@@ -1,7 +1,8 @@
 import type { ConversationState, FieldValue, TravelServiceKind } from './types';
+import { withConfidence } from './confidence';
 
 function inferred<T>(value: T): FieldValue<T> {
-  return { value, source: 'inferred' };
+  return withConfidence(value, 'inferred', 0.55);
 }
 
 function uniqueServices(services: TravelServiceKind[]): TravelServiceKind[] {
@@ -14,6 +15,10 @@ export function inferContext(state: ConversationState): ConversationState {
     ...state,
     requestedServices: [...state.requestedServices],
     missingRequiredFields: [...state.missingRequiredFields],
+    conflicts: [...state.conflicts],
+    lastPresentedOptions: [...state.lastPresentedOptions],
+    selectedOptions: [...state.selectedOptions],
+    lastUpdatedFields: [...state.lastUpdatedFields],
   };
 
   if (next.accommodationArea && !next.requestedServices.includes('accommodation')) {
@@ -40,7 +45,12 @@ export function inferContext(state: ConversationState): ConversationState {
   }
 
   if (!next.travellers && next.requestedServices.length > 0) {
-    next.travellers = inferred({ adults: 1, children: 0, total: 1 });
+    next.travellers = inferred({ adults: 1, children: 0, infants: 0, total: 1 });
+  } else if (next.travellers && next.travellers.value.infants == null) {
+    next.travellers = {
+      ...next.travellers,
+      value: { ...next.travellers.value, infants: next.travellers.value.infants ?? 0 },
+    };
   }
 
   if (!next.tripPurpose && next.origin && next.destination) {

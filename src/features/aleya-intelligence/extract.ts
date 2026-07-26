@@ -8,6 +8,7 @@ import type {
   TravelServiceKind,
   TripPurposeKind,
 } from './types';
+import { withConfidence } from './confidence';
 
 export type ExtractionPatch = {
   origin?: FieldValue<string>;
@@ -16,19 +17,31 @@ export type ExtractionPatch = {
   returnDate?: FieldValue<ApproximateDate>;
   departureTimePreference?: FieldValue<TimePreference>;
   returnTimePreference?: FieldValue<TimePreference>;
+  dateFlexibility?: FieldValue<'strict' | 'flexible' | 'plus_minus_days'>;
   requestedServices?: TravelServiceKind[];
   removeServices?: TravelServiceKind[];
   accommodationArea?: FieldValue<string>;
   clearAccommodationArea?: boolean;
   travellers?: FieldValue<TravellerCounts>;
   tripPurpose?: FieldValue<TripPurposeKind>;
-  budget?: FieldValue<{ amount?: number; currency?: string; style?: 'budget' | 'mid' | 'luxury' }>;
+  budget?: FieldValue<{ amount?: number; currency?: string; style?: 'budget' | 'mid' | 'luxury'; relative?: 'cheaper' | 'more_expensive' }>;
+  roomRequirements?: FieldValue<{ rooms?: number; beds?: string; connecting?: boolean; notes?: string }>;
+  airlinePreferences?: FieldValue<{ airlines?: string[]; cabin?: string; directOnly?: boolean; notes?: string }>;
+  hotelPreferences?: FieldValue<{ stars?: number; brands?: string[]; amenities?: string[]; notes?: string }>;
+  activities?: FieldValue<string[]>;
+  dietaryRequirements?: FieldValue<string[]>;
+  accessibility?: FieldValue<string[]>;
+  loyaltyMemberships?: FieldValue<string[]>;
+  specialRequests?: FieldValue<string[]>;
+  transportNotes?: FieldValue<string>;
   explicitItineraryIntent?: boolean;
   isGreeting?: boolean;
   isThanks?: boolean;
   isCapabilityQuestion?: boolean;
   isDateConfirmation?: boolean;
   confirmedDateLabel?: string;
+  pendingLowConfidenceFields?: string[];
+  changedFields?: string[];
 };
 
 const MONTHS: Record<string, number> = {
@@ -45,11 +58,11 @@ const WEEKDAYS: Record<string, number> = {
 
 const PLACE_STOPWORDS = new Set([
   'around', 'from', 'to', 'on', 'at', 'in', 'and', 'with', 'for', 'next', 'this',
-  'the', 'a', 'an', 'after', 'before', 'near', 'via', 'leaving',
+  'the', 'a', 'an', 'after', 'before', 'near', 'via', 'leaving', 'actually', 'instead',
 ]);
 
 function field<T>(value: T, source: 'confirmed' | 'inferred' = 'confirmed'): FieldValue<T> {
-  return { value, source };
+  return withConfidence(value, source, source === 'confirmed' ? 0.9 : 0.55);
 }
 
 function resolvePlaceName(raw: string): string {
@@ -63,7 +76,7 @@ function resolvePlaceName(raw: string): string {
   if (known) return known.name;
   const first = cleaned.split(/\s+/)[0]?.toLowerCase() ?? '';
   const byFirst = PLACES.find((p) => p.name.toLowerCase() === first || p.aliases.includes(first));
-  return byFirst?.name ?? cleaned;
+  return byFirst?.name ?? cleaned.replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function extractServices(text: string): TravelServiceKind[] {
@@ -117,10 +130,11 @@ function extractTimePreference(fragment: string): TimePreference | undefined {
   if (/\bmorning\b/.test(t)) return 'morning';
   if (/\bafternoon\b/.test(t)) return 'afternoon';
   if (/\bevening\b|\bnight\b/.test(t)) return 'evening';
+  if (/\bflexible\b/.test(t)) return 'flexible';
   return undefined;
 }
 
-function parseAbsoluteDate(text: string, now: Date): ApproximateDate | undefined {
+export function parseAbsoluteDate(text: string, now: Date): ApproximateDate | undefined {
   const lower = text.toLowerCase();
   const long = lower.match(
     /\b(?:(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)[,]?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)(?:\s+(\d{4}))?\b/,
@@ -163,22 +177,34 @@ function parseRelativeDate(text: string, now: Date): ApproximateDate | undefined
   return parseAbsoluteDate(text, now);
 }
 
+const WORD_NUMBERS: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+};
+
+function parseCount(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return WORD_NUMBERS[raw.toLowerCase()];
+}
+
 function extractTravellers(text: string): TravellerCounts | undefined {
   const t = text.toLowerCase();
-  const adultsMatch = t.match(/(\d+)\s*adults?/);
-  const childrenMatch = t.match(/(\d+)\s*(?:children|kids|child)/);
-  const peopleMatch = t.match(/(\d+)\s*(?:travellers?|travelers?|people|passengers?|of us)/);
-  if (adultsMatch || childrenMatch) {
-    const adults = adultsMatch ? Number(adultsMatch[1]) : 1;
-    const children = childrenMatch ? Number(childrenMatch[1]) : 0;
-    return { adults, children, total: adults + children };
+  const adultsMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*adults?/);
+  const childrenMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:children|kids|child)/);
+  const infantsMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:infants?|babies|baby)/);
+  const peopleMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:travellers?|travelers?|people|passengers?|of us)/);
+  if (adultsMatch || childrenMatch || infantsMatch) {
+    const adults = parseCount(adultsMatch?.[1]) ?? (infantsMatch || childrenMatch ? 1 : 1);
+    const children = parseCount(childrenMatch?.[1]) ?? 0;
+    const infants = parseCount(infantsMatch?.[1]) ?? 0;
+    return { adults, children, infants, total: adults + children + infants };
   }
   if (peopleMatch) {
-    const total = Number(peopleMatch[1]);
-    return { adults: total, children: 0, total };
+    const total = parseCount(peopleMatch[1]) ?? 1;
+    return { adults: total, children: 0, infants: 0, total };
   }
-  if (/\bjust me\b|\bsolo\b/.test(t)) return { adults: 1, children: 0, total: 1 };
-  if (/\bcouple\b|\btwo of us\b/.test(t)) return { adults: 2, children: 0, total: 2 };
+  if (/\bjust me\b|\bsolo\b/.test(t)) return { adults: 1, children: 0, infants: 0, total: 1 };
+  if (/\bcouple\b|\btwo of us\b/.test(t)) return { adults: 2, children: 0, infants: 0, total: 2 };
   return undefined;
 }
 
@@ -197,6 +223,78 @@ function extractBudget(text: string): ExtractionPatch['budget'] | undefined {
   return undefined;
 }
 
+function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
+  const lower = text.toLowerCase();
+
+  if (/\bflexible (?:on|with)?\s*dates?\b|\bdates? are flexible\b|\b\+\/?\-?\s*\d+\s*days?\b/.test(lower)) {
+    patch.dateFlexibility = field('flexible');
+  } else if (/\bexact dates?\b|\bmust (?:be|travel) on\b/.test(lower)) {
+    patch.dateFlexibility = field('strict');
+  }
+
+  const rooms = lower.match(/(\d+)\s*rooms?/);
+  const beds = lower.match(/\b(king|queen|twin|double)\s*beds?\b/);
+  if (rooms || beds || /\bconnecting rooms?\b/.test(lower)) {
+    patch.roomRequirements = field({
+      rooms: rooms ? Number(rooms[1]) : undefined,
+      beds: beds?.[1],
+      connecting: /\bconnecting rooms?\b/.test(lower) || undefined,
+    });
+  }
+
+  const airline = text.match(/\b(?:prefer|fly|with)\s+(Qantas|Jetstar|Virgin|Singapore Airlines|Emirates|Cathay)\b/i);
+  const cabin = lower.match(/\b(economy|premium economy|business|first)\s*class\b/);
+  if (airline || cabin || /\bdirect(?: flights?)? only\b|\bnon[- ]stop\b/.test(lower)) {
+    patch.airlinePreferences = field({
+      airlines: airline ? [airline[1]!] : undefined,
+      cabin: cabin?.[1],
+      directOnly: /\bdirect(?: flights?)? only\b|\bnon[- ]stop\b/.test(lower) || undefined,
+    });
+  }
+
+  const stars = lower.match(/(\d)\s*[- ]?star/);
+  if (stars || /\bboutique\b|\bnear the beach\b|\bpool\b/.test(lower)) {
+    const amenities: string[] = [];
+    if (/\bpool\b/.test(lower)) amenities.push('pool');
+    if (/\bbeach\b/.test(lower)) amenities.push('beach');
+    if (/\bboutique\b/.test(lower)) amenities.push('boutique');
+    patch.hotelPreferences = field({
+      stars: stars ? Number(stars[1]) : undefined,
+      amenities: amenities.length ? amenities : undefined,
+    });
+  }
+
+  const diet: string[] = [];
+  if (/\bvegetarian\b/.test(lower)) diet.push('vegetarian');
+  if (/\bvegan\b/.test(lower)) diet.push('vegan');
+  if (/\bgluten[- ]free\b/.test(lower)) diet.push('gluten-free');
+  if (/\bhalal\b/.test(lower)) diet.push('halal');
+  if (/\bkosher\b/.test(lower)) diet.push('kosher');
+  if (diet.length) patch.dietaryRequirements = field(diet);
+
+  const access: string[] = [];
+  if (/\bwheelchair\b/.test(lower)) access.push('wheelchair');
+  if (/\bstep[- ]free\b/.test(lower)) access.push('step-free');
+  if (/\baccessible\b/.test(lower)) access.push('accessible');
+  if (access.length) patch.accessibility = field(access);
+
+  const loyalty = text.match(/\b((?:Qantas|Virgin|Marriott|Hilton|Accor)\s*(?:Frequent Flyer|FF|Bonvoy|Honors|Live Limitless)?)\b/gi);
+  if (loyalty?.length) patch.loyaltyMemberships = field(Array.from(new Set(loyalty.map((s) => s.trim()))));
+
+  if (/\bspecial request\b|\banniversary\b|\bhoneymoon setup\b|\blate checkout\b/.test(lower)) {
+    const notes: string[] = [];
+    if (/\banniversary\b/.test(lower)) notes.push('anniversary');
+    if (/\bhoneymoon\b/.test(lower)) notes.push('honeymoon');
+    if (/\blate checkout\b/.test(lower)) notes.push('late checkout');
+    if (notes.length) patch.specialRequests = field(notes);
+  }
+
+  const activityHits = text.match(/\b(?:visit|see|do)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3})/g);
+  if (activityHits?.length && /\bactivit/i.test(text)) {
+    patch.activities = field(activityHits.map((h) => h.replace(/^(visit|see|do)\s+/i, '').trim()));
+  }
+}
+
 function looksLikeDateConfirmation(text: string, previous?: ConversationState): boolean {
   const t = text.trim().toLowerCase();
   if (previous?.awaitingDateConfirmation || previous?.lastSuggestedDate) {
@@ -209,10 +307,24 @@ function looksLikeDateConfirmation(text: string, previous?: ConversationState): 
   return false;
 }
 
+function extractDestinationChange(text: string): string | undefined {
+  const patterns = [
+    /\b(?:actually\s+)?make it\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*(?:instead)?\b/i,
+    /\b(?:actually\s+)?(?:change|switch)\s+(?:the\s+)?destination\s+to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+    /\b(?:actually\s+)?(?:change|switch)\s+(?:it\s+)?to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+    /\binstead\s+(?:make it\s+|go to\s+|to\s+)?([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m?.[1]) return resolvePlaceName(m[1]);
+  }
+  return undefined;
+}
+
 export function extractRequirements(message: string, previous?: ConversationState, now = new Date()): ExtractionPatch {
   const text = message.trim();
   const lower = text.toLowerCase();
-  const patch: ExtractionPatch = {};
+  const patch: ExtractionPatch = { changedFields: [] };
 
   if (/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)([!,.\s].*)?$/i.test(text)) {
     patch.isGreeting = true;
@@ -233,9 +345,11 @@ export function extractRequirements(message: string, previous?: ConversationStat
     if (absolute) {
       patch.confirmedDateLabel = absolute.label;
       patch.departureDate = field(absolute, 'confirmed');
+      patch.changedFields!.push('departureDate');
     } else if (previous?.lastSuggestedDate) {
       patch.confirmedDateLabel = previous.lastSuggestedDate.label;
       patch.departureDate = field({ ...previous.lastSuggestedDate, kind: 'absolute' }, 'confirmed');
+      patch.changedFields!.push('departureDate');
     }
   }
 
@@ -251,26 +365,54 @@ export function extractRequirements(message: string, previous?: ConversationStat
     /\b(?:hotel|stay|resort|accommodation)\s+(?:in\s+|at\s+)([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/,
   );
 
-  if (fromMatch) patch.origin = field(resolvePlaceName(fromMatch[1]!));
-  if (backToMatch) patch.origin = field(resolvePlaceName(backToMatch[1]!));
+  if (fromMatch) {
+    patch.origin = field(resolvePlaceName(fromMatch[1]!));
+    patch.changedFields!.push('origin');
+  }
+  if (backToMatch) {
+    patch.origin = field(resolvePlaceName(backToMatch[1]!));
+    patch.changedFields!.push('origin');
+  }
 
-  if (toMatch) {
+  const destinationChange = extractDestinationChange(text);
+  if (destinationChange) {
+    patch.destination = field(destinationChange);
+    patch.changedFields!.push('destination');
+  }
+
+  if (!patch.destination && toMatch) {
     const raw = toMatch[1]!;
     const isReturnPhrase =
       /\b(?:come back|return|back)\s+to\b/i.test(text) &&
       new RegExp(`\\b(?:come back|return|back)\\s+to\\s+${raw.split(/\s+/)[0]}`, 'i').test(text);
-    if (!isReturnPhrase) patch.destination = field(resolvePlaceName(raw));
+    if (!isReturnPhrase) {
+      patch.destination = field(resolvePlaceName(raw));
+      patch.changedFields!.push('destination');
+    }
   }
 
   if (!patch.destination && inMatch) {
     const name = resolvePlaceName(inMatch[1]!);
-    // Hotel at Docklands is an area, not destination city
     if (
       name &&
       !PLACE_STOPWORDS.has(name.toLowerCase()) &&
       !areas.some((a) => a.area.toLowerCase() === name.toLowerCase())
     ) {
       patch.destination = field(name);
+      patch.changedFields!.push('destination');
+    }
+  }
+
+  // Explicit "to <place>" even when it matches origin (validation will flag impossible same-city trips)
+  const explicitTo = text.match(/\bto\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/);
+  if (!patch.destination && explicitTo) {
+    const name = resolvePlaceName(explicitTo[1]!);
+    const isReturnOnly =
+      /\b(?:come back|return|back)\s+to\b/i.test(text) &&
+      new RegExp(`\\b(?:come back|return|back)\\s+to\\s+${explicitTo[1]!.split(/\s+/)[0]}`, 'i').test(text);
+    if (name && !isReturnOnly && !areas.some((a) => a.area.toLowerCase() === name.toLowerCase())) {
+      patch.destination = field(name);
+      patch.changedFields!.push('destination');
     }
   }
 
@@ -282,29 +424,53 @@ export function extractRequirements(message: string, previous?: ConversationStat
       places[0];
     if (preferred && preferred.name.toLowerCase() !== originName) {
       patch.destination = field(preferred.name);
+      patch.changedFields!.push('destination');
     }
   }
 
   if (areas.length > 0) {
     patch.accommodationArea = field(areas[0]!.area);
+    patch.changedFields!.push('accommodationArea');
     if (!patch.destination) patch.destination = field(areas[0]!.city, 'inferred');
   }
 
   const removals = extractRemovals(text);
-  if (removals.length) patch.removeServices = removals;
+  if (removals.length) {
+    patch.removeServices = removals;
+    patch.changedFields!.push('requestedServices');
+  }
 
   const services = extractServices(text).filter((s) => !removals.includes(s));
-  if (services.length) patch.requestedServices = services;
+  if (services.length) {
+    patch.requestedServices = services;
+    patch.changedFields!.push('requestedServices');
+  }
   if (areas.length && !services.includes('accommodation') && !removals.includes('accommodation')) {
     patch.requestedServices = Array.from(new Set([...(patch.requestedServices ?? []), 'accommodation']));
   }
 
   const purpose = extractPurpose(text);
-  if (purpose) patch.tripPurpose = field(purpose);
+  if (purpose) {
+    patch.tripPurpose = field(purpose);
+    patch.changedFields!.push('tripPurpose');
+  }
 
   if (!patch.isDateConfirmation) {
-    const depDate = parseRelativeDate(text, now);
-    if (depDate) patch.departureDate = field(depDate);
+    const returnOnlyUpdate = /^\s*return\b/i.test(text) && !/\b(?:depart|leave|outbound|from\s+[A-Z])/i.test(text);
+
+    // Explicit date change phrasing
+    const dateChange = text.match(
+      /\b(?:change|update|move)\s+(?:the\s+)?date\s+to\s+(.+)$/i,
+    );
+    const depDate = returnOnlyUpdate
+      ? undefined
+      : dateChange
+        ? parseAbsoluteDate(dateChange[1]!, now) ?? parseRelativeDate(dateChange[1]!, now)
+        : parseRelativeDate(text, now);
+    if (depDate) {
+      patch.departureDate = field(depDate);
+      patch.changedFields!.push('departureDate');
+    }
 
     const fridayWindow = /\bfriday\b/i.test(text)
       ? text.match(/\bfriday\b[\s\S]{0,80}?(?=come back|return|$)/i)?.[0] ?? ''
@@ -314,13 +480,16 @@ export function extractRequirements(message: string, previous?: ConversationStat
         ? 'after_5pm'
         : extractTimePreference(fridayWindow) ?? 'afternoon';
       patch.departureTimePreference = field(pref);
+      patch.changedFields!.push('departureTimePreference');
       if (patch.departureDate) {
         patch.departureDate = field({ ...patch.departureDate.value, weekday: 5, timePreference: pref });
       } else {
         patch.departureDate = field({ kind: 'relative', label: 'Friday', weekday: 5, timePreference: pref });
+        patch.changedFields!.push('departureDate');
       }
     } else if (/after\s*5|after work/.test(lower) && !/\b(?:come back|return)[\s\S]{0,40}(?:after\s*5|afternoon)/.test(lower)) {
       patch.departureTimePreference = field('after_5pm');
+      patch.changedFields!.push('departureTimePreference');
     }
 
     const returnClause = text.match(/\b(?:come back|return)([\s\S]{0,60})/i);
@@ -330,19 +499,24 @@ export function extractRequirements(message: string, previous?: ConversationStat
       const returnTime = extractTimePreference(returnBit);
       if (returnAbs) {
         patch.returnDate = field({ ...returnAbs, timePreference: returnTime });
+        patch.changedFields!.push('returnDate');
       } else if (returnTime) {
         patch.returnDate = field({
           kind: 'relative',
           label: `return ${returnTime}`,
           timePreference: returnTime,
         });
+        patch.changedFields!.push('returnDate');
       }
-      if (returnTime) patch.returnTimePreference = field(returnTime);
+      if (returnTime) {
+        patch.returnTimePreference = field(returnTime);
+        patch.changedFields!.push('returnTimePreference');
+      }
     } else if (/\bcome back\b|\breturn\b/.test(lower) && /\bafternoon\b/.test(lower)) {
       patch.returnTimePreference = field('afternoon');
+      patch.changedFields!.push('returnTimePreference');
     }
 
-    // "Return Sunday afternoon" without "come back"
     const returnDay = text.match(/\breturn\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s+(afternoon|morning|evening)/i);
     if (returnDay) {
       patch.returnTimePreference = field(extractTimePreference(returnDay[2]!) ?? 'afternoon');
@@ -352,10 +526,10 @@ export function extractRequirements(message: string, previous?: ConversationStat
         weekday: WEEKDAYS[returnDay[1]!.toLowerCase()],
         timePreference: extractTimePreference(returnDay[2]!) ?? 'afternoon',
       });
+      patch.changedFields!.push('returnDate', 'returnTimePreference');
     }
   }
 
-  // Return day/time can appear on confirmation or later turns
   const returnDay = text.match(
     /\breturn\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)?\s*(afternoon|morning|evening)?/i,
   );
@@ -371,14 +545,24 @@ export function extractRequirements(message: string, previous?: ConversationStat
   }
 
   const travellers = extractTravellers(text);
-  if (travellers) patch.travellers = field(travellers);
+  if (travellers) {
+    patch.travellers = field(travellers);
+    patch.changedFields!.push('travellers');
+  }
 
   const budget = extractBudget(text);
-  if (budget) patch.budget = budget;
+  if (budget) {
+    patch.budget = budget;
+    patch.changedFields!.push('budget');
+  }
+
+  extractPreferenceExtras(text, patch);
 
   if (/\bitinerary\b|\bday[- ]by[- ]day\b|\bdaily schedule\b|\bbuild (?:me )?an? itinerary\b|\bcreate (?:an? )?itinerary\b/.test(lower)) {
     patch.explicitItineraryIntent = true;
+    patch.changedFields!.push('explicitItineraryIntent');
   }
 
+  patch.changedFields = Array.from(new Set(patch.changedFields));
   return patch;
 }

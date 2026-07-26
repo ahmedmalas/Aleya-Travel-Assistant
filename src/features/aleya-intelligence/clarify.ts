@@ -1,9 +1,10 @@
 import type { ApproximateDate, ConversationState } from './types';
+import type { ValidationResult } from './validate';
 
 export type ClarificationResult = {
   needsClarification: boolean;
   missingRequiredFields: string[];
-  /** At most one precise question in Phase 1. */
+  /** At most one precise question. */
   question?: string;
   suggestedDate?: ApproximateDate;
 };
@@ -69,9 +70,22 @@ function hasTravelIntent(state: ConversationState): boolean {
 }
 
 /** Ask only for genuinely missing information — one precise question. */
-export function evaluateClarifications(state: ConversationState, now: Date): ClarificationResult {
+export function evaluateClarifications(
+  state: ConversationState,
+  now: Date,
+  validation?: ValidationResult,
+): ClarificationResult {
   if (!hasTravelIntent(state)) {
     return { needsClarification: false, missingRequiredFields: [] };
+  }
+
+  // Impossible / conflicting combinations take priority over soft missing fields
+  if (validation?.question && (validation.impossible.length > 0 || validation.conflicts.length > 0)) {
+    return {
+      needsClarification: true,
+      missingRequiredFields: validation.impossible.concat(validation.conflicts).map((c) => c.field),
+      question: validation.question,
+    };
   }
 
   if (!state.destination) {
@@ -79,6 +93,19 @@ export function evaluateClarifications(state: ConversationState, now: Date): Cla
       needsClarification: true,
       missingRequiredFields: ['destination'],
       question: 'Which city or destination are you travelling to?',
+    };
+  }
+
+  // Low-confidence destination confirmation (Phase 2) — only when not already clarifying dates
+  if (
+    validation?.question &&
+    validation.ambiguous.some((a) => a.field === 'destination') &&
+    state.destination.confidenceLevel === 'low'
+  ) {
+    return {
+      needsClarification: true,
+      missingRequiredFields: ['confirm:destination'],
+      question: validation.question,
     };
   }
 
@@ -98,14 +125,19 @@ export function evaluateClarifications(state: ConversationState, now: Date): Cla
       };
     }
 
-    const unresolved =
-      !state.departureDate.value.isoDate ||
-      state.departureDate.value.kind === 'month_end' ||
-      state.departureDate.value.kind === 'relative' ||
-      state.departureDate.value.kind === 'weekend' ||
-      state.departureDate.value.kind === 'suggested';
+    // Concrete ISO dates (absolute or resolved relative like "next week") need no further ask.
+    // Approximate kinds without isoDate still need a precise confirmation (Phase 1 behaviour).
+    const hasConcreteDate = Boolean(state.departureDate.value.isoDate);
+    const approxNeedsConfirm =
+      !hasConcreteDate &&
+      state.departureDate.value.kind !== 'absolute' &&
+      (state.departureDate.value.kind === 'month_end' ||
+        state.departureDate.value.kind === 'relative' ||
+        state.departureDate.value.kind === 'weekend' ||
+        state.departureDate.value.kind === 'suggested' ||
+        state.departureDate.value.weekday != null);
 
-    if (unresolved && state.departureDate.value.kind !== 'absolute') {
+    if (approxNeedsConfirm) {
       const suggestedDate = suggestConcreteDate(state, now);
       if (suggestedDate) {
         return {

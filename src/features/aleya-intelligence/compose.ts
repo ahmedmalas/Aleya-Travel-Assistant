@@ -29,14 +29,32 @@ function summarizeKnown(state: ConversationState): string[] {
     bits.push(`services: ${state.requestedServices.map(serviceLabel).join(', ')}`);
   }
   if (state.travellers && state.travellers.source === 'confirmed') {
-    bits.push(`${state.travellers.value.total} travellers`);
+    const t = state.travellers.value;
+    const parts = [`${t.adults} adult${t.adults === 1 ? '' : 's'}`];
+    if (t.children) parts.push(`${t.children} child${t.children === 1 ? '' : 'ren'}`);
+    if (t.infants) parts.push(`${t.infants} infant${t.infants === 1 ? '' : 's'}`);
+    bits.push(parts.join(', '));
   }
   if (state.budget) {
     bits.push(
-      state.budget.value.style
-        ? `${state.budget.value.style} budget`
-        : `budget ${state.budget.value.amount ?? ''}`.trim(),
+      state.budget.value.relative === 'cheaper'
+        ? 'prefer cheaper options'
+        : state.budget.value.style
+          ? `${state.budget.value.style} budget`
+          : `budget ${state.budget.value.amount ?? ''}`.trim(),
     );
+  }
+  if (state.airlinePreferences?.value.airlines?.length) {
+    bits.push(`airline ${state.airlinePreferences.value.airlines.join(', ')}`);
+  }
+  if (state.hotelPreferences?.value.stars) {
+    bits.push(`${state.hotelPreferences.value.stars}-star hotel preference`);
+  }
+  if (state.dietaryRequirements?.value.length) {
+    bits.push(`dietary: ${state.dietaryRequirements.value.join(', ')}`);
+  }
+  if (state.selectedOptions.length) {
+    bits.push(`selected: ${state.selectedOptions.map((o) => o.label).join(', ')}`);
   }
   if (state.explicitItineraryIntent) bits.push('itinerary requested');
   return bits;
@@ -51,8 +69,9 @@ export type ComposeInput = {
 };
 
 /**
- * Phase 1 replies acknowledge understood state and clarify when needed.
+ * Acknowledge understood state and clarify when needed.
  * Never claims a search ran. Never uses banned generic fallbacks when travel intent exists.
+ * Confidence scores stay internal and are never mentioned.
  */
 export function composeReply(input: ComposeInput): string {
   const { patch, state, clarification, travellerName } = input;

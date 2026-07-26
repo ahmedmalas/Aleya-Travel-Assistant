@@ -1,15 +1,18 @@
 /**
- * Aleya Intelligence Core (Phase 1)
+ * Aleya Intelligence Layer (Phase 1 + Phase 2)
  * All travel chat UIs must call `handleTravelChatMessage` / `processTravelMessage`.
  */
 
 export { processTravelMessage } from './pipeline';
 export { createEmptyConversationState } from './types';
+export { getContextSummary } from './compress';
 export type {
   ApproximateDate,
   ConversationState,
+  ContextCompression,
   FieldValue,
   IntelligenceResult,
+  PresentedOption,
   ProcessMessageInput,
   TravelServiceKind,
   TripPurposeKind,
