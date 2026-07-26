@@ -82,30 +82,12 @@ export function UserProfilePanel() {
   const inputClass =
     'w-full rounded-xl border border-white/15 bg-slate-950/70 px-3 py-2.5 text-white outline-none focus:ring-2 focus:ring-sky-300/40';
 
-  const identityFields: Array<[keyof UserProfile, string]> = [
-    ['fullName', 'Full name'],
-    ['preferredName', 'Preferred name'],
-    ['email', 'Email'],
-    ['phone', 'Phone'],
-  ];
-
-  const personalFields: Array<[keyof UserProfile, string]> = [
-    ['countryOfResidence', 'Country of residence'],
-    ['homeCity', 'Home city'],
-    ['homeAirport', 'Home airport'],
-    ['nationality', 'Nationality'],
-    ['language', 'Language / locale'],
-    ['timezone', 'Time zone'],
-    ['seatingPreference', 'Seating preference'],
-    ['emergencyContactName', 'Emergency contact'],
-    ['emergencyContactPhone', 'Emergency contact phone'],
-  ];
-
-  const preferenceNotes: Array<[keyof UserProfile, string]> = [
-    ['hotelPreferences', 'Hotel preferences'],
-    ['dietaryRequirements', 'Dietary requirements'],
-    ['accessibilityNeeds', 'Accessibility needs'],
-  ];
+  const renderInput = (field: keyof UserProfile, label: string, type = 'text') => (
+    <label key={field} className="block text-sm text-slate-200">
+      <span className="mb-2 block">{label}</span>
+      <input type={type} className={inputClass} value={profile[field]} onChange={(event) => update(field, event.target.value)} />
+    </label>
+  );
 
   return (
     <section id="user-profile" className="scroll-mt-28 mx-auto max-w-7xl px-6 pb-12" aria-labelledby="user-profile-title">
@@ -113,30 +95,28 @@ export function UserProfilePanel() {
         <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">My Aleya</p>
         <h2 id="user-profile-title" className="mt-2 text-3xl font-bold text-white">My profile</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          Keep your essential account details current. Travel preferences are available below when you need to update them.
+          Manage your personal details, contact information and travel settings.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {identityFields.map(([field, label]) => (
-            <label key={field} className="block text-sm text-slate-200">
-              <span className="mb-2 block">{label}</span>
-              <input className={inputClass} value={profile[field]} onChange={(event) => update(field, event.target.value)} />
-            </label>
-          ))}
-        </div>
+        <section className="mt-7" aria-labelledby="personal-details-title">
+          <h3 id="personal-details-title" className="text-lg font-semibold text-white">Personal details</h3>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {renderInput('fullName', 'Full name')}
+            {renderInput('preferredName', 'Preferred name')}
+            {renderInput('email', 'Email address', 'email')}
+            {renderInput('phone', 'Mobile number', 'tel')}
+            {renderInput('nationality', 'Nationality')}
+            {renderInput('countryOfResidence', 'Country of residence')}
+          </div>
+        </section>
 
-        <details className="mt-6 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-          <summary className="cursor-pointer font-medium text-white">Travel preferences and personal details</summary>
-          <p className="mt-2 text-sm text-slate-400">Home location, regional settings, preferences and emergency information.</p>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {personalFields.map(([field, label]) => (
-              <label key={field} className="block text-sm text-slate-200">
-                <span className="mb-2 block">{label}</span>
-                <input className={inputClass} value={profile[field]} onChange={(event) => update(field, event.target.value)} />
-              </label>
-            ))}
-
+        <section className="mt-7 border-t border-white/10 pt-7" aria-labelledby="home-details-title">
+          <h3 id="home-details-title" className="text-lg font-semibold text-white">Home and regional details</h3>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {renderInput('homeCity', 'Home city')}
+            {renderInput('homeAirport', 'Home airport')}
+            {renderInput('language', 'Language / locale')}
+            {renderInput('timezone', 'Time zone')}
             <label className="block text-sm text-slate-200">
               <span className="mb-2 block">Home currency</span>
               <input
@@ -151,7 +131,12 @@ export function UserProfilePanel() {
                 ))}
               </datalist>
             </label>
+          </div>
+        </section>
 
+        <details className="mt-7 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+          <summary className="cursor-pointer font-medium text-white">Travel preferences</summary>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <label className="block text-sm text-slate-200">
               <span className="mb-2 block">Travel style</span>
               <select className={inputClass} value={profile.travelStyle} onChange={(event) => update('travelStyle', event.target.value)}>
@@ -164,7 +149,6 @@ export function UserProfilePanel() {
                 <option value="accessible">Accessible</option>
               </select>
             </label>
-
             <label className="block text-sm text-slate-200">
               <span className="mb-2 block">Cabin preference</span>
               <select className={inputClass} value={profile.cabinPreference} onChange={(event) => update('cabinPreference', event.target.value)}>
@@ -174,20 +158,35 @@ export function UserProfilePanel() {
                 <option value="first">First</option>
               </select>
             </label>
+            {renderInput('seatingPreference', 'Seating preference')}
           </div>
-
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {preferenceNotes.map(([field, label]) => (
-              <label key={field} className="block text-sm text-slate-200">
-                <span className="mb-2 block">{label}</span>
-                <textarea rows={3} className={inputClass} value={profile[field]} onChange={(event) => update(field, event.target.value)} />
-              </label>
-            ))}
+            {(['hotelPreferences', 'dietaryRequirements', 'accessibilityNeeds'] as const).map((field) => {
+              const labels = {
+                hotelPreferences: 'Hotel preferences',
+                dietaryRequirements: 'Dietary requirements',
+                accessibilityNeeds: 'Accessibility needs',
+              };
+              return (
+                <label key={field} className="block text-sm text-slate-200">
+                  <span className="mb-2 block">{labels[field]}</span>
+                  <textarea rows={3} className={inputClass} value={profile[field]} onChange={(event) => update(field, event.target.value)} />
+                </label>
+              );
+            })}
+          </div>
+        </details>
+
+        <details className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+          <summary className="cursor-pointer font-medium text-white">Emergency contact</summary>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {renderInput('emergencyContactName', 'Emergency contact name')}
+            {renderInput('emergencyContactPhone', 'Emergency contact mobile', 'tel')}
           </div>
         </details>
 
         {isDirty ? (
-          <div className="mt-5 flex items-center gap-3">
+          <div className="mt-6 flex items-center gap-3">
             <button type="button" onClick={save} className="rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 hover:bg-sky-300">
               Save my profile
             </button>
