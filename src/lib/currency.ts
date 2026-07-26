@@ -29,8 +29,8 @@ export const getSupportedCurrencies = (): string[] => {
 };
 
 export const detectUserCurrency = (): string => {
-  if (typeof navigator === 'undefined') return 'USD';
-  const locale = navigator.languages?.[0] || navigator.language || 'en-US';
+  if (typeof navigator === 'undefined') return 'AUD';
+  const locale = navigator.languages?.[0] || navigator.language || 'en-AU';
   try {
     const region = new Intl.Locale(locale).region;
     if (region && REGION_CURRENCY[region]) return REGION_CURRENCY[region];
@@ -38,7 +38,7 @@ export const detectUserCurrency = (): string => {
     const region = locale.split('-')[1]?.toUpperCase();
     if (region && REGION_CURRENCY[region]) return REGION_CURRENCY[region];
   }
-  return 'USD';
+  return 'AUD';
 };
 
 export const getCurrencyLabel = (currency: string): string => {
