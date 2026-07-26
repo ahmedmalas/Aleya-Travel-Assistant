@@ -1,6 +1,6 @@
 import { mayCommitField } from './confidence';
 import type { ExtractionPatch } from './extract';
-import type { ConversationState, FieldValue, RequirementConflict } from './types';
+import type { ConversationState, FieldValue } from './types';
 import { createEmptyConversationState } from './types';
 
 function preferField<T>(
@@ -26,10 +26,7 @@ function preferField<T>(
 
   if (decision === 'retain' && existing) return existing;
 
-  if (
-    existing &&
-    JSON.stringify(existing.value) !== JSON.stringify(incoming.value)
-  ) {
+  if (existing && JSON.stringify(existing.value) !== JSON.stringify(incoming.value)) {
     updated.push(fieldName);
   } else if (!existing) {
     updated.push(fieldName);
@@ -50,6 +47,13 @@ function mergeStringLists(
   };
 }
 
+function isSoftDestination(patch: ExtractionPatch): boolean {
+  return (
+    patch.destination?.confidenceLevel === 'low' ||
+    Boolean(patch.pendingLowConfidenceFields?.includes('destination'))
+  );
+}
+
 /** Merge extraction into prior state; later turns accumulate and can correct one field at a time. */
 export function mergeConversationState(
   previous: ConversationState | undefined,
@@ -67,10 +71,59 @@ export function mergeConversationState(
     selectedOptions: [...base.selectedOptions],
     turnCount: base.turnCount + 1,
     lastUpdatedFields: [],
+    awaitingDestinationConfirmation: base.awaitingDestinationConfirmation,
+    pendingDestination: base.pendingDestination,
   };
 
+  // Pending destination confirm / decline (Blocker 2)
+  if (patch.confirmPendingDestination && next.pendingDestination) {
+    next.destination = {
+      ...next.pendingDestination,
+      source: 'confirmed',
+      confidence: 0.95,
+      confidenceLevel: 'high',
+    };
+    next.pendingDestination = undefined;
+    next.awaitingDestinationConfirmation = false;
+    updated.push('destination');
+  } else if (patch.declinePendingDestination) {
+    // If the only destination was the soft candidate itself, clear it too
+    if (
+      next.pendingDestination &&
+      next.destination &&
+      next.pendingDestination.value.toLowerCase() === next.destination.value.toLowerCase()
+    ) {
+      next.destination = undefined;
+    }
+    next.pendingDestination = undefined;
+    next.awaitingDestinationConfirmation = false;
+  } else if (patch.destination) {
+    const incoming = patch.destination;
+    const existing = next.destination;
+    const soft = isSoftDestination(patch);
+
+    if (existing && soft && incoming.value.toLowerCase() !== existing.value.toLowerCase()) {
+      // Keep confirmed destination; hold soft candidate for confirmation
+      next.pendingDestination = incoming;
+      next.awaitingDestinationConfirmation = true;
+      askFields.push('destination');
+    } else if (!existing && soft) {
+      // First soft mention: store tentatively and ask before treating as firm
+      next.destination = incoming;
+      next.awaitingDestinationConfirmation = true;
+      next.pendingDestination = incoming;
+      askFields.push('destination');
+      updated.push('destination');
+    } else {
+      next.destination = preferField(incoming, existing, 'destination', updated, askFields);
+      if (incoming.confidenceLevel !== 'low') {
+        next.pendingDestination = undefined;
+        next.awaitingDestinationConfirmation = false;
+      }
+    }
+  }
+
   next.origin = preferField(patch.origin, next.origin, 'origin', updated, askFields);
-  next.destination = preferField(patch.destination, next.destination, 'destination', updated, askFields);
   next.departureDate = preferField(patch.departureDate, next.departureDate, 'departureDate', updated, askFields);
   next.returnDate = preferField(patch.returnDate, next.returnDate, 'returnDate', updated, askFields);
   next.departureTimePreference = preferField(
@@ -147,27 +200,11 @@ export function mergeConversationState(
     if (patch.departureDate) next.departureDate = patch.departureDate;
   }
 
-  // Track destination replacement conflicts for transparency (non-blocking when high confidence)
-  if (
-    previous?.destination &&
-    patch.destination &&
-    previous.destination.value !== patch.destination.value &&
-    patch.destination.confidenceLevel !== 'low'
-  ) {
-    const note: RequirementConflict = {
-      field: 'destination',
-      message: 'Destination updated.',
-      previousValue: previous.destination.value,
-      incomingValue: patch.destination.value,
-    };
-    // informational — cleared after merge; validate handles real conflicts
-    next.conflicts = next.conflicts.filter((c) => c.field !== 'destination');
-    void note;
-  }
-
   next.lastUpdatedFields = Array.from(new Set([...updated, ...(patch.changedFields ?? [])]));
   if (askFields.length) {
-    next.missingRequiredFields = Array.from(new Set([...next.missingRequiredFields, ...askFields.map((f) => `confirm:${f}`)]));
+    next.missingRequiredFields = Array.from(
+      new Set([...next.missingRequiredFields, ...askFields.map((f) => `confirm:${f}`)]),
+    );
   }
 
   return next;

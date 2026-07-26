@@ -153,6 +153,12 @@ export type ConversationState = {
   lastReference?: ReferenceResolution;
   /** Fields updated on the most recent turn (internal). */
   lastUpdatedFields: string[];
+  /**
+   * Soft/low-confidence destination candidate awaiting user confirmation.
+   * Confirmed `destination` is never overwritten until the user accepts this.
+   */
+  pendingDestination?: FieldValue<string>;
+  awaitingDestinationConfirmation: boolean;
 };
 
 export type PipelineStage = 'understand' | 'extract' | 'infer' | 'store' | 'clarify' | 'continue';
@@ -191,5 +197,6 @@ export function createEmptyConversationState(conversationId?: string): Conversat
     lastPresentedOptions: [],
     selectedOptions: [],
     lastUpdatedFields: [],
+    awaitingDestinationConfirmation: false,
   };
 }

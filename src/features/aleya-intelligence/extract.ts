@@ -42,6 +42,10 @@ export type ExtractionPatch = {
   confirmedDateLabel?: string;
   pendingLowConfidenceFields?: string[];
   changedFields?: string[];
+  /** User accepted the soft/pending destination candidate. */
+  confirmPendingDestination?: boolean;
+  /** User declined the soft/pending destination candidate. */
+  declinePendingDestination?: boolean;
 };
 
 const MONTHS: Record<string, number> = {
@@ -297,6 +301,8 @@ function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
 
 function looksLikeDateConfirmation(text: string, previous?: ConversationState): boolean {
   const t = text.trim().toLowerCase();
+  // Do not treat destination-confirmation turns as date confirmations
+  if (previous?.awaitingDestinationConfirmation) return false;
   if (previous?.awaitingDateConfirmation || previous?.lastSuggestedDate) {
     if (/^(yes|yep|yeah|correct|confirm|that works|sounds good)\b/.test(t)) return true;
     if (t.includes('friday') && (t.includes('28') || t.includes('august'))) return true;
@@ -307,16 +313,60 @@ function looksLikeDateConfirmation(text: string, previous?: ConversationState): 
   return false;
 }
 
+/** Resolve yes/no against a pending soft destination candidate. */
+function resolvePendingDestinationDecision(
+  text: string,
+  previous?: ConversationState,
+): 'confirm' | 'decline' | undefined {
+  if (!previous?.awaitingDestinationConfirmation || !previous.pendingDestination) return undefined;
+  const t = text.trim().toLowerCase();
+  const pending = previous.pendingDestination.value.toLowerCase();
+  const current = previous.destination?.value.toLowerCase() ?? '';
+
+  if (
+    /\b(?:keep|stay with|stay in|don'?t change|do not change)\b/.test(t) ||
+    (/^(no|nope|nah)\b/.test(t) && !t.includes(pending))
+  ) {
+    return 'decline';
+  }
+  if (current && new RegExp(`\\b(?:keep|stay with|stay in)\\s+${current}\\b`, 'i').test(t)) {
+    return 'decline';
+  }
+
+  if (
+    /^(yes|yep|yeah|correct|confirm|that works|sounds good|please do|change it|switch)\b/.test(t) ||
+    new RegExp(`\\b(?:change|switch|go)\\s+to\\s+${pending}\\b`, 'i').test(t) ||
+    t === pending ||
+    new RegExp(`^(?:yes[,.]?\\s*)?${pending}\\b`, 'i').test(t)
+  ) {
+    return 'confirm';
+  }
+  return undefined;
+}
+
+const DESTINATION_CHANGE_STOPWORDS = new Set([
+  'one', 'a', 'an', 'the', 'it', 'day', 'days', 'earlier', 'later', 'sometime', 'soon',
+  'maybe', 'perhaps', 'tonight', 'today', 'tomorrow', 'yesterday', 'please', 'now',
+]);
+
 function extractDestinationChange(text: string): string | undefined {
+  // Never treat day-shift phrasing as a destination change
+  if (/\b(?:one|a|1)\s+day\s+(?:earlier|later)\b/i.test(text)) return undefined;
+
   const patterns = [
     /\b(?:actually\s+)?make it\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*(?:instead)?\b/i,
     /\b(?:actually\s+)?(?:change|switch)\s+(?:the\s+)?destination\s+to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
     /\b(?:actually\s+)?(?:change|switch)\s+(?:it\s+)?to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
-    /\binstead\s+(?:make it\s+|go to\s+|to\s+)?([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+    /\binstead\s+(?:make it\s+|go to\s+|to\s+)([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
   ];
   for (const re of patterns) {
     const m = text.match(re);
-    if (m?.[1]) return resolvePlaceName(m[1]);
+    if (!m?.[1]) continue;
+    const raw = m[1].trim();
+    if (DESTINATION_CHANGE_STOPWORDS.has(raw.toLowerCase())) continue;
+    const name = resolvePlaceName(raw);
+    if (DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) continue;
+    return name;
   }
   return undefined;
 }
@@ -336,6 +386,16 @@ export function extractRequirements(message: string, previous?: ConversationStat
   }
   if (/what can you do|how can you help|who are you|what are you/i.test(text)) {
     patch.isCapabilityQuestion = true;
+    return patch;
+  }
+
+  const pendingDecision = resolvePendingDestinationDecision(text, previous);
+  if (pendingDecision === 'confirm') {
+    patch.confirmPendingDestination = true;
+    return patch;
+  }
+  if (pendingDecision === 'decline') {
+    patch.declinePendingDestination = true;
     return patch;
   }
 

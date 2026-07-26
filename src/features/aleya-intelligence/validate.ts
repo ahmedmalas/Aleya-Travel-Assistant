@@ -88,13 +88,23 @@ export function validateRequirements(
     }
   }
 
-  for (const field of askBeforeCommit) {
-    if (field === 'destination' && state.destination) {
-      ambiguous.push({
-        field: 'destination',
-        message: 'Destination was mentioned uncertainly.',
-        incomingValue: state.destination.value,
-      });
+  if (state.awaitingDestinationConfirmation && state.pendingDestination) {
+    askBeforeCommit.push('destination');
+    ambiguous.push({
+      field: 'destination',
+      message: 'Soft destination candidate awaits confirmation.',
+      previousValue: state.destination?.value,
+      incomingValue: state.pendingDestination.value,
+    });
+  } else {
+    for (const field of askBeforeCommit) {
+      if (field === 'destination' && state.destination) {
+        ambiguous.push({
+          field: 'destination',
+          message: 'Destination was mentioned uncertainly.',
+          incomingValue: state.destination.value,
+        });
+      }
     }
   }
 
@@ -110,6 +120,12 @@ export function validateRequirements(
             : 'One of those details looks impossible — could you confirm it?';
   } else if (conflicts[0]) {
     question = `I noticed a conflict on ${conflicts[0].field.replace(/([A-Z])/g, ' $1').toLowerCase()} — which should I keep?`;
+  } else if (state.awaitingDestinationConfirmation && state.pendingDestination && state.destination) {
+    question = samePlace(state.pendingDestination.value, state.destination.value)
+      ? `Just to confirm — is ${state.pendingDestination.value} the destination you want?`
+      : `Are you thinking of changing your destination to ${state.pendingDestination.value}, or would you like to keep ${state.destination.value}?`;
+  } else if (state.awaitingDestinationConfirmation && state.pendingDestination && !state.destination) {
+    question = `Just to confirm — is ${state.pendingDestination.value} the destination you want?`;
   } else if (ambiguous[0]?.field === 'destination') {
     question = `Just to confirm — is ${ambiguous[0].incomingValue} the destination you want?`;
   }

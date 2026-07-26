@@ -41,14 +41,42 @@ function relativeDateFromText(text: string, now: Date, previous?: ConversationSt
     return { kind: 'relative', label: 'next week', isoDate: iso };
   }
   if (/\byesterday\b/.test(lower) && previous?.departureDate?.value.isoDate) {
-    // "same as yesterday" style relative to prior stated date if present; otherwise skip inventing trips
     return undefined;
   }
-  if (/\binstead\b/.test(lower) && /\bnext week\b/.test(lower)) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + 7);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return { kind: 'relative', label: 'next week', isoDate: iso };
+  return undefined;
+}
+
+/** True when earlier/later clearly refers to travel timing, not casual English. */
+function hasTravelTimeShiftIntent(lower: string, direction: 'earlier' | 'later'): boolean {
+  const word = direction;
+  // Require earlier/later adjacent to an explicit travel-timing cue — never bare "later"/"earlier".
+  const patterns = [
+    new RegExp(`\\b${word}\\s+(?:flight|flights|departure|departures|take[- ]?off|arrival|return|outbound)\\b`),
+    new RegExp(
+      `\\b(?:flight|flights|departure|departures|take[- ]?off|arrival|return|outbound)\\s+${word}\\b`,
+    ),
+    new RegExp(`\\b(?:leave|leaving|depart|departing)\\s+${word}\\b`),
+    new RegExp(`\\btravel time\\s+${word}\\b`),
+    new RegExp(`\\b${word}\\s+travel time\\b`),
+  ];
+  return patterns.some((re) => re.test(lower));
+}
+
+function isDayShiftRequest(lower: string): { direction: 'earlier' | 'later'; days: number } | undefined {
+  if (
+    /\b(?:make it\s+)?(?:one|a|1)\s+day earlier\b/.test(lower) ||
+    /\bearlier by (?:one|a|1) day\b/.test(lower) ||
+    /\b(?:leave|depart|move)\s+(?:it\s+)?(?:one|a|1)\s+day earlier\b/.test(lower)
+  ) {
+    return { direction: 'earlier', days: 1 };
+  }
+  if (
+    /\b(?:make it\s+)?(?:one|a|1)\s+day later\b/.test(lower) ||
+    /\blater by (?:one|a|1) day\b/.test(lower) ||
+    /\b(?:leave|depart|move)\s+(?:it\s+)?(?:one|a|1)\s+day later\b/.test(lower) ||
+    /\bleave (?:one|a|1) day later\b/.test(lower)
+  ) {
+    return { direction: 'later', days: 1 };
   }
   return undefined;
 }
@@ -129,59 +157,69 @@ export function resolveReferences(
     );
   }
 
-  if (/\bearlier\b|\bearlier flight\b|\bleave earlier\b/.test(lower)) {
-    resolution = { kind: 'earlier' };
-    const shifted = shiftTime('earlier', previous.departureTimePreference?.value);
-    next.departureTimePreference = withConfidence(shifted, 'confirmed', 0.85);
+  // Date day-shifts first — never also mutate departure time for these phrases
+  const dayShift = isDayShiftRequest(lower);
+  if (dayShift && previous.departureDate?.value.isoDate) {
+    const delta = dayShift.direction === 'earlier' ? -dayShift.days : dayShift.days;
+    const iso = addDaysIso(previous.departureDate.value.isoDate, delta);
+    next.departureDate = withConfidence({ kind: 'absolute', isoDate: iso, label: iso }, 'confirmed', 0.9);
+    // Explicitly do not touch departureTimePreference
+    delete next.departureTimePreference;
+    resolution = { kind: dayShift.direction, detail: iso };
+  } else {
+    // Time preference shifts only with clear travel-timing intent
+    if (hasTravelTimeShiftIntent(lower, 'earlier')) {
+      resolution = { kind: 'earlier' };
+      next.departureTimePreference = withConfidence(
+        shiftTime('earlier', previous.departureTimePreference?.value),
+        'confirmed',
+        0.85,
+      );
+    } else if (hasTravelTimeShiftIntent(lower, 'later')) {
+      resolution = { kind: 'later' };
+      next.departureTimePreference = withConfidence(
+        shiftTime('later', previous.departureTimePreference?.value),
+        'confirmed',
+        0.85,
+      );
+    }
   }
 
-  if (/\blater\b|\blater flight\b|\bleave later\b/.test(lower)) {
-    resolution = { kind: 'later' };
-    const shifted = shiftTime('later', previous.departureTimePreference?.value);
-    next.departureTimePreference = withConfidence(shifted, 'confirmed', 0.85);
-  }
+  // "make it Brisbane instead" / "actually Brisbane instead" — never day-shift phrases
+  if (!dayShift) {
+    const insteadPlace = text.match(
+      /\b(?:actually\s+)?(?:make it|switch to|change (?:it )?to|go to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead\b/,
+    ) ?? text.match(/\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead\b/);
+    const candidate = insteadPlace?.[1]?.trim();
+    const invalid =
+      !candidate ||
+      /^(one|a|day|earlier|later|sometime|maybe|please)$/i.test(candidate) ||
+      /\bday\b/i.test(candidate);
+    if (candidate && !invalid && !next.destination) {
+      resolution = { kind: 'instead', detail: candidate };
+      next.destination = withConfidence(candidate, 'confirmed', 0.95);
+    }
 
-  // "make it Brisbane instead" / "actually Brisbane instead"
-  const insteadPlace = text.match(
-    /\b(?:actually\s+)?(?:make it|switch to|change (?:it )?to|go to)?\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead\b/,
-  ) ?? text.match(/\binstead(?:\s+make it|\s+to)?\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/);
-  if (insteadPlace?.[1] && !next.destination) {
-    resolution = { kind: 'instead', detail: insteadPlace[1] };
-    next.destination = withConfidence(insteadPlace[1], 'confirmed', 0.95);
-  }
-
-  const shortInstead = text.match(/^\s*(?:actually[, ]+)?(?:make it|change (?:it )?to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*\.?$/i);
-  if (shortInstead?.[1] && previous.destination && !next.destination) {
-    resolution = { kind: 'instead', detail: shortInstead[1] };
-    next.destination = withConfidence(shortInstead[1].replace(/^\w/, (c) => c.toUpperCase()), 'confirmed', 0.95);
+    const shortInstead = text.match(
+      /^\s*(?:actually[, ]+)?(?:make it|change (?:it )?to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*\.?$/i,
+    );
+    const shortCandidate = shortInstead?.[1]?.trim();
+    if (
+      shortCandidate &&
+      previous.destination &&
+      !next.destination &&
+      !/^(one|a|day|earlier|later|sometime)$/i.test(shortCandidate) &&
+      !/\bday\b/i.test(shortCandidate)
+    ) {
+      resolution = { kind: 'instead', detail: shortCandidate };
+      next.destination = withConfidence(shortCandidate.replace(/^\w/, (c) => c.toUpperCase()), 'confirmed', 0.95);
+    }
   }
 
   const relative = relativeDateFromText(text, now, previous);
   if (relative && !next.departureDate) {
     resolution = { kind: 'relative_date', detail: relative.label };
     next.departureDate = withConfidence(relative, 'confirmed', 0.8);
-  }
-
-  // "a day earlier/later" relative to confirmed departure
-  if (previous.departureDate?.value.isoDate) {
-    if (/\b(?:one|a|1)\s+day earlier\b|\bearlier by (?:one|a|1) day\b/.test(lower)) {
-      const iso = addDaysIso(previous.departureDate.value.isoDate, -1);
-      next.departureDate = withConfidence(
-        { kind: 'absolute', isoDate: iso, label: iso },
-        'confirmed',
-        0.9,
-      );
-      resolution = { kind: 'earlier', detail: iso };
-    }
-    if (/\b(?:one|a|1)\s+day later\b|\blater by (?:one|a|1) day\b/.test(lower)) {
-      const iso = addDaysIso(previous.departureDate.value.isoDate, 1);
-      next.departureDate = withConfidence(
-        { kind: 'absolute', isoDate: iso, label: iso },
-        'confirmed',
-        0.9,
-      );
-      resolution = { kind: 'later', detail: iso };
-    }
   }
 
   return { patch: next, resolution, selected };

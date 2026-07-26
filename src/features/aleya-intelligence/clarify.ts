@@ -88,6 +88,24 @@ export function evaluateClarifications(
     };
   }
 
+  // Soft/pending destination must be confirmed before other soft asks
+  if (state.awaitingDestinationConfirmation && state.pendingDestination) {
+    const sameAsCurrent =
+      state.destination &&
+      state.destination.value.toLowerCase() === state.pendingDestination.value.toLowerCase();
+    const question =
+      validation?.question && validation.ambiguous.some((a) => a.field === 'destination')
+        ? validation.question
+        : state.destination && !sameAsCurrent
+          ? `Are you thinking of changing your destination to ${state.pendingDestination.value}, or would you like to keep ${state.destination.value}?`
+          : `Just to confirm — is ${state.pendingDestination.value} the destination you want?`;
+    return {
+      needsClarification: true,
+      missingRequiredFields: ['confirm:destination'],
+      question,
+    };
+  }
+
   if (!state.destination) {
     return {
       needsClarification: true,
@@ -96,7 +114,7 @@ export function evaluateClarifications(
     };
   }
 
-  // Low-confidence destination confirmation (Phase 2) — only when not already clarifying dates
+  // Low-confidence destination confirmation when stored as tentative destination
   if (
     validation?.question &&
     validation.ambiguous.some((a) => a.field === 'destination') &&
