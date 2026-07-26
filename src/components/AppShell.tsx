@@ -14,6 +14,8 @@ const normaliseAirport = (value: string) => value.trim().toLowerCase().replace(/
 const compactDate = (value: string) => value.replaceAll('-', '').slice(2);
 const today = new Date().toISOString().split('T')[0];
 
+type CabinClass = 'economy' | 'premiumeconomy' | 'business' | 'first';
+
 function CustomerApp() {
   const [entered, setEntered] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -22,6 +24,7 @@ function CustomerApp() {
   const [departDate, setDepartDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [travellers, setTravellers] = useState(1);
+  const [cabinClass, setCabinClass] = useState<CabinClass>('economy');
   const [flightError, setFlightError] = useState<string | null>(null);
   const departureInputRef = useRef<HTMLInputElement>(null);
   const returnInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +76,7 @@ function CustomerApp() {
     setFlightError(null);
     const outbound = compactDate(departDate);
     const inbound = returnDate ? `/${compactDate(returnDate)}` : '';
-    const url = `https://www.skyscanner.com.au/transport/flights/${from}/${to}/${outbound}${inbound}/?adultsv2=${travellers}&cabinclass=economy&currency=${preferredCurrency}`;
+    const url = `https://www.skyscanner.com.au/transport/flights/${from}/${to}/${outbound}${inbound}/?adultsv2=${travellers}&cabinclass=${cabinClass}&currency=${preferredCurrency}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -125,11 +128,12 @@ function CustomerApp() {
               <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
               <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onFocus={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button></div></label>
               <label className="block text-sm text-slate-200"><span className="mb-2 block">Return (optional)</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onFocus={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button></div></label>
-              <label className="block text-sm text-slate-200 sm:col-span-2"><span className="mb-2 block">Adult travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1, 2, 3, 4, 5, 6, 7, 8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Adult travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1, 2, 3, 4, 5, 6, 7, 8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Cabin class</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
             <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">Search flights in {preferredCurrency}</button>
-            <p className="mt-3 text-xs leading-5 text-slate-400">Results use your regional currency ({preferredCurrency}).</p>
+            <p className="mt-3 text-xs leading-5 text-slate-400">Results use your regional currency ({preferredCurrency}) and selected cabin class.</p>
           </form>
         </section>
 
