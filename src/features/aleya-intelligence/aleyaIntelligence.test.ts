@@ -63,6 +63,8 @@ describe('Aleya Intelligence Layer', () => {
     expect(second.state.accommodationLocation?.value).toBe('Docklands');
     expect(second.state.requestedServices).toEqual(expect.arrayContaining(['flights', 'hotels', 'car_hire']));
     expect(second.state.departureDate?.value.isoDate).toBe('2026-08-28');
+    expect(second.state.departureTimePreference?.value).toBe('after_5pm');
+    expect(second.state.returnTimePreference?.value).toBe('afternoon');
     expect(second.state.awaitingDateConfirmation).toBe(false);
     expect(second.stage).toBe('recommend');
     expect(second.search?.flights.length).toBeGreaterThan(0);

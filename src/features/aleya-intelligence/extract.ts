@@ -444,39 +444,41 @@ export function extractRequirements(message: string, previous?: ConversationStat
     patch.departureDate = field(depDate);
   }
 
-  // Departure / return time preferences
-  const fridayWindow = /\bfriday\b/i.test(text)
-    ? text.match(/\bfriday\b[\s\S]{0,80}?(?=come back|return|$)/i)?.[0] ?? ''
-    : '';
-  if (fridayWindow) {
-    const pref = /after\s*5/.test(fridayWindow.toLowerCase())
-      ? 'after_5pm'
-      : extractTimePreference(fridayWindow) ?? 'afternoon';
-    patch.departureTimePreference = field(pref);
-    if (patch.departureDate) {
-      patch.departureDate = field({ ...patch.departureDate.value, weekday: 5, timePreference: pref });
+  // Departure / return time preferences (skip on pure date confirmations so prior prefs persist)
+  if (!patch.isDateConfirmation) {
+    const fridayWindow = /\bfriday\b/i.test(text)
+      ? text.match(/\bfriday\b[\s\S]{0,80}?(?=come back|return|$)/i)?.[0] ?? ''
+      : '';
+    if (fridayWindow) {
+      const pref = /after\s*5/.test(fridayWindow.toLowerCase())
+        ? 'after_5pm'
+        : extractTimePreference(fridayWindow) ?? 'afternoon';
+      patch.departureTimePreference = field(pref);
+      if (patch.departureDate) {
+        patch.departureDate = field({ ...patch.departureDate.value, weekday: 5, timePreference: pref });
+      } else {
+        patch.departureDate = field({ kind: 'relative', label: 'Friday', weekday: 5, timePreference: pref });
+      }
+    } else if (/after\s*5/.test(lower) && !/\b(?:come back|return)[\s\S]{0,40}after\s*5/.test(lower)) {
+      patch.departureTimePreference = field('after_5pm');
     } else {
-      patch.departureDate = field({ kind: 'relative', label: 'Friday', weekday: 5, timePreference: pref });
+      const depTime = extractTimePreference(text);
+      if (depTime && !/come back|return/.test(lower)) {
+        patch.departureTimePreference = field(depTime);
+      }
     }
-  } else if (/after\s*5/.test(lower) && !/\b(?:come back|return)[\s\S]{0,40}after\s*5/.test(lower)) {
-    patch.departureTimePreference = field('after_5pm');
-  } else {
-    const depTime = extractTimePreference(text);
-    if (depTime && !/come back|return/.test(lower)) {
-      patch.departureTimePreference = field(depTime);
-    }
-  }
 
-  const returnAfternoon = text.match(/(?:come back|return)[^.]*?\b(afternoon|morning|evening|after\s*5\s*pm)\b/i);
-  if (returnAfternoon) {
-    patch.returnTimePreference = field(extractTimePreference(returnAfternoon[1]!) ?? 'afternoon');
-    patch.returnDate = field({
-      kind: 'relative',
-      label: `return ${returnAfternoon[1]}`,
-      timePreference: extractTimePreference(returnAfternoon[1]!) ?? 'afternoon',
-    });
-  } else if (/\bcome back\b|\breturn\b/.test(lower) && /\bafternoon\b/.test(lower)) {
-    patch.returnTimePreference = field('afternoon');
+    const returnAfternoon = text.match(/(?:come back|return)[^.]*?\b(afternoon|morning|evening|after\s*5\s*pm)\b/i);
+    if (returnAfternoon) {
+      patch.returnTimePreference = field(extractTimePreference(returnAfternoon[1]!) ?? 'afternoon');
+      patch.returnDate = field({
+        kind: 'relative',
+        label: `return ${returnAfternoon[1]}`,
+        timePreference: extractTimePreference(returnAfternoon[1]!) ?? 'afternoon',
+      });
+    } else if (/\bcome back\b|\breturn\b/.test(lower) && /\bafternoon\b/.test(lower)) {
+      patch.returnTimePreference = field('afternoon');
+    }
   }
 
   const travellers = extractTravellers(text);
