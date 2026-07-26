@@ -26,7 +26,7 @@ export function WelcomeAuthGate({ onEnter }: { onEnter: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (authState.mode === 'signed-in' || authState.mode === 'demo') onEnter();
+    if (authState.mode === 'signed-in' || authState.mode === 'demo-local') onEnter();
   }, [authState.mode, onEnter]);
 
   const run = async (action: () => Promise<unknown>) => {
