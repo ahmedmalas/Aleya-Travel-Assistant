@@ -9,7 +9,7 @@ describe('TripPlatform UI', () => {
     render(<TripPlatform />);
     expect(screen.getByRole('heading', { name: /Trip platform/i })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^Command centre$/i })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: /^Trip$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Plan$/i }));
     await user.click(screen.getByRole('tab', { name: /Trip setup/i }));
     expect(await screen.findByRole('heading', { name: /Create or edit trip/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Trip name/i)).toBeInTheDocument();
@@ -19,14 +19,14 @@ describe('TripPlatform UI', () => {
     const user = userEvent.setup();
     render(<TripPlatform />);
     await user.click(screen.getByRole('tab', { name: /^Home$/i }));
-    await user.click(screen.getByRole('tab', { name: /^Assistance$/i }));
+    await user.click(screen.getByRole('tab', { name: /AI Concierge/i }));
     expect(await screen.findByRole('heading', { name: /Smart assistance/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /^Logistics$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Book$/i }));
     await user.click(screen.getByRole('tab', { name: /^Flights$/i }));
-    expect(await screen.findByRole('heading', { name: /Flight segments/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Flights$/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /^Prep & safety$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Organise$/i }));
     await user.click(screen.getByRole('tab', { name: /^Emergency$/i }));
     expect(await screen.findByRole('heading', { name: /Emergency centre/i })).toBeInTheDocument();
   });

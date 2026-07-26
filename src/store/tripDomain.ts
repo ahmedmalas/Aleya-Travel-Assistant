@@ -12,8 +12,23 @@ import {
   type SavedPlace,
 } from './travelOpsDomain';
 
-export type TripPurpose = 'leisure' | 'business' | 'family' | 'adventure' | 'other';
-export type TripStatus = 'draft' | 'active' | 'archived';
+export type TripPurpose =
+  | 'leisure'
+  | 'business'
+  | 'family'
+  | 'adventure'
+  | 'solo'
+  | 'couples'
+  | 'cruise'
+  | 'honeymoon'
+  | 'group'
+  | 'accessible'
+  | 'road-trip'
+  | 'weekend'
+  | 'other';
+export type TripStatus = 'draft' | 'upcoming' | 'active' | 'completed' | 'cancelled' | 'archived';
+
+export type TravelStyle = 'budget' | 'balanced' | 'luxury' | 'family' | 'adventure' | 'romantic' | 'business' | 'accessible';
 
 export type ItineraryCategory =
   | 'travel'
@@ -34,6 +49,11 @@ export type ExpenseCategory =
   | 'activities'
   | 'transport'
   | 'shopping'
+  | 'car-hire'
+  | 'cruises'
+  | 'insurance'
+  | 'visas'
+  | 'communications'
   | 'other';
 
 export type PackingCategory =
@@ -44,6 +64,8 @@ export type PackingCategory =
   | 'health'
   | 'misc'
   | 'custom';
+
+export type ItineraryItemStatus = 'planned' | 'confirmed' | 'completed' | 'cancelled' | 'unscheduled';
 
 export type TripStop = {
   id: string;
@@ -59,6 +81,14 @@ export type TripStop = {
   cost: number;
   currency: string;
   bookingReference: string;
+  locked: boolean;
+  travellerIds: string[];
+  itemStatus: ItineraryItemStatus;
+  latitude: string;
+  longitude: string;
+  supplierDetails: string;
+  reminderAt: string;
+  aiGenerated: boolean;
 };
 
 export type Booking = {
@@ -90,6 +120,11 @@ export type Expense = {
   date: string;
   paid: boolean;
   notes: string;
+  deposit: number;
+  refund: number;
+  sharedTravellerIds: string[];
+  exchangeRateToTrip: number;
+  attachmentName: string;
 };
 
 export type PackingItem = {
@@ -109,19 +144,51 @@ export type PackingList = {
   items: PackingItem[];
 };
 
+export type LoyaltyMembership = {
+  id: string;
+  program: string;
+  membershipNumberLast4: string;
+  tier: string;
+};
+
+export type TravellerCompanion = {
+  id: string;
+  name: string;
+  relationship: string;
+  dateOfBirth: string;
+  notes: string;
+};
+
 export type Traveller = {
   id: string;
   name: string;
+  preferredName: string;
   dateOfBirth: string;
   nationality: string;
+  countryOfResidence: string;
+  homeAirport: string;
+  preferredDepartureAirports: string;
+  language: string;
+  currency: string;
+  timeZone: string;
+  travelPreferences: string;
   dietaryRequirements: string;
   accessibilityNeeds: string;
+  seatingPreference: string;
+  cabinPreference: string;
+  hotelPreferences: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  /** Free-text fallback; prefer structured `loyaltyMemberships`. */
   loyaltyPrograms: string;
+  loyaltyMemberships: LoyaltyMembership[];
+  companions: TravellerCompanion[];
+  /** Metadata only — never store full passport numbers or scans here. */
   passportNumberLast4: string;
   passportExpiry: string;
   passportCountry: string;
+  identityDocumentType: string;
+  identityDocumentExpiry: string;
 };
 
 export type ActivityLogEntry = {
@@ -144,6 +211,8 @@ export type TripDocument = {
   notes: string;
   attachmentName: string;
   attachmentMimeType: string;
+  /** Private Storage object path (`userId/tripId/docId/file`) or `local://…` placeholder. */
+  storagePath: string;
 };
 
 export type CollaborationRole = 'owner' | 'editor' | 'viewer';
@@ -173,6 +242,24 @@ export type CollaborationState = {
   auditHistory: CollaborationAuditEntry[];
 };
 
+export type ItineraryVersion = {
+  id: string;
+  label: string;
+  createdAt: string;
+  source: 'manual' | 'ai' | 'restore';
+  stops: TripStop[];
+  notes: string;
+};
+
+export type SavedSearch = {
+  id: string;
+  kind: 'flight' | 'hotel' | 'service';
+  label: string;
+  query: Record<string, string | number | boolean>;
+  createdAt: string;
+  alertEnabled: boolean;
+};
+
 export type TripData = {
   id?: string;
   favourite?: boolean;
@@ -181,15 +268,22 @@ export type TripData = {
   updatedAt?: string;
   tripName: string;
   destination: string;
+  /** Additional destinations for multi-city / multi-stop trips. */
+  destinationsList: string[];
   departureDate: string;
   returnDate: string;
   travellerCount: number;
   purpose: TripPurpose;
+  travelStyle: TravelStyle;
   budget: number;
   currency: string;
   notes: string;
+  tags: string[];
+  coverImageUrl: string;
   status: TripStatus;
   stops: TripStop[];
+  itineraryVersions: ItineraryVersion[];
+  savedSearches: SavedSearch[];
   bookings: Booking[];
   expenses: Expense[];
   packingLists: PackingList[];
@@ -212,20 +306,49 @@ export type TripData = {
 export type TripSetupInput = {
   tripName: string;
   destination: string;
+  destinationsList?: string[];
   departureDate: string;
   returnDate: string;
   travellerCount: number;
   purpose: TripPurpose;
+  travelStyle?: TravelStyle;
   budget: number;
   currency: string;
   notes: string;
+  tags?: string[];
+  coverImageUrl?: string;
   status?: TripStatus;
 };
 
 export type TripSetupErrors = Partial<Record<keyof TripSetupInput, string>>;
 
 export const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'] as const;
-export const TRIP_PURPOSES: TripPurpose[] = ['leisure', 'business', 'family', 'adventure', 'other'];
+export const TRIP_PURPOSES: TripPurpose[] = [
+  'leisure',
+  'business',
+  'family',
+  'adventure',
+  'solo',
+  'couples',
+  'cruise',
+  'honeymoon',
+  'group',
+  'accessible',
+  'road-trip',
+  'weekend',
+  'other',
+];
+export const TRAVEL_STYLES: TravelStyle[] = [
+  'budget',
+  'balanced',
+  'luxury',
+  'family',
+  'adventure',
+  'romantic',
+  'business',
+  'accessible',
+];
+export const TRIP_STATUSES: TripStatus[] = ['draft', 'upcoming', 'active', 'completed', 'cancelled', 'archived'];
 export const ITINERARY_CATEGORIES: ItineraryCategory[] = [
   'travel',
   'lodging',
@@ -244,6 +367,11 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'activities',
   'transport',
   'shopping',
+  'car-hire',
+  'cruises',
+  'insurance',
+  'visas',
+  'communications',
   'other',
 ];
 export const PACKING_CATEGORIES: PackingCategory[] = [
@@ -305,15 +433,21 @@ export const createEmptyTrip = (overrides: Partial<TripData> = {}): TripData => 
   return {
     tripName: 'Untitled Trip',
     destination: '',
+    destinationsList: [],
     departureDate: '',
     returnDate: '',
     travellerCount: 1,
     purpose: 'leisure',
+    travelStyle: 'balanced',
     budget: 0,
     currency: 'USD',
     notes: '',
+    tags: [],
+    coverImageUrl: '',
     status: 'draft',
     stops: [],
+    itineraryVersions: [],
+    savedSearches: [],
     bookings: [],
     expenses: [],
     packingLists: [createDefaultPackingList()],
@@ -359,6 +493,15 @@ export const createSeededTrip = (): TripData =>
         cost: 40,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
       {
         id: 's2',
@@ -374,6 +517,15 @@ export const createSeededTrip = (): TripData =>
         cost: 25,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
       {
         id: 's3',
@@ -389,6 +541,15 @@ export const createSeededTrip = (): TripData =>
         cost: 180,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
     ],
     bookings: [
@@ -426,6 +587,22 @@ export const createSeededTrip = (): TripData =>
         passportNumberLast4: '',
         passportExpiry: '',
         passportCountry: '',
+
+        preferredName: '',
+        countryOfResidence: '',
+        homeAirport: '',
+        preferredDepartureAirports: '',
+        language: 'en',
+        currency: 'USD',
+        timeZone: '',
+        travelPreferences: '',
+        seatingPreference: '',
+        cabinPreference: '',
+        hotelPreferences: '',
+        loyaltyMemberships: [],
+        companions: [],
+        identityDocumentType: '',
+        identityDocumentExpiry: '',
       },
     ],
     activityLog: [createActivityLogEntry('Seeded Japan Discovery trip loaded.')],
@@ -435,6 +612,8 @@ const asString = (value: unknown, fallback = ''): string => (typeof value === 's
 const asNumber = (value: unknown, fallback = 0): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 const asBoolean = (value: unknown, fallback = false): boolean => (typeof value === 'boolean' ? value : fallback);
+
+const ITEM_STATUSES: ItineraryItemStatus[] = ['planned', 'confirmed', 'completed', 'cancelled', 'unscheduled'];
 
 const sanitizeStop = (stop: Partial<TripStop>, index: number): TripStop => ({
   id: asString(stop.id, crypto.randomUUID()),
@@ -452,6 +631,16 @@ const sanitizeStop = (stop: Partial<TripStop>, index: number): TripStop => ({
   cost: Math.max(0, asNumber(stop.cost, 0)),
   currency: asString(stop.currency, 'USD').toUpperCase() || 'USD',
   bookingReference: asString(stop.bookingReference).trim(),
+  locked: asBoolean(stop.locked, false),
+  travellerIds: Array.isArray(stop.travellerIds) ? stop.travellerIds.map(String) : [],
+  itemStatus: ITEM_STATUSES.includes(stop.itemStatus as ItineraryItemStatus)
+    ? (stop.itemStatus as ItineraryItemStatus)
+    : 'planned',
+  latitude: asString(stop.latitude).trim(),
+  longitude: asString(stop.longitude).trim(),
+  supplierDetails: asString(stop.supplierDetails).trim(),
+  reminderAt: asString(stop.reminderAt).trim(),
+  aiGenerated: asBoolean(stop.aiGenerated, false),
 });
 
 const sanitizeBooking = (booking: Partial<Booking>): Booking => ({
@@ -487,6 +676,11 @@ const sanitizeExpense = (expense: Partial<Expense>): Expense => ({
   date: isIsoDate(asString(expense.date)) ? asString(expense.date) : '',
   paid: asBoolean(expense.paid, false),
   notes: asString(expense.notes).trim(),
+  deposit: Math.max(0, asNumber(expense.deposit, 0)),
+  refund: Math.max(0, asNumber(expense.refund, 0)),
+  sharedTravellerIds: Array.isArray(expense.sharedTravellerIds) ? expense.sharedTravellerIds.map(String) : [],
+  exchangeRateToTrip: Math.max(0, asNumber(expense.exchangeRateToTrip, 1)) || 1,
+  attachmentName: asString(expense.attachmentName).trim(),
 });
 
 const sanitizePackingItem = (item: Partial<PackingItem>): PackingItem => ({
@@ -508,19 +702,55 @@ const sanitizePackingList = (list: Partial<PackingList>): PackingList => ({
   items: Array.isArray(list.items) ? list.items.map((item) => sanitizePackingItem(item as Partial<PackingItem>)) : [],
 });
 
+const sanitizeLoyalty = (value: Partial<LoyaltyMembership> | undefined): LoyaltyMembership => ({
+  id: asString(value?.id, crypto.randomUUID()),
+  program: asString(value?.program).trim(),
+  membershipNumberLast4: asString(value?.membershipNumberLast4).replace(/\D/g, '').slice(-4),
+  tier: asString(value?.tier).trim(),
+});
+
+const sanitizeCompanion = (value: Partial<TravellerCompanion> | undefined): TravellerCompanion => ({
+  id: asString(value?.id, crypto.randomUUID()),
+  name: asString(value?.name).trim() || 'Companion',
+  relationship: asString(value?.relationship).trim(),
+  dateOfBirth: isIsoDate(asString(value?.dateOfBirth)) ? asString(value?.dateOfBirth) : '',
+  notes: asString(value?.notes).trim(),
+});
+
 const sanitizeTraveller = (traveller: Partial<Traveller>): Traveller => ({
   id: asString(traveller.id, crypto.randomUUID()),
   name: asString(traveller.name).trim() || 'Traveller',
+  preferredName: asString(traveller.preferredName).trim(),
   dateOfBirth: isIsoDate(asString(traveller.dateOfBirth)) ? asString(traveller.dateOfBirth) : '',
   nationality: asString(traveller.nationality).trim(),
+  countryOfResidence: asString(traveller.countryOfResidence).trim(),
+  homeAirport: asString(traveller.homeAirport).trim(),
+  preferredDepartureAirports: asString(traveller.preferredDepartureAirports).trim(),
+  language: asString(traveller.language).trim() || 'en',
+  currency: asString(traveller.currency, 'USD').toUpperCase() || 'USD',
+  timeZone: asString(traveller.timeZone).trim(),
+  travelPreferences: asString(traveller.travelPreferences).trim(),
   dietaryRequirements: asString(traveller.dietaryRequirements).trim(),
   accessibilityNeeds: asString(traveller.accessibilityNeeds).trim(),
+  seatingPreference: asString(traveller.seatingPreference).trim(),
+  cabinPreference: asString(traveller.cabinPreference).trim(),
+  hotelPreferences: asString(traveller.hotelPreferences).trim(),
   emergencyContactName: asString(traveller.emergencyContactName).trim(),
   emergencyContactPhone: asString(traveller.emergencyContactPhone).trim(),
   loyaltyPrograms: asString(traveller.loyaltyPrograms).trim(),
+  loyaltyMemberships: Array.isArray(traveller.loyaltyMemberships)
+    ? traveller.loyaltyMemberships.map((item) => sanitizeLoyalty(item as Partial<LoyaltyMembership>))
+    : [],
+  companions: Array.isArray(traveller.companions)
+    ? traveller.companions.map((item) => sanitizeCompanion(item as Partial<TravellerCompanion>))
+    : [],
   passportNumberLast4: asString(traveller.passportNumberLast4).replace(/\D/g, '').slice(-4),
   passportExpiry: isIsoDate(asString(traveller.passportExpiry)) ? asString(traveller.passportExpiry) : '',
   passportCountry: asString(traveller.passportCountry).trim(),
+  identityDocumentType: asString(traveller.identityDocumentType).trim(),
+  identityDocumentExpiry: isIsoDate(asString(traveller.identityDocumentExpiry))
+    ? asString(traveller.identityDocumentExpiry)
+    : '',
 });
 
 const sanitizeActivity = (entry: Partial<ActivityLogEntry>): ActivityLogEntry => ({
@@ -567,6 +797,7 @@ const sanitizeDocument = (doc: Partial<TripDocument>): TripDocument => ({
   notes: asString(doc.notes).trim(),
   attachmentName: asString(doc.attachmentName).trim(),
   attachmentMimeType: asString(doc.attachmentMimeType).trim(),
+  storagePath: asString(doc.storagePath).trim(),
 });
 
 const sanitizeCollaborationState = (value: unknown): CollaborationState => {
@@ -653,15 +884,45 @@ export const migrateTrip = (value: unknown): TripData => {
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
     tripName: asString(raw.tripName, base.tripName),
     destination: asString(raw.destination, base.destination),
+    destinationsList: Array.isArray(raw.destinationsList) ? raw.destinationsList.map(String).filter(Boolean) : [],
     departureDate: isIsoDate(asString(raw.departureDate)) ? asString(raw.departureDate) : base.departureDate,
     returnDate: isIsoDate(asString(raw.returnDate)) ? asString(raw.returnDate) : base.returnDate,
     travellerCount: Math.max(1, Math.floor(asNumber(raw.travellerCount, 1))),
     purpose: TRIP_PURPOSES.includes(raw.purpose as TripPurpose) ? (raw.purpose as TripPurpose) : 'leisure',
+    travelStyle: TRAVEL_STYLES.includes(raw.travelStyle as TravelStyle) ? (raw.travelStyle as TravelStyle) : 'balanced',
     budget: Math.max(0, asNumber(raw.budget, 0)),
     currency: asString(raw.currency, 'USD').toUpperCase() || 'USD',
     notes: asString(raw.notes),
-    status: raw.status === 'active' || raw.status === 'archived' || raw.status === 'draft' ? raw.status : 'draft',
+    tags: Array.isArray(raw.tags) ? raw.tags.map(String).filter(Boolean) : [],
+    coverImageUrl: asString(raw.coverImageUrl),
+    status: TRIP_STATUSES.includes(raw.status as TripStatus) ? (raw.status as TripStatus) : 'draft',
     stops: raw.stops.map((stop, index) => sanitizeStop(stop, index)),
+    itineraryVersions: Array.isArray(raw.itineraryVersions)
+      ? raw.itineraryVersions.map((version) => {
+          const item = version as Partial<ItineraryVersion>;
+          return {
+            id: asString(item.id, crypto.randomUUID()),
+            label: asString(item.label, 'Version'),
+            createdAt: asString(item.createdAt, new Date().toISOString()),
+            source: item.source === 'ai' || item.source === 'restore' || item.source === 'manual' ? item.source : 'manual',
+            stops: Array.isArray(item.stops) ? item.stops.map((stop, index) => sanitizeStop(stop, index)) : [],
+            notes: asString(item.notes),
+          } satisfies ItineraryVersion;
+        })
+      : [],
+    savedSearches: Array.isArray(raw.savedSearches)
+      ? raw.savedSearches.map((search) => {
+          const item = search as Partial<SavedSearch>;
+          return {
+            id: asString(item.id, crypto.randomUUID()),
+            kind: item.kind === 'hotel' || item.kind === 'service' || item.kind === 'flight' ? item.kind : 'flight',
+            label: asString(item.label, 'Saved search'),
+            query: item.query && typeof item.query === 'object' ? item.query : {},
+            createdAt: asString(item.createdAt, new Date().toISOString()),
+            alertEnabled: asBoolean(item.alertEnabled, false),
+          } satisfies SavedSearch;
+        })
+      : [],
     bookings: Array.isArray(raw.bookings) ? raw.bookings.map((booking) => sanitizeBooking(booking as Partial<Booking>)) : [],
     expenses: Array.isArray(raw.expenses) ? raw.expenses.map((expense) => sanitizeExpense(expense as Partial<Expense>)) : [],
     packingLists:

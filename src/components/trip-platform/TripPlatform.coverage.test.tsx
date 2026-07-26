@@ -68,13 +68,13 @@ describe('TripPlatform deep coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add custom list' }))
 
     goTo('travellers')
-    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Sam' } })
+    fireEvent.change(await screen.findByLabelText(/^Name$/), { target: { value: 'Sam' } })
     fireEvent.change(screen.getByLabelText('Nationality'), { target: { value: 'CA' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save traveller' }))
     expect(await screen.findByText('Sam')).toBeTruthy()
     const samRow = screen.getByText('Sam').closest('article')!
     fireEvent.click(within(samRow).getByRole('button', { name: 'Edit' }))
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Sam Lee' } })
+    fireEvent.change(screen.getByLabelText(/^Name$/), { target: { value: 'Sam Lee' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save traveller' }))
     expect(await screen.findByText('Sam Lee')).toBeTruthy()
     fireEvent.click(within(screen.getByText('Sam Lee').closest('article')!).getByRole('button', { name: 'Delete' }))

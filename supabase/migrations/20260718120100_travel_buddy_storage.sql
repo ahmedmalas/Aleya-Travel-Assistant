@@ -1,5 +1,6 @@
 -- Travel Buddy Slice 58 — private document storage bucket + policies
--- Apply only to a verified Travel Buddy Supabase project.
+-- Apply only to aleya travel assistant (jtktojbvbmiewpntpvhe)
+-- Organisation: tasqkbrzxjralyelioyv (Aleya)
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

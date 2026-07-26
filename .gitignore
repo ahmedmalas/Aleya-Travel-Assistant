@@ -7,6 +7,9 @@ dist
 .vscode
 .idea
 coverage
+playwright-report
+test-results
+blob-report
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -17,3 +20,10 @@ pnpm-debug.log*
 .env.local
 .env.production.local
 .env*.local
+
+# Supabase CLI link cache
+supabase/.temp/
+
+# Accidental TS emit next to sources
+playwright.config.js
+e2e/*.js

@@ -23,6 +23,15 @@ describe('smartAssistance edge rules', () => {
         cost: 0,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
       {
         id: 't1',
@@ -38,6 +47,15 @@ describe('smartAssistance edge rules', () => {
         cost: 0,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
     ]);
     expect(excessive.some((item) => item.kind === 'excessive-travel')).toBe(true);

@@ -22,7 +22,7 @@ export function SyncEnginePanel() {
       <StatusBanner
         kind="info"
         message={`Provider: ${cloudRuntime.activeProvider} · env ${cloudRuntime.env.ok ? 'ready' : 'local-demo'} · remote migrations ${
-          cloudRuntime.remoteMigrationsApplied ? 'applied' : 'not applied (target unverified)'
+          cloudRuntime.remoteMigrationsApplied ? 'applied on Aleya' : 'not applied (target unverified)'
         }`}
       />
       {syncState.lastSyncMessage ? <StatusBanner kind="info" message={syncState.lastSyncMessage} /> : null}

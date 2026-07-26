@@ -6,6 +6,8 @@ import {
   type TripSetupInput,
 } from '../../store/tripDomain';
 import { useSharedTripStore } from '../../store/TripStoreContext';
+import { DatePickerField, todayIso } from '../ui/DatePickerField';
+import { LocationAutocomplete } from '../ui/LocationAutocomplete';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
 export function TripSetupForm() {
@@ -81,29 +83,31 @@ export function TripSetupForm() {
           />
         </Field>
         <Field label="Destination" htmlFor="destination" error={errors.destination}>
-          <input
+          <LocationAutocomplete
             id="destination"
-            className={inputClassName}
+            mode="place"
             value={form.destination}
-            onChange={(event) => updateField('destination', event.target.value)}
+            onChange={(value) => updateField('destination', value)}
+            placeholder="City, region, or landmark"
           />
         </Field>
         <Field label="Departure date" htmlFor="departure-date" error={errors.departureDate}>
-          <input
+          <DatePickerField
             id="departure-date"
-            type="date"
-            className={inputClassName}
             value={form.departureDate}
-            onChange={(event) => updateField('departureDate', event.target.value)}
+            min={todayIso()}
+            onChange={(next) => {
+              updateField('departureDate', next);
+              if (form.returnDate && next && form.returnDate < next) updateField('returnDate', next);
+            }}
           />
         </Field>
         <Field label="Return date" htmlFor="return-date" error={errors.returnDate}>
-          <input
+          <DatePickerField
             id="return-date"
-            type="date"
-            className={inputClassName}
             value={form.returnDate}
-            onChange={(event) => updateField('returnDate', event.target.value)}
+            min={form.departureDate || todayIso()}
+            onChange={(next) => updateField('returnDate', next)}
           />
         </Field>
         <Field label="Traveller count" htmlFor="traveller-count" error={errors.travellerCount}>

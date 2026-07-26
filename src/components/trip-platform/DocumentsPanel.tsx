@@ -15,6 +15,7 @@ const createDocument = (): TripDocument => ({
   notes: '',
   attachmentName: '',
   attachmentMimeType: '',
+  storagePath: '',
 });
 
 export function DocumentsPanel() {
@@ -26,14 +27,67 @@ export function DocumentsPanel() {
     uploadDocumentFile,
     deleteDocumentFile,
     validateDocumentUpload,
+    createDocumentSignedUrl,
   } = useSharedTripStore();
   const [draft, setDraft] = useState<TripDocument>(createDocument());
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const saveDocument = async () => {
+    if (!draft.title.trim()) {
+      setFeedback('Document title is required.');
+      return;
+    }
+    setBusy(true);
+    try {
+      let next = { ...draft };
+      if (pendingFile) {
+        const validation = validateDocumentUpload({
+          fileName: pendingFile.name,
+          mimeType: pendingFile.type || 'application/octet-stream',
+          sizeBytes: pendingFile.size,
+        });
+        if (!validation.ok) {
+          setFeedback(validation.message);
+          return;
+        }
+        const upload = await uploadDocumentFile({
+          tripId: activeVaultTrip.id,
+          documentId: next.id,
+          fileName: pendingFile.name,
+          mimeType: pendingFile.type || 'application/octet-stream',
+          sizeBytes: pendingFile.size,
+          bytes: pendingFile,
+        });
+        if (!upload.ok) {
+          setFeedback(upload.message);
+          return;
+        }
+        next = {
+          ...next,
+          attachmentName: pendingFile.name,
+          attachmentMimeType: pendingFile.type || 'application/octet-stream',
+          storagePath: upload.value.path,
+        };
+      }
+      upsertDocument(next);
+      setDraft(createDocument());
+      setPendingFile(null);
+      setFeedback(
+        next.storagePath
+          ? `Document saved with storage path ${next.storagePath}.`
+          : 'Document metadata saved.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Panel
       title="Travel documents"
-      description="Metadata plus optional private Supabase Storage uploads (validated MIME/size, signed access). Local placeholders remain when cloud is unavailable."
+      description="Save metadata and upload files to the private travel-documents bucket when signed in. Local placeholders remain offline."
     >
       {feedback ? <StatusBanner kind="info" message={feedback} /> : null}
 
@@ -55,7 +109,12 @@ export function DocumentsPanel() {
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Field label="Title" htmlFor="doc-title">
-          <input id="doc-title" className={inputClassName} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+          <input
+            id="doc-title"
+            className={inputClassName}
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+          />
         </Field>
         <Field label="Type" htmlFor="doc-type">
           <select
@@ -72,7 +131,12 @@ export function DocumentsPanel() {
           </select>
         </Field>
         <Field label="Holder name" htmlFor="doc-holder">
-          <input id="doc-holder" className={inputClassName} value={draft.holderName} onChange={(e) => setDraft({ ...draft, holderName: e.target.value })} />
+          <input
+            id="doc-holder"
+            className={inputClassName}
+            value={draft.holderName}
+            onChange={(e) => setDraft({ ...draft, holderName: e.target.value })}
+          />
         </Field>
         <Field label="Number last 4" htmlFor="doc-last4">
           <input
@@ -91,30 +155,32 @@ export function DocumentsPanel() {
           />
         </Field>
         <Field label="Issue date" htmlFor="doc-issue">
-          <input id="doc-issue" type="date" className={inputClassName} value={draft.issueDate} onChange={(e) => setDraft({ ...draft, issueDate: e.target.value })} />
-        </Field>
-        <Field label="Expiry date" htmlFor="doc-expiry">
-          <input id="doc-expiry" type="date" className={inputClassName} value={draft.expiryDate} onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })} />
-        </Field>
-        <Field label="Attachment name (placeholder)" htmlFor="doc-attachment">
           <input
-            id="doc-attachment"
+            id="doc-issue"
+            type="date"
             className={inputClassName}
-            value={draft.attachmentName}
-            onChange={(e) => setDraft({ ...draft, attachmentName: e.target.value })}
+            value={draft.issueDate}
+            onChange={(e) => setDraft({ ...draft, issueDate: e.target.value })}
           />
         </Field>
-        <Field label="Attachment MIME type" htmlFor="doc-mime">
+        <Field label="Expiry date" htmlFor="doc-expiry">
           <input
-            id="doc-mime"
+            id="doc-expiry"
+            type="date"
             className={inputClassName}
-            value={draft.attachmentMimeType}
-            onChange={(e) => setDraft({ ...draft, attachmentMimeType: e.target.value })}
+            value={draft.expiryDate}
+            onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
           />
         </Field>
         <div className="md:col-span-2 xl:col-span-3">
           <Field label="Notes" htmlFor="doc-notes">
-            <textarea id="doc-notes" rows={2} className={inputClassName} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
+            <textarea
+              id="doc-notes"
+              rows={2}
+              className={inputClassName}
+              value={draft.notes}
+              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            />
           </Field>
         </div>
       </div>
@@ -126,50 +192,27 @@ export function DocumentsPanel() {
             accept=".pdf,image/jpeg,image/png,image/webp,text/plain"
             className={inputClassName}
             onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const validation = validateDocumentUpload({
-                fileName: file.name,
-                mimeType: file.type || 'application/octet-stream',
-                sizeBytes: file.size,
-              });
-              if (!validation.ok) {
-                setFeedback(validation.message);
-                return;
+              const file = event.target.files?.[0] ?? null;
+              setPendingFile(file);
+              if (file) {
+                setDraft((current) => ({
+                  ...current,
+                  attachmentName: file.name,
+                  attachmentMimeType: file.type,
+                }));
               }
-              setDraft((current) => ({
-                ...current,
-                attachmentName: file.name,
-                attachmentMimeType: file.type,
-              }));
-              void uploadDocumentFile({
-                tripId: activeVaultTrip.id,
-                documentId: draft.id,
-                fileName: file.name,
-                mimeType: file.type,
-                sizeBytes: file.size,
-                bytes: file,
-              }).then((result) => {
-                setFeedback(result.ok ? `File reserved/uploaded: ${result.value.path}` : result.message);
-              });
             }}
           />
         </Field>
-        <PrimaryButton
-          type="button"
-          onClick={() => {
-            if (!draft.title.trim()) {
-              setFeedback('Document title is required.');
-              return;
-            }
-            upsertDocument(draft);
-            setDraft(createDocument());
-            setFeedback('Document metadata saved.');
-          }}
-        >
-          Save document
+        <PrimaryButton type="button" disabled={busy} onClick={() => void saveDocument()}>
+          {busy ? 'Saving…' : 'Save document'}
         </PrimaryButton>
       </div>
+      {pendingFile ? (
+        <p className="mt-2 text-xs text-slate-400">
+          Selected file will upload when you save: {pendingFile.name}
+        </p>
+      ) : null}
 
       <div className="mt-6 space-y-3">
         {activeVaultTrip.documents.length === 0 ? (
@@ -187,23 +230,40 @@ export function DocumentsPanel() {
                   </p>
                   <p className="mt-1">
                     Expires {document.expiryDate || 'n/a'}
-                    {document.attachmentName ? ` · Attachment placeholder: ${document.attachmentName}` : ''}
+                    {document.attachmentName ? ` · File: ${document.attachmentName}` : ''}
                   </p>
+                  {document.storagePath ? (
+                    <p className="mt-1 break-all text-xs text-slate-400">Storage: {document.storagePath}</p>
+                  ) : null}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {document.storagePath && !document.storagePath.startsWith('local://') ? (
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => {
+                        void createDocumentSignedUrl(document.storagePath).then((result) => {
+                          if (!result.ok) {
+                            setFeedback(result.message);
+                            return;
+                          }
+                          if (result.value) window.open(result.value, '_blank', 'noopener,noreferrer');
+                        });
+                      }}
+                    >
+                      Open signed URL
+                    </SecondaryButton>
+                  ) : null}
                   <SecondaryButton type="button" onClick={() => setDraft(document)}>
                     Edit
                   </SecondaryButton>
                   <SecondaryButton
                     type="button"
                     onClick={() => {
-                      if (document.attachmentName) {
-                        void deleteDocumentFile(
-                          `local://${activeVaultTrip.id}/${document.id}/${document.attachmentName}`,
-                          document.id,
-                        );
+                      if (document.storagePath) {
+                        void deleteDocumentFile(document.storagePath, document.id);
                       }
                       deleteDocument(document.id);
+                      setFeedback('Document deleted.');
                     }}
                   >
                     Delete

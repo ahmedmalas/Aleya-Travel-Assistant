@@ -23,6 +23,12 @@ describe('commandCentre', () => {
             date: '2026-08-01',
             paid: true,
             notes: '',
+
+            deposit: 0,
+            refund: 0,
+            sharedTravellerIds: [],
+            exchangeRateToTrip: 1,
+            attachmentName: '',
           },
         ],
       }),

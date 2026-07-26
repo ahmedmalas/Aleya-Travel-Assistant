@@ -62,18 +62,27 @@ const timeToMinutes = (value: string): number | null => {
   return Number(match[1]) * 60 + Number(match[2]);
 };
 
+const expenseAmountInTripCurrency = (expense: Expense): number => {
+  const rate = Number.isFinite(expense.exchangeRateToTrip) && expense.exchangeRateToTrip > 0 ? expense.exchangeRateToTrip : 1;
+  const gross = Math.max(0, expense.amount) + Math.max(0, expense.deposit ?? 0) - Math.max(0, expense.refund ?? 0);
+  return Math.max(0, gross * rate);
+};
+
 export const calculateBudgetSummary = (trip: TripData): BudgetSummary => {
   const currency = trip.currency || 'USD';
-  const actualSpending = trip.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const paidSpending = trip.expenses.filter((expense) => expense.paid).reduce((sum, expense) => sum + expense.amount, 0);
+  const actualSpending = trip.expenses.reduce((sum, expense) => sum + expenseAmountInTripCurrency(expense), 0);
+  const paidSpending = trip.expenses
+    .filter((expense) => expense.paid)
+    .reduce((sum, expense) => sum + expenseAmountInTripCurrency(expense), 0);
   const unpaidSpending = actualSpending - paidSpending;
   const remainingBalance = trip.budget - actualSpending;
   const categories = new Map<ExpenseCategory, { amount: number; paidAmount: number }>();
   for (const expense of trip.expenses) {
+    const amount = expenseAmountInTripCurrency(expense);
     const current = categories.get(expense.category) ?? { amount: 0, paidAmount: 0 };
-    current.amount += expense.amount;
+    current.amount += amount;
     if (expense.paid) {
-      current.paidAmount += expense.amount;
+      current.paidAmount += amount;
     }
     categories.set(expense.category, current);
   }

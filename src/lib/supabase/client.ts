@@ -48,7 +48,8 @@ export const getCloudRuntimeStatus = () => {
     env: validation,
     clientConfigured: validation.ok,
     activeProvider: validation.ok && SUPABASE_TARGET_VERIFICATION.verified ? 'supabase' : 'local-storage',
-    remoteMigrationsApplied: false as const,
+    remoteMigrationsApplied: SUPABASE_TARGET_VERIFICATION.remoteMigrationsApplied,
+    migrationsApplied: SUPABASE_TARGET_VERIFICATION.migrationsApplied,
   };
 };
 

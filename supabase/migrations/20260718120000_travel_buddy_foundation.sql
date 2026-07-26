@@ -1,5 +1,7 @@
 -- Travel Buddy Slices 53–57 foundation schema + RLS
--- Apply only to a verified Travel Buddy Supabase project.
+-- Apply only to aleya travel assistant (jtktojbvbmiewpntpvhe)
+-- Organisation: tasqkbrzxjralyelioyv (Aleya)
+-- Never apply to ABoss, AI Invoicing, Aleya Logo Creator, or retired farnjmgwcayvkzuaoifk.
 
 create extension if not exists "pgcrypto";
 

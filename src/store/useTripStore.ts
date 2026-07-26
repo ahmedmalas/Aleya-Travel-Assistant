@@ -29,6 +29,12 @@ import {
   type Traveller,
 } from './tripDomain';
 import {
+  aiPlanToStops,
+  generateAiTravelPlan,
+  type AiPlanMode,
+  type AiTravelPlan,
+} from '../features/ai-planning/aiPlanning';
+import {
   buildTripOverview,
   calculateBudgetSummary,
   calculateItineraryTotalCost,
@@ -113,6 +119,13 @@ import {
 } from './sync/syncEngine';
 import { runCloudSync } from './sync/cloudSync';
 import {
+  hydrateVaultFromRepositories,
+  persistVaultToRepositories,
+  shouldAutoPersistToCloud,
+} from './sync/cloudPersistence';
+import type { DraftPlan, TripBriefInput } from '../features/trip-brief/models';
+import { getTripDurationDays } from '../features/trip-brief/tripBrief.mapper';
+import {
   buildNotificationsFromTrips,
   dismissNotification as applyDismissNotification,
   loadNotificationState,
@@ -145,6 +158,7 @@ import {
 } from './documents/secureStorage';
 import {
   evaluateAccountDeletion,
+  requestAccountDeletion,
   exportAccountDataBundle,
   loadAccountSettings,
   persistAccountSettings,
@@ -152,7 +166,7 @@ import {
   updateAccountSettings,
   type AccountSettings,
 } from './settings/accountSettings';
-import { getCloudRuntimeStatus, isSupabaseConfigured } from '../lib/supabase/client';
+import { getCloudRuntimeStatus, getSupabaseClient, isSupabaseConfigured } from '../lib/supabase/client';
 import { SUPABASE_TARGET_VERIFICATION } from '../lib/supabase/env';
 import {
   DEFAULT_CHECKLIST_TEMPLATES,
@@ -1372,6 +1386,9 @@ export function useTripStore() {
   const accountSettingsRef = useRef(accountSettings);
   accountSettingsRef.current = accountSettings;
   const [cloudMigrationMessage, setCloudMigrationMessage] = useState<string | null>(null);
+  const [cloudPersistMessage, setCloudPersistMessage] = useState<string | null>(null);
+  const vaultRef = useRef(vault);
+  vaultRef.current = vault;
   const [onboardingState, setOnboardingState] = useState<OnboardingState>(() => loadOnboardingState());
   const [dealEngineState, setDealEngineState] = useState<DealEngineState>(() => loadDealEngineState());
   const [finalisationState, setFinalisationState] = useState<FinalisationState>(() => loadFinalisationState());
@@ -1542,10 +1559,119 @@ export function useTripStore() {
       setAuthProvider((current) => (current === 'supabase' ? current : result.provider));
       setEmailVerified((current) => current ?? result.emailVerified);
     });
+
+    const client = getSupabaseClient();
+    const subscription = client?.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setAuthState((current) => ({
+          ...current,
+          mode: 'signed-out',
+          user: null,
+          screen: 'sign-in',
+          message: event === 'SIGNED_OUT' ? 'Signed out.' : current.message,
+          updatedAt: new Date().toISOString(),
+        }));
+        setEmailVerified(null);
+        return;
+      }
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED' ||
+        event === 'INITIAL_SESSION'
+      ) {
+        const user = session.user;
+        setAuthProvider('supabase');
+        setEmailVerified(Boolean(user.email_confirmed_at));
+        setAuthState((current) => ({
+          ...current,
+          mode: 'signed-in',
+          user: {
+            id: user.id,
+            email: user.email ?? '',
+            displayName:
+              (user.user_metadata?.display_name as string | undefined)?.trim() ||
+              (user.email ? user.email.split('@')[0] : 'Traveller') ||
+              'Traveller',
+          },
+          screen: 'session',
+          message:
+            event === 'TOKEN_REFRESHED'
+              ? 'Session refreshed.'
+              : current.message || 'Signed in with Supabase Auth.',
+          updatedAt: new Date().toISOString(),
+        }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription?.data.subscription.unsubscribe();
+    };
+  }, []);
+
+  // When signed in, hydrate vault from cloud once per session transition.
+  useEffect(() => {
+    if (
+      !shouldAutoPersistToCloud({
+        supabaseConfigured: isSupabaseConfigured(),
+        authMode: authState.mode,
+        remoteMigrationsApplied: cloudRuntime.remoteMigrationsApplied,
+      })
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void hydrateVaultFromRepositories(repositories, vaultRef.current).then((next) => {
+      if (cancelled) return;
+      if (next.trips.length === 0) return;
+      setVault(next);
+      const active = getActiveVaultTrip(next);
+      if (active) {
+        setHistory({ past: [], present: active, future: [] });
+      }
+      setCloudPersistMessage(`Hydrated ${next.trips.length} trip(s) from cloud.`);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+    // Intentionally only re-run when auth mode flips to signed-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authState.mode]);
+
+  // Debounced cloud persist of vault when authenticated.
+  useEffect(() => {
+    if (
+      !shouldAutoPersistToCloud({
+        supabaseConfigured: isSupabaseConfigured(),
+        authMode: authState.mode,
+        remoteMigrationsApplied: cloudRuntime.remoteMigrationsApplied,
+      })
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void persistVaultToRepositories(repositories, vault).then((result) => {
+        setCloudPersistMessage(result.ok ? result.message : `Cloud persist: ${result.message}`);
+        if (result.ok) {
+          const active = getActiveVaultTrip(vault);
+          if (active) {
+            setSyncState((current) =>
+              enqueueChange(current, {
+                entityType: 'trip',
+                entityId: active.id,
+                tripId: active.id,
+                revision: Date.now(),
+                payload: { tripName: active.tripName },
+              }),
+            );
+          }
+        }
+      });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [vault, authState.mode, repositories, cloudRuntime.remoteMigrationsApplied]);
   useEffect(() => {
     persistSyncState(syncState);
   }, [syncState]);
@@ -1765,6 +1891,14 @@ export function useTripStore() {
               cost: partial?.cost ?? 0,
               currency: partial?.currency ?? trip.currency,
               bookingReference: partial?.bookingReference ?? '',
+              locked: partial?.locked ?? false,
+              travellerIds: partial?.travellerIds ?? [],
+              itemStatus: partial?.itemStatus ?? 'planned',
+              latitude: partial?.latitude ?? '',
+              longitude: partial?.longitude ?? '',
+              supplierDetails: partial?.supplierDetails ?? '',
+              reminderAt: partial?.reminderAt ?? '',
+              aiGenerated: partial?.aiGenerated ?? false,
             },
           ],
         },
@@ -1786,27 +1920,40 @@ export function useTripStore() {
   };
 
   const updateStopDetails = (stopId: string, updates: Partial<TripStop>) => {
-    updateTrip((trip) =>
-      appendActivity(
+    updateTrip((trip) => {
+      const existing = trip.stops.find((stop) => stop.id === stopId);
+      if (!existing) return trip;
+      if (existing.locked) {
+        const keys = Object.keys(updates);
+        const unlocking = updates.locked === false && keys.every((key) => key === 'locked');
+        if (!unlocking) {
+          return appendActivity(trip, 'Blocked edit: itinerary item is locked.');
+        }
+      }
+      return appendActivity(
         {
           ...trip,
           stops: trip.stops.map((stop) => (stop.id === stopId ? { ...stop, ...updates, id: stop.id } : stop)),
         },
         'Updated itinerary item details.',
-      ),
-    { createSnapshot: true });
+      );
+    }, { createSnapshot: true });
   };
 
   const deleteStop = (stopId: string) => {
-    updateTrip((trip) =>
-      appendActivity(
+    updateTrip((trip) => {
+      const existing = trip.stops.find((stop) => stop.id === stopId);
+      if (existing?.locked) {
+        return appendActivity(trip, 'Blocked delete: itinerary item is locked.');
+      }
+      return appendActivity(
         {
           ...trip,
           stops: trip.stops.filter((stop) => stop.id !== stopId),
         },
         'Deleted itinerary item.',
-      ),
-    { createSnapshot: true });
+      );
+    }, { createSnapshot: true });
   };
 
   const duplicateStop = (stopId: string) => {
@@ -1828,12 +1975,99 @@ export function useTripStore() {
               id: `s-${crypto.randomUUID()}`,
               order: maxOrder + 1,
               title: `${target.title} (copy)`,
+              locked: false,
             },
           ],
         },
         'Duplicated itinerary item.',
       );
     }, { createSnapshot: true });
+  };
+
+  const toggleStopLock = (stopId: string) => {
+    updateTrip((trip) => {
+      const existing = trip.stops.find((stop) => stop.id === stopId);
+      if (!existing) return trip;
+      return appendActivity(
+        {
+          ...trip,
+          stops: trip.stops.map((stop) =>
+            stop.id === stopId ? { ...stop, locked: !stop.locked } : stop,
+          ),
+        },
+        existing.locked ? 'Unlocked itinerary item.' : 'Locked itinerary item.',
+      );
+    }, { createSnapshot: true });
+  };
+
+  const saveItineraryVersion = (label?: string, source: 'manual' | 'ai' | 'restore' = 'manual') => {
+    updateTrip((trip) => {
+      const version = {
+        id: crypto.randomUUID(),
+        label: label?.trim() || `Version ${trip.itineraryVersions.length + 1}`,
+        createdAt: new Date().toISOString(),
+        source,
+        stops: trip.stops.map((stop) => ({ ...stop })),
+        notes: '',
+      };
+      return appendActivity(
+        {
+          ...trip,
+          itineraryVersions: [version, ...trip.itineraryVersions].slice(0, 20),
+        },
+        `Saved itinerary version: ${version.label}.`,
+      );
+    }, { createSnapshot: true });
+  };
+
+  const restoreItineraryVersion = (versionId: string) => {
+    updateTrip((trip) => {
+      const version = trip.itineraryVersions.find((entry) => entry.id === versionId);
+      if (!version) return trip;
+      const snapshot = {
+        id: crypto.randomUUID(),
+        label: `Before restore ${new Date().toLocaleString()}`,
+        createdAt: new Date().toISOString(),
+        source: 'restore' as const,
+        stops: trip.stops.map((stop) => ({ ...stop })),
+        notes: `Auto-saved before restoring ${version.label}`,
+      };
+      return appendActivity(
+        {
+          ...trip,
+          stops: version.stops.map((stop) => ({ ...stop, id: stop.id || crypto.randomUUID() })),
+          itineraryVersions: [snapshot, ...trip.itineraryVersions].slice(0, 20),
+        },
+        `Restored itinerary version: ${version.label}.`,
+      );
+    }, { createSnapshot: true });
+  };
+
+  const upsertSavedSearch = (search: TripData['savedSearches'][number]) => {
+    updateTrip((trip) => {
+      const exists = trip.savedSearches.some((entry) => entry.id === search.id);
+      return appendActivity(
+        {
+          ...trip,
+          savedSearches: exists
+            ? trip.savedSearches.map((entry) => (entry.id === search.id ? search : entry))
+            : [search, ...trip.savedSearches].slice(0, 50),
+        },
+        exists ? 'Updated saved search.' : 'Saved search.',
+      );
+    }, { createSnapshot: true });
+  };
+
+  const deleteSavedSearch = (searchId: string) => {
+    updateTrip((trip) =>
+      appendActivity(
+        {
+          ...trip,
+          savedSearches: trip.savedSearches.filter((entry) => entry.id !== searchId),
+        },
+        'Deleted saved search.',
+      ),
+    { createSnapshot: true });
   };
 
   const reorderStop = (stopId: string, direction: 'up' | 'down') => {
@@ -1852,13 +2086,17 @@ export function useTripStore() {
             ...trip,
             tripName: input.tripName.trim(),
             destination: input.destination.trim(),
+            destinationsList: input.destinationsList ?? trip.destinationsList,
             departureDate: input.departureDate,
             returnDate: input.returnDate,
             travellerCount: input.travellerCount,
             purpose: input.purpose,
+            travelStyle: input.travelStyle ?? trip.travelStyle,
             budget: input.budget,
             currency: input.currency.trim().toUpperCase(),
             notes: input.notes.trim(),
+            tags: input.tags ?? trip.tags,
+            coverImageUrl: input.coverImageUrl ?? trip.coverImageUrl,
             status: input.status ?? trip.status,
           },
           'Saved trip setup.',
@@ -2250,6 +2488,38 @@ export function useTripStore() {
     }
   };
 
+  const restoreVaultTrip = (tripId: string) => {
+    setVault((current) => ({
+      ...current,
+      trips: current.trips.map((trip) =>
+        trip.id === tripId
+          ? { ...trip, status: trip.departureDate ? 'upcoming' : 'draft', updatedAt: new Date().toISOString() }
+          : trip,
+      ),
+    }));
+    if (history.present && (history.present as VaultTrip).id === tripId) {
+      updateTrip(
+        (trip) => ({ ...trip, status: trip.departureDate ? 'upcoming' : 'draft' }),
+        { createSnapshot: true },
+      );
+    }
+  };
+
+  const updateVaultTripMeta = (
+    tripId: string,
+    patch: Partial<Pick<VaultTrip, 'tags' | 'coverImageUrl' | 'travelStyle' | 'destinationsList' | 'status' | 'notes'>>,
+  ) => {
+    setVault((current) => ({
+      ...current,
+      trips: current.trips.map((trip) =>
+        trip.id === tripId ? { ...trip, ...patch, updatedAt: new Date().toISOString() } : trip,
+      ),
+    }));
+    if (history.present && (history.present as VaultTrip).id === tripId) {
+      updateTrip((trip) => ({ ...trip, ...patch }), { createSnapshot: true });
+    }
+  };
+
   const duplicateVaultTrip = (tripId: string) => {
     const source = vault.trips.find((trip) => trip.id === tripId);
     if (!source) {
@@ -2355,6 +2625,106 @@ export function useTripStore() {
       },
       { createSnapshot: true },
     );
+  };
+
+  const applyDraftPlanToActiveTrip = (
+    plan: DraftPlan,
+    brief: TripBriefInput,
+  ): { ok: true; message: string } => {
+    const durationDays = plan.durationDays || getTripDurationDays(brief.startDate, brief.endDate);
+    updateTrip(
+      (trip) => {
+        const vaultTrip = toVaultTrip(trip);
+        const stops = plan.suggestedDays.map((title, index) => {
+          const day = index + 1;
+          const date = brief.startDate
+            ? new Date(`${brief.startDate}T00:00:00`)
+            : new Date();
+          date.setDate(date.getDate() + index);
+          const iso = date.toISOString().slice(0, 10);
+          return {
+            id: crypto.randomUUID(),
+            title,
+            day,
+            order: index,
+            notes: plan.tripPillars.join(' · '),
+            date: iso,
+            startTime: day === 1 ? '14:00' : '09:00',
+            endTime: day === durationDays ? '12:00' : '17:00',
+            location: plan.destination,
+            category: index === 0 ? ('travel' as const) : ('activity' as const),
+            cost: 0,
+            currency: vaultTrip.currency || 'USD',
+            bookingReference: '',
+
+            locked: false,
+            travellerIds: [],
+            itemStatus: 'planned' as const,
+            latitude: '',
+            longitude: '',
+            supplierDetails: '',
+            reminderAt: '',
+            aiGenerated: false,
+          };
+        });
+        const next = {
+          ...vaultTrip,
+          tripName: vaultTrip.tripName?.trim() || plan.title,
+          destination: plan.destination,
+          departureDate: brief.startDate || vaultTrip.departureDate,
+          returnDate: brief.endDate || vaultTrip.returnDate,
+          travellerCount: plan.travelers,
+          notes: [vaultTrip.notes, brief.notes, `Draft pace: ${plan.dailyPace}`, ...plan.assumptions]
+            .filter(Boolean)
+            .join('\n'),
+          status: vaultTrip.status === 'archived' ? vaultTrip.status : ('draft' as const),
+          stops: stops.length > 0 ? stops : vaultTrip.stops,
+        };
+        return appendActivity(next, `Applied draft plan: ${plan.title}.`);
+      },
+      { createSnapshot: true },
+    );
+    return { ok: true, message: `Applied draft plan to active trip (${plan.suggestedDays.length} day(s)).` };
+  };
+
+  const generateAndPreviewAiPlan = (mode: AiPlanMode = 'complete'): AiTravelPlan =>
+    generateAiTravelPlan(history.present ?? createEmptyTrip(), mode);
+
+  const applyAiTravelPlan = (
+    plan: AiTravelPlan,
+    options: { replaceUnlocked?: boolean; saveVersion?: boolean } = {},
+  ) => {
+    const replaceUnlocked = options.replaceUnlocked ?? true;
+    const saveVersion = options.saveVersion ?? true;
+    updateTrip((trip) => {
+      const generated = aiPlanToStops(plan, trip.currency);
+      const lockedStops = trip.stops.filter((stop) => stop.locked);
+      const nextStops = replaceUnlocked
+        ? [...lockedStops, ...generated.filter((stop) => !lockedStops.some((locked) => locked.id === stop.id))]
+        : [...trip.stops, ...generated];
+      const version = saveVersion
+        ? {
+            id: crypto.randomUUID(),
+            label: `AI ${plan.label}`,
+            createdAt: new Date().toISOString(),
+            source: 'ai' as const,
+            stops: nextStops.map((stop) => ({ ...stop })),
+            notes: plan.disclaimer,
+          }
+        : null;
+      return appendActivity(
+        {
+          ...trip,
+          stops: nextStops.map((stop, index) => ({ ...stop, order: index + 1 })),
+          itineraryVersions: version
+            ? [version, ...trip.itineraryVersions].slice(0, 20)
+            : trip.itineraryVersions,
+          budget: trip.budget > 0 ? trip.budget : plan.budgetSuggestion.amount,
+        },
+        `Applied AI plan (${plan.mode}) — mock guidance, not live inventory.`,
+      );
+    }, { createSnapshot: true });
+    return { ok: true as const, message: `Applied ${plan.label}. Locked items were preserved.` };
   };
 
   const currentUserRole: CollaborationRole = 'owner';
@@ -5059,6 +5429,13 @@ export function useTripStore() {
     deleteStop,
     duplicateStop,
     reorderStop,
+    toggleStopLock,
+    saveItineraryVersion,
+    restoreItineraryVersion,
+    upsertSavedSearch,
+    deleteSavedSearch,
+    generateAndPreviewAiPlan,
+    applyAiTravelPlan,
     saveTripSetup,
     createDraftTrip,
     updatePlannedBudget,
@@ -5092,6 +5469,8 @@ export function useTripStore() {
     openVaultTrip,
     createVaultTripEntry,
     archiveVaultTrip,
+    restoreVaultTrip,
+    updateVaultTripMeta,
     duplicateVaultTrip,
     deleteVaultTrip,
     toggleVaultFavourite,
@@ -5277,6 +5656,22 @@ export function useTripStore() {
             passportNumberLast4: '',
             passportExpiry: '',
             passportCountry: '',
+
+            preferredName: '',
+            countryOfResidence: '',
+            homeAirport: '',
+            preferredDepartureAirports: '',
+            language: 'en',
+            currency: 'USD',
+            timeZone: '',
+            travelPreferences: '',
+            seatingPreference: '',
+            cabinPreference: '',
+            hotelPreferences: '',
+            loyaltyMemberships: [],
+            companions: [],
+            identityDocumentType: '',
+            identityDocumentExpiry: '',
           });
         }
         return {
@@ -5385,6 +5780,8 @@ export function useTripStore() {
       return result;
     },
     cloudMigrationMessage,
+    cloudPersistMessage,
+    applyDraftPlanToActiveTrip,
     uploadDocumentFile: async (input: {
       tripId: string;
       documentId: string;
@@ -5419,6 +5816,12 @@ export function useTripStore() {
       }),
     evaluateAccountDeletionGuard: (confirmation: string) =>
       evaluateAccountDeletion({
+        confirmation,
+        activeTripCount: vault.trips.filter((trip) => trip.status !== 'archived').length,
+        hasPendingSync: syncQueueSummary(syncStateRef.current).pending > 0 || syncQueueSummary(syncStateRef.current).failed > 0,
+      }),
+    requestAccountDeletion: async (confirmation: string) =>
+      requestAccountDeletion({
         confirmation,
         activeTripCount: vault.trips.filter((trip) => trip.status !== 'archived').length,
         hasPendingSync: syncQueueSummary(syncStateRef.current).pending > 0 || syncQueueSummary(syncStateRef.current).failed > 0,

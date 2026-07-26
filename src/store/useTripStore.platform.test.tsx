@@ -134,6 +134,12 @@ describe('useTripStore platform slices 29-36', () => {
         date: '2026-09-01',
         paid: true,
         notes: '',
+
+        deposit: 0,
+        refund: 0,
+        sharedTravellerIds: [],
+        exchangeRateToTrip: 1,
+        attachmentName: '',
       });
       result.current.updatePlannedBudget(450);
       result.current.upsertTraveller({
@@ -149,6 +155,22 @@ describe('useTripStore platform slices 29-36', () => {
         passportNumberLast4: '1234',
         passportExpiry: '2030-01-01',
         passportCountry: 'US',
+
+        preferredName: '',
+        countryOfResidence: '',
+        homeAirport: '',
+        preferredDepartureAirports: '',
+        language: 'en',
+        currency: 'USD',
+        timeZone: '',
+        travelPreferences: '',
+        seatingPreference: '',
+        cabinPreference: '',
+        hotelPreferences: '',
+        loyaltyMemberships: [],
+        companions: [],
+        identityDocumentType: '',
+        identityDocumentExpiry: '',
       });
       const listId = result.current.trip.packingLists[0]!.id;
       result.current.upsertPackingItem(listId, {

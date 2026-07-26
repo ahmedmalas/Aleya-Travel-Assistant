@@ -99,6 +99,15 @@ describe('smartAssistance', () => {
           cost: 0,
           currency: 'USD',
           bookingReference: '',
+
+          locked: false,
+          travellerIds: [],
+          itemStatus: 'planned' as const,
+          latitude: '',
+          longitude: '',
+          supplierDetails: '',
+          reminderAt: '',
+          aiGenerated: false,
         },
         {
           id: 'b',
@@ -114,6 +123,15 @@ describe('smartAssistance', () => {
           cost: 0,
           currency: 'USD',
           bookingReference: '',
+
+          locked: false,
+          travellerIds: [],
+          itemStatus: 'planned' as const,
+          latitude: '',
+          longitude: '',
+          supplierDetails: '',
+          reminderAt: '',
+          aiGenerated: false,
         },
       ],
     });

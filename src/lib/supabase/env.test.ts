@@ -61,5 +61,7 @@ describe('validateSupabaseEnv', () => {
     expect(TRAVEL_BUDDY_SUPABASE_ORG.expectedProjectName).toBe('aleya travel assistant');
     expect(FORBIDDEN_SUPABASE_PROJECTS.map((p) => p.id)).toContain('farnjmgwcayvkzuaoifk');
     expect(SUPABASE_TARGET_VERIFICATION.vercel.project).toBe('travel-buddy-assistant-ai');
+    expect(SUPABASE_TARGET_VERIFICATION.remoteMigrationsApplied).toBe(true);
+    expect(SUPABASE_TARGET_VERIFICATION.migrationsApplied.length).toBeGreaterThanOrEqual(4);
   });
 });

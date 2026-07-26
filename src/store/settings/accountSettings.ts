@@ -156,3 +156,53 @@ export const evaluateAccountDeletion = (input: {
     confirmationPhrase,
   };
 };
+
+/**
+ * Clears local account artefacts and attempts a best-effort cloud sign-out.
+ * Full auth-user hard-delete requires a privileged server function; this phase
+ * anonymises/removes local data and documents the remaining external step.
+ */
+export async function requestAccountDeletion(input: {
+  confirmation: string;
+  activeTripCount: number;
+  hasPendingSync: boolean;
+  client?: TravelBuddyClient | null;
+}): Promise<AccountSettingsResult<{ clearedLocal: boolean; cloudMessage: string }>> {
+  const guard = evaluateAccountDeletion(input);
+  if (!guard.canDelete) {
+    return { ok: false, message: guard.blockers.join(' ') };
+  }
+  try {
+    for (const key of Object.values(STORAGE_KEYS)) {
+      window.localStorage.removeItem(key);
+    }
+    window.localStorage.removeItem(ACCOUNT_SETTINGS_STORAGE_KEY);
+    window.localStorage.removeItem(SUPPORT_STORAGE_KEY_SAFE);
+  } catch {
+    // Continue — best effort.
+  }
+  const client = input.client === undefined ? getSupabaseClient() : input.client;
+  if (!client) {
+    return {
+      ok: true,
+      value: {
+        clearedLocal: true,
+        cloudMessage:
+          'Local data cleared. No cloud client configured — remote auth deletion remains an external admin/server step.',
+      },
+    };
+  }
+  const { error: signOutError } = await client.auth.signOut();
+  return {
+    ok: true,
+    value: {
+      clearedLocal: true,
+      cloudMessage: signOutError
+        ? `Local data cleared. Cloud sign-out failed: ${signOutError.message}. Hard-delete of the auth user still requires a privileged server function.`
+        : 'Local data cleared and session signed out. Hard-delete of the auth user still requires a privileged server function / support action.',
+    },
+  };
+}
+
+/** Avoid circular import with support centre storage key. */
+const SUPPORT_STORAGE_KEY_SAFE = 'travel-buddy:support-tickets:v1';

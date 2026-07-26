@@ -39,6 +39,7 @@ describe('useTripStore foundation slices 45-52', () => {
         notes: '',
         attachmentName: '',
         attachmentMimeType: '',
+        storagePath: '',
       });
     });
     expect(result.current.notifications.some((item) => item.kind === 'document-expiry')).toBe(true);

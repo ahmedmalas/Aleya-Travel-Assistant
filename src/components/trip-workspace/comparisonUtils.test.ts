@@ -18,6 +18,14 @@ const makeStop = (partial: Partial<TripStop> & Pick<TripStop, 'id' | 'title' | '
   cost: 0,
   currency: 'USD',
   bookingReference: '',
+  locked: false,
+  travellerIds: [],
+  itemStatus: 'planned',
+  latitude: '',
+  longitude: '',
+  supplierDetails: '',
+  reminderAt: '',
+  aiGenerated: false,
   ...partial,
 });
 

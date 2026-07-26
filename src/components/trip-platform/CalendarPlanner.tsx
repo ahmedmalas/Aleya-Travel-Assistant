@@ -1,4 +1,10 @@
 import { useMemo, useState } from 'react';
+import {
+  buildItineraryIcs,
+  downloadIcsFile,
+  EXTERNAL_CALENDAR_ADAPTERS,
+  openPrintableItinerary,
+} from '../../features/calendar/icsExport';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import {
   calendarConflictsForDate,
@@ -41,6 +47,24 @@ export function CalendarPlanner() {
           <SecondaryButton type="button" onClick={() => shiftAnchor(1)}>
             Next
           </SecondaryButton>
+          <SecondaryButton
+            type="button"
+            onClick={() => {
+              downloadIcsFile(`${trip.tripName || 'aleya-trip'}.ics`, buildItineraryIcs(trip));
+              setFeedback('Downloaded .ics calendar export.');
+            }}
+          >
+            Download .ics
+          </SecondaryButton>
+          <SecondaryButton
+            type="button"
+            onClick={() => {
+              openPrintableItinerary(trip);
+              setFeedback('Opened printable itinerary.');
+            }}
+          >
+            Print itinerary
+          </SecondaryButton>
         </>
       }
     >
@@ -60,6 +84,11 @@ export function CalendarPlanner() {
       </div>
       <p className="mt-3 text-sm text-slate-300">
         Anchor {toIsoDate(anchor)} · {itineraryConflicts.length} conflict(s) in trip
+      </p>
+
+      <p className="mt-2 text-xs text-slate-500">
+        External calendar sync placeholders:{' '}
+        {EXTERNAL_CALENDAR_ADAPTERS.map((adapter) => adapter.label).join(', ')} — OAuth not required in this phase.
       </p>
 
       {trip.stops.length === 0 ? (

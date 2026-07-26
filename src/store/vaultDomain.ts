@@ -54,13 +54,21 @@ export type TripTemplate = {
 };
 
 export type VaultSortKey = 'lastOpened' | 'name' | 'departure' | 'updated' | 'favourite';
-export type VaultFilterKey = 'all' | 'active' | 'draft' | 'archived' | 'favourites';
+export type VaultFilterKey =
+  | 'all'
+  | 'active'
+  | 'upcoming'
+  | 'completed'
+  | 'cancelled'
+  | 'draft'
+  | 'archived'
+  | 'favourites';
 
 export type GlobalSearchHit = {
   id: string;
   tripId: string;
   tripName: string;
-  entity: 'trip' | 'itinerary' | 'booking' | 'expense' | 'packing' | 'traveller' | 'document';
+  entity: 'trip' | 'itinerary' | 'booking' | 'expense' | 'packing' | 'traveller' | 'document' | 'destination' | 'note' | 'service';
   title: string;
   subtitle: string;
 };
@@ -138,6 +146,7 @@ export const sanitizeDocument = (doc: Partial<TripDocument>): TripDocument => ({
   notes: asString(doc.notes).trim(),
   attachmentName: asString(doc.attachmentName).trim(),
   attachmentMimeType: asString(doc.attachmentMimeType).trim(),
+  storagePath: asString((doc as Partial<TripDocument>).storagePath).trim(),
 });
 
 export const sanitizeCollaboration = (value: unknown): CollaborationState => {
@@ -318,6 +327,15 @@ export const DEFAULT_TRIP_TEMPLATES: TripTemplate[] = [
           cost: 0,
           currency: 'USD',
           bookingReference: '',
+
+          locked: false,
+          travellerIds: [],
+          itemStatus: 'planned' as const,
+          latitude: '',
+          longitude: '',
+          supplierDetails: '',
+          reminderAt: '',
+          aiGenerated: false,
         },
         {
           id: 'tpl-s2',
@@ -333,6 +351,15 @@ export const DEFAULT_TRIP_TEMPLATES: TripTemplate[] = [
           cost: 0,
           currency: 'USD',
           bookingReference: '',
+
+          locked: false,
+          travellerIds: [],
+          itemStatus: 'planned' as const,
+          latitude: '',
+          longitude: '',
+          supplierDetails: '',
+          reminderAt: '',
+          aiGenerated: false,
         },
       ],
     }),
@@ -367,8 +394,208 @@ export const DEFAULT_TRIP_TEMPLATES: TripTemplate[] = [
           cost: 0,
           currency: 'USD',
           bookingReference: '',
+
+          locked: false,
+          travellerIds: [],
+          itemStatus: 'planned' as const,
+          latitude: '',
+          longitude: '',
+          supplierDetails: '',
+          reminderAt: '',
+          aiGenerated: false,
         },
       ],
+    }),
+  },
+  {
+    id: 'template-solo',
+    name: 'Solo travel',
+    description: 'Independent itinerary with flexible pacing and safety notes.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-solo-snapshot',
+      tripName: 'Solo escape',
+      purpose: 'solo',
+      travelStyle: 'balanced',
+      travellerCount: 1,
+      budget: 1800,
+      status: 'draft',
+      tags: ['solo', 'flexible'],
+      notes: 'Template: solo travel with flexible days.',
+    }),
+  },
+  {
+    id: 'template-couples',
+    name: 'Couples getaway',
+    description: 'Romantic pacing with dining and shared experiences.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-couples-snapshot',
+      tripName: 'Couples getaway',
+      purpose: 'couples',
+      travelStyle: 'romantic',
+      travellerCount: 2,
+      budget: 3200,
+      status: 'draft',
+      tags: ['couples', 'romantic'],
+      notes: 'Template: couples getaway.',
+    }),
+  },
+  {
+    id: 'template-family',
+    name: 'Family holiday',
+    description: 'Family-friendly days with rest blocks and shared activities.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-family-snapshot',
+      tripName: 'Family holiday',
+      purpose: 'family',
+      travelStyle: 'family',
+      travellerCount: 4,
+      budget: 5000,
+      status: 'draft',
+      tags: ['family'],
+      notes: 'Template: family holiday.',
+    }),
+  },
+  {
+    id: 'template-road-trip',
+    name: 'Road trip',
+    description: 'Multi-stop driving itinerary with lodging hops.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-road-trip-snapshot',
+      tripName: 'Road trip',
+      purpose: 'road-trip',
+      travelStyle: 'adventure',
+      travellerCount: 2,
+      budget: 2800,
+      status: 'draft',
+      tags: ['road-trip'],
+      destinationsList: ['Start city', 'Midpoint', 'End city'],
+      notes: 'Template: road trip multi-stop.',
+    }),
+  },
+  {
+    id: 'template-cruise',
+    name: 'Cruise holiday',
+    description: 'Embarkation, sea days, and port exploration scaffolding.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-cruise-snapshot',
+      tripName: 'Cruise holiday',
+      purpose: 'cruise',
+      travelStyle: 'balanced',
+      travellerCount: 2,
+      budget: 4500,
+      status: 'draft',
+      tags: ['cruise'],
+      notes: 'Template: cruise holiday.',
+    }),
+  },
+  {
+    id: 'template-weekend',
+    name: 'Weekend escape',
+    description: 'Short break with light packing and two signature experiences.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-weekend-snapshot',
+      tripName: 'Weekend escape',
+      purpose: 'weekend',
+      travelStyle: 'balanced',
+      travellerCount: 2,
+      budget: 900,
+      status: 'draft',
+      tags: ['weekend'],
+      notes: 'Template: weekend escape.',
+    }),
+  },
+  {
+    id: 'template-honeymoon',
+    name: 'Honeymoon',
+    description: 'Celebration-focused luxury leisure template.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-honeymoon-snapshot',
+      tripName: 'Honeymoon',
+      purpose: 'honeymoon',
+      travelStyle: 'romantic',
+      travellerCount: 2,
+      budget: 7000,
+      status: 'draft',
+      tags: ['honeymoon', 'celebration'],
+      notes: 'Template: honeymoon.',
+    }),
+  },
+  {
+    id: 'template-group',
+    name: 'Group travel',
+    description: 'Shared decisions, split expenses, and group logistics.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-group-snapshot',
+      tripName: 'Group trip',
+      purpose: 'group',
+      travelStyle: 'balanced',
+      travellerCount: 6,
+      budget: 9000,
+      status: 'draft',
+      tags: ['group'],
+      notes: 'Template: group travel.',
+    }),
+  },
+  {
+    id: 'template-accessible',
+    name: 'Accessible travel',
+    description: 'Accessibility-first pacing, transfers, and lodging notes.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-accessible-snapshot',
+      tripName: 'Accessible trip',
+      purpose: 'accessible',
+      travelStyle: 'accessible',
+      travellerCount: 2,
+      budget: 3500,
+      status: 'draft',
+      tags: ['accessible'],
+      notes: 'Template: accessible travel.',
+    }),
+  },
+  {
+    id: 'template-adventure',
+    name: 'Adventure travel',
+    description: 'Outdoor-forward days with gear and weather buffers.',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    sourceTripId: null,
+    snapshot: createVaultTrip({
+      id: 'template-adventure-snapshot',
+      tripName: 'Adventure trip',
+      purpose: 'adventure',
+      travelStyle: 'adventure',
+      travellerCount: 2,
+      budget: 4000,
+      status: 'draft',
+      tags: ['adventure'],
+      notes: 'Template: adventure travel.',
     }),
   },
 ];

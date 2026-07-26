@@ -20,6 +20,12 @@ const createExpense = (currency: string): Expense => ({
   date: '',
   paid: false,
   notes: '',
+
+  deposit: 0,
+  refund: 0,
+  sharedTravellerIds: [],
+  exchangeRateToTrip: 1,
+  attachmentName: '',
 });
 
 export function BudgetTracker() {
@@ -111,13 +117,69 @@ export function BudgetTracker() {
         <Field label="Currency" htmlFor="expense-currency">
           <input id="expense-currency" className={inputClassName} value={draft.currency} onChange={(e) => setDraft({ ...draft, currency: e.target.value.toUpperCase() })} />
         </Field>
+        <Field label="FX rate → trip currency" htmlFor="expense-fx">
+          <input
+            id="expense-fx"
+            type="number"
+            min={0}
+            step="0.0001"
+            className={inputClassName}
+            value={draft.exchangeRateToTrip}
+            onChange={(e) => setDraft({ ...draft, exchangeRateToTrip: Number(e.target.value) || 1 })}
+          />
+        </Field>
+        <Field label="Deposit" htmlFor="expense-deposit">
+          <input
+            id="expense-deposit"
+            type="number"
+            min={0}
+            className={inputClassName}
+            value={draft.deposit}
+            onChange={(e) => setDraft({ ...draft, deposit: Number(e.target.value) || 0 })}
+          />
+        </Field>
+        <Field label="Refund" htmlFor="expense-refund">
+          <input
+            id="expense-refund"
+            type="number"
+            min={0}
+            className={inputClassName}
+            value={draft.refund}
+            onChange={(e) => setDraft({ ...draft, refund: Number(e.target.value) || 0 })}
+          />
+        </Field>
+        <Field label="Shared traveller IDs" htmlFor="expense-shared">
+          <input
+            id="expense-shared"
+            className={inputClassName}
+            value={draft.sharedTravellerIds.join(',')}
+            onChange={(e) =>
+              setDraft({
+                ...draft,
+                sharedTravellerIds: e.target.value
+                  .split(',')
+                  .map((entry) => entry.trim())
+                  .filter(Boolean),
+              })
+            }
+            placeholder="traveller-id-1, traveller-id-2"
+          />
+        </Field>
+        <Field label="Attachment name" htmlFor="expense-attachment">
+          <input
+            id="expense-attachment"
+            className={inputClassName}
+            value={draft.attachmentName}
+            onChange={(e) => setDraft({ ...draft, attachmentName: e.target.value })}
+          />
+        </Field>
         <label className="flex items-center gap-2 text-sm text-slate-200">
           <input type="checkbox" checked={draft.paid} onChange={(e) => setDraft({ ...draft, paid: e.target.checked })} />
           Paid
         </label>
         <div className="md:col-span-2 xl:col-span-3">
           <Field label="Notes" htmlFor="expense-notes">
-            <textarea id="expense-notes" rows={2} className={inputClassName} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
+            <textarea id="expense-notes" rows={2} className={inputClassName} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} placeholder="Payment notes, receipts, split context…" />
           </Field>
         </div>
       </div>
@@ -159,10 +221,13 @@ export function BudgetTracker() {
                     <div>
                       <p className="font-medium text-slate-100">{expense.title}</p>
                       <p className="text-xs text-slate-400">
-                        {expense.category} · {expense.date || 'No date'} · {expense.paid ? 'Paid' : 'Unpaid'}
+                        {expense.category} · {expense.date || 'No date'} · {expense.paid ? 'Paid' : 'Unpaid'} · FX{' '}
+                        {expense.exchangeRateToTrip || 1}
                       </p>
                       <p className="mt-1 text-slate-300">
                         {expense.amount.toFixed(2)} {expense.currency}
+                        {expense.deposit ? ` · deposit ${expense.deposit}` : ''}
+                        {expense.refund ? ` · refund ${expense.refund}` : ''}
                       </p>
                     </div>
                     <div className="flex gap-2">

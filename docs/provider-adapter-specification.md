@@ -1,6 +1,8 @@
 # Provider Adapter Specification
 
-Travel Buddy keeps all inventory providers behind replaceable adapters (`src/deal-engine/adapters/`).
+Travel Buddy keeps product inventory behind the **Travel Provider Integration Layer** (`src/providers/`). The UI calls `src/providers/gateway.ts` only.
+
+The deal-engine adapter path (`src/deal-engine/adapters/`) remains available for ranking/handoff demos and follows the same mock-first rules.
 
 ## Contract
 

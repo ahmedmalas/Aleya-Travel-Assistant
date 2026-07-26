@@ -8,10 +8,11 @@ describe('Finalisation surfaces', () => {
     const user = userEvent.setup();
     render(<TripPlatform />);
 
-    await user.click(screen.getByRole('tab', { name: /^Trip$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Plan$/i }));
     await user.click(screen.getByRole('tab', { name: /Trip health/i }));
     expect(await screen.findByRole('heading', { name: /Trip Health Score/i })).toBeInTheDocument();
 
+    await user.click(screen.getByRole('tab', { name: /^Organise$/i }));
     await user.click(screen.getByRole('tab', { name: /Universal import/i }));
     expect(await screen.findByRole('heading', { name: /Universal import/i })).toBeInTheDocument();
 

@@ -109,6 +109,12 @@ Hotel check-in: Marina Bay Inn
         date: '2026-09-10',
         paid: true,
         notes: '',
+
+        deposit: 0,
+        refund: 0,
+        sharedTravellerIds: [],
+        exchangeRateToTrip: 1,
+        attachmentName: '',
       },
     ];
     trip.stops = [
@@ -126,6 +132,14 @@ Hotel check-in: Marina Bay Inn
         cost: 0,
         currency: 'GBP',
         bookingReference: '',
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
       {
         id: 's2',
@@ -141,6 +155,15 @@ Hotel check-in: Marina Bay Inn
         cost: 0,
         currency: 'GBP',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
     ];
     const report = auditTripHealth(trip);

@@ -75,9 +75,9 @@ export const SUPABASE_ADAPTER_PLAN: CloudAdapterPlan = {
   provider: 'supabase',
   status: 'connected',
   notes:
-    'Production target jtktojbvbmiewpntpvhe (aleya travel assistant). Repositories switch to Supabase when VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY are present. Do not use retired ref farnjmgwcayvkzuaoifk.',
+    'Production target jtktojbvbmiewpntpvhe (aleya travel assistant). Repositories switch to Supabase when VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY are present. Schema applied on Aleya (PR #19). Do not use retired ref farnjmgwcayvkzuaoifk.',
   interfaces: ['trips', 'bookings', 'expenses', 'travellers', 'documents', 'templates', 'collaboration'],
-  remoteMigrationsApplied: false,
+  remoteMigrationsApplied: true,
 };
 
 export type ActiveTripSnapshot = TripData;

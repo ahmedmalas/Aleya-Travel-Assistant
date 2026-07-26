@@ -19,9 +19,10 @@ export function AuthShellPanel() {
     cloudRuntime,
     supabaseTargetVerification,
   } = useSharedTripStore();
-  const [email, setEmail] = useState('demo@travelbuddy.local');
-  const [password, setPassword] = useState('demo-demo');
-  const [displayName, setDisplayName] = useState('Demo Traveller');
+  const cloudConfigured = cloudRuntime.clientConfigured;
+  const [email, setEmail] = useState(cloudConfigured ? '' : 'demo@travelbuddy.local');
+  const [password, setPassword] = useState(cloudConfigured ? '' : 'demo-demo');
+  const [displayName, setDisplayName] = useState(cloudConfigured ? '' : 'Demo Traveller');
   const [resetToken, setResetToken] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -42,13 +43,17 @@ export function AuthShellPanel() {
   return (
     <Panel
       title="Authentication"
-      description="Live Supabase Auth when configured; otherwise local/demo mode. Session persistence and password visibility included."
+      description={
+        cloudConfigured
+          ? 'Live Supabase Auth for Aleya Travel Assistant. Session persistence, refresh, and password visibility included.'
+          : 'Local/demo mode — configure VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY for cloud auth.'
+      }
     >
       <StatusBanner
         kind={supabaseTargetVerification.verified ? 'info' : 'error'}
         message={
           supabaseTargetVerification.verified
-            ? 'Supabase target verified.'
+            ? `Supabase target verified${cloudRuntime.remoteMigrationsApplied ? ' · schema applied' : ''}.`
             : `Target unverified — ${supabaseTargetVerification.reason}`
         }
       />
@@ -59,9 +64,11 @@ export function AuthShellPanel() {
             {screen}
           </SecondaryButton>
         ))}
-        <SecondaryButton type="button" onClick={() => authEnterDemoMode()}>
-          Demo/local mode
-        </SecondaryButton>
+        {!cloudConfigured ? (
+          <SecondaryButton type="button" onClick={() => authEnterDemoMode()}>
+            Demo/local mode
+          </SecondaryButton>
+        ) : null}
         <SecondaryButton type="button" onClick={() => authClearError()}>
           Clear auth errors
         </SecondaryButton>

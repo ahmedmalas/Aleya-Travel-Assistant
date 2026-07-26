@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import type { VaultFilterKey, VaultSortKey } from '../../store/vaultDomain';
-import { EmptyState, Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
+import {
+  EmptyState,
+  Field,
+  Panel,
+  PrimaryButton,
+  SecondaryButton,
+  StatusBanner,
+  inputClassName,
+} from './shared/ui';
 
 export function TripVaultPanel() {
   const {
@@ -16,12 +24,19 @@ export function TripVaultPanel() {
     openVaultTrip,
     createVaultTripEntry,
     archiveVaultTrip,
+    restoreVaultTrip,
+    updateVaultTripMeta,
     duplicateVaultTrip,
     deleteVaultTrip,
     toggleVaultFavourite,
     activeVaultTrip,
   } = useSharedTripStore();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [metaTripId, setMetaTripId] = useState<string | null>(null);
+  const [metaTags, setMetaTags] = useState('');
+  const [metaCover, setMetaCover] = useState('');
+  const [metaStyle, setMetaStyle] = useState('balanced');
+  const [metaStatus, setMetaStatus] = useState('draft');
 
   return (
     <Panel
@@ -59,6 +74,9 @@ export function TripVaultPanel() {
           >
             <option value="all">All</option>
             <option value="active">Active</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
             <option value="favourites">Favourites</option>
@@ -105,10 +123,12 @@ export function TripVaultPanel() {
                       {active ? ' · open' : ''}
                     </p>
                     <p className="mt-1 text-sm text-slate-300">
-                      {trip.destination || 'No destination'} · {trip.status} · {trip.departureDate || 'No dates'}
+                      {trip.destination || 'No destination'} · {trip.status} · {trip.travelStyle} ·{' '}
+                      {trip.departureDate || 'No dates'}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      Last opened {new Date(trip.lastOpenedAt).toLocaleString()}
+                      Tags: {(trip.tags ?? []).join(', ') || 'none'} · Last opened{' '}
+                      {new Date(trip.lastOpenedAt).toLocaleString()}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -124,14 +144,38 @@ export function TripVaultPanel() {
                     <SecondaryButton type="button" onClick={() => toggleVaultFavourite(trip.id)}>
                       {trip.favourite ? 'Unfavourite' : 'Favourite'}
                     </SecondaryButton>
+                    {trip.status === 'archived' ? (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          restoreVaultTrip(trip.id);
+                          setFeedback('Trip restored from archive.');
+                        }}
+                      >
+                        Restore
+                      </SecondaryButton>
+                    ) : (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          archiveVaultTrip(trip.id);
+                          setFeedback('Trip archived.');
+                        }}
+                      >
+                        Archive
+                      </SecondaryButton>
+                    )}
                     <SecondaryButton
                       type="button"
                       onClick={() => {
-                        archiveVaultTrip(trip.id);
-                        setFeedback('Trip archived.');
+                        setMetaTripId(trip.id);
+                        setMetaTags((trip.tags ?? []).join(', '));
+                        setMetaCover(trip.coverImageUrl || '');
+                        setMetaStyle(trip.travelStyle || 'balanced');
+                        setMetaStatus(trip.status);
                       }}
                     >
-                      Archive
+                      Edit meta
                     </SecondaryButton>
                     <SecondaryButton
                       type="button"
@@ -153,6 +197,80 @@ export function TripVaultPanel() {
                     </SecondaryButton>
                   </div>
                 </div>
+                {metaTripId === trip.id ? (
+                  <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 md:grid-cols-4">
+                    <Field label="Tags" htmlFor={`meta-tags-${trip.id}`}>
+                      <input
+                        id={`meta-tags-${trip.id}`}
+                        className={inputClassName}
+                        value={metaTags}
+                        onChange={(event) => setMetaTags(event.target.value)}
+                        placeholder="family, summer"
+                      />
+                    </Field>
+                    <Field label="Cover image URL" htmlFor={`meta-cover-${trip.id}`}>
+                      <input
+                        id={`meta-cover-${trip.id}`}
+                        className={inputClassName}
+                        value={metaCover}
+                        onChange={(event) => setMetaCover(event.target.value)}
+                      />
+                    </Field>
+                    <Field label="Travel style" htmlFor={`meta-style-${trip.id}`}>
+                      <select
+                        id={`meta-style-${trip.id}`}
+                        className={inputClassName}
+                        value={metaStyle}
+                        onChange={(event) => setMetaStyle(event.target.value)}
+                      >
+                        {['budget', 'balanced', 'luxury', 'family', 'adventure', 'romantic', 'business', 'accessible'].map(
+                          (style) => (
+                            <option key={style} value={style}>
+                              {style}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </Field>
+                    <Field label="Status" htmlFor={`meta-status-${trip.id}`}>
+                      <select
+                        id={`meta-status-${trip.id}`}
+                        className={inputClassName}
+                        value={metaStatus}
+                        onChange={(event) => setMetaStatus(event.target.value)}
+                      >
+                        {['draft', 'upcoming', 'active', 'completed', 'cancelled', 'archived'].map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <div className="md:col-span-4 flex gap-2">
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => {
+                          updateVaultTripMeta(trip.id, {
+                            tags: metaTags
+                              .split(',')
+                              .map((entry) => entry.trim())
+                              .filter(Boolean),
+                            coverImageUrl: metaCover.trim(),
+                            travelStyle: metaStyle as typeof trip.travelStyle,
+                            status: metaStatus as typeof trip.status,
+                          });
+                          setMetaTripId(null);
+                          setFeedback('Trip metadata updated.');
+                        }}
+                      >
+                        Save meta
+                      </PrimaryButton>
+                      <SecondaryButton type="button" onClick={() => setMetaTripId(null)}>
+                        Cancel
+                      </SecondaryButton>
+                    </div>
+                  </div>
+                ) : null}
               </article>
             );
           })

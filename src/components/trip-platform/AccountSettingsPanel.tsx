@@ -9,6 +9,7 @@ export function AccountSettingsPanel() {
     syncAccountSettings,
     exportAccountData,
     evaluateAccountDeletionGuard,
+    requestAccountDeletion,
     migrateLocalToCloud,
     cloudMigrationMessage,
     cloudRuntime,
@@ -145,7 +146,20 @@ export function AccountSettingsPanel() {
         ) : (
           <StatusBanner kind="info" message="Safeguards cleared — remote account deletion still requires a verified Supabase target." />
         )}
-        <SecondaryButton type="button" disabled={!deletion.canDelete} className="mt-3" onClick={() => setFeedback('Deletion blocked until verified cloud target is available.')}>
+        <SecondaryButton
+          type="button"
+          disabled={!deletion.canDelete}
+          className="mt-3"
+          onClick={() => {
+            void requestAccountDeletion(deleteConfirmation).then((result) => {
+              if (!result.ok) {
+                setFeedback(result.message);
+                return;
+              }
+              setFeedback(`${result.value.cloudMessage} Shared-trip ownership is preserved for collaborators; transfer ownership before hard-delete when required.`);
+            });
+          }}
+        >
           Request account deletion
         </SecondaryButton>
       </div>

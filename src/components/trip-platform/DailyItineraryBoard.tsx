@@ -22,6 +22,15 @@ const blankStop = (currency: string): Omit<TripStop, 'id' | 'day' | 'order'> => 
   cost: 0,
   currency,
   bookingReference: '',
+
+  locked: false,
+  travellerIds: [],
+  itemStatus: 'planned' as const,
+  latitude: '',
+  longitude: '',
+  supplierDetails: '',
+  reminderAt: '',
+  aiGenerated: false,
 });
 
 export function DailyItineraryBoard() {
@@ -35,6 +44,7 @@ export function DailyItineraryBoard() {
     deleteStop,
     duplicateStop,
     reorderStop,
+    toggleStopLock,
     canUndo,
     canRedo,
     undo,
@@ -163,6 +173,15 @@ export function DailyItineraryBoard() {
         <Field label="Booking reference" htmlFor="stop-ref">
           <input id="stop-ref" className={inputClassName} value={draft.bookingReference} onChange={(e) => setDraft({ ...draft, bookingReference: e.target.value })} />
         </Field>
+        <Field label="Latitude" htmlFor="stop-lat">
+          <input id="stop-lat" className={inputClassName} value={draft.latitude} onChange={(e) => setDraft({ ...draft, latitude: e.target.value })} />
+        </Field>
+        <Field label="Longitude" htmlFor="stop-lon">
+          <input id="stop-lon" className={inputClassName} value={draft.longitude} onChange={(e) => setDraft({ ...draft, longitude: e.target.value })} />
+        </Field>
+        <Field label="Supplier details" htmlFor="stop-supplier">
+          <input id="stop-supplier" className={inputClassName} value={draft.supplierDetails} onChange={(e) => setDraft({ ...draft, supplierDetails: e.target.value })} />
+        </Field>
         <div className="md:col-span-2 xl:col-span-4">
           <Field label="Notes" htmlFor="stop-notes">
             <textarea id="stop-notes" className={inputClassName} rows={2} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
@@ -227,9 +246,18 @@ export function DailyItineraryBoard() {
                     ) : (
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="font-medium text-slate-100">{stop.title}</p>
+                          <p className="font-medium text-slate-100">
+                            {stop.title}
+                            {stop.locked ? ' · locked' : ''}
+                            {stop.aiGenerated ? ' · AI suggestion' : ''}
+                          </p>
                           <p className="mt-1 text-xs text-slate-400">
-                            {[stop.startTime && stop.endTime ? `${stop.startTime}–${stop.endTime}` : null, stop.location, stop.category]
+                            {[
+                              stop.startTime && stop.endTime ? `${stop.startTime}–${stop.endTime}` : null,
+                              stop.location,
+                              stop.category,
+                              stop.itemStatus,
+                            ]
                               .filter(Boolean)
                               .join(' · ')}
                           </p>
@@ -237,6 +265,7 @@ export function DailyItineraryBoard() {
                           <p className="mt-1 text-xs text-slate-500">
                             Cost {stop.cost.toFixed(2)} {stop.currency}
                             {stop.bookingReference ? ` · Ref ${stop.bookingReference}` : ''}
+                            {stop.supplierDetails ? ` · ${stop.supplierDetails}` : ''}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -246,13 +275,22 @@ export function DailyItineraryBoard() {
                           <SecondaryButton type="button" onClick={() => reorderStop(stop.id, 'down')}>
                             Down
                           </SecondaryButton>
-                          <SecondaryButton type="button" onClick={() => setEditDraft(stop)}>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => {
+                              toggleStopLock(stop.id);
+                              setFeedback(stop.locked ? 'Item unlocked.' : 'Item locked.');
+                            }}
+                          >
+                            {stop.locked ? 'Unlock' : 'Lock'}
+                          </SecondaryButton>
+                          <SecondaryButton type="button" onClick={() => setEditDraft(stop)} disabled={stop.locked}>
                             Edit
                           </SecondaryButton>
                           <SecondaryButton type="button" onClick={() => duplicateStop(stop.id)}>
                             Duplicate
                           </SecondaryButton>
-                          <SecondaryButton type="button" onClick={() => deleteStop(stop.id)}>
+                          <SecondaryButton type="button" onClick={() => deleteStop(stop.id)} disabled={stop.locked}>
                             Delete
                           </SecondaryButton>
                         </div>

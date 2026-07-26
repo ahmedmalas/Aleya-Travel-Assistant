@@ -152,8 +152,15 @@ export const SUPABASE_TARGET_VERIFICATION = {
   forbiddenProjects: FORBIDDEN_SUPABASE_PROJECTS.map((project) => project.name),
   localMigrationsPath: 'supabase/migrations/',
   fallbackMode: 'local-demo',
-  remoteMigrationsApplied: false as const,
-  migrationsApplied: [] as const,
+  /** Applied on jtktojbvbmiewpntpvhe via PR #19 CLI evidence (2026-07-19). */
+  remoteMigrationsApplied: true as const,
+  migrationsApplied: [
+    '20260718120000_travel_buddy_foundation',
+    '20260718120100_travel_buddy_storage',
+    '20260719120000_travel_buddy_security_hardening',
+    '20260719120100_travel_buddy_launch_grants',
+    '20260719120200_travel_buddy_trips_returning_select',
+  ] as const,
   isolationProof: {
     passed: true as const,
     checks: 4,

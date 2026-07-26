@@ -23,7 +23,17 @@ import {
   type RankedOffer,
   type TripPackageDeal,
 } from '../../deal-engine';
+import { DatePickerField, todayIso } from '../ui/DatePickerField';
+import { LocationAutocomplete } from '../ui/LocationAutocomplete';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBadge, inputClassName } from './shared/ui';
+
+function extractAirportToken(value: string): string {
+  const match = value.match(/\(([A-Za-z]{3})\)/);
+  if (match?.[1]) return match[1].toUpperCase();
+  const trimmed = value.trim();
+  if (/^[A-Za-z]{3}$/.test(trimmed)) return trimmed.toUpperCase();
+  return value;
+}
 
 type DealTab = 'flights' | 'stays' | 'packages' | 'compare' | 'alerts' | 'discovery' | 'prefs' | 'trust';
 
@@ -283,32 +293,48 @@ export function DealEnginePanel() {
       {(tab === 'flights' || tab === 'stays' || tab === 'packages') && (
         <div className="mb-4 grid gap-3 md:grid-cols-4">
           <Field label="Origin" htmlFor="deal-origin">
-            <input id="deal-origin" className={inputClassName} value={origin} onChange={(e) => setOrigin(e.target.value)} />
+            <LocationAutocomplete
+              id="deal-origin"
+              mode="flight"
+              value={origin}
+              onChange={(value, suggestion) =>
+                setOrigin(suggestion?.airportCode ?? extractAirportToken(value))
+              }
+              placeholder="City or airport"
+            />
           </Field>
           <Field label="Destination" htmlFor="deal-destination">
-            <input
+            <LocationAutocomplete
               id="deal-destination"
-              className={inputClassName}
+              mode={tab === 'stays' ? 'place' : 'flight'}
               value={destination}
-              onChange={(e) => setDestination(e.target.value)}
+              onChange={(value, suggestion) => {
+                if (tab === 'stays') {
+                  setDestination(value);
+                  return;
+                }
+                setDestination(suggestion?.airportCode ?? extractAirportToken(value));
+              }}
+              placeholder={tab === 'stays' ? 'City or neighbourhood' : 'City or airport'}
             />
           </Field>
           <Field label="Depart" htmlFor="deal-depart">
-            <input
+            <DatePickerField
               id="deal-depart"
-              type="date"
-              className={inputClassName}
               value={departDate}
-              onChange={(e) => setDepartDate(e.target.value)}
+              min={todayIso()}
+              onChange={(next) => {
+                setDepartDate(next);
+                if (returnDate && next && returnDate < next) setReturnDate(next);
+              }}
             />
           </Field>
           <Field label="Return" htmlFor="deal-return">
-            <input
+            <DatePickerField
               id="deal-return"
-              type="date"
-              className={inputClassName}
               value={returnDate}
-              onChange={(e) => setReturnDate(e.target.value)}
+              min={departDate || todayIso()}
+              onChange={setReturnDate}
             />
           </Field>
         </div>

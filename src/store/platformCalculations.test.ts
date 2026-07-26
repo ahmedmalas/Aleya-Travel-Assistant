@@ -23,6 +23,12 @@ describe('platformCalculations', () => {
           date: '2026-07-01',
           paid: true,
           notes: '',
+
+          deposit: 0,
+          refund: 0,
+          sharedTravellerIds: [],
+          exchangeRateToTrip: 1,
+          attachmentName: '',
         },
         {
           id: 'e2',
@@ -33,6 +39,12 @@ describe('platformCalculations', () => {
           date: '2026-07-01',
           paid: false,
           notes: '',
+
+          deposit: 0,
+          refund: 0,
+          sharedTravellerIds: [],
+          exchangeRateToTrip: 1,
+          attachmentName: '',
         },
       ],
     });
@@ -60,6 +72,15 @@ describe('platformCalculations', () => {
         cost: 20,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
       {
         id: 'b',
@@ -75,6 +96,15 @@ describe('platformCalculations', () => {
         cost: 30,
         currency: 'USD',
         bookingReference: '',
+
+        locked: false,
+        travellerIds: [],
+        itemStatus: 'planned' as const,
+        latitude: '',
+        longitude: '',
+        supplierDetails: '',
+        reminderAt: '',
+        aiGenerated: false,
       },
     ]);
     expect(conflicts).toHaveLength(1);

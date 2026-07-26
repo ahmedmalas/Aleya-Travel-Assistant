@@ -94,6 +94,7 @@ describe('useTripStore vault slices 37-44', () => {
         notes: '',
         attachmentName: 'passport.pdf',
         attachmentMimeType: 'application/pdf',
+        storagePath: '',
       });
       result.current.inviteCollaborator({ name: 'Jamie', email: 'jamie@example.com', role: 'editor' });
       result.current.setGlobalSearchQuery('passport');

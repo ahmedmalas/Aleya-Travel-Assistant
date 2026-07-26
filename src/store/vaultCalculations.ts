@@ -79,11 +79,26 @@ export const filterAndSortVaultTrips = (
     next = next.filter((trip) => trip.status === 'draft');
   } else if (filter === 'active') {
     next = next.filter((trip) => trip.status === 'active');
+  } else if (filter === 'upcoming') {
+    next = next.filter((trip) => trip.status === 'upcoming');
+  } else if (filter === 'completed') {
+    next = next.filter((trip) => trip.status === 'completed');
+  } else if (filter === 'cancelled') {
+    next = next.filter((trip) => trip.status === 'cancelled');
   }
 
   if (query) {
     next = next.filter((trip) => {
-      const haystack = [trip.tripName, trip.destination, trip.notes, trip.purpose, trip.status]
+      const haystack = [
+        trip.tripName,
+        trip.destination,
+        trip.notes,
+        trip.purpose,
+        trip.status,
+        trip.travelStyle,
+        ...(trip.tags ?? []),
+        ...(trip.destinationsList ?? []),
+      ]
         .join(' ')
         .toLowerCase();
       return haystack.includes(query);
@@ -119,7 +134,11 @@ export const searchVault = (trips: VaultTrip[], query: string): GlobalSearchHit[
 
   const hits: GlobalSearchHit[] = [];
   for (const trip of trips) {
-    if (matches(`${trip.tripName} ${trip.destination} ${trip.notes}`)) {
+    if (
+      matches(
+        `${trip.tripName} ${trip.destination} ${trip.notes} ${(trip.tags ?? []).join(' ')} ${(trip.destinationsList ?? []).join(' ')}`,
+      )
+    ) {
       hits.push({
         id: `trip-${trip.id}`,
         tripId: trip.id,
@@ -129,8 +148,36 @@ export const searchVault = (trips: VaultTrip[], query: string): GlobalSearchHit[
         subtitle: trip.destination || 'No destination',
       });
     }
+    for (const destination of trip.destinationsList ?? []) {
+      if (matches(destination)) {
+        hits.push({
+          id: `destination-list-${trip.id}-${destination}`,
+          tripId: trip.id,
+          tripName: trip.tripName,
+          entity: 'destination',
+          title: destination,
+          subtitle: 'Trip destination',
+        });
+      }
+    }
+    for (const profile of trip.destinations ?? []) {
+      if (
+        matches(
+          `${profile.name} ${profile.country} ${profile.city} ${profile.practicalNotes} ${profile.safetyNotes}`,
+        )
+      ) {
+        hits.push({
+          id: `destination-${trip.id}-${profile.id}`,
+          tripId: trip.id,
+          tripName: trip.tripName,
+          entity: 'destination',
+          title: profile.name,
+          subtitle: profile.country || 'Destination profile',
+        });
+      }
+    }
     for (const stop of trip.stops) {
-      if (matches(`${stop.title} ${stop.location} ${stop.notes} ${stop.bookingReference}`)) {
+      if (matches(`${stop.title} ${stop.location} ${stop.notes} ${stop.bookingReference} ${stop.supplierDetails}`)) {
         hits.push({
           id: `stop-${trip.id}-${stop.id}`,
           tripId: trip.id,
@@ -180,14 +227,46 @@ export const searchVault = (trips: VaultTrip[], query: string): GlobalSearchHit[
       }
     }
     for (const traveller of trip.travellers) {
-      if (matches(`${traveller.name} ${traveller.nationality} ${traveller.loyaltyPrograms}`)) {
+      if (
+        matches(
+          `${traveller.name} ${traveller.preferredName} ${traveller.nationality} ${traveller.loyaltyPrograms} ${traveller.homeAirport} ${traveller.travelPreferences}`,
+        )
+      ) {
         hits.push({
           id: `traveller-${trip.id}-${traveller.id}`,
           tripId: trip.id,
           tripName: trip.tripName,
           entity: 'traveller',
-          title: traveller.name,
+          title: traveller.preferredName || traveller.name,
           subtitle: traveller.nationality || 'Traveller profile',
+        });
+      }
+    }
+    for (const entry of trip.journalEntries ?? []) {
+      if (matches(`${entry.title} ${entry.notes} ${entry.highlights} ${entry.locationName}`)) {
+        hits.push({
+          id: `note-${trip.id}-${entry.id}`,
+          tripId: trip.id,
+          tripName: trip.tripName,
+          entity: 'note',
+          title: entry.title || 'Trip note',
+          subtitle: 'Journal note',
+        });
+      }
+    }
+    for (const transport of trip.groundTransport ?? []) {
+      if (
+        matches(
+          `${transport.mode} ${transport.provider} ${transport.notes} ${transport.pickupLocation} ${transport.dropoffLocation}`,
+        )
+      ) {
+        hits.push({
+          id: `service-${trip.id}-${transport.id}`,
+          tripId: trip.id,
+          tripName: trip.tripName,
+          entity: 'service',
+          title: `${transport.mode} · ${transport.provider || 'provider tbd'}`,
+          subtitle: 'Ground transport planning',
         });
       }
     }
