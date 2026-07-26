@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import {
+  createEmptyConversationState,
+  handleTravelChatMessage,
+  type ConversationState,
+} from '../../features/aleya-intelligence';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
@@ -45,58 +50,10 @@ const emptyWorkspace = (): ConciergeWorkspace => ({
   approvalState: 'draft',
 });
 
-function buildResponse(question: string, tripName: string, destination: string, workspace: ConciergeWorkspace): ConciergeMessage {
-  const q = question.toLowerCase();
-  let title = 'Trip planning suggestion';
-  let detail =
-    'I can help organise flights, stays, itinerary days, transport, dining, and local activities. Live supplier inventory is not connected — recommendations are planning guidance only.';
-
-  if (q.includes('flight') || q.includes('airport')) {
-    title = 'Flight planning';
-    detail = `For ${destination || 'your trip'}, set origin/destination with airport autocomplete, pick dates on the calendar, then save the search to the Flights workspace. Compare options externally and store the chosen segment here.`;
-  } else if (q.includes('hotel') || q.includes('stay') || q.includes('accommodation')) {
-    title = 'Hotel planning';
-    detail = `Use Hotels to capture destination, check-in/out, guests, and preferences for ${tripName || 'this trip'}. Save the plan, then attach a confirmation once you book.`;
-  } else if (q.includes('itinerary') || q.includes('day') || q.includes('schedule')) {
-    title = 'Itinerary creation';
-    detail = `Open Itinerary or AI Planning. Pace preference: ${workspace.pace || 'balanced'}. Must-do: ${workspace.mustDo || 'none listed yet'}.`;
-  } else if (q.includes('restaurant') || q.includes('food') || q.includes('dining')) {
-    title = 'Dining ideas';
-    detail = `Restaurant notes: ${workspace.restaurants || 'none yet'}. Shortlist neighbourhood restaurants near ${destination || 'your base'} and add dinner blocks to the itinerary. Not a live reservation system.`;
-  } else if (q.includes('transfer') || q.includes('taxi') || q.includes('transport') || q.includes('train')) {
-    title = 'Transport planning';
-    detail = `Transport notes: ${workspace.transport || 'none yet'}. Use Transport / Move services to capture pickup, drop-off, mode, and timing.`;
-  } else if (q.includes('accessib')) {
-    title = 'Accessibility planning';
-    detail = `Accessibility requirements: ${workspace.accessibility || 'none listed'}. Prefer step-free transfers, rest buffers, and accessible lodging notes.`;
-  } else if (q.includes('family')) {
-    title = 'Family requirements';
-    detail = `Family notes: ${workspace.family || 'none listed'}. Keep transitions short and include shared downtime.`;
-  } else if (q.includes('backup') || q.includes('emergency')) {
-    title = 'Backup / emergency alternatives';
-    detail = `Backup plans: ${workspace.backupPlans || 'none'}. Emergency alternatives: ${workspace.emergencyAlternatives || 'none'}.`;
-  } else if (q.includes('cruise')) {
-    title = 'Cruise planning';
-    detail = 'Record sailing window, ports, cabin preferences, and budget in Travel services → Cruises, then add sea days to the itinerary.';
-  } else if (q.includes('budget') || q.includes('cost') || q.includes('money')) {
-    title = 'Budget organisation';
-    detail = 'Track estimates in Budget and mark planned vs confirmed spend. No live fare quotes are shown here.';
-  } else if (q.includes('nearby') || q.includes('activity') || q.includes('things to do')) {
-    title = 'Nearby recommendations';
-    detail = `Based on ${destination || 'your destination'}, add morning/afternoon activity blocks, keep travel times realistic, and pin places in Maps. Avoid list: ${workspace.avoid || 'none'}.`;
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    role: 'assistant',
-    text: detail,
-    recommendation: { title, detail },
-  };
-}
-
 export function ConciergePlanPanel() {
   const { activeVaultTrip, addStop, canEditTrip, updateVaultTripMeta } = useSharedTripStore();
   const [question, setQuestion] = useState('');
+  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const [workspace, setWorkspace] = useState<ConciergeWorkspace>(() => {
     try {
       const match = /\[concierge-workspace\]([\s\S]*?)\[\/concierge-workspace\]/.exec(activeVaultTrip.notes || '');
@@ -131,14 +88,32 @@ export function ConciergePlanPanel() {
     setFeedback('Concierge workspace saved to trip notes.');
   };
 
-  const ask = () => {
+  const ask = async () => {
     const trimmed = question.trim();
     if (!trimmed) return;
     const userMessage: ConciergeMessage = { id: crypto.randomUUID(), role: 'user', text: trimmed };
-    const assistant = buildResponse(trimmed, activeVaultTrip.tripName, activeVaultTrip.destination, workspace);
-    setMessages((current) => [...current, userMessage, assistant]);
     setQuestion('');
     setFeedback(null);
+    const seeded =
+      activeVaultTrip.destination && !conversationRef.current.destination
+        ? {
+            ...conversationRef.current,
+            destination: { value: activeVaultTrip.destination, source: 'confirmed' as const },
+          }
+        : conversationRef.current;
+    const result = handleTravelChatMessage({
+      message: trimmed,
+      previousState: seeded,
+    });
+    conversationRef.current = result.state;
+    const title = result.stage === 'clarify' ? 'Need a detail' : 'Concierge planning update';
+    const assistant: ConciergeMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: result.reply,
+      recommendation: { title, detail: result.reply },
+    };
+    setMessages((current) => [...current, userMessage, assistant]);
   };
 
   const saveRecommendation = (message: ConciergeMessage) => {
@@ -236,7 +211,7 @@ export function ConciergePlanPanel() {
             placeholder="e.g. Help me plan an accessible family day with backup options"
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') ask();
+              if (event.key === 'Enter') void ask();
             }}
           />
         </Field>

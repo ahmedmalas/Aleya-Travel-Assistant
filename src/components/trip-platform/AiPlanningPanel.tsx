@@ -1,5 +1,10 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import type { AiPlanMode, AiTravelPlan } from '../../features/ai-planning/aiPlanning';
+import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
+import {
+  createEmptyConversationState,
+  handleTravelChatMessage,
+  type ConversationState,
+} from '../../features/aleya-intelligence';
 import { detectUserCurrency } from '../../lib/currency';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
@@ -37,35 +42,11 @@ const getTravellerCurrency = () => {
   return savedCurrency?.trim().toUpperCase() || detectUserCurrency();
 };
 
-const inferMode = (message: string): AiPlanMode => {
-  const value = message.toLowerCase();
-  if (/family|children|kids|child|parents/.test(value)) return 'family';
-  if (/accessible|accessibility|wheelchair|mobility|step-free/.test(value)) return 'accessible';
-  if (/business|work|meeting|conference/.test(value)) return 'business';
-  if (/romantic|honeymoon|anniversary|couple/.test(value)) return 'romantic';
-  if (/adventure|hike|outdoor|active|thrill/.test(value)) return 'adventure';
-  if (/cheap|budget|low cost|save money|affordable/.test(value)) return 'low-cost';
-  if (/luxury|premium|five star|first class/.test(value)) return 'luxury';
-  if (/relax|slow|easy|rest|quiet|light|leisure/.test(value)) return 'leisure';
-  return 'complete';
-};
-
-const isGreeting = (message: string) => /^(hi|hello|hey|good morning|good afternoon|good evening|hiya|hi aleya|hello aleya)[!,.\s]*$/i.test(message.trim());
-const isThanks = (message: string) => /^(thanks|thank you|thankyou|cheers|great|perfect|okay thanks)[!,.\s]*$/i.test(message.trim());
-const isCapabilityQuestion = (message: string) => /what can you do|how can you help|who are you|what are you/i.test(message);
-const hasPlanningIntent = (message: string) => /\b(plan|build|create|make|design|organise|organize|prepare|revise|change|improve)\b.*\b(trip|holiday|vacation|journey|itinerary|travel|honeymoon|weekend)\b|\b(itinerary|trip plan|travel plan)\b/i.test(message);
-const hasDestination = (message: string, destination: string) => destination.trim().length > 0 || /\b(?:to|in|visit|visiting|going to)\s+[a-z][a-z\s-]{2,}/i.test(message);
-
-const formatPlanReply = (plan: AiTravelPlan, request: string) => {
-  const budget = `${plan.budgetSuggestion.amount.toLocaleString('en-AU')} ${plan.budgetSuggestion.currency}`;
-  return `I’ve prepared a ${plan.days.length}-day starting plan based on “${request}”, using an estimated budget of ${budget}. Have a look and tell me what you want changed.`;
-};
-
 const STARTERS = [
   'I want to visit Japan next April',
   'Find me affordable flights to Bali',
-  'Do Australians need a visa for Vietnam?',
-  'Build a luxury Europe itinerary in AUD',
+  'I need a hotel in Singapore next weekend',
+  'Plan a family trip to Queenstown with car hire',
 ];
 
 export function AiPlanningPanel() {
@@ -74,6 +55,7 @@ export function AiPlanningPanel() {
   const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
   const [input, setInput] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
@@ -82,6 +64,7 @@ export function AiPlanningPanel() {
       createdAt: new Date().toISOString(),
     },
   ]);
+  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
 
@@ -90,50 +73,48 @@ export function AiPlanningPanel() {
     window.setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
   };
 
-  const sendMessage = (event?: FormEvent) => {
+  const sendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
-    if (!request) return;
+    if (!request || busy) return;
 
     setMessages((current) => [...current, { id: createId(), role: 'user', text: request, createdAt: new Date().toISOString() }]);
     setInput('');
     setFeedback(null);
+    setBusy(true);
 
-    if (isGreeting(request)) {
-      reply(travellerName ? `Hi ${travellerName}! What are we working on today—flights, hotels, visas, an itinerary, or another travel question?` : 'Hi! What are we working on today—flights, hotels, visas, an itinerary, or another travel question?');
-      return;
-    }
-    if (isThanks(request)) {
-      reply('You’re welcome. What would you like to do next?');
-      return;
-    }
-    if (isCapabilityQuestion(request)) {
-      reply('I can help you research destinations, compare travel options, understand visa requirements, plan an itinerary, work within a budget, organise bookings, and revise plans through normal conversation.');
-      return;
-    }
-    if (!hasPlanningIntent(request)) {
-      reply('I understand. Tell me a little more about what you need, and I’ll help without creating an itinerary unless you ask me to.');
-      return;
-    }
-    if (!hasDestination(request, trip.destination ?? '')) {
-      reply('Absolutely. Which destination or countries are you considering? You can also include your dates, departure city, travellers, budget and preferred pace.');
-      return;
-    }
+    try {
+      const result = handleTravelChatMessage({
+        message: request,
+        previousState: conversationRef.current,
+        travellerName,
+      });
+      conversationRef.current = result.state;
 
-    const travellerCurrency = getTravellerCurrency();
-    const generated = generateAndPreviewAiPlan(inferMode(request));
-    const plan: AiTravelPlan = {
-      ...generated,
-      budgetSuggestion: { ...generated.budgetSuggestion, currency: travellerCurrency },
-    };
-    reply(formatPlanReply(plan, request), plan);
+      // Phase 1: only generate an itinerary when the user explicitly asked for one.
+      let plan: AiTravelPlan | undefined;
+      if (result.shouldGenerateItinerary && result.explicitItineraryIntent) {
+        const travellerCurrency = getTravellerCurrency();
+        const generated = generateAndPreviewAiPlan('complete');
+        plan = {
+          ...generated,
+          budgetSuggestion: { ...generated.budgetSuggestion, currency: travellerCurrency },
+        };
+      }
+
+      reply(result.reply, plan);
+    } catch (error) {
+      reply(error instanceof Error ? error.message : 'Something went wrong while processing your request.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30" aria-labelledby="aleya-assistant-title">
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
         <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">Aleya AI Assistant</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Ask naturally. Aleya will listen first and only create plans when you request one.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the Aleya Intelligence Core — requirements persist across turns; itineraries only when you ask. Search comes in a later phase.</p>
       </header>
 
       {feedback ? <div className="px-5 pt-4 md:px-7"><StatusBanner kind="info" message={feedback} /></div> : null}
@@ -171,8 +152,8 @@ export function AiPlanningPanel() {
       <form onSubmit={sendMessage} className="border-t border-white/10 bg-slate-950/70 p-4 md:p-5">
         <label className="sr-only" htmlFor="aleya-chat-input">Message Aleya</label>
         <div className="flex items-end gap-3 rounded-3xl border border-white/15 bg-slate-950 px-4 py-3 focus-within:border-sky-300/70 focus-within:ring-2 focus-within:ring-sky-300/20">
-          <textarea id="aleya-chat-input" rows={2} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } }} placeholder="Message Aleya…" className="min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-slate-500" />
-          <button type="submit" disabled={!input.trim()} className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-40">Send</button>
+          <textarea id="aleya-chat-input" rows={2} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Message Aleya…" className="min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-slate-500" />
+          <button type="submit" disabled={!input.trim() || busy} className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-40">{busy ? '…' : 'Send'}</button>
         </div>
       </form>
 

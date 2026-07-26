@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import {
+  createEmptyConversationState,
+  handleTravelChatMessage,
+  type ConversationState,
+} from '../features/aleya-intelligence';
 
 type PreviewMessage = {
   id: string;
@@ -13,50 +18,48 @@ const STARTERS = [
   'Suggest cruise and leisure options for a coastal break',
 ];
 
-function respond(question: string): string {
-  const q = question.toLowerCase();
-  if (q.includes('flight') || q.includes('hotel')) {
-    return 'Open Flights and Hotels in the trip platform for live location autocomplete and calendar dates. Save plans to your trip — live inventory is not connected yet, so treat results as planning requirements, not bookings.';
-  }
-  if (q.includes('itinerary') || q.includes('day')) {
-    return 'Use Itinerary Builder to add days, activities, times, locations, and notes. Concierge Plan can drop recommendations into the same itinerary.';
-  }
-  if (q.includes('cruise') || q.includes('leisure') || q.includes('activity')) {
-    return 'Travel services under Explore and Book let you capture cruise, leisure, tours, and adventure preferences, then save them as planning requests.';
-  }
-  if (q.includes('transfer') || q.includes('taxi') || q.includes('transport') || q.includes('train')) {
-    return 'Move services cover taxis, rideshare, trains, buses, ferries, and airport transfers. Capture pickup details and save planned ground transport to your trip.';
-  }
-  if (q.includes('budget') || q.includes('currency') || q.includes('pack')) {
-    return 'Budget Intelligence, packing lists, documents, and the booking organiser are available now for trip organisation. No fake fares or confirmations are shown.';
-  }
-  if (q.includes('nearby') || q.includes('restaurant') || q.includes('nightlife') || q.includes('beach')) {
-    return 'Explore categories cover restaurants, nearby recommendations, beaches, nightlife, family activities, and events. Save shortlists into your itinerary or journal.';
-  }
-  return 'Travel Buddy helps with flight/hotel planning, itineraries, destination discovery, nearby recommendations, transport, cruises, leisure, budgeting, documents, and concierge-style questions. Open the trip platform below — features are labelled Available now, Planning tool, or Coming soon. Live supplier booking is not claimed.';
-}
-
 export function AssistantPreview() {
   const [question, setQuestion] = useState(STARTERS[0]!);
+  const [busy, setBusy] = useState(false);
+  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const [messages, setMessages] = useState<PreviewMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Ask about flights, hotels, itineraries, destinations, nearby ideas, transport, cruises, leisure, budgets, or booking organisation. This preview uses the same planning guidance as the live app — it does not invent live availability or confirm bookings.',
+      text: 'Ask about flights, hotels, itineraries, destinations, nearby ideas, transport, cruises, leisure, budgets, or booking organisation. Every message goes through the Aleya Intelligence Layer — it does not invent live availability or confirm bookings.',
     },
   ]);
 
-  const canAsk = useMemo(() => question.trim().length > 0, [question]);
+  const canAsk = useMemo(() => question.trim().length > 0 && !busy, [question, busy]);
 
-  const ask = (value = question) => {
+  const ask = async (value = question) => {
     const trimmed = value.trim();
-    if (!trimmed) return;
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: 'user', text: trimmed },
-      { id: crypto.randomUUID(), role: 'assistant', text: respond(trimmed) },
-    ]);
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text: trimmed }]);
     setQuestion('');
+    try {
+      const result = handleTravelChatMessage({
+        message: trimmed,
+        previousState: conversationRef.current,
+      });
+      conversationRef.current = result.state;
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: 'assistant', text: result.reply },
+      ]);
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: error instanceof Error ? error.message : 'Unable to process that request.',
+        },
+      ]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -72,14 +75,14 @@ export function AssistantPreview() {
         </span>
       </div>
       <p className="mt-3 text-sm text-slate-300">
-        Interactive preview of Travel Buddy planning help. Connected to the same workflows in the trip platform below.
+        Interactive preview powered by the Aleya Intelligence Layer. Connected to the same workflows in the trip platform below.
       </p>
       <div className="mt-5 max-h-64 space-y-3 overflow-y-auto text-sm text-slate-200">
         {messages.map((message) => (
           <p
             key={message.id}
             className={`rounded-2xl p-4 ${
-              message.role === 'user' ? 'bg-slate-900' : 'bg-sky-400/10 text-sky-100'
+              message.role === 'user' ? 'bg-slate-950' : 'bg-sky-400/10 text-sky-100'
             }`}
           >
             {message.text}
@@ -92,7 +95,7 @@ export function AssistantPreview() {
             key={starter}
             type="button"
             className="rounded-full border border-white/15 px-3 py-1.5 text-left text-xs text-slate-200 hover:border-sky-300/50"
-            onClick={() => ask(starter)}
+            onClick={() => void ask(starter)}
           >
             {starter}
           </button>
@@ -109,14 +112,14 @@ export function AssistantPreview() {
           placeholder="Ask about flights, hotels, itineraries…"
           onChange={(event) => setQuestion(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') ask();
+            if (event.key === 'Enter') void ask();
           }}
         />
         <button
           type="button"
           disabled={!canAsk}
           className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 transition hover:bg-sky-400/30 disabled:cursor-not-allowed disabled:opacity-40"
-          onClick={() => ask()}
+          onClick={() => void ask()}
         >
           Ask
         </button>
