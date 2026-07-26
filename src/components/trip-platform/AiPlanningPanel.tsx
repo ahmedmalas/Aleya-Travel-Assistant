@@ -15,14 +15,26 @@ type ChatMessage = {
 const PROFILE_STORAGE_KEY = 'aleya-travel:user-profile:v1';
 const createId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
-const getTravellerCurrency = () => {
+const readSavedProfile = () => {
   try {
     const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
-    const savedCurrency = stored ? (JSON.parse(stored) as { currency?: string }).currency : '';
-    return savedCurrency?.trim().toUpperCase() || detectUserCurrency();
+    return stored ? (JSON.parse(stored) as { fullName?: string; preferredName?: string; currency?: string }) : {};
   } catch {
-    return detectUserCurrency();
+    return {};
   }
+};
+
+const getTravellerName = () => {
+  const profile = readSavedProfile();
+  const preferredName = profile.preferredName?.trim();
+  if (preferredName) return preferredName;
+  const fullName = profile.fullName?.trim();
+  return fullName ? fullName.split(/\s+/)[0] : '';
+};
+
+const getTravellerCurrency = () => {
+  const savedCurrency = readSavedProfile().currency;
+  return savedCurrency?.trim().toUpperCase() || detectUserCurrency();
 };
 
 const inferMode = (message: string): AiPlanMode => {
@@ -58,13 +70,15 @@ const STARTERS = [
 
 export function AiPlanningPanel() {
   const { trip, generateAndPreviewAiPlan, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
+  const travellerName = getTravellerName();
+  const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
   const [input, setInput] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
       role: 'aleya',
-      text: `Hi${trip.travellers?.[0]?.name ? ` ${trip.travellers[0].name}` : ''}. How can I help with your travel today?`,
+      text: greeting,
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -86,7 +100,7 @@ export function AiPlanningPanel() {
     setFeedback(null);
 
     if (isGreeting(request)) {
-      reply(`Hi${trip.travellers?.[0]?.name ? ` ${trip.travellers[0].name}` : ''}! What are we working on today—flights, hotels, visas, an itinerary, or another travel question?`);
+      reply(travellerName ? `Hi ${travellerName}! What are we working on today—flights, hotels, visas, an itinerary, or another travel question?` : 'Hi! What are we working on today—flights, hotels, visas, an itinerary, or another travel question?');
       return;
     }
     if (isThanks(request)) {
