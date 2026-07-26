@@ -1,5 +1,4 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { SectionCard } from './SectionCard';
 import { TripPlatform } from './trip-platform/TripPlatform';
 import { CurrencyBootstrap } from './CurrencyBootstrap';
 import { AccountDrawer } from './AccountDrawer';
@@ -7,17 +6,18 @@ import { MoneyServicesPanel } from './MoneyServicesPanel';
 import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
 import { TripStoreProvider } from '../store/TripStoreContext';
-import { travelSections } from '../data/sections';
 import { detectUserCurrency } from '../lib/currency';
 
 const normaliseAirport = (value: string) => value.trim().toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
 const compactDate = (value: string) => value.replaceAll('-', '').slice(2);
 const today = new Date().toISOString().split('T')[0];
 type CabinClass = 'economy' | 'premiumeconomy' | 'business' | 'first';
+type WorkspaceView = 'visa' | 'money' | 'trips' | null;
 
 function CustomerApp() {
   const [entered, setEntered] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [workspace, setWorkspace] = useState<WorkspaceView>(null);
   const [origin, setOrigin] = useState('SYD');
   const [destination, setDestination] = useState('MEL');
   const [departDate, setDepartDate] = useState('');
@@ -36,18 +36,12 @@ function CustomerApp() {
     input.focus();
     if ('showPicker' in input) input.showPicker();
   };
-  const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const openPlatformTool = (tabId: 'stays' | 'itinerary') => {
-    const groupLabel = tabId === 'stays' ? 'Book' : 'Plan';
-    scrollToSection('trip-platform');
-    window.setTimeout(() => {
-      Array.from(document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Platform sections"] button')).find((button) => button.textContent?.trim() === groupLabel)?.click();
-      window.setTimeout(() => {
-        document.getElementById(`trip-platform-tab-${tabId}`)?.click();
-        document.getElementById(`trip-platform-panel-${tabId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }, 100);
+
+  const openWorkspace = (view: Exclude<WorkspaceView, null>) => {
+    setWorkspace(view);
+    window.setTimeout(() => document.getElementById('selected-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
   const searchFlights = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const from = normaliseAirport(origin);
@@ -60,70 +54,78 @@ function CustomerApp() {
     const inbound = returnDate ? `/${compactDate(returnDate)}` : '';
     window.open(`https://www.skyscanner.com.au/transport/flights/${from}/${to}/${outbound}${inbound}/?adultsv2=${travellers}&cabinclass=${cabinClass}&currency=${preferredCurrency}`, '_blank', 'noopener,noreferrer');
   };
+
   const signOut = () => {
     setAccountOpen(false);
+    setWorkspace(null);
     setEntered(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const shortcutClass = 'rounded-full bg-white/10 px-4 py-2 text-slate-300 hover:bg-sky-400/20 hover:text-white';
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <CurrencyBootstrap />
       <style>{`.customer-trip-platform > section > div:first-child > div:first-child { display: none; } .customer-trip-platform > section > div:first-child > p[role='status'][class*='border-sky-300'] { display: none; }`}</style>
+
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <a href="#top" className="block" aria-label="Aleya Travel home"><p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p><h1 className="mt-1 text-xl font-bold">AI Travel Assistant</h1></a>
-          <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Customer navigation">
-            <button type="button" onClick={() => scrollToSection('visa-entry')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Visas & entry</button>
-            <button type="button" onClick={() => scrollToSection('money-services')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Money & ATMs</button>
-            <button type="button" onClick={() => scrollToSection('flight-search')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Search</button>
-            <button type="button" onClick={() => scrollToSection('trip-platform')} className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30">My trips</button>
-            <button type="button" onClick={() => setAccountOpen(true)} className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] pl-2 pr-4 text-sm text-white hover:border-sky-300" aria-label="Open my account"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-400 font-bold text-slate-950">A</span><span className="hidden sm:inline">Ahmed</span></button>
+          <button type="button" onClick={() => { setWorkspace(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="block text-left" aria-label="Aleya Travel home">
+            <p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p>
+            <h1 className="mt-1 text-xl font-bold">Travel made simple</h1>
+          </button>
+          <nav className="flex items-center justify-end gap-2" aria-label="Customer navigation">
+            <button type="button" onClick={() => openWorkspace('visa')} className="hidden rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300 sm:inline-flex">Visas</button>
+            <button type="button" onClick={() => openWorkspace('money')} className="hidden rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300 md:inline-flex">Money</button>
+            <button type="button" onClick={() => openWorkspace('trips')} className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30">My trips</button>
+            <button type="button" onClick={() => setAccountOpen(true)} className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] pl-2 pr-3 text-sm text-white hover:border-sky-300" aria-label="Open account menu">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-400 font-bold text-slate-950">A</span>
+            </button>
           </nav>
         </div>
       </header>
 
       <main id="top">
-        <section className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Welcome to your travel dashboard</p>
-            <h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Where will Aleya take you next?</h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one personalised place.</p>
-            <div className="mt-8 flex flex-wrap gap-3 text-sm">
-              <button type="button" onClick={() => scrollToSection('flight-search')} className={shortcutClass}>Flights</button>
-              <button type="button" onClick={() => openPlatformTool('stays')} className={shortcutClass}>Hotels</button>
-              <button type="button" onClick={() => openPlatformTool('itinerary')} className={shortcutClass}>Itineraries</button>
-              <button type="button" onClick={() => scrollToSection('visa-entry')} className={shortcutClass}>Visa requirements</button>
-              <button type="button" onClick={() => scrollToSection('money-services')} className={shortcutClass}>Exchange & ATMs</button>
-            </div>
+        <section className="mx-auto max-w-7xl px-6 py-12 lg:py-20">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-sky-300">Search. Book. Travel.</p>
+            <h2 className="mt-5 text-4xl font-black tracking-tight text-white md:text-6xl">Where do you want to go?</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">Compare flights in your regional currency and keep the rest of your journey organised in one place.</p>
           </div>
 
-          <form id="flight-search" onSubmit={searchFlights} className="scroll-mt-28 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30">
-            <p className="text-sm uppercase tracking-[0.32em] text-sky-300">Quick search</p><h3 className="mt-2 text-2xl font-bold">Find available flights</h3>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onFocus={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button></div></label>
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">Return (optional)</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onFocus={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button></div></label>
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">Adult travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
-              <label className="block text-sm text-slate-200"><span className="mb-2 block">Cabin class</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
+          <form id="flight-search" onSubmit={searchFlights} className="mx-auto mt-10 max-w-5xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Cabin</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
-            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300">Search flights in {preferredCurrency}</button>
-            <p className="mt-3 text-xs leading-5 text-slate-400">Results use your regional currency ({preferredCurrency}) and selected cabin class.</p>
+            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-sky-300">Search flights</button>
+            <p className="mt-3 text-center text-xs text-slate-400">Prices shown in {preferredCurrency}.</p>
           </form>
+
+          <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2 text-sm">
+            <button type="button" onClick={() => openWorkspace('trips')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Hotels & itineraries</button>
+            <button type="button" onClick={() => openWorkspace('visa')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Visa requirements</button>
+            <button type="button" onClick={() => openWorkspace('money')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Exchange & ATMs</button>
+          </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-5 px-6 pb-12 md:grid-cols-2 lg:grid-cols-3">{travelSections.map((section) => <SectionCard key={section.title} section={section} />)}</section>
-        <VisaEntryPanel />
-        <MoneyServicesPanel />
-        <div id="trip-platform" className="customer-trip-platform scroll-mt-28">
-          <div className="mx-auto max-w-7xl px-6 pb-5"><p className="text-sm font-semibold uppercase tracking-[0.32em] text-sky-300">My trips</p><h2 className="mt-2 text-3xl font-bold text-white md:text-4xl">Plan and manage your journey</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Ask Aleya for help, organise your itinerary, manage bookings and keep everything for your journey together.</p></div>
-          <TripPlatform />
-        </div>
+        {workspace ? (
+          <section id="selected-workspace" className="scroll-mt-24 border-t border-white/10 bg-slate-950/70 pt-8">
+            <div className="mx-auto flex max-w-7xl justify-end px-6">
+              <button type="button" onClick={() => { setWorkspace(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Close</button>
+            </div>
+            {workspace === 'visa' ? <VisaEntryPanel /> : null}
+            {workspace === 'money' ? <MoneyServicesPanel /> : null}
+            {workspace === 'trips' ? <div className="customer-trip-platform"><TripPlatform /></div> : null}
+          </section>
+        ) : null}
       </main>
-      <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-slate-500">Aleya Travel — search, plan and manage your journey.</footer>
+
+      <footer className="border-t border-white/10 px-6 py-6 text-center text-sm text-slate-500">Aleya Travel</footer>
       {accountOpen ? <AccountDrawer onClose={() => setAccountOpen(false)} onSignOut={signOut} /> : null}
     </div>
   );
