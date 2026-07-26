@@ -1,4 +1,5 @@
 import type { ExtractionPatch } from './extract';
+import { matchAreaName, PLACES } from './places';
 import type {
   ApproximateDate,
   ConversationState,
@@ -7,6 +8,49 @@ import type {
   TimePreference,
 } from './types';
 import { withConfidence } from './confidence';
+
+const NON_DESTINATION_INSTEAD = new Set([
+  'one',
+  'a',
+  'day',
+  'earlier',
+  'later',
+  'sometime',
+  'maybe',
+  'please',
+  'four',
+  'three',
+  'two',
+  'five',
+  'virgin',
+  'qantas',
+  'jetstar',
+  'emirates',
+  'cathay',
+]);
+
+function isKnownDestinationCandidate(raw: string): boolean {
+  const lower = raw.trim().toLowerCase();
+  if (!lower || NON_DESTINATION_INSTEAD.has(lower)) return false;
+  if (/\bday\b/i.test(lower)) return false;
+  if (matchAreaName(raw)) return true;
+  return PLACES.some((p) => p.name.toLowerCase() === lower || p.aliases.includes(lower));
+}
+
+/** Resolve "X instead" to a known place, ignoring leading hedges like "Maybe Bali". */
+function resolveInsteadPlaceCandidate(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (isKnownDestinationCandidate(trimmed)) return trimmed;
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length > 1) {
+    const last = parts[parts.length - 1]!;
+    if (isKnownDestinationCandidate(last)) return last;
+    const lastTwo = parts.slice(-2).join(' ');
+    if (isKnownDestinationCandidate(lastTwo)) return lastTwo;
+  }
+  return undefined;
+}
 
 function addDaysIso(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -130,7 +174,10 @@ export function resolveReferences(
     if (previous.accommodationArea) next.accommodationArea = previous.accommodationArea;
     if (previous.hotelPreferences) next.hotelPreferences = previous.hotelPreferences;
     if (!next.requestedServices) next.requestedServices = [];
-    if (!previous.requestedServices.includes('accommodation')) {
+    if (
+      !previous.requestedServices.includes('accommodation') &&
+      !(previous.excludedServices ?? []).includes('accommodation')
+    ) {
       next.requestedServices = Array.from(new Set([...(next.requestedServices ?? []), 'accommodation']));
     }
   }
@@ -185,34 +232,50 @@ export function resolveReferences(
     }
   }
 
-  // "make it Brisbane instead" / "actually Brisbane instead" — never day-shift phrases
-  if (!dayShift) {
+  // "make it Brisbane instead" / "actually Brisbane instead" — never day-shift / airline / retention phrases
+  const retainingDestination =
+    /\b(?:keep\s+(?:the\s+)?(?:current\s+)?destination|keep\s+[a-z]|do not change|don'?t change|do not make it|don'?t make it|leave\s+.+\s+as it is)\b/i.test(
+      text,
+    ) && !/\bnot\s+[a-z][a-z\s]+?\s+anymore\b/i.test(text);
+
+  if (!dayShift && !retainingDestination) {
     const insteadPlace = text.match(
       /\b(?:actually\s+)?(?:make it|switch to|change (?:it )?to|go to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead\b/,
     ) ?? text.match(/\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead\b/);
-    const candidate = insteadPlace?.[1]?.trim();
-    const invalid =
-      !candidate ||
-      /^(one|a|day|earlier|later|sometime|maybe|please)$/i.test(candidate) ||
-      /\bday\b/i.test(candidate);
-    if (candidate && !invalid && !next.destination) {
-      resolution = { kind: 'instead', detail: candidate };
-      next.destination = withConfidence(candidate, 'confirmed', 0.95);
+    const candidate = resolveInsteadPlaceCandidate(insteadPlace?.[1]);
+    const softHedge = /\b(?:maybe|might|thinking of|possibly|not sure|sometime)\b/i.test(text);
+    if (candidate) {
+      const area = matchAreaName(candidate);
+      const name = area?.city ?? candidate;
+      const canOverride =
+        !next.destination ||
+        next.destination.source === 'inferred' ||
+        (next.destination.confidence ?? 0) < 0.9;
+      if (canOverride) {
+        resolution = { kind: 'instead', detail: candidate };
+        next.destination = withConfidence(
+          name,
+          softHedge ? 'inferred' : 'confirmed',
+          softHedge ? 0.55 : 0.95,
+        );
+        if (area && !next.accommodationArea) {
+          next.accommodationArea = withConfidence(area.area, 'confirmed', 0.95);
+        }
+      }
     }
 
     const shortInstead = text.match(
       /^\s*(?:actually[, ]+)?(?:make it|change (?:it )?to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*\.?$/i,
     );
-    const shortCandidate = shortInstead?.[1]?.trim();
-    if (
-      shortCandidate &&
-      previous.destination &&
-      !next.destination &&
-      !/^(one|a|day|earlier|later|sometime)$/i.test(shortCandidate) &&
-      !/\bday\b/i.test(shortCandidate)
-    ) {
+    const shortCandidate = resolveInsteadPlaceCandidate(shortInstead?.[1]);
+    if (shortCandidate && previous.destination && !next.destination) {
+      const area = matchAreaName(shortCandidate);
+      const name = area?.city ?? shortCandidate.replace(/^\w/, (c) => c.toUpperCase());
       resolution = { kind: 'instead', detail: shortCandidate };
-      next.destination = withConfidence(shortCandidate.replace(/^\w/, (c) => c.toUpperCase()), 'confirmed', 0.95);
+      next.destination = withConfidence(name, 'confirmed', 0.95);
+      if (area) {
+        next.accommodationArea = withConfidence(area.area, 'confirmed', 0.95);
+      }
     }
   }
 

@@ -10,10 +10,15 @@ function uniqueServices(services: TravelServiceKind[]): TravelServiceKind[] {
 }
 
 /** Safely infer obvious context without inventing preferences. */
+function isExcluded(state: ConversationState, service: TravelServiceKind): boolean {
+  return (state.excludedServices ?? []).includes(service);
+}
+
 export function inferContext(state: ConversationState): ConversationState {
   const next: ConversationState = {
     ...state,
     requestedServices: [...state.requestedServices],
+    excludedServices: [...(state.excludedServices ?? [])],
     missingRequiredFields: [...state.missingRequiredFields],
     conflicts: [...state.conflicts],
     lastPresentedOptions: [...state.lastPresentedOptions],
@@ -21,7 +26,14 @@ export function inferContext(state: ConversationState): ConversationState {
     lastUpdatedFields: [...state.lastUpdatedFields],
   };
 
-  if (next.accommodationArea && !next.requestedServices.includes('accommodation')) {
+  // Never re-add a service the user explicitly removed
+  next.requestedServices = next.requestedServices.filter((service) => !isExcluded(next, service));
+
+  if (
+    next.accommodationArea &&
+    !next.requestedServices.includes('accommodation') &&
+    !isExcluded(next, 'accommodation')
+  ) {
     next.requestedServices = uniqueServices([...next.requestedServices, 'accommodation']);
   }
 
@@ -29,7 +41,8 @@ export function inferContext(state: ConversationState): ConversationState {
     next.origin &&
     next.destination &&
     next.origin.value !== next.destination.value &&
-    next.requestedServices.length === 0
+    next.requestedServices.length === 0 &&
+    !isExcluded(next, 'flights')
   ) {
     next.requestedServices = ['flights'];
   }
@@ -39,7 +52,8 @@ export function inferContext(state: ConversationState): ConversationState {
     next.destination &&
     next.origin.value !== next.destination.value &&
     (next.requestedServices.includes('accommodation') || next.requestedServices.includes('car_hire')) &&
-    !next.requestedServices.includes('flights')
+    !next.requestedServices.includes('flights') &&
+    !isExcluded(next, 'flights')
   ) {
     next.requestedServices = uniqueServices([...next.requestedServices, 'flights']);
   }

@@ -65,6 +65,7 @@ export function mergeConversationState(
   const next: ConversationState = {
     ...base,
     requestedServices: [...base.requestedServices],
+    excludedServices: [...(base.excludedServices ?? [])],
     missingRequiredFields: [...base.missingRequiredFields],
     conflicts: [...base.conflicts],
     lastPresentedOptions: [...base.lastPresentedOptions],
@@ -181,20 +182,39 @@ export function mergeConversationState(
   next.loyaltyMemberships = mergeStringLists(patch.loyaltyMemberships, next.loyaltyMemberships);
   next.specialRequests = mergeStringLists(patch.specialRequests, next.specialRequests);
 
-  if (patch.clearAccommodationArea) {
+  // Prefer a newly extracted area over clearing a stale one in the same turn
+  if (patch.clearAccommodationArea && !patch.accommodationArea) {
     next.accommodationArea = undefined;
     updated.push('accommodationArea');
   }
 
   if (patch.requestedServices?.length) {
+    // Explicit re-request lifts a prior exclusion
+    next.excludedServices = next.excludedServices.filter(
+      (service) => !patch.requestedServices!.includes(service),
+    );
     const before = next.requestedServices.join(',');
     next.requestedServices = Array.from(new Set([...next.requestedServices, ...patch.requestedServices]));
     if (next.requestedServices.join(',') !== before) updated.push('requestedServices');
   }
 
   if (patch.removeServices?.length) {
-    next.requestedServices = next.requestedServices.filter((service) => !patch.removeServices!.includes(service));
+    next.requestedServices = next.requestedServices.filter(
+      (service) => !patch.removeServices!.includes(service),
+    );
+    next.excludedServices = Array.from(
+      new Set([...next.excludedServices, ...patch.removeServices]),
+    );
     updated.push('requestedServices');
+  }
+
+  // Exclusions always win over stale merges / side-effect re-adds
+  if (next.excludedServices.length) {
+    const before = next.requestedServices.join(',');
+    next.requestedServices = next.requestedServices.filter(
+      (service) => !next.excludedServices.includes(service),
+    );
+    if (next.requestedServices.join(',') !== before) updated.push('requestedServices');
   }
 
   if (patch.explicitItineraryIntent) {

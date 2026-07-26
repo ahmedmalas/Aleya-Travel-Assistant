@@ -89,7 +89,14 @@ function extractServices(text: string): TravelServiceKind[] {
   const t = text.toLowerCase();
   const services: TravelServiceKind[] = [];
   if (/\bflights?\b|\bflying\b|\bfly\b|\bairfare\b/.test(t)) services.push('flights');
-  if (/\bhotels?\b|\bresorts?\b|\bstay\b|\baccommodation\b|\blodging\b/.test(t)) services.push('accommodation');
+  // "stay with family" is a removal cue, not an accommodation request
+  const stayWithFamily = /\bstay with family\b/.test(t);
+  if (
+    /\bhotels?\b|\bresorts?\b|\baccommodation\b|\blodging\b/.test(t) ||
+    (/\bstay\b/.test(t) && !stayWithFamily)
+  ) {
+    services.push('accommodation');
+  }
   if (/\bcar hire\b|\brent(?:al)? car\b|\bhire a car\b|\brental car\b|\bvehicle hire\b/.test(t)) {
     services.push('car_hire');
   }
@@ -101,22 +108,47 @@ function extractServices(text: string): TravelServiceKind[] {
 function extractRemovals(text: string): TravelServiceKind[] {
   const t = text.toLowerCase();
   const removed: TravelServiceKind[] = [];
+  const carPhrase = '(?:car hire|rental car|hire car|rent(?:al)? car|vehicle hire)';
+  const hotelPhrase = '(?:hotel|accommodation|stay|lodging)';
+
   if (
-    /\b(?:no|without|remove|don't need|do not need|cancel)\b[\s\w]{0,24}\b(?:car hire|rental car|hire car|rent(?:al)? car)\b/.test(t) ||
-    /\b(?:car hire|rental car|hire car)\b[\s\w]{0,16}\b(?:not needed|off|removed)\b/.test(t)
+    new RegExp(
+      `\\b(?:no|without|remove|forget|don'?t need|do not need|do not include|cancel)\\b[\\s\\w]{0,28}\\b${carPhrase}\\b`,
+    ).test(t) ||
+    new RegExp(`\\b${carPhrase}\\b[\\s\\w]{0,20}\\b(?:not needed|off|removed|anymore)\\b`).test(t) ||
+    /\bforget\s+(?:the\s+)?(?:car|rental)\b/.test(t)
   ) {
     removed.push('car_hire');
   }
-  if (/\b(?:no|without|remove|don't need)\b[\s\w]{0,20}\b(?:hotel|accommodation|stay)\b/.test(t)) {
+
+  if (
+    new RegExp(
+      `\\b(?:no|without|remove|forget|don'?t need|do not need|do not include|cancel)\\b[\\s\\w]{0,28}\\b${hotelPhrase}\\b`,
+    ).test(t) ||
+    /\bno hotel\b/.test(t) ||
+    /\bstay with family\b/.test(t) ||
+    /\bwe will stay with (?:family|friends|relatives)\b/.test(t)
+  ) {
     removed.push('accommodation');
   }
-  if (/\b(?:no|without|remove|don't need)\b[\s\w]{0,20}\bflights?\b/.test(t)) {
+
+  if (
+    /\b(?:no|without|remove|forget|don'?t need|do not need|do not include|cancel)\b[\s\w]{0,28}\bflights?\b/.test(t) ||
+    /\b(?:flights?)\b[\s\w]{0,20}\b(?:not needed|anymore|off|removed)\b/.test(t) ||
+    /\bwe do not need flights?\b/.test(t)
+  ) {
     removed.push('flights');
   }
-  if (/\b(?:no|without|remove|don't need)\b[\s\w]{0,20}\b(?:transfer|taxi)\b/.test(t)) {
+
+  if (
+    /\b(?:no|without|remove|forget|don'?t need|do not need|do not include|cancel)\b[\s\w]{0,28}\b(?:transfer|taxi)\b/.test(
+      t,
+    )
+  ) {
     removed.push('transfers');
   }
-  return removed;
+
+  return Array.from(new Set(removed));
 }
 
 function extractPurpose(text: string): TripPurposeKind | undefined {
@@ -268,16 +300,33 @@ function parseCount(raw: string | undefined): number | undefined {
   return WORD_NUMBERS[raw.toLowerCase()];
 }
 
-function extractTravellers(text: string): TravellerCounts | undefined {
+function extractTravellers(text: string, previous?: ConversationState): TravellerCounts | undefined {
   const t = text.toLowerCase();
+  const base = previous?.travellers?.value ?? { adults: 1, children: 0, infants: 0, total: 1 };
   const adultsMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*adults?/);
   const childrenMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:children|kids|child)/);
   const infantsMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:infants?|babies|baby)/);
   const peopleMatch = t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:travellers?|travelers?|people|passengers?|of us)/);
+
+  const wifePartner =
+    /\bcouple\b|\btwo of us\b/.test(t) ||
+    /\b(?:my wife|my husband|my partner)\b/.test(t) ||
+    /\b(?:wife and i|husband and i|partner and i)\b/.test(t) ||
+    /\b(?:me and my wife|me and my husband|me and my partner)\b/.test(t) ||
+    /\btake my (?:wife|husband|partner)\b/.test(t);
+
+  const childAdd =
+    /\b(?:bring my (?:daughter|son|child)|my (?:daughter|son|child) (?:is|are) coming(?:\s+too)?|add one child|the kids? are coming)\b/.test(
+      t,
+    ) ||
+    /\b(?:wife|husband|partner)\s+and\s+(?:daughter|son|child|kids?)\b/.test(t) ||
+    /\b(?:daughter|son|child)\s+as well\b/.test(t);
+  const childCountFromPhrase = /\bthe kids\b|\bchildren\b/.test(t) && childAdd ? 2 : childAdd ? 1 : 0;
+
   if (adultsMatch || childrenMatch || infantsMatch) {
-    const adults = parseCount(adultsMatch?.[1]) ?? (infantsMatch || childrenMatch ? 1 : 1);
-    const children = parseCount(childrenMatch?.[1]) ?? 0;
-    const infants = parseCount(infantsMatch?.[1]) ?? 0;
+    const adults = parseCount(adultsMatch?.[1]) ?? (wifePartner ? 2 : infantsMatch || childrenMatch ? 1 : base.adults);
+    const children = parseCount(childrenMatch?.[1]) ?? Math.max(base.children, childCountFromPhrase);
+    const infants = parseCount(infantsMatch?.[1]) ?? base.infants;
     return { adults, children, infants, total: adults + children + infants };
   }
   if (peopleMatch) {
@@ -285,16 +334,35 @@ function extractTravellers(text: string): TravellerCounts | undefined {
     return { adults: total, children: 0, infants: 0, total };
   }
   if (/\bjust me\b|\bsolo\b/.test(t)) return { adults: 1, children: 0, infants: 0, total: 1 };
-  if (
-    /\bcouple\b|\btwo of us\b/.test(t) ||
-    /\b(?:my wife|my husband|my partner)\b/.test(t) ||
-    /\b(?:wife and i|husband and i|partner and i)\b/.test(t) ||
-    /\b(?:me and my wife|me and my husband|me and my partner)\b/.test(t) ||
-    /\btake my (?:wife|husband|partner)\b/.test(t)
-  ) {
-    return { adults: 2, children: 0, infants: 0, total: 2 };
+
+  if (wifePartner || childAdd) {
+    const adults = wifePartner ? Math.max(base.adults, 2) : base.adults;
+    const children = Math.max(base.children, childCountFromPhrase);
+    const infants = base.infants;
+    return { adults, children, infants, total: adults + children + infants };
   }
   return undefined;
+}
+
+/**
+ * Freeform stay locality when not in the curated area lexicon
+ * (e.g. "stay near the marina", "base us in South Bank").
+ */
+function extractFreeformStayArea(text: string): string | undefined {
+  if (/\bstay with (?:family|friends|relatives)\b/i.test(text)) return undefined;
+  const match = text.match(
+    /\b(?:stay|hotel|accommodation|base(?:\s+us)?)\s+(?:near|in|around|at)\s+(?:the\s+)?([A-Za-z][A-Za-z]+(?:\s+[A-Za-z][A-Za-z]+)?)/i,
+  );
+  if (!match?.[1]) return undefined;
+  const raw = match[1].trim();
+  const lower = raw.toLowerCase();
+  if (PLACE_STOPWORDS.has(lower) || DESTINATION_CHANGE_STOPWORDS.has(lower)) return undefined;
+  if (['family', 'friends', 'relatives', 'home', 'there', 'here'].includes(lower)) return undefined;
+  // Known cities are destinations, not stay areas
+  if (PLACES.some((p) => p.name.toLowerCase() === lower || p.aliases.includes(lower))) return undefined;
+  const knownArea = matchAreaName(raw);
+  if (knownArea) return knownArea.area;
+  return raw.replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function extractDurationNights(text: string): number | undefined {
@@ -499,15 +567,59 @@ function normalizeDestinationCandidate(raw: string): DestinationChange | undefin
   return { destination: name };
 }
 
-function hasDestinationReplacementLanguage(text: string): boolean {
-  return /\b(?:change of plans|instead of|actually\b|make it\b|change the destination|destination is|destination to|go to\b[\s\S]{0,40}\binstead|not\s+[A-Za-z])/i.test(
+/** Explicit keep / do-not-change language — not a destination replacement. */
+function isDestinationRetention(text: string, previous?: ConversationState): boolean {
+  const t = text.toLowerCase();
+  // Positive replacement of the current destination wins over retention cues
+  if (/\bnot\s+[a-z][a-z\s]+?\s+anymore\b/.test(t)) return false;
+  if (/\bnot\s+[a-z][a-z\s]+?\s*[—\-,:]+\s*[a-z]/.test(t) && /\b(?:change|make)\b/.test(t)) {
+    return false;
+  }
+  if (
+    /\bkeep\s+(?:the\s+)?(?:current\s+)?destination\b/.test(t) ||
+    /\bkeep\s+[a-z]/.test(t) ||
+    /\bleave\s+.+\s+as it is\b/.test(t) ||
+    /\bdo not change\b/.test(t) ||
+    /\bdon'?t change\b/.test(t) ||
+    /\bdo not make it\b/.test(t) ||
+    /\bdon'?t make it\b/.test(t)
+  ) {
+    return true;
+  }
+
+  // "Not Brisbane" / "Not Brisbane, keep Gold Coast" — negate a proposed city,
+  // not the confirmed destination (unless "anymore" / replacement punctuation).
+  const notPlace = t.match(/\bnot\s+([a-z][a-z]*(?:\s+[a-z][a-z]*)?)\b/);
+  if (notPlace?.[1] && !/\banymore\b/.test(t)) {
+    const negated = notPlace[1].toLowerCase();
+    const current = previous?.destination?.value?.toLowerCase();
+    if (!current || negated !== current) return true;
+    if (/\bkeep\b/.test(t)) return true;
+  }
+  return false;
+}
+
+function hasDestinationReplacementLanguage(text: string, previous?: ConversationState): boolean {
+  if (isDestinationRetention(text, previous)) return false;
+  return /\b(?:change of plans|instead(?:\s+of)?|actually\b|make it\b|change the destination|destination is|destination to|go to\b[\s\S]{0,40}\binstead|not\s+[A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?\s*(?:anymore|[—\-,:]))/i.test(
     text,
   );
 }
 
-function extractDestinationChange(text: string): DestinationChange | undefined {
+/** True when a regex match is negated by don't/do not/never immediately before it. */
+function matchIsNegated(text: string, matchIndex: number): boolean {
+  const before = text.slice(Math.max(0, matchIndex - 32), matchIndex).toLowerCase();
+  return (
+    /\b(?:do not|don'?t|never)\s+(?:change|make|switch)?\s*$/.test(before) ||
+    /\b(?:do not|don'?t|never)\s*$/.test(before)
+  );
+}
+
+function extractDestinationChange(text: string, previous?: ConversationState): DestinationChange | undefined {
   // Never treat day-shift phrasing as a destination change
   if (/\b(?:one|a|1)\s+day\s+(?:earlier|later)\b/i.test(text)) return undefined;
+  // Retention / negation of a proposed city — do not flip destination
+  if (isDestinationRetention(text, previous)) return undefined;
 
   // Intentionally NOT using the `i` flag on place captures — JS `/i` makes [A-Z] match
   // lowercase and turns "instead of Melbourne" into destination "Of Melbourne".
@@ -521,10 +633,12 @@ function extractDestinationChange(text: string): DestinationChange | undefined {
       group: 1,
     },
     { re: new RegExp(`\\b${PLACE_CAPTURE}\\s+instead of\\b`), group: 1 },
+    // "Gold Coast instead" / "Bali instead" — known places only via normalizeDestinationCandidate
+    { re: new RegExp(`\\b${PLACE_CAPTURE}\\s+instead\\b`), group: 1 },
     { re: new RegExp(`\\binstead(?:\\s+make it|\\s+to)\\s+${PLACE_CAPTURE}`), group: 1 },
     {
       re: new RegExp(
-        `\\bnot\\s+[A-Za-z][a-zA-Z]+(?:\\s+[A-Za-z][a-zA-Z]+)?\\s*[—\\-,:]+\\s*${PLACE_CAPTURE}`,
+        `\\bnot\\s+[A-Za-z][a-zA-Z]+(?:\\s+[A-Za-z][a-zA-Z]+)?\\s*(?:anymore\\s*[—\\-,:]?\\s*|\\s*[—\\-,:]+\\s*)${PLACE_CAPTURE}`,
       ),
       group: 1,
     },
@@ -544,7 +658,8 @@ function extractDestinationChange(text: string): DestinationChange | undefined {
   for (const { re, group } of patterns) {
     const m = text.match(re);
     const raw = m?.[group];
-    if (!raw) continue;
+    if (!raw || m?.index == null) continue;
+    if (matchIsNegated(text, m.index)) continue;
     const normalized = normalizeDestinationCandidate(raw);
     if (normalized) return normalized;
   }
@@ -658,7 +773,7 @@ export function extractRequirements(message: string, previous?: ConversationStat
   const places = findPlacesInText(text);
   const areas = findAreaMentions(text);
   const pendingPlaceField = pendingPlaceClarification(previous);
-  const destinationChange = extractDestinationChange(text);
+  const destinationChange = extractDestinationChange(text, previous);
 
   const fromMatch = text.match(/\b(?:leaving|departing|flying)?\s*from\s+([A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?)/i);
   const backToMatch = text.match(/\b(?:come back|return|back)\s+to\s+([A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?)/i);
@@ -713,19 +828,39 @@ export function extractRequirements(message: string, previous?: ConversationStat
     }
   }
 
-  if (!patch.destination && toMatch) {
+  // Place reply while a non-place field is pending (e.g. date): treat as origin, never
+  // silently overwrite a confirmed destination.
+  const placeReply = !destinationChange && !pendingPlaceField ? extractClarificationPlaceReply(text) : undefined;
+  const datePendingNonPlace =
+    Boolean(previous?.destination) &&
+    awaitingExactDepartureDate(previous) &&
+    !looksLikeDateConfirmation(text, previous, now);
+  if (placeReply && datePendingNonPlace && !hasDestinationReplacementLanguage(text, previous)) {
+    if (!patch.origin) {
+      patch.origin = field(placeReply);
+      patch.changedFields!.push('origin');
+    }
+  }
+
+  const retainingDestination = isDestinationRetention(text, previous);
+
+  if (!patch.destination && toMatch && !retainingDestination) {
     const raw = toMatch[1]!;
     const isReturnPhrase =
       /\b(?:come back|return|back)\s+to\b/i.test(text) &&
       new RegExp(`\\b(?:come back|return|back)\\s+to\\s+${raw.split(/\s+/)[0]}`, 'i').test(text);
     // Avoid treating clarification origin replies as destination via "to"
-    if (!isReturnPhrase && !(pendingPlaceField === 'origin' && patch.origin)) {
+    if (
+      !isReturnPhrase &&
+      !(pendingPlaceField === 'origin' && patch.origin) &&
+      !(datePendingNonPlace && placeReply)
+    ) {
       patch.destination = field(resolvePlaceName(raw));
       patch.changedFields!.push('destination');
     }
   }
 
-  if (!patch.destination && inMatch) {
+  if (!patch.destination && inMatch && !retainingDestination) {
     const name = resolvePlaceName(inMatch[1]!);
     if (
       name &&
@@ -739,36 +874,64 @@ export function extractRequirements(message: string, previous?: ConversationStat
 
   // Explicit "to <place>" even when it matches origin (validation will flag impossible same-city trips)
   const explicitTo = text.match(/\bto\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/);
-  if (!patch.destination && explicitTo && !(pendingPlaceField === 'origin' && patch.origin)) {
+  if (
+    !patch.destination &&
+    explicitTo &&
+    !retainingDestination &&
+    !(pendingPlaceField === 'origin' && patch.origin) &&
+    !(datePendingNonPlace && placeReply)
+  ) {
     const name = resolvePlaceName(explicitTo[1]!);
     const isReturnOnly =
       /\b(?:come back|return|back)\s+to\b/i.test(text) &&
       new RegExp(`\\b(?:come back|return|back)\\s+to\\s+${explicitTo[1]!.split(/\s+/)[0]}`, 'i').test(text);
     if (name && !isReturnOnly && !areas.some((a) => a.area.toLowerCase() === name.toLowerCase())) {
-      patch.destination = field(name);
-      patch.changedFields!.push('destination');
+      // Bare "to <place>" inside "do not change it to X" must never flip destination
+      const toIndex = explicitTo.index ?? 0;
+      if (!matchIsNegated(text, toIndex) && !/\bdo not change\b|\bdon'?t change\b/i.test(text)) {
+        patch.destination = field(name);
+        patch.changedFields!.push('destination');
+      }
     }
   }
 
-  // Bare place → destination, unless this turn answered an origin clarification
+  // Bare place → destination only when safe (no confirmed dest, or explicit replacement language)
   const answeredOriginClarification = pendingPlaceField === 'origin' && Boolean(patch.origin);
-  if (!patch.destination && places.length > 0 && !answeredOriginClarification) {
+  const confirmedDestination = previous?.destination?.value;
+  if (
+    !patch.destination &&
+    places.length > 0 &&
+    !answeredOriginClarification &&
+    !(datePendingNonPlace && placeReply) &&
+    !isDestinationRetention(text, previous)
+  ) {
     const originName = (patch.origin?.value ?? previous?.origin?.value)?.toLowerCase();
-    const previousDestination = previous?.destination?.value;
-    let preferred;
-    if (hasDestinationReplacementLanguage(text) && previousDestination) {
-      // Prefer the new place, not the destination being replaced
-      preferred =
-        places.find((p) => p.name.toLowerCase() !== previousDestination.toLowerCase()) ?? places[0];
-    } else {
-      preferred =
-        places.find((p) => p.name === 'Melbourne' && p.name.toLowerCase() !== originName) ??
-        places.find((p) => p.name.toLowerCase() !== originName) ??
-        places[0];
-    }
-    if (preferred && preferred.name.toLowerCase() !== originName) {
-      patch.destination = field(preferred.name, 'confirmed');
-      patch.changedFields!.push('destination');
+    const previousDestination = confirmedDestination;
+    const canReplace =
+      !previousDestination ||
+      hasDestinationReplacementLanguage(text, previous) ||
+      !previous?.destination;
+    if (canReplace) {
+      let preferred;
+      if (hasDestinationReplacementLanguage(text, previous) && previousDestination) {
+        preferred =
+          places.find((p) => p.name.toLowerCase() !== previousDestination.toLowerCase()) ?? places[0];
+      } else {
+        preferred =
+          places.find((p) => p.name === 'Melbourne' && p.name.toLowerCase() !== originName) ??
+          places.find((p) => p.name.toLowerCase() !== originName) ??
+          places[0];
+      }
+      if (preferred && preferred.name.toLowerCase() !== originName) {
+        // Bare place must not overwrite a confirmed destination without replacement language
+        if (!previousDestination || hasDestinationReplacementLanguage(text, previous)) {
+          patch.destination = field(preferred.name, 'confirmed');
+          patch.changedFields!.push('destination');
+        } else if (!patch.origin && !previous?.origin) {
+          patch.origin = field(preferred.name);
+          patch.changedFields!.push('origin');
+        }
+      }
     }
   }
 
@@ -779,6 +942,12 @@ export function extractRequirements(message: string, previous?: ConversationStat
       // Explicit "destination is <locality>" already handled above; area-only mentions stay inferred
       patch.destination = field(areas[0]!.city, 'inferred');
     }
+  } else {
+    const freeformArea = extractFreeformStayArea(text);
+    if (freeformArea) {
+      patch.accommodationArea = field(freeformArea);
+      patch.changedFields!.push('accommodationArea');
+    }
   }
 
   const removals = extractRemovals(text);
@@ -787,12 +956,20 @@ export function extractRequirements(message: string, previous?: ConversationStat
     patch.changedFields!.push('requestedServices');
   }
 
+  const previouslyExcluded = new Set(previous?.excludedServices ?? []);
   const services = extractServices(text).filter((s) => !removals.includes(s));
   if (services.length) {
     patch.requestedServices = services;
     patch.changedFields!.push('requestedServices');
   }
+  // Stay-area mention is an explicit accommodation signal (lifts prior exclusion)
   if (areas.length && !services.includes('accommodation') && !removals.includes('accommodation')) {
+    patch.requestedServices = Array.from(new Set([...(patch.requestedServices ?? []), 'accommodation']));
+  } else if (
+    patch.accommodationArea &&
+    !services.includes('accommodation') &&
+    !removals.includes('accommodation')
+  ) {
     patch.requestedServices = Array.from(new Set([...(patch.requestedServices ?? []), 'accommodation']));
   }
 
@@ -800,7 +977,8 @@ export function extractRequirements(message: string, previous?: ConversationStat
   if (nights != null) {
     patch.durationNights = field(nights);
     patch.changedFields!.push('durationNights');
-    if (!removals.includes('accommodation')) {
+    // Duration alone must not revive an explicitly excluded accommodation service
+    if (!removals.includes('accommodation') && !previouslyExcluded.has('accommodation')) {
       patch.requestedServices = Array.from(
         new Set([...(patch.requestedServices ?? []), 'accommodation']),
       );
@@ -848,6 +1026,32 @@ export function extractRequirements(message: string, previous?: ConversationStat
     } else if (/after\s*5|after work/.test(lower) && !/\b(?:come back|return)[\s\S]{0,40}(?:after\s*5|afternoon)/.test(lower)) {
       patch.departureTimePreference = field('after_5pm');
       patch.changedFields!.push('departureTimePreference');
+    }
+
+    if (!patch.departureTimePreference) {
+      if (
+        /\b(?:leave|depart(?:ure)?|fly|flight)\s+(?:in\s+the\s+|early\s+)?morning\b/i.test(text) ||
+        /\bmorning\s+(?:flight|departure)\b/i.test(text) ||
+        /\bdepart early morning\b/i.test(text)
+      ) {
+        patch.departureTimePreference = field('morning');
+        patch.changedFields!.push('departureTimePreference');
+      } else if (
+        /\b(?:leave|depart(?:ure)?|fly|flight)\s+(?:in\s+the\s+)?afternoon\b/i.test(text) ||
+        /\bafternoon\s+(?:flight|departure)\b/i.test(text)
+      ) {
+        patch.departureTimePreference = field('afternoon');
+        patch.changedFields!.push('departureTimePreference');
+      } else if (
+        /\b(?:leave|depart(?:ure)?|fly|flight)\s+(?:in\s+the\s+)?evening\b/i.test(text) ||
+        /\bevening\s+(?:flight|departure)\b/i.test(text) ||
+        /\bfly after\s+5\s*(?:pm|p\.m\.)\b/i.test(text)
+      ) {
+        patch.departureTimePreference = field(
+          /\bafter\s+5\s*(?:pm|p\.m\.)\b/i.test(text) ? 'after_5pm' : 'evening',
+        );
+        patch.changedFields!.push('departureTimePreference');
+      }
     }
 
     const returnClause = text.match(/\b(?:come back|return)([\s\S]{0,60})/i);
@@ -902,7 +1106,7 @@ export function extractRequirements(message: string, previous?: ConversationStat
     });
   }
 
-  const travellers = extractTravellers(text);
+  const travellers = extractTravellers(text, previous);
   if (travellers) {
     patch.travellers = field(travellers);
     patch.changedFields!.push('travellers');
@@ -918,7 +1122,7 @@ export function extractRequirements(message: string, previous?: ConversationStat
   if (patch.airlinePreferences) patch.changedFields!.push('airlinePreferences');
   if (patch.hotelPreferences) {
     patch.changedFields!.push('hotelPreferences');
-    if (!removals.includes('accommodation')) {
+    if (!removals.includes('accommodation') && !previouslyExcluded.has('accommodation')) {
       patch.requestedServices = Array.from(
         new Set([...(patch.requestedServices ?? []), 'accommodation']),
       );

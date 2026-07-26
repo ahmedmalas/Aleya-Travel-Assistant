@@ -14,6 +14,7 @@ function factList(state: ConversationState): string[] {
   if (state.accommodationArea) facts.push(`area=${state.accommodationArea.value}`);
   if (state.durationNights) facts.push(`nights=${state.durationNights.value}`);
   if (state.requestedServices.length) facts.push(`services=${state.requestedServices.join('+')}`);
+  if (state.excludedServices?.length) facts.push(`excluded=${state.excludedServices.join('+')}`);
   if (state.travellers) {
     const t = state.travellers.value;
     facts.push(`travellers=${t.adults}a/${t.children}c/${t.infants}i`);

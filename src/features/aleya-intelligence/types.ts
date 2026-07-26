@@ -123,6 +123,11 @@ export type ConversationState = {
   returnTimePreference?: FieldValue<TimePreference>;
   dateFlexibility?: FieldValue<'strict' | 'flexible' | 'plus_minus_days'>;
   requestedServices: TravelServiceKind[];
+  /**
+   * Services the user explicitly removed. Prevents re-add from inference,
+   * accommodation-area side effects, or stale history.
+   */
+  excludedServices: TravelServiceKind[];
   accommodationArea?: FieldValue<string>;
   /** Stay length in nights when the user states a duration (e.g. "four nights"). */
   durationNights?: FieldValue<number>;
@@ -191,6 +196,7 @@ export function createEmptyConversationState(conversationId?: string): Conversat
   return {
     conversationId: conversationId ?? `conv-${Math.random().toString(36).slice(2, 10)}`,
     requestedServices: [],
+    excludedServices: [],
     explicitItineraryIntent: false,
     missingRequiredFields: [],
     awaitingDateConfirmation: false,
