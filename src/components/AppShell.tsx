@@ -37,6 +37,11 @@ function CustomerApp() {
     if ('showPicker' in input) input.showPicker();
   };
 
+  const showFlights = () => {
+    setWorkspace(null);
+    window.setTimeout(() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  };
+
   const openWorkspace = (view: Exclude<WorkspaceView, null>) => {
     setWorkspace(view);
     window.setTimeout(() => document.getElementById('selected-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -62,26 +67,35 @@ function CustomerApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const serviceButton = (active: boolean) =>
+    `whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition ${active ? 'border-sky-300 text-white' : 'border-transparent text-slate-300 hover:border-white/30 hover:text-white'}`;
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <CurrencyBootstrap />
       <style>{`.customer-trip-platform > section > div:first-child > div:first-child { display: none; } .customer-trip-platform > section > div:first-child > p[role='status'][class*='border-sky-300'] { display: none; }`}</style>
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <button type="button" onClick={() => { setWorkspace(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="block text-left" aria-label="Aleya Travel home">
-            <p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p>
-            <h1 className="mt-1 text-xl font-bold">Travel made simple</h1>
-          </button>
-          <nav className="flex items-center justify-end gap-2" aria-label="Customer navigation">
-            <button type="button" onClick={() => openWorkspace('visa')} className="hidden rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300 sm:inline-flex">Visas</button>
-            <button type="button" onClick={() => openWorkspace('money')} className="hidden rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300 md:inline-flex">Money</button>
-            <button type="button" onClick={() => openWorkspace('trips')} className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30">My trips</button>
-            <button type="button" onClick={() => setAccountOpen(true)} className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] pl-2 pr-3 text-sm text-white hover:border-sky-300" aria-label="Open account menu">
+      <header className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur">
+        <div className="border-b border-white/10">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
+            <button type="button" onClick={showFlights} className="block text-left" aria-label="Aleya Travel home">
+              <p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p>
+              <h1 className="mt-1 text-xl font-bold">Travel made simple</h1>
+            </button>
+            <button type="button" onClick={() => setAccountOpen(true)} className="flex h-10 items-center rounded-full border border-white/15 bg-white/[0.05] p-1.5 text-white hover:border-sky-300" aria-label="Open account menu">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-400 font-bold text-slate-950">A</span>
             </button>
-          </nav>
+          </div>
         </div>
+
+        <nav className="border-b border-white/10 bg-slate-900/80" aria-label="Travel services">
+          <div className="mx-auto flex max-w-7xl overflow-x-auto px-2 sm:px-6">
+            <button type="button" onClick={showFlights} className={serviceButton(workspace === null)}>Flights</button>
+            <button type="button" onClick={() => openWorkspace('trips')} className={serviceButton(workspace === 'trips')}>Hotels & itineraries</button>
+            <button type="button" onClick={() => openWorkspace('visa')} className={serviceButton(workspace === 'visa')}>Visa requirements</button>
+            <button type="button" onClick={() => openWorkspace('money')} className={serviceButton(workspace === 'money')}>Exchange & ATMs</button>
+          </div>
+        </nav>
       </header>
 
       <main id="top">
@@ -92,31 +106,25 @@ function CustomerApp() {
             <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">Compare flights in your regional currency and keep the rest of your journey organised in one place.</p>
           </div>
 
-          <form id="flight-search" onSubmit={searchFlights} className="mx-auto mt-10 max-w-5xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8">
+          <form id="flight-search" onSubmit={searchFlights} className="mx-auto mt-10 max-w-5xl scroll-mt-36 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
-              <label className="block text-sm text-slate-200 xl:col-span-1"><span className="mb-2 block">Cabin</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+              <label className="block text-sm text-slate-200"><span className="mb-2 block">Cabin</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
             <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-sky-300">Search flights</button>
             <p className="mt-3 text-center text-xs text-slate-400">Prices shown in {preferredCurrency}.</p>
           </form>
-
-          <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2 text-sm">
-            <button type="button" onClick={() => openWorkspace('trips')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Hotels & itineraries</button>
-            <button type="button" onClick={() => openWorkspace('visa')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Visa requirements</button>
-            <button type="button" onClick={() => openWorkspace('money')} className="rounded-full border border-white/10 px-4 py-2 text-slate-300 hover:border-sky-300 hover:text-white">Exchange & ATMs</button>
-          </div>
         </section>
 
         {workspace ? (
-          <section id="selected-workspace" className="scroll-mt-24 border-t border-white/10 bg-slate-950/70 pt-8">
+          <section id="selected-workspace" className="scroll-mt-36 border-t border-white/10 bg-slate-950/70 pt-8">
             <div className="mx-auto flex max-w-7xl justify-end px-6">
-              <button type="button" onClick={() => { setWorkspace(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Close</button>
+              <button type="button" onClick={showFlights} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Close</button>
             </div>
             {workspace === 'visa' ? <VisaEntryPanel /> : null}
             {workspace === 'money' ? <MoneyServicesPanel /> : null}
