@@ -5,11 +5,34 @@ type SectionCardProps = {
   section: TravelSection;
 };
 
+const TOOL_GROUPS: Record<string, string> = {
+  flights: 'Book',
+  stays: 'Book',
+  services: 'Book',
+  itinerary: 'Plan',
+  destinations: 'Plan',
+  budget: 'Plan',
+  bookings: 'Organise',
+  assistance: 'Home',
+  'concierge-plan': 'Home',
+};
+
 export function SectionCard({ section }: SectionCardProps) {
   const openFeature = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    window.dispatchEvent(new CustomEvent('aleya:navigate', { detail: { tab: section.targetTab } }));
     document.getElementById('trip-platform')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const groupLabel = TOOL_GROUPS[section.targetTab];
+    const groupButton = Array.from(document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Platform sections"] button')).find(
+      (button) => button.textContent?.trim() === groupLabel,
+    );
+    groupButton?.click();
+
+    window.setTimeout(() => {
+      document.getElementById(`trip-platform-tab-${section.targetTab}`)?.click();
+      document.getElementById(`trip-platform-panel-${section.targetTab}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+
     window.history.replaceState(null, '', `${section.href}?tool=${section.targetTab}`);
   };
 
