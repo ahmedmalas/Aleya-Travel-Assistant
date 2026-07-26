@@ -15,9 +15,14 @@ const createId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto 
 
 const inferMode = (message: string): AiPlanMode => {
   const value = message.toLowerCase();
-  if (/revise|change|replace|remove|swap|update|different|less|more|shorter|longer/.test(value)) return 'revise';
-  if (/relax|slow|easy|rest|quiet|light/.test(value)) return 'relaxed';
-  if (/busy|full|packed|maximum|everything|complete|whole trip|day by day/.test(value)) return 'complete';
+  if (/family|children|kids|child|parents/.test(value)) return 'family';
+  if (/accessible|accessibility|wheelchair|mobility|step-free/.test(value)) return 'accessible';
+  if (/business|work|meeting|conference/.test(value)) return 'business';
+  if (/romantic|honeymoon|anniversary|couple/.test(value)) return 'romantic';
+  if (/adventure|hike|outdoor|active|thrill/.test(value)) return 'adventure';
+  if (/cheap|budget|low cost|save money|affordable/.test(value)) return 'low-cost';
+  if (/luxury|premium|five star|first class/.test(value)) return 'luxury';
+  if (/relax|slow|easy|rest|quiet|light|leisure/.test(value)) return 'leisure';
   return 'complete';
 };
 
