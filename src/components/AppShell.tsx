@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { SectionCard } from './SectionCard';
 import { TripPlatform } from './trip-platform/TripPlatform';
 import { travelSections } from '../data/sections';
 
 const normaliseAirport = (value: string) => value.trim().toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
 const compactDate = (value: string) => value.replaceAll('-', '').slice(2);
+const today = new Date().toISOString().split('T')[0];
 
 export function AppShell() {
   const [origin, setOrigin] = useState('SYD');
@@ -13,6 +14,14 @@ export function AppShell() {
   const [returnDate, setReturnDate] = useState('');
   const [travellers, setTravellers] = useState(1);
   const [flightError, setFlightError] = useState<string | null>(null);
+  const departureInputRef = useRef<HTMLInputElement>(null);
+  const returnInputRef = useRef<HTMLInputElement>(null);
+
+  const openCalendar = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    input.focus();
+    if ('showPicker' in input) input.showPicker();
+  };
 
   const searchFlights = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,12 +57,8 @@ export function AppShell() {
             <h1 className="mt-1 text-xl font-bold">AI Travel Assistant</h1>
           </a>
           <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Main navigation">
-            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#flight-search">
-              Search flights
-            </a>
-            <a className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30" href="#trip-platform">
-              Open trip planner
-            </a>
+            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#flight-search">Search flights</a>
+            <a className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30" href="#trip-platform">Open trip planner</a>
           </nav>
         </div>
       </header>
@@ -62,12 +67,8 @@ export function AppShell() {
         <section className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Search. Compare. Plan.</p>
-            <h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">
-              Your entire trip starts with Aleya.
-            </h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one place.
-            </p>
+            <h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Your entire trip starts with Aleya.</h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one place.</p>
             <div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300">
               <a href="#flight-search" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Flights</a>
               <a href="#trip-platform" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Hotels</a>
@@ -90,11 +91,17 @@ export function AppShell() {
               </label>
               <label className="block text-sm text-slate-200">
                 <span className="mb-2 block">Departure</span>
-                <input aria-label="Departure date" required type="date" value={departDate} onChange={(event) => setDepartDate(event.target.value)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" />
+                <div className="relative">
+                  <input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onFocus={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" />
+                  <button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button>
+                </div>
               </label>
               <label className="block text-sm text-slate-200">
                 <span className="mb-2 block">Return (optional)</span>
-                <input aria-label="Return date" type="date" min={departDate || undefined} value={returnDate} onChange={(event) => setReturnDate(event.target.value)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" />
+                <div className="relative">
+                  <input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onFocus={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none focus:ring-2 focus:ring-sky-300/40" />
+                  <button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button>
+                </div>
               </label>
               <label className="block text-sm text-slate-200 sm:col-span-2">
                 <span className="mb-2 block">Adult travellers</span>
@@ -104,10 +111,8 @@ export function AppShell() {
               </label>
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
-            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">
-              Search flights in AUD
-            </button>
-            <p className="mt-3 text-xs leading-5 text-slate-400">Search results open securely with Skyscanner Australia. Aleya does not add a booking fee.</p>
+            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">Search flights in AUD</button>
+            <p className="mt-3 text-xs leading-5 text-slate-400">Click either date field or calendar icon to open the full calendar. Search results open with Skyscanner Australia.</p>
           </form>
         </section>
 
@@ -115,14 +120,10 @@ export function AppShell() {
           {travelSections.map((section) => <SectionCard key={section.title} section={section} />)}
         </section>
 
-        <div id="trip-platform" className="scroll-mt-28">
-          <TripPlatform />
-        </div>
+        <div id="trip-platform" className="scroll-mt-28"><TripPlatform /></div>
       </main>
 
-      <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-slate-500">
-        Aleya Travel — search, plan and manage your journey.
-      </footer>
+      <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-slate-500">Aleya Travel — search, plan and manage your journey.</footer>
     </div>
   );
 }
