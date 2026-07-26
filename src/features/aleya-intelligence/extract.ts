@@ -371,6 +371,61 @@ function extractDestinationChange(text: string): string | undefined {
   return undefined;
 }
 
+/** Which place field the prior turn asked the user to fill. */
+function pendingPlaceClarification(previous?: ConversationState): 'origin' | 'destination' | undefined {
+  const missing = previous?.missingRequiredFields ?? [];
+  if (missing.includes('origin')) return 'origin';
+  if (missing.includes('destination')) return 'destination';
+  return undefined;
+}
+
+/**
+ * Short replies that answer a pending place clarification
+ * (e.g. "Sydney", "Sydney Airport", "From Sydney", "Leaving from Sydney").
+ */
+function extractClarificationPlaceReply(text: string): string | undefined {
+  const cleaned = text.trim().replace(/[.!?]+$/, '').trim();
+  if (!cleaned || cleaned.length > 80) return undefined;
+
+  const prefixed = cleaned.match(
+    /^(?:from|leaving from|departing from|flying from)\s+(.+)$/i,
+  );
+  if (prefixed?.[1]) {
+    const name = resolvePlaceName(prefixed[1].replace(/\s+Airport$/i, '').trim());
+    if (name && !PLACE_STOPWORDS.has(name.toLowerCase()) && !DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) {
+      return name;
+    }
+  }
+
+  const airport = cleaned.match(/^(.+?)\s+Airport$/i);
+  if (airport?.[1]) {
+    const name = resolvePlaceName(airport[1].trim());
+    if (name && !PLACE_STOPWORDS.has(name.toLowerCase())) return name;
+  }
+
+  const places = findPlacesInText(cleaned);
+  if (places.length === 1) {
+    const place = places[0]!;
+    const escaped = place.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const bare = new RegExp(
+      `^(?:from\\s+|leaving\\s+from\\s+|departing\\s+from\\s+|flying\\s+from\\s+)?${escaped}(?:\\s+Airport)?$`,
+      'i',
+    );
+    if (bare.test(cleaned) || cleaned.toLowerCase() === place.name.toLowerCase()) {
+      return place.name;
+    }
+  }
+
+  if (/^[A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?$/.test(cleaned)) {
+    const name = resolvePlaceName(cleaned);
+    if (name && !PLACE_STOPWORDS.has(name.toLowerCase()) && !DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) {
+      return name;
+    }
+  }
+
+  return undefined;
+}
+
 export function extractRequirements(message: string, previous?: ConversationState, now = new Date()): ExtractionPatch {
   const text = message.trim();
   const lower = text.toLowerCase();
@@ -415,8 +470,10 @@ export function extractRequirements(message: string, previous?: ConversationStat
 
   const places = findPlacesInText(text);
   const areas = findAreaMentions(text);
+  const pendingPlaceField = pendingPlaceClarification(previous);
+  const destinationChange = extractDestinationChange(text);
 
-  const fromMatch = text.match(/\bfrom\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/);
+  const fromMatch = text.match(/\b(?:leaving|departing|flying)?\s*from\s+([A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?)/i);
   const backToMatch = text.match(/\b(?:come back|return|back)\s+to\s+([A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?)/i);
   const toMatch = text.match(
     /\b(?:travel to|go to|going to|fly to|visit(?:ing)?|change destination to|destination to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/,
@@ -426,7 +483,7 @@ export function extractRequirements(message: string, previous?: ConversationStat
   );
 
   if (fromMatch) {
-    patch.origin = field(resolvePlaceName(fromMatch[1]!));
+    patch.origin = field(resolvePlaceName(fromMatch[1]!.replace(/\s+Airport$/i, '')));
     patch.changedFields!.push('origin');
   }
   if (backToMatch) {
@@ -434,10 +491,25 @@ export function extractRequirements(message: string, previous?: ConversationStat
     patch.changedFields!.push('origin');
   }
 
-  const destinationChange = extractDestinationChange(text);
+  // Explicit destination-change language always updates destination.
   if (destinationChange) {
     patch.destination = field(destinationChange);
     patch.changedFields!.push('destination');
+  }
+
+  // When a clarification asked for a place field, short replies fill that field —
+  // do not reinterpret them as a new destination.
+  if (pendingPlaceField && !destinationChange) {
+    const clarificationPlace = extractClarificationPlaceReply(text);
+    if (clarificationPlace) {
+      if (pendingPlaceField === 'origin') {
+        patch.origin = field(clarificationPlace);
+        patch.changedFields!.push('origin');
+      } else if (pendingPlaceField === 'destination' && !patch.destination) {
+        patch.destination = field(clarificationPlace);
+        patch.changedFields!.push('destination');
+      }
+    }
   }
 
   if (!patch.destination && toMatch) {
@@ -445,7 +517,8 @@ export function extractRequirements(message: string, previous?: ConversationStat
     const isReturnPhrase =
       /\b(?:come back|return|back)\s+to\b/i.test(text) &&
       new RegExp(`\\b(?:come back|return|back)\\s+to\\s+${raw.split(/\s+/)[0]}`, 'i').test(text);
-    if (!isReturnPhrase) {
+    // Avoid treating clarification origin replies as destination via "to"
+    if (!isReturnPhrase && !(pendingPlaceField === 'origin' && patch.origin)) {
       patch.destination = field(resolvePlaceName(raw));
       patch.changedFields!.push('destination');
     }
@@ -465,7 +538,7 @@ export function extractRequirements(message: string, previous?: ConversationStat
 
   // Explicit "to <place>" even when it matches origin (validation will flag impossible same-city trips)
   const explicitTo = text.match(/\bto\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/);
-  if (!patch.destination && explicitTo) {
+  if (!patch.destination && explicitTo && !(pendingPlaceField === 'origin' && patch.origin)) {
     const name = resolvePlaceName(explicitTo[1]!);
     const isReturnOnly =
       /\b(?:come back|return|back)\s+to\b/i.test(text) &&
@@ -476,7 +549,9 @@ export function extractRequirements(message: string, previous?: ConversationStat
     }
   }
 
-  if (!patch.destination && places.length > 0) {
+  // Bare place → destination, unless this turn answered an origin clarification
+  const answeredOriginClarification = pendingPlaceField === 'origin' && Boolean(patch.origin);
+  if (!patch.destination && places.length > 0 && !answeredOriginClarification) {
     const originName = patch.origin?.value.toLowerCase();
     const preferred =
       places.find((p) => p.name === 'Melbourne' && p.name.toLowerCase() !== originName) ??
