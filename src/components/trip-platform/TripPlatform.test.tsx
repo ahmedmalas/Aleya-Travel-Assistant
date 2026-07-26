@@ -8,7 +8,8 @@ describe('TripPlatform UI', () => {
     const user = userEvent.setup();
     render(<TripPlatform />);
     expect(screen.getByRole('heading', { name: /Trip platform/i })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /^Command centre$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /My travel dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Command centre/i })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /^Plan$/i }));
     await user.click(screen.getByRole('tab', { name: /Trip setup/i }));
     expect(await screen.findByRole('heading', { name: /Create or edit trip/i })).toBeInTheDocument();
