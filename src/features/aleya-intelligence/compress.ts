@@ -12,6 +12,7 @@ function factList(state: ConversationState): string[] {
   else if (state.returnTimePreference) facts.push(`returnTime=${state.returnTimePreference.value}`);
   if (state.departureTimePreference) facts.push(`outbound=${state.departureTimePreference.value}`);
   if (state.accommodationArea) facts.push(`area=${state.accommodationArea.value}`);
+  if (state.durationNights) facts.push(`nights=${state.durationNights.value}`);
   if (state.requestedServices.length) facts.push(`services=${state.requestedServices.join('+')}`);
   if (state.travellers) {
     const t = state.travellers.value;

@@ -22,6 +22,7 @@ export type ExtractionPatch = {
   removeServices?: TravelServiceKind[];
   accommodationArea?: FieldValue<string>;
   clearAccommodationArea?: boolean;
+  durationNights?: FieldValue<number>;
   travellers?: FieldValue<TravellerCounts>;
   tripPurpose?: FieldValue<TripPurposeKind>;
   budget?: FieldValue<{ amount?: number; currency?: string; style?: 'budget' | 'mid' | 'luxury'; relative?: 'cheaper' | 'more_expensive' }>;
@@ -139,25 +140,100 @@ function extractTimePreference(fragment: string): TimePreference | undefined {
   return undefined;
 }
 
-export function parseAbsoluteDate(text: string, now: Date): ApproximateDate | undefined {
-  const lower = text.toLowerCase();
-  const long = lower.match(
-    /\b(?:(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)[,]?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)(?:\s+(\d{4}))?\b/,
+export type DateParseContext = {
+  month?: number;
+  year?: number;
+};
+
+function resolveYearForMonth(month: number, explicitYear: number | undefined, now: Date, contextYear?: number): number {
+  if (explicitYear) return explicitYear;
+  if (contextYear) return contextYear;
+  let year = now.getFullYear();
+  // If the month has already passed this calendar year, roll forward
+  if (month < now.getMonth() + 1) year += 1;
+  return year;
+}
+
+function buildAbsoluteDate(
+  day: number,
+  month: number,
+  year: number,
+  label: string,
+  weekday?: number,
+): ApproximateDate {
+  const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return {
+    kind: 'absolute',
+    isoDate: iso,
+    label,
+    weekday,
+    month,
+    year,
+  };
+}
+
+/**
+ * Parse common Australian absolute date phrases.
+ * Optional context supplies month/year from an active trip (e.g. end-of-August clarification).
+ */
+export function parseAbsoluteDate(
+  text: string,
+  now: Date,
+  context?: DateParseContext,
+): ApproximateDate | undefined {
+  const lower = text.toLowerCase().trim();
+  const monthNames =
+    'january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
+  const weekdays = 'sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat';
+
+  // 28th of August / the 28th of August / Friday 28th of August [2026]
+  const ofMonth = lower.match(
+    new RegExp(
+      `\\b(?:(${weekdays})[,]?\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+of\\s+(${monthNames})(?:\\s+(\\d{4}))?\\b`,
+    ),
   );
-  if (long) {
-    const day = Number(long[2]);
-    const month = MONTHS[long[3]!];
-    const year = long[4] ? Number(long[4]) : now.getFullYear();
-    const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return {
-      kind: 'absolute',
-      isoDate: iso,
-      label: long[0]!,
-      weekday: long[1] ? WEEKDAYS[long[1]] : undefined,
-      month,
-      year,
-    };
+  if (ofMonth) {
+    const day = Number(ofMonth[2]);
+    const month = MONTHS[ofMonth[3]!];
+    const year = resolveYearForMonth(month, ofMonth[4] ? Number(ofMonth[4]) : undefined, now, context?.year);
+    return buildAbsoluteDate(day, month, year, ofMonth[0]!, ofMonth[1] ? WEEKDAYS[ofMonth[1]] : undefined);
   }
+
+  // 28 August / 28th August / Friday 28 August 2026
+  const dayMonth = lower.match(
+    new RegExp(
+      `\\b(?:(${weekdays})[,]?\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthNames})(?:\\s+(\\d{4}))?\\b`,
+    ),
+  );
+  if (dayMonth) {
+    const day = Number(dayMonth[2]);
+    const month = MONTHS[dayMonth[3]!];
+    const year = resolveYearForMonth(month, dayMonth[4] ? Number(dayMonth[4]) : undefined, now, context?.year);
+    return buildAbsoluteDate(day, month, year, dayMonth[0]!, dayMonth[1] ? WEEKDAYS[dayMonth[1]] : undefined);
+  }
+
+  // August 28 / August 28th / August the 28th [2026]
+  const monthDay = lower.match(
+    new RegExp(`\\b(${monthNames})\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+(\\d{4}))?\\b`),
+  );
+  if (monthDay) {
+    const month = MONTHS[monthDay[1]!];
+    const day = Number(monthDay[2]);
+    const year = resolveYearForMonth(month, monthDay[3] ? Number(monthDay[3]) : undefined, now, context?.year);
+    return buildAbsoluteDate(day, month, year, monthDay[0]!);
+  }
+
+  // Friday the 28th / the 28th — resolve month/year from trip context
+  const dayOnly = lower.match(
+    new RegExp(`\\b(?:(${weekdays})\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)\\b`),
+  );
+  if (dayOnly && context?.month) {
+    const day = Number(dayOnly[2]);
+    const month = context.month;
+    const year = resolveYearForMonth(month, undefined, now, context.year);
+    return buildAbsoluteDate(day, month, year, dayOnly[0]!, dayOnly[1] ? WEEKDAYS[dayOnly[1]] : undefined);
+  }
+
   return undefined;
 }
 
@@ -209,8 +285,31 @@ function extractTravellers(text: string): TravellerCounts | undefined {
     return { adults: total, children: 0, infants: 0, total };
   }
   if (/\bjust me\b|\bsolo\b/.test(t)) return { adults: 1, children: 0, infants: 0, total: 1 };
-  if (/\bcouple\b|\btwo of us\b/.test(t)) return { adults: 2, children: 0, infants: 0, total: 2 };
+  if (
+    /\bcouple\b|\btwo of us\b/.test(t) ||
+    /\b(?:my wife|my husband|my partner)\b/.test(t) ||
+    /\b(?:wife and i|husband and i|partner and i)\b/.test(t) ||
+    /\b(?:me and my wife|me and my husband|me and my partner)\b/.test(t) ||
+    /\btake my (?:wife|husband|partner)\b/.test(t)
+  ) {
+    return { adults: 2, children: 0, infants: 0, total: 2 };
+  }
   return undefined;
+}
+
+function extractDurationNights(text: string): number | undefined {
+  const t = text.toLowerCase();
+  const match = t.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen)\s*nights?\b/);
+  if (!match) return undefined;
+  const words: Record<string, number> = {
+    ...WORD_NUMBERS,
+    eleven: 11,
+    twelve: 12,
+    fourteen: 14,
+  };
+  const raw = match[1]!;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return words[raw];
 }
 
 function extractBudget(text: string): ExtractionPatch['budget'] | undefined {
@@ -247,7 +346,9 @@ function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
     });
   }
 
-  const airline = text.match(/\b(?:prefer|fly|with)\s+(Qantas|Jetstar|Virgin|Singapore Airlines|Emirates|Cathay)\b/i);
+  const airline = text.match(
+    /\b(?:prefer|fly(?:ing)?|with)\s+(Qantas|Jetstar|Virgin|Singapore Airlines|Emirates|Cathay)\b/i,
+  );
   const cabin = lower.match(/\b(economy|premium economy|business|first)\s*class\b/);
   if (airline || cabin || /\bdirect(?: flights?)? only\b|\bnon[- ]stop\b/.test(lower)) {
     patch.airlinePreferences = field({
@@ -258,7 +359,8 @@ function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
   }
 
   const stars = lower.match(/(\d)\s*[- ]?star/);
-  if (stars || /\bboutique\b|\bnear the beach\b|\bpool\b/.test(lower)) {
+  const niceHotel = /\b(?:nice|good|lovely|quality|decent)\s+hotel\b/.test(lower);
+  if (stars || niceHotel || /\bboutique\b|\bnear the beach\b|\bpool\b/.test(lower)) {
     const amenities: string[] = [];
     if (/\bpool\b/.test(lower)) amenities.push('pool');
     if (/\bbeach\b/.test(lower)) amenities.push('beach');
@@ -266,6 +368,7 @@ function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
     patch.hotelPreferences = field({
       stars: stars ? Number(stars[1]) : undefined,
       amenities: amenities.length ? amenities : undefined,
+      notes: niceHotel ? 'nice hotel' : undefined,
     });
   }
 
@@ -300,16 +403,36 @@ function extractPreferenceExtras(text: string, patch: ExtractionPatch): void {
   }
 }
 
-function looksLikeDateConfirmation(text: string, previous?: ConversationState): boolean {
+function dateContextFromState(previous?: ConversationState): DateParseContext | undefined {
+  if (!previous) return undefined;
+  const month = previous.departureDate?.value.month ?? previous.lastSuggestedDate?.month;
+  const year = previous.departureDate?.value.year ?? previous.lastSuggestedDate?.year;
+  if (month == null && year == null) return undefined;
+  return { month, year };
+}
+
+function awaitingExactDepartureDate(previous?: ConversationState): boolean {
+  if (!previous) return false;
+  if (previous.awaitingDateConfirmation) return true;
+  if (previous.lastSuggestedDate) return true;
+  if (previous.missingRequiredFields.includes('departureDate')) return true;
+  if (previous.missingRequiredFields.includes('departureDateConfirmation')) return true;
+  const kind = previous.departureDate?.value.kind;
+  return Boolean(kind && kind !== 'absolute' && !previous.departureDate?.value.isoDate);
+}
+
+function looksLikeDateConfirmation(text: string, previous?: ConversationState, now = new Date()): boolean {
   const t = text.trim().toLowerCase();
   // Do not treat destination-confirmation turns as date confirmations
   if (previous?.awaitingDestinationConfirmation) return false;
-  if (previous?.awaitingDateConfirmation || previous?.lastSuggestedDate) {
-    if (/^(yes|yep|yeah|correct|confirm|that works|sounds good)\b/.test(t)) return true;
-    if (t.includes('friday') && (t.includes('28') || t.includes('august'))) return true;
-  }
-  if (parseAbsoluteDate(text, new Date()) && /^(yes[,.]?\s*)?/i.test(t) && t.length < 100) {
-    if (previous?.awaitingDateConfirmation) return true;
+  if (!awaitingExactDepartureDate(previous)) return false;
+
+  if (/^(yes|yep|yeah|correct|confirm|that works|sounds good)\b/.test(t)) return true;
+  if (t.includes('friday') && (t.includes('28') || t.includes('august'))) return true;
+
+  // Short natural-language date answers while a departure date is pending
+  if (t.length <= 80 && parseAbsoluteDate(text, now, dateContextFromState(previous))) {
+    return true;
   }
   return false;
 }
@@ -484,22 +607,28 @@ function extractClarificationPlaceReply(text: string): string | undefined {
 }
 
 export function extractRequirements(message: string, previous?: ConversationState, now = new Date()): ExtractionPatch {
-  const text = message.trim();
-  const lower = text.toLowerCase();
+  const rawText = message.trim();
   const patch: ExtractionPatch = { changedFields: [] };
 
-  if (/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)([!,.\s].*)?$/i.test(text)) {
+  // Pure greeting / thanks only — do not discard compound "Hi … I want to go to …" turns.
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)(?:\s+[A-Za-z]+)?[!,.\s]*$/i.test(rawText)) {
     patch.isGreeting = true;
     return patch;
   }
-  if (/^(thanks|thank you|thankyou|cheers)([!,.\s].*)?$/i.test(text)) {
+  if (/^(thanks|thank you|thankyou|cheers)([!,.\s]*)$/i.test(rawText)) {
     patch.isThanks = true;
     return patch;
   }
-  if (/what can you do|how can you help|who are you|what are you/i.test(text)) {
+  if (/what can you do|how can you help|who are you|what are you/i.test(rawText)) {
     patch.isCapabilityQuestion = true;
     return patch;
   }
+
+  // Strip a leading greeting so the rest of the message is extracted normally.
+  const text = rawText
+    .replace(/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)(?:\s+[A-Za-z]+)?[!,.]?\s+/i, '')
+    .trim();
+  const lower = text.toLowerCase();
 
   const pendingDecision = resolvePendingDestinationDecision(text, previous);
   if (pendingDecision === 'confirm') {
@@ -511,9 +640,10 @@ export function extractRequirements(message: string, previous?: ConversationStat
     return patch;
   }
 
-  if (looksLikeDateConfirmation(text, previous)) {
+  const dateCtx = dateContextFromState(previous);
+  if (looksLikeDateConfirmation(text, previous, now)) {
     patch.isDateConfirmation = true;
-    const absolute = parseAbsoluteDate(text, now);
+    const absolute = parseAbsoluteDate(text, now, dateCtx);
     if (absolute) {
       patch.confirmedDateLabel = absolute.label;
       patch.departureDate = field(absolute, 'confirmed');
@@ -666,6 +796,17 @@ export function extractRequirements(message: string, previous?: ConversationStat
     patch.requestedServices = Array.from(new Set([...(patch.requestedServices ?? []), 'accommodation']));
   }
 
+  const nights = extractDurationNights(text);
+  if (nights != null) {
+    patch.durationNights = field(nights);
+    patch.changedFields!.push('durationNights');
+    if (!removals.includes('accommodation')) {
+      patch.requestedServices = Array.from(
+        new Set([...(patch.requestedServices ?? []), 'accommodation']),
+      );
+    }
+  }
+
   const purpose = extractPurpose(text);
   if (purpose) {
     patch.tripPurpose = field(purpose);
@@ -774,6 +915,18 @@ export function extractRequirements(message: string, previous?: ConversationStat
   }
 
   extractPreferenceExtras(text, patch);
+  if (patch.airlinePreferences) patch.changedFields!.push('airlinePreferences');
+  if (patch.hotelPreferences) {
+    patch.changedFields!.push('hotelPreferences');
+    if (!removals.includes('accommodation')) {
+      patch.requestedServices = Array.from(
+        new Set([...(patch.requestedServices ?? []), 'accommodation']),
+      );
+      patch.changedFields!.push('requestedServices');
+    }
+  }
+  if (patch.dateFlexibility) patch.changedFields!.push('dateFlexibility');
+  if (patch.roomRequirements) patch.changedFields!.push('roomRequirements');
 
   if (/\bitinerary\b|\bday[- ]by[- ]day\b|\bdaily schedule\b|\bbuild (?:me )?an? itinerary\b|\bcreate (?:an? )?itinerary\b/.test(lower)) {
     patch.explicitItineraryIntent = true;

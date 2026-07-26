@@ -156,19 +156,22 @@ export function evaluateClarifications(
         state.departureDate.value.weekday != null);
 
     if (approxNeedsConfirm) {
-      const suggestedDate = suggestConcreteDate(state, now);
-      if (suggestedDate) {
-        return {
-          needsClarification: true,
-          missingRequiredFields: ['departureDateConfirmation'],
-          suggestedDate,
-          question: `Which Friday did you mean — does ${suggestedDate.label} work?`,
-        };
+      // Only suggest a concrete Friday when the user already named a weekday.
+      if (state.departureDate.value.weekday != null) {
+        const suggestedDate = suggestConcreteDate(state, now);
+        if (suggestedDate) {
+          return {
+            needsClarification: true,
+            missingRequiredFields: ['departureDateConfirmation'],
+            suggestedDate,
+            question: `Which Friday did you mean — does ${suggestedDate.label} work?`,
+          };
+        }
       }
       return {
         needsClarification: true,
         missingRequiredFields: ['departureDate'],
-        question: 'Could you confirm the exact travel date?',
+        question: 'Which date would you like to travel?',
       };
     }
   }

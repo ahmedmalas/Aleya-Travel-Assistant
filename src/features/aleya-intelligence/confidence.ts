@@ -59,6 +59,7 @@ export function applyConfidenceToPatch(patch: ExtractionPatch, message: string):
   next.departureTimePreference = annotate(patch.departureTimePreference, 0.85);
   next.returnTimePreference = annotate(patch.returnTimePreference, 0.85);
   next.accommodationArea = annotate(patch.accommodationArea, 0.9);
+  next.durationNights = annotate(patch.durationNights, 0.9);
   next.travellers = annotate(patch.travellers, 0.9);
   next.tripPurpose = annotate(patch.tripPurpose, 0.7);
   next.budget = annotate(patch.budget, 0.75);

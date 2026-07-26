@@ -148,6 +148,13 @@ export function mergeConversationState(
     updated,
     askFields,
   );
+  next.durationNights = preferField(
+    patch.durationNights,
+    next.durationNights,
+    'durationNights',
+    updated,
+    askFields,
+  );
   next.travellers = preferField(patch.travellers, next.travellers, 'travellers', updated, askFields);
   next.tripPurpose = preferField(patch.tripPurpose, next.tripPurpose, 'tripPurpose', updated, askFields);
   next.budget = preferField(patch.budget, next.budget, 'budget', updated, askFields);

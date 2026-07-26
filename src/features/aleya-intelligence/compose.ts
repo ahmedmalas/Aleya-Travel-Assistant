@@ -25,6 +25,9 @@ function summarizeKnown(state: ConversationState): string[] {
   if (state.returnDate?.value.label) bits.push(state.returnDate.value.label);
   else if (state.returnTimePreference) bits.push(`return ${state.returnTimePreference.value}`);
   if (state.accommodationArea) bits.push(`stay in ${state.accommodationArea.value}`);
+  if (state.durationNights) {
+    bits.push(`${state.durationNights.value} night${state.durationNights.value === 1 ? '' : 's'}`);
+  }
   if (state.requestedServices.length) {
     bits.push(`services: ${state.requestedServices.map(serviceLabel).join(', ')}`);
   }
@@ -49,6 +52,8 @@ function summarizeKnown(state: ConversationState): string[] {
   }
   if (state.hotelPreferences?.value.stars) {
     bits.push(`${state.hotelPreferences.value.stars}-star hotel preference`);
+  } else if (state.hotelPreferences?.value.notes) {
+    bits.push(state.hotelPreferences.value.notes);
   }
   if (state.dietaryRequirements?.value.length) {
     bits.push(`dietary: ${state.dietaryRequirements.value.join(', ')}`);

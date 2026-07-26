@@ -124,6 +124,8 @@ export type ConversationState = {
   dateFlexibility?: FieldValue<'strict' | 'flexible' | 'plus_minus_days'>;
   requestedServices: TravelServiceKind[];
   accommodationArea?: FieldValue<string>;
+  /** Stay length in nights when the user states a duration (e.g. "four nights"). */
+  durationNights?: FieldValue<number>;
   travellers?: FieldValue<TravellerCounts>;
   tripPurpose?: FieldValue<TripPurposeKind>;
   budget?: FieldValue<BudgetValue>;
