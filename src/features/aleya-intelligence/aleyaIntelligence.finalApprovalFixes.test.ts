@@ -122,6 +122,119 @@ describe('Final approval fixes — clause-scoped service ops', () => {
     expect(second.state.excludedServices).not.toContain('car_hire');
     expect(second.reply).toMatch(/car hire/i);
   });
+
+  it('Remove flights and accommodation (coordinated same-op list)', () => {
+    const first = processTravelMessage({
+      message:
+        'Flights, accommodation and car hire from Sydney to Melbourne on 28 August 2026',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: 'Remove flights and accommodation.',
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices).toContain('car_hire');
+    expect(second.state.requestedServices).not.toContain('flights');
+    expect(second.state.requestedServices).not.toContain('accommodation');
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['flights', 'accommodation']),
+    );
+    expect(second.state.excludedServices).not.toContain('car_hire');
+    expect(second.reply).toMatch(/car hire/i);
+    expect(second.reply).not.toMatch(/services:[^.]*flights/i);
+  });
+
+  it('Forget accommodation and car hire', () => {
+    const first = processTravelMessage({
+      message:
+        'Flights, accommodation and car hire from Sydney to Brisbane on 30 August 2026',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: 'Forget accommodation and car hire.',
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices).toContain('flights');
+    expect(second.state.requestedServices).not.toContain('accommodation');
+    expect(second.state.requestedServices).not.toContain('car_hire');
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['accommodation', 'car_hire']),
+    );
+  });
+
+  it("I don't need flights and the hotel", () => {
+    const first = processTravelMessage({
+      message: 'Flights and accommodation from Sydney to Adelaide for three nights',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: "I don't need flights and the hotel.",
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices ?? []).not.toContain('flights');
+    expect(second.state.requestedServices ?? []).not.toContain('accommodation');
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['flights', 'accommodation']),
+    );
+  });
+
+  it('Remove the hotel and the rental car', () => {
+    const first = processTravelMessage({
+      message:
+        'Flights, accommodation and car hire from Sydney to Melbourne on 28 August 2026',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: 'Remove the hotel and the rental car.',
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices).toContain('flights');
+    expect(second.state.requestedServices).not.toContain('accommodation');
+    expect(second.state.requestedServices).not.toContain('car_hire');
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['accommodation', 'car_hire']),
+    );
+  });
+
+  it('Remove flights, accommodation and car hire (comma + and list)', () => {
+    const first = processTravelMessage({
+      message:
+        'Flights, accommodation and car hire from Sydney to Melbourne on 28 August 2026',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: 'Remove flights, accommodation and car hire.',
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices ?? []).toEqual([]);
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['flights', 'accommodation', 'car_hire']),
+    );
+  });
+
+  it('Remove flights and accommodation and add car hire (list then new op)', () => {
+    const first = processTravelMessage({
+      message: 'Flights and accommodation from Sydney to Melbourne on 28 August 2026',
+      now: NOW,
+    });
+    const second = processTravelMessage({
+      message: 'Remove flights and accommodation and add car hire.',
+      previousState: first.state,
+      now: NOW,
+    });
+    expect(second.state.requestedServices).toContain('car_hire');
+    expect(second.state.requestedServices).not.toContain('flights');
+    expect(second.state.requestedServices).not.toContain('accommodation');
+    expect(second.state.excludedServices).toEqual(
+      expect.arrayContaining(['flights', 'accommodation']),
+    );
+    expect(second.state.excludedServices).not.toContain('car_hire');
+  });
 });
 
 describe('Final approval fixes — bare actually / preference soft destination', () => {

@@ -101,10 +101,15 @@ function detectServicesInFragment(fragment: string): TravelServiceKind[] {
   return hits;
 }
 
-/** Split on clause boundaries so removal verbs cannot span into add/keep clauses. */
+/** Split on independent action boundaries; keep same-op service lists intact. */
 function splitServiceClauses(text: string): string[] {
+  // Always split on punctuation and adversative/sequential conjunctions.
+  // Split on "and" only when the right-hand side starts a new operation
+  // ("and add car hire"), not for coordinated lists ("flights and accommodation").
   return text
-    .split(/\s*(?:,|;|\.(?=\s|$)|!|\?|\band\b|\bbut\b|\bthen\b|\bwhile\b|\bhowever\b)\s*/i)
+    .split(
+      /\s*(?:,|;|\.(?=\s|$)|!|\?|\bbut\b|\bthen\b|\bwhile\b|\bhowever\b)\s*|\s*\band\s+(?=(?:also\s+)?(?:add|include|get(?:\s+me)?|book|keep|retain|still\s+(?:need|want)|leave|remove|forget|cancel|don'?t|do\s+not|without|no)\b)/i,
+    )
     .map((part) => part.trim())
     .filter(Boolean);
 }
@@ -126,8 +131,26 @@ function classifyServiceClauseIntent(clause: string): ServiceClauseIntent {
 }
 
 /**
+ * Comma-separated tails like "accommodation and car hire" after
+ * "Remove flights, …" should inherit the prior operation. Reject
+ * fragments that contain non-service content ("Accommodation is nice").
+ */
+function isServiceListContinuation(clause: string): boolean {
+  let rest = clause;
+  for (const { re } of SERVICE_FRAGMENT) {
+    rest = rest.replace(new RegExp(re.source, 'gi'), ' ');
+  }
+  rest = rest
+    .replace(/\b(?:the|a|an|and|also|plus|too|as\s+well|please)\b/gi, ' ')
+    .replace(/[,&\s]+/g, '')
+    .trim();
+  return rest.length === 0;
+}
+
+/**
  * Clause-scoped service ops. Latest explicit operation per service wins
  * (remove → keep/add in a later clause restores the service).
+ * Coordinated lists under one verb share that verb's intent.
  */
 function extractServiceOperations(text: string): {
   removeServices: TravelServiceKind[];
@@ -135,27 +158,37 @@ function extractServiceOperations(text: string): {
 } {
   const ops = new Map<TravelServiceKind, 'remove' | 'add' | 'keep'>();
   let lastRemoved: TravelServiceKind | undefined;
+  let activeIntent: Exclude<ServiceClauseIntent, 'neutral'> | undefined;
   const clauses = splitServiceClauses(text);
 
   for (const clause of clauses) {
     const intent = classifyServiceClauseIntent(clause);
     const services = detectServicesInFragment(clause);
 
+    const effectiveIntent: ServiceClauseIntent =
+      intent !== 'neutral'
+        ? intent
+        : services.length && activeIntent && isServiceListContinuation(clause)
+          ? activeIntent
+          : 'neutral';
+
+    if (intent !== 'neutral') activeIntent = intent;
+
     if (!services.length) {
       // "actually add it back" refers to the most recently removed service
-      if (intent === 'add' && /\badd(?:\s+it)?(?:\s+back)?\b/i.test(clause) && lastRemoved) {
+      if (effectiveIntent === 'add' && /\badd(?:\s+it)?(?:\s+back)?\b/i.test(clause) && lastRemoved) {
         ops.set(lastRemoved, 'add');
       }
       continue;
     }
 
     for (const service of services) {
-      if (intent === 'remove') {
+      if (effectiveIntent === 'remove') {
         ops.set(service, 'remove');
         lastRemoved = service;
-      } else if (intent === 'keep') {
+      } else if (effectiveIntent === 'keep') {
         ops.set(service, 'keep');
-      } else if (intent === 'add') {
+      } else if (effectiveIntent === 'add') {
         ops.set(service, 'add');
       }
     }
