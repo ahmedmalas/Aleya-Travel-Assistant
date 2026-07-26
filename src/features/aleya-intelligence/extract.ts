@@ -63,6 +63,7 @@ const WEEKDAYS: Record<string, number> = {
 const PLACE_STOPWORDS = new Set([
   'around', 'from', 'to', 'on', 'at', 'in', 'and', 'with', 'for', 'next', 'this',
   'the', 'a', 'an', 'after', 'before', 'near', 'via', 'leaving', 'actually', 'instead',
+  'of', 'go', 'going', 'want', 'plans', 'change', 'make', 'it',
 ]);
 
 function field<T>(value: T, source: 'confirmed' | 'inferred' = 'confirmed'): FieldValue<T> {
@@ -347,12 +348,16 @@ function resolvePendingDestinationDecision(
 const DESTINATION_CHANGE_STOPWORDS = new Set([
   'one', 'a', 'an', 'the', 'it', 'day', 'days', 'earlier', 'later', 'sometime', 'soon',
   'maybe', 'perhaps', 'tonight', 'today', 'tomorrow', 'yesterday', 'please', 'now',
+  'of', 'go', 'going', 'to', 'want', 'plans', 'change', 'make',
 ]);
 
 type DestinationChange = {
   destination: string;
   area?: string;
 };
+
+/** Place-name capture: keep case-sensitive so `instead of Melbourne` never becomes "Of Melbourne". */
+const PLACE_CAPTURE = '([A-Z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)?)';
 
 function normalizeDestinationCandidate(raw: string): DestinationChange | undefined {
   const trimmed = raw.trim().replace(/[.,!?;:]+$/g, '').trim();
@@ -365,9 +370,9 @@ function normalizeDestinationCandidate(raw: string): DestinationChange | undefin
 
   const name = resolvePlaceName(trimmed);
   if (!name || DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) return undefined;
-  // Reject vague multi-word captures that are not known places
+  // Only accept known cities/areas for replacement — reject garbage captures like "Of Melbourne"
   const known = PLACES.some((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (!known && trimmed.split(/\s+/).length > 2) return undefined;
+  if (!known) return undefined;
   return { destination: name };
 }
 
@@ -381,23 +386,34 @@ function extractDestinationChange(text: string): DestinationChange | undefined {
   // Never treat day-shift phrasing as a destination change
   if (/\b(?:one|a|1)\s+day\s+(?:earlier|later)\b/i.test(text)) return undefined;
 
+  // Intentionally NOT using the `i` flag on place captures — JS `/i` makes [A-Z] match
+  // lowercase and turns "instead of Melbourne" into destination "Of Melbourne".
   const patterns: Array<{ re: RegExp; group: number }> = [
-    { re: /\b(?:actually\s+)?make it\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*(?:instead)?\b/i, group: 1 },
-    { re: /\b(?:actually\s+)?(?:change|switch)\s+(?:the\s+)?destination\s+to\s+(.+?)(?:\.|$)/i, group: 1 },
-    { re: /\bdestination\s+is\s+(.+?)(?:\.|$)/i, group: 1 },
-    { re: /\b(?:actually\s+)?(?:change|switch)\s+(?:it\s+)?to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, group: 1 },
+    { re: new RegExp(`\\b(?:actually\\s+)?make it\\s+${PLACE_CAPTURE}\\s*(?:instead)?\\b`), group: 1 },
+    { re: new RegExp(`\\b(?:actually\\s+)?(?:change|switch)\\s+(?:the\\s+)?destination\\s+to\\s+(.+?)(?:\\.|$)`, 'i'), group: 1 },
+    { re: new RegExp(`\\bdestination\\s+is\\s+(.+?)(?:\\.|$)`, 'i'), group: 1 },
+    { re: new RegExp(`\\b(?:actually\\s+)?(?:change|switch)\\s+(?:it\\s+)?to\\s+${PLACE_CAPTURE}`), group: 1 },
     {
-      re: /\b(?:go to|travel to|fly to|going to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead of\b/i,
+      re: new RegExp(`\\b(?:go to|travel to|fly to|going to)\\s+${PLACE_CAPTURE}\\s+instead of\\b`),
       group: 1,
     },
-    { re: /\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead of\b/i, group: 1 },
-    { re: /\binstead(?:\s+make it|\s+to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, group: 1 },
+    { re: new RegExp(`\\b${PLACE_CAPTURE}\\s+instead of\\b`), group: 1 },
+    { re: new RegExp(`\\binstead(?:\\s+make it|\\s+to)\\s+${PLACE_CAPTURE}`), group: 1 },
     {
-      re: /\bnot\s+[A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?\s*[—\-,:]+\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      re: new RegExp(
+        `\\bnot\\s+[A-Za-z][a-zA-Z]+(?:\\s+[A-Za-z][a-zA-Z]+)?\\s*[—\\-,:]+\\s*${PLACE_CAPTURE}`,
+      ),
       group: 1,
     },
     {
-      re: /\bchange of plans\b[\s\S]{0,120}?\b(?:go to|travel to|fly to|make it|to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      // Prefer "go to/travel to/fly to/make it" before bare "to" so "want to go" is skipped
+      re: new RegExp(
+        `\\bchange of plans\\b[\\s\\S]{0,120}?\\b(?:go to|travel to|fly to|make it)\\s+${PLACE_CAPTURE}`,
+      ),
+      group: 1,
+    },
+    {
+      re: new RegExp(`\\bchange of plans\\b[\\s\\S]{0,120}?\\bto\\s+${PLACE_CAPTURE}`),
       group: 1,
     },
   ];
