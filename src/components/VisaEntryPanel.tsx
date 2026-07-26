@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type VisaApplication = {
   id: string;
@@ -11,6 +11,13 @@ type VisaApplication = {
 };
 
 const STORAGE_KEY = 'aleya-travel:visa-applications:v1';
+const today = new Date().toISOString().split('T')[0];
+const formatDate = (value: string) => {
+  if (!value) return '';
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(year, month - 1, day));
+};
 
 export function VisaEntryPanel() {
   const [traveller, setTraveller] = useState('');
@@ -18,6 +25,7 @@ export function VisaEntryPanel() {
   const [destination, setDestination] = useState('');
   const [departureDate, setDepartureDate] = useState('');
   const [applications, setApplications] = useState<VisaApplication[]>([]);
+  const departureInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -36,6 +44,13 @@ export function VisaEntryPanel() {
   const saveApplications = (next: VisaApplication[]) => {
     setApplications(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const openCalendar = () => {
+    const input = departureInputRef.current;
+    if (!input) return;
+    input.focus();
+    if ('showPicker' in input) input.showPicker();
   };
 
   const addApplication = () => {
@@ -72,7 +87,7 @@ export function VisaEntryPanel() {
           <label className="text-sm text-slate-200"><span className="mb-2 block">Traveller</span><input className={inputClass} value={traveller} onChange={(event) => setTraveller(event.target.value)} placeholder="Traveller name" /></label>
           <label className="text-sm text-slate-200"><span className="mb-2 block">Passport nationality</span><input className={inputClass} value={nationality} onChange={(event) => setNationality(event.target.value)} /></label>
           <label className="text-sm text-slate-200"><span className="mb-2 block">Destination country</span><input className={inputClass} value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Japan" /></label>
-          <label className="text-sm text-slate-200"><span className="mb-2 block">Departure date</span><input type="date" className={inputClass} value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} /></label>
+          <label className="text-sm text-slate-200"><span className="mb-2 block">Departure date</span><div className="relative"><input ref={departureInputRef} type="date" min={today} value={departureDate} onClick={openCalendar} onFocus={openCalendar} onChange={(event) => setDepartureDate(event.target.value)} style={{ colorScheme: 'dark' }} className={`${inputClass} cursor-pointer pr-12`} /><button type="button" aria-label="Open departure calendar" onClick={openCalendar} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-xl text-sky-200 hover:text-white">📅</button></div></label>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -84,7 +99,7 @@ export function VisaEntryPanel() {
         <div className="mt-7 space-y-3">
           {applications.length === 0 ? <p className="rounded-2xl border border-dashed border-white/15 p-5 text-sm text-slate-400">No visa checks saved yet.</p> : applications.map((entry) => (
             <article key={entry.id} className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 md:grid-cols-[1.4fr_1fr_1fr_auto] md:items-center">
-              <div><p className="font-semibold text-white">{entry.traveller} · {entry.destination}</p><p className="mt-1 text-xs text-slate-400">{entry.nationality} passport{entry.departureDate ? ` · departs ${entry.departureDate}` : ''}</p></div>
+              <div><p className="font-semibold text-white">{entry.traveller} · {entry.destination}</p><p className="mt-1 text-xs text-slate-400">{entry.nationality} passport{entry.departureDate ? ` · departs ${formatDate(entry.departureDate)}` : ''}</p></div>
               <select className={inputClass} aria-label={`Visa requirement for ${entry.traveller}`} value={entry.requirement} onChange={(event) => update(entry.id, { requirement: event.target.value as VisaApplication['requirement'] })}><option value="checking">Checking requirement</option><option value="required">Visa required</option><option value="eta">eVisa / ETA required</option><option value="not-required">No visa required</option></select>
               <select className={inputClass} aria-label={`Application status for ${entry.traveller}`} value={entry.status} onChange={(event) => update(entry.id, { status: event.target.value as VisaApplication['status'] })}><option value="not-started">Not started</option><option value="preparing">Preparing documents</option><option value="submitted">Submitted</option><option value="approved">Approved</option></select>
               <button type="button" onClick={() => saveApplications(applications.filter((item) => item.id !== entry.id))} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-300 hover:border-rose-300 hover:text-rose-200">Remove</button>
