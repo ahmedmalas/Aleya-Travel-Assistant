@@ -79,17 +79,9 @@ export function WelcomeAuthGate({ onEnter }: { onEnter: () => void }) {
         <button type="button" onClick={() => setView('welcome')} className="text-sm text-slate-400 hover:text-white">← Back to welcome</button>
         <p className="mt-6 text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">Aleya Travel</p>
         <h1 className="mt-2 text-3xl font-bold">{view === 'sign-up' ? 'Create your account' : view === 'forgot' ? 'Reset your password' : 'Welcome back'}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-400">{cloudRuntime.clientConfigured ? 'Secure authentication is connected to Aleya cloud.' : 'Cloud authentication configuration is required before public launch. Guest mode remains available for testing.'}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-400">{cloudRuntime.clientConfigured ? 'Securely access your trips and travel plans across your devices.' : 'Create an account with email or continue as a guest while Aleya is being prepared for public launch.'}</p>
 
-        {view !== 'forgot' ? (
-          <div className="mt-6 grid gap-3">
-            <button type="button" disabled className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-semibold text-slate-400">Continue with Google · provider setup required</button>
-            <button type="button" disabled className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-semibold text-slate-400">Continue with Apple · provider setup required</button>
-            <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-slate-500"><span className="h-px flex-1 bg-white/10" />or use email<span className="h-px flex-1 bg-white/10" /></div>
-          </div>
-        ) : null}
-
-        <div className="mt-4 space-y-4">
+        <div className="mt-6 space-y-4">
           {view === 'sign-up' ? <label className="block text-sm text-slate-200"><span className="mb-2 block">Name</span><input className={inputClass} value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /></label> : null}
           <label className="block text-sm text-slate-200"><span className="mb-2 block">Email</span><input type="email" className={inputClass} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
           {view !== 'forgot' ? <label className="block text-sm text-slate-200"><span className="mb-2 block">Password</span><div className="flex gap-2"><input type={showPassword ? 'text' : 'password'} className={inputClass} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={view === 'sign-up' ? 'new-password' : 'current-password'} /><button type="button" onClick={() => setShowPassword((value) => !value)} className="rounded-2xl border border-white/15 px-4 text-sm">{showPassword ? 'Hide' : 'Show'}</button></div></label> : null}
@@ -100,7 +92,7 @@ export function WelcomeAuthGate({ onEnter }: { onEnter: () => void }) {
 
         <button type="button" disabled={busy || !email || (view !== 'forgot' && !password)} onClick={() => {
           if (view === 'sign-up') void run(() => authSignUp(email, password, displayName));
-          else if (view === 'forgot') void run(async () => { await authForgotPassword(email); setNotice('Check your email for password reset instructions when cloud email delivery is configured.'); });
+          else if (view === 'forgot') void run(async () => { await authForgotPassword(email); setNotice('Check your email for password reset instructions.'); });
           else void run(() => authSignIn(email, password));
         }} className="mt-6 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">
           {busy ? 'Please wait…' : view === 'sign-up' ? 'Create account' : view === 'forgot' ? 'Send reset link' : 'Sign in'}
