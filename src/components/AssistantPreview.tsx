@@ -39,10 +39,9 @@ export function AssistantPreview() {
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text: trimmed }]);
     setQuestion('');
     try {
-      const result = await handleTravelChatMessage({
+      const result = handleTravelChatMessage({
         message: trimmed,
         previousState: conversationRef.current,
-        runSearch: true,
       });
       conversationRef.current = result.state;
       setMessages((current) => [

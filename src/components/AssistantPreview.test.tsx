@@ -14,8 +14,9 @@ describe('AssistantPreview', () => {
     await user.clear(screen.getByLabelText(/Ask the assistant/i));
     await user.type(screen.getByLabelText(/Ask the assistant/i), 'Help me plan flights and hotels to Tokyo in April');
     await user.click(ask);
-    expect(await screen.findByText(/I’ve captured destination Tokyo/i)).toBeInTheDocument();
+    expect(await screen.findByText(/I’ve got destination Tokyo/i)).toBeInTheDocument();
     expect(screen.queryByText(/disabled/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Tell me a little more about what you need/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/[Ss]earching/)).not.toBeInTheDocument();
   });
 });

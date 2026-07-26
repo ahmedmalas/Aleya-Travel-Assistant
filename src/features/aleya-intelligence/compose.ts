@@ -1,14 +1,10 @@
 import type { ClarificationResult } from './clarify';
 import type { ExtractionPatch } from './extract';
-import type {
-  ConversationState,
-  IntelligenceResult,
-  RecommendationBundle,
-  SearchBundle,
-} from './types';
+import type { ConversationState, IntelligenceResult } from './types';
 
-const FORBIDDEN_GENERIC =
-  /tell me a little more about what you need/i;
+function serviceLabel(service: string): string {
+  return service.replace(/_/g, ' ');
+}
 
 function summarizeKnown(state: ConversationState): string[] {
   const bits: string[] = [];
@@ -26,101 +22,67 @@ function summarizeKnown(state: ConversationState): string[] {
         : state.departureTimePreference.value;
     bits.push(`outbound ${label}`);
   }
-  if (state.returnTimePreference) bits.push(`return ${state.returnTimePreference.value}`);
-  if (state.accommodationLocation) bits.push(`stay in ${state.accommodationLocation.value}`);
+  if (state.returnDate?.value.label) bits.push(state.returnDate.value.label);
+  else if (state.returnTimePreference) bits.push(`return ${state.returnTimePreference.value}`);
+  if (state.accommodationArea) bits.push(`stay in ${state.accommodationArea.value}`);
   if (state.requestedServices.length) {
+    bits.push(`services: ${state.requestedServices.map(serviceLabel).join(', ')}`);
+  }
+  if (state.travellers && state.travellers.source === 'confirmed') {
+    bits.push(`${state.travellers.value.total} travellers`);
+  }
+  if (state.budget) {
     bits.push(
-      `services: ${state.requestedServices
-        .map((s) => s.replace(/_/g, ' '))
-        .join(', ')}`,
+      state.budget.value.style
+        ? `${state.budget.value.style} budget`
+        : `budget ${state.budget.value.amount ?? ''}`.trim(),
     );
   }
+  if (state.explicitItineraryIntent) bits.push('itinerary requested');
   return bits;
-}
-
-function formatOffers(search: SearchBundle, recommendations: RecommendationBundle): string {
-  const lines: string[] = [];
-  if (recommendations.primary.length) {
-    lines.push('Here is a coherent planning package (mock/planning offers — not live inventory):');
-    for (const offer of recommendations.primary) {
-      lines.push(
-        `• ${offer.service.replace(/_/g, ' ')}: ${offer.title} — ${offer.detail}${offer.priceLabel ? ` (${offer.priceLabel})` : ''}`,
-      );
-    }
-  }
-  if (recommendations.rationale.length) {
-    lines.push('');
-    lines.push(recommendations.rationale.join(' '));
-  }
-  lines.push('');
-  lines.push('Say if you want me to adjust times, change hotels, or book placeholders. I will only build a full day-by-day itinerary if you ask for one.');
-  return lines.join('\n');
 }
 
 export type ComposeInput = {
   patch: ExtractionPatch;
   state: ConversationState;
   clarification: ClarificationResult;
-  search?: SearchBundle;
-  recommendations?: RecommendationBundle;
-  travellerName?: string;
   stage: IntelligenceResult['stage'];
-  shouldGenerateItinerary: boolean;
+  travellerName?: string;
 };
 
 /**
- * Compose a natural reply from conversation state — never a hardcoded city script.
+ * Phase 1 replies acknowledge understood state and clarify when needed.
+ * Never claims a search ran. Never uses banned generic fallbacks when travel intent exists.
  */
 export function composeReply(input: ComposeInput): string {
-  const { patch, state, clarification, search, recommendations, travellerName, shouldGenerateItinerary } = input;
+  const { patch, state, clarification, travellerName } = input;
 
   if (patch.isGreeting) {
     return travellerName
-      ? `Hi ${travellerName}. I can help with flights, stays, cars, transfers, activities, and more — tell me where you want to go.`
-      : 'Hi. I can help with flights, stays, cars, transfers, activities, and more — tell me where you want to go.';
+      ? `Hi ${travellerName}. Tell me where you want to go and I’ll capture the details.`
+      : 'Hi. Tell me where you want to go and I’ll capture the details.';
   }
-  if (patch.isThanks) {
-    return 'You’re welcome. What would you like to do next?';
-  }
+  if (patch.isThanks) return 'You’re welcome. What would you like to adjust next?';
   if (patch.isCapabilityQuestion) {
-    return 'I read your full request, keep requirements across turns, clarify only what is missing, then search and compare flights, hotels, cars, transfers, activities, cruises, and more. I build itineraries only when you ask.';
+    return 'I read your full message, keep requirements across turns, and ask only for what is still missing. I do not invent searches or itineraries unless you ask for an itinerary.';
   }
 
-  if (clarification.needsClarification && clarification.questions.length) {
-    const known = summarizeKnown(state);
+  const known = summarizeKnown(state);
+
+  if (clarification.needsClarification && clarification.question) {
     const lead =
       known.length > 0
-        ? `I’ve captured ${known.join('; ')}.`
+        ? `I’ve got ${known.join('; ')}.`
         : 'I’ve started capturing your travel requirements.';
-    const question = clarification.questions[0]!;
-    // Melbourne-style: suggest concrete Friday when we have a suggestion
-    if (clarification.suggestedDate) {
-      return `${lead} ${question}`;
-    }
-    return `${lead} ${question}`;
+    return `${lead} ${clarification.question}`;
   }
 
-  if (search && recommendations) {
-    const known = summarizeKnown(state);
-    const header = `Searching with your saved details (${known.join('; ')}).`;
-    const body = formatOffers(search, recommendations);
-    const itineraryNote = shouldGenerateItinerary
-      ? '\n\nYou asked for an itinerary — I can generate a day-by-day plan next from these options.'
-      : '';
-    return `${header}\n\n${body}${itineraryNote}`;
-  }
-
-  // Soft continue when we have intent but are not searching yet
-  const known = summarizeKnown(state);
   if (known.length > 0) {
-    return `Got it — I’ve saved ${known.join('; ')}. Tell me anything else to refine, or confirm the remaining details so I can search.`;
+    const itineraryNote = state.explicitItineraryIntent
+      ? ' You’ve asked for an itinerary — I’ll generate one only when that step is available for this conversation.'
+      : ' I won’t build an itinerary unless you ask for one.';
+    return `Understood — I’ve saved ${known.join('; ')}.${itineraryNote} Tell me anything to add, change, or remove.`;
   }
 
-  // Last resort when there is truly no travel signal — still avoid the banned generic phrase
-  const fallback =
-    'Share a destination, dates, or the services you need (flights, hotel, car hire, and so on) and I’ll take it from there.';
-  if (FORBIDDEN_GENERIC.test(fallback)) {
-    return 'Share a destination or travel service and I’ll help.';
-  }
-  return fallback;
+  return 'Share a destination, dates, or the services you need (flights, accommodation, car hire, and so on) and I’ll take it from there.';
 }

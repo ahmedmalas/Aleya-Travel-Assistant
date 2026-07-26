@@ -101,16 +101,12 @@ export function ConciergePlanPanel() {
             destination: { value: activeVaultTrip.destination, source: 'confirmed' as const },
           }
         : conversationRef.current;
-    const result = await handleTravelChatMessage({
+    const result = handleTravelChatMessage({
       message: trimmed,
       previousState: seeded,
-      currency: activeVaultTrip.currency,
-      runSearch: true,
     });
     conversationRef.current = result.state;
-    const title =
-      result.recommendations?.primary[0]?.title ??
-      (result.stage === 'clarify' ? 'Need a detail' : 'Concierge planning update');
+    const title = result.stage === 'clarify' ? 'Need a detail' : 'Concierge planning update';
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',

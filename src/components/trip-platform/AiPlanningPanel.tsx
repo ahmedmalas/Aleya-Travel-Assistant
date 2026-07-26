@@ -84,19 +84,18 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
-      const result = await handleTravelChatMessage({
+      const result = handleTravelChatMessage({
         message: request,
         previousState: conversationRef.current,
         travellerName,
-        currency: getTravellerCurrency(),
-        runSearch: true,
       });
       conversationRef.current = result.state;
 
+      // Phase 1: only generate an itinerary when the user explicitly asked for one.
       let plan: AiTravelPlan | undefined;
-      if (result.shouldGenerateItinerary) {
+      if (result.shouldGenerateItinerary && result.explicitItineraryIntent) {
         const travellerCurrency = getTravellerCurrency();
-        const generated = generateAndPreviewAiPlan(result.planModeHint ?? 'complete');
+        const generated = generateAndPreviewAiPlan('complete');
         plan = {
           ...generated,
           budgetSuggestion: { ...generated.budgetSuggestion, currency: travellerCurrency },
@@ -115,7 +114,7 @@ export function AiPlanningPanel() {
     <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30" aria-labelledby="aleya-assistant-title">
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
         <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">Aleya AI Assistant</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the Aleya Intelligence Layer — requirements persist across turns; itineraries only when you ask.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the Aleya Intelligence Core — requirements persist across turns; itineraries only when you ask. Search comes in a later phase.</p>
       </header>
 
       {feedback ? <div className="px-5 pt-4 md:px-7"><StatusBanner kind="info" message={feedback} /></div> : null}

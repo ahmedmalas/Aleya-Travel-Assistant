@@ -1,19 +1,16 @@
 /**
- * Aleya Intelligence Layer — public entry points.
- * All travel chat UIs must call `processTravelMessage` / `handleTravelChatMessage`.
+ * Aleya Intelligence Core (Phase 1)
+ * All travel chat UIs must call `handleTravelChatMessage` / `processTravelMessage`.
  */
 
-export { processTravelMessage, processTravelMessageSync } from './pipeline';
+export { processTravelMessage } from './pipeline';
 export { createEmptyConversationState } from './types';
 export type {
   ApproximateDate,
   ConversationState,
   FieldValue,
   IntelligenceResult,
-  OfferSummary,
   ProcessMessageInput,
-  RecommendationBundle,
-  SearchBundle,
   TravelServiceKind,
   TripPurposeKind,
 } from './types';
@@ -21,20 +18,14 @@ export type {
 import { processTravelMessage } from './pipeline';
 import type { ConversationState, IntelligenceResult, ProcessMessageInput } from './types';
 
-/** Alias used by UI surfaces — every travel chat request enters here. */
-export async function handleTravelChatMessage(input: ProcessMessageInput): Promise<IntelligenceResult> {
+export function handleTravelChatMessage(input: ProcessMessageInput): IntelligenceResult {
   return processTravelMessage(input);
 }
 
-/** Multi-turn helper that threads state for callers. */
-export async function continueTravelConversation(
+export function continueTravelConversation(
   message: string,
   previousState: ConversationState | undefined,
   options?: Omit<ProcessMessageInput, 'message' | 'previousState'>,
-): Promise<IntelligenceResult> {
-  return processTravelMessage({
-    message,
-    previousState,
-    ...options,
-  });
+): IntelligenceResult {
+  return processTravelMessage({ message, previousState, ...options });
 }
