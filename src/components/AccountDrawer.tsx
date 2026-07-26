@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { UserProfilePanel, type ProfileSection } from './UserProfilePanel';
 
 type AccountView = 'menu' | ProfileSection | 'help';
@@ -13,29 +13,24 @@ const menuItems: Array<{ id: ProfileSection | 'help'; title: string; description
 
 export function AccountDrawer({ onClose, onSignOut }: { onClose: () => void; onSignOut: () => void }) {
   const [view, setView] = useState<AccountView>('menu');
-
-  useEffect(() => {
-    const back = () => setView('menu');
-    window.addEventListener('aleya-account-back', back);
-    return () => window.removeEventListener('aleya-account-back', back);
-  }, []);
-
   const supportSubject = encodeURIComponent('Aleya Travel support request');
   const issueSubject = encodeURIComponent('Aleya Travel issue report');
 
+  const goBack = () => setView('menu');
+
   return (
-    <div className="fixed inset-0 z-[80] bg-slate-950/75 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="My Aleya account">
+    <div className="fixed inset-0 z-[80] bg-slate-950/75 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Account menu">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Close account" onClick={onClose} />
       <aside className="absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-white/10 bg-slate-950 shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">My Aleya</p><h2 className="mt-1 text-2xl font-bold">Account</h2></div>
+          <h2 className="text-2xl font-bold">Account</h2>
           <button type="button" onClick={onClose} className="rounded-full border border-white/15 px-4 py-2 text-sm hover:border-sky-300">Close</button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-6">
           {view === 'menu' ? (
             <div className="flex min-h-full flex-col px-6">
-              <p className="text-sm text-slate-400">Choose what you want to view or update.</p>
+              <p className="text-sm text-slate-400">Select an option to view or update it.</p>
               <div className="mt-5 space-y-3">
                 {menuItems.map((item) => (
                   <button key={item.id} type="button" onClick={() => setView(item.id)} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left hover:border-sky-300/60 hover:bg-sky-400/[0.06]">
@@ -48,11 +43,16 @@ export function AccountDrawer({ onClose, onSignOut }: { onClose: () => void; onS
             </div>
           ) : null}
 
-          {view === 'personal' || view === 'regional' || view === 'preferences' || view === 'emergency' ? <UserProfilePanel section={view} /> : null}
+          {view === 'personal' || view === 'regional' || view === 'preferences' || view === 'emergency' ? (
+            <div>
+              <button type="button" onClick={goBack} className="mx-6 mb-1 text-sm text-sky-300 hover:text-sky-200">← Back to account</button>
+              <UserProfilePanel section={view} hideBackButton />
+            </div>
+          ) : null}
 
           {view === 'help' ? (
             <section className="px-6 pb-8">
-              <button type="button" onClick={() => setView('menu')} className="mb-5 text-sm text-sky-300 hover:text-sky-200">← Back to account</button>
+              <button type="button" onClick={goBack} className="mb-5 text-sm text-sky-300 hover:text-sky-200">← Back to account</button>
               <h2 className="text-3xl font-bold">Help & support</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">Get help using Aleya, report something that is not working, or contact our support team.</p>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
