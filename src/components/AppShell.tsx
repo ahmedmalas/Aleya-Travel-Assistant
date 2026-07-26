@@ -82,6 +82,14 @@ function CustomerApp() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <CurrencyBootstrap />
+      <style>{`
+        .customer-trip-platform > section > div:first-child > div:first-child {
+          display: none;
+        }
+        .customer-trip-platform > section > div:first-child > p[role='status'][class*='border-sky-300'] {
+          display: none;
+        }
+      `}</style>
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <a href="#top" className="block" aria-label="Aleya Travel home"><p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p><h1 className="mt-1 text-xl font-bold">AI Travel Assistant</h1></a>
@@ -128,7 +136,14 @@ function CustomerApp() {
         <section className="mx-auto grid max-w-7xl gap-5 px-6 pb-12 md:grid-cols-2 lg:grid-cols-3">{travelSections.map((section) => <SectionCard key={section.title} section={section} />)}</section>
         <VisaEntryPanel />
         <MoneyServicesPanel />
-        <div id="trip-platform" className="scroll-mt-28"><TripPlatform /></div>
+        <div id="trip-platform" className="customer-trip-platform scroll-mt-28">
+          <div className="mx-auto max-w-7xl px-6 pb-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-sky-300">My trips</p>
+            <h2 className="mt-2 text-3xl font-bold text-white md:text-4xl">Plan and manage your journey</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Ask Aleya for help, organise your itinerary, manage bookings and keep everything for your journey together.</p>
+          </div>
+          <TripPlatform />
+        </div>
       </main>
       <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-slate-500">Aleya Travel — search, plan and manage your journey.</footer>
 
