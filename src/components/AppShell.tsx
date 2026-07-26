@@ -35,6 +35,25 @@ function CustomerApp() {
     if ('showPicker' in input) input.showPicker();
   };
 
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const openPlatformTool = (tabId: 'stays' | 'itinerary') => {
+    const groupLabel = tabId === 'stays' ? 'Book' : 'Plan';
+    scrollToSection('trip-platform');
+    window.setTimeout(() => {
+      const groupButton = Array.from(document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Platform sections"] button')).find(
+        (button) => button.textContent?.trim() === groupLabel,
+      );
+      groupButton?.click();
+      window.setTimeout(() => {
+        document.getElementById(`trip-platform-tab-${tabId}`)?.click();
+        document.getElementById(`trip-platform-panel-${tabId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }, 100);
+  };
+
   const searchFlights = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const from = normaliseAirport(origin);
@@ -58,6 +77,8 @@ function CustomerApp() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const shortcutClass = 'rounded-full bg-white/10 px-4 py-2 text-slate-300 hover:bg-sky-400/20 hover:text-white';
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <CurrencyBootstrap />
@@ -65,10 +86,10 @@ function CustomerApp() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <a href="#top" className="block" aria-label="Aleya Travel home"><p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p><h1 className="mt-1 text-xl font-bold">AI Travel Assistant</h1></a>
           <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Customer navigation">
-            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#visa-entry">Visas & entry</a>
-            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#money-services">Money & ATMs</a>
-            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#flight-search">Search</a>
-            <a className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30" href="#trip-platform">My trips</a>
+            <button type="button" onClick={() => scrollToSection('visa-entry')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Visas & entry</button>
+            <button type="button" onClick={() => scrollToSection('money-services')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Money & ATMs</button>
+            <button type="button" onClick={() => scrollToSection('flight-search')} className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300">Search</button>
+            <button type="button" onClick={() => scrollToSection('trip-platform')} className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30">My trips</button>
             <button type="button" onClick={() => setAccountOpen(true)} className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] pl-2 pr-4 text-sm text-white hover:border-sky-300" aria-label="Open my account"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-400 font-bold text-slate-950">A</span><span className="hidden sm:inline">Ahmed</span></button>
           </nav>
         </div>
@@ -76,7 +97,18 @@ function CustomerApp() {
 
       <main id="top">
         <section className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
-          <div><p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Welcome to your travel dashboard</p><h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Where will Aleya take you next?</h2><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one personalised place.</p><div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300"><a href="#flight-search" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Flights</a><a href="#trip-platform?tab=stays&group=book" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Hotels</a><a href="#trip-platform?tab=itinerary&group=plan" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Itineraries</a><a href="#visa-entry" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Visa requirements</a><a href="#money-services" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Exchange & ATMs</a></div></div>
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Welcome to your travel dashboard</p>
+            <h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Where will Aleya take you next?</h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one personalised place.</p>
+            <div className="mt-8 flex flex-wrap gap-3 text-sm">
+              <button type="button" onClick={() => scrollToSection('flight-search')} className={shortcutClass}>Flights</button>
+              <button type="button" onClick={() => openPlatformTool('stays')} className={shortcutClass}>Hotels</button>
+              <button type="button" onClick={() => openPlatformTool('itinerary')} className={shortcutClass}>Itineraries</button>
+              <button type="button" onClick={() => scrollToSection('visa-entry')} className={shortcutClass}>Visa requirements</button>
+              <button type="button" onClick={() => scrollToSection('money-services')} className={shortcutClass}>Exchange & ATMs</button>
+            </div>
+          </div>
 
           <form id="flight-search" onSubmit={searchFlights} className="scroll-mt-28 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30">
             <p className="text-sm uppercase tracking-[0.32em] text-sky-300">Quick search</p><h3 className="mt-2 text-2xl font-bold">Find available flights</h3>
