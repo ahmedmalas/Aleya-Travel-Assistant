@@ -75,7 +75,13 @@ export function applyConfidenceToPatch(patch: ExtractionPatch, message: string):
   next.transportNotes = annotate(patch.transportNotes, 0.8);
 
   // Ambiguous soft destination phrasing → low confidence (ask before hard commit)
-  if (next.destination && /\b(?:maybe|might|thinking of|possibly|not sure)\b/i.test(message)) {
+  if (
+    next.destination &&
+    (next.pendingLowConfidenceFields?.includes('destination') ||
+      /\b(?:maybe|might|thinking of|possibly|not sure|actually\s+(?:prefer|like)|might be better|is nicer)\b/i.test(
+        message,
+      ))
+  ) {
     next.destination = withConfidence(next.destination.value, 'inferred', 0.35);
     next.pendingLowConfidenceFields = Array.from(
       new Set([...(next.pendingLowConfidenceFields ?? []), 'destination']),

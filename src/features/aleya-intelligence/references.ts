@@ -232,11 +232,16 @@ export function resolveReferences(
     }
   }
 
-  // "make it Brisbane instead" / "actually Brisbane instead" — never day-shift / airline / retention phrases
+  // Destination retention must target the destination itself — not "keep looking/hotel/flights"
   const retainingDestination =
-    /\b(?:keep\s+(?:the\s+)?(?:current\s+)?destination|keep\s+[a-z]|do not change|don'?t change|do not make it|don'?t make it|leave\s+.+\s+as it is)\b/i.test(
+    !/\bkeep\s+(?:looking|searching|thinking|exploring|checking)\b/i.test(text) &&
+    !/\b(?:make (?:the\s+)?destination|change (?:the\s+)?destination|go to\b[\s\S]{0,40}\binstead)\b/i.test(
       text,
-    ) && !/\bnot\s+[a-z][a-z\s]+?\s+anymore\b/i.test(text);
+    ) &&
+    /\b(?:keep\s+(?:the\s+)?(?:current\s+)?destination|keep\s+it\s+as|do not change|don'?t change|do not make it|don'?t make it|leave\s+.+\s+as it is|stay with\s+[a-z]|keep\s+(?:it\s+as\s+)?(?:gold coast|melbourne|brisbane|sydney|adelaide|cairns|perth|bali|tokyo))\b/i.test(
+      text,
+    ) &&
+    !/\bnot\s+[a-z][a-z\s]+?\s+anymore\b/i.test(text);
 
   if (!dayShift && !retainingDestination) {
     const insteadPlace = text.match(
