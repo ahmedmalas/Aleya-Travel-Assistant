@@ -2,15 +2,14 @@ import { useSharedTripStore } from '../../store/TripStoreContext';
 import { EmptyState, Panel, PrimaryButton, SecondaryButton } from './shared/ui';
 
 export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
-  const { commandCentre, openVaultTrip, unreadNotifications, syncSummary, authState, authProvider, cloudRuntime } =
-    useSharedTripStore();
+  const { commandCentre, openVaultTrip, unreadNotifications } = useSharedTripStore();
 
   return (
     <Panel
-      title="Command centre"
-      description="All-trips summary, alerts, budget status, expiring documents, and quick actions."
+      title="My travel dashboard"
+      description="Your trips, alerts, budget status, expiring documents, and quick actions in one place."
     >
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <article className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-sky-300">Trips</p>
           <p className="mt-2 text-2xl font-semibold text-white">{commandCentre.tripCount}</p>
@@ -20,20 +19,13 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
         </article>
         <article className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-sky-300">Current trip</p>
-          <p className="mt-2 text-lg font-semibold text-white">{commandCentre.currentTrip?.tripName ?? 'None'}</p>
-          <p className="mt-1 text-xs text-slate-400">{commandCentre.currentTrip?.destination || 'No destination'}</p>
+          <p className="mt-2 text-lg font-semibold text-white">{commandCentre.currentTrip?.tripName ?? 'None yet'}</p>
+          <p className="mt-1 text-xs text-slate-400">{commandCentre.currentTrip?.destination || 'Start planning your next destination'}</p>
         </article>
         <article className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-sky-300">Alerts</p>
           <p className="mt-2 text-2xl font-semibold text-white">{unreadNotifications}</p>
-          <p className="mt-1 text-xs text-slate-400">Unread notifications</p>
-        </article>
-        <article className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-sky-300">Session / sync</p>
-          <p className="mt-2 text-lg font-semibold text-white">{authState.mode}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            {cloudRuntime.activeProvider} · {authProvider} · {syncSummary.network} · {syncSummary.pending} pending
-          </p>
+          <p className="mt-1 text-xs text-slate-400">Travel reminders needing your attention</p>
         </article>
       </div>
 
@@ -50,7 +42,7 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
           <h4 className="font-medium text-white">Upcoming departures</h4>
           {commandCentre.upcomingDepartures.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="No upcoming departures" body="Set departure dates on trips to see countdown cards." />
+              <EmptyState title="No upcoming departures" body="Add travel dates to a trip to see your countdown here." />
             </div>
           ) : (
             <ul className="mt-3 space-y-2">
@@ -59,7 +51,7 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
                   <div>
                     <p className="text-white">{entry.tripName}</p>
                     <p className="text-slate-400">
-                      {entry.destination || 'No destination'} · {entry.departureDate}
+                      {entry.destination || 'Destination not set'} · {entry.departureDate}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -78,7 +70,7 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
           <h4 className="font-medium text-white">Alerts</h4>
           {commandCentre.alerts.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="No alerts" body="Notification centre alerts appear here." />
+              <EmptyState title="No alerts" body="Important travel reminders will appear here." />
             </div>
           ) : (
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
@@ -110,7 +102,7 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
           <h4 className="font-medium text-white">Documents expiring</h4>
           {commandCentre.documentsExpiring.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="No expiry alerts" body="Document metadata with nearby expiries will show here." />
+              <EmptyState title="No expiry alerts" body="Passport, visa and travel-document reminders will appear here." />
             </div>
           ) : (
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
@@ -131,7 +123,7 @@ export function CommandCentreDashboard({ onNavigate }: { onNavigate?: (tab: stri
         <h4 className="font-medium text-white">Recent activity</h4>
         {commandCentre.recentActivity.length === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No recent activity" body="Trip edits will appear in this feed." />
+            <EmptyState title="No recent activity" body="Your recent trip changes will appear here." />
           </div>
         ) : (
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
