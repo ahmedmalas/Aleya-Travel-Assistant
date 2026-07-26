@@ -35,12 +35,24 @@ export function findPlacesInText(text: string): PlaceRef[] {
   );
 }
 
+const AREA_LEXICON: Array<{ area: string; city: string; aliases: string[] }> = [
+  { area: 'Docklands', city: 'Melbourne', aliases: ['docklands'] },
+  { area: 'Southbank', city: 'Melbourne', aliases: ['southbank'] },
+  { area: 'Surfers Paradise', city: 'Gold Coast', aliases: ['surfers paradise'] },
+  { area: 'Shibuya', city: 'Tokyo', aliases: ['shibuya'] },
+];
+
 export function findAreaMentions(text: string): Array<{ area: string; city: string }> {
   const lower = text.toLowerCase();
-  const areas: Array<{ area: string; city: string }> = [];
-  if (/\bdocklands\b/.test(lower)) areas.push({ area: 'Docklands', city: 'Melbourne' });
-  if (/\bsouthbank\b/.test(lower)) areas.push({ area: 'Southbank', city: 'Melbourne' });
-  if (/\bsurfers paradise\b/.test(lower)) areas.push({ area: 'Surfers Paradise', city: 'Gold Coast' });
-  if (/\bshibuya\b/.test(lower)) areas.push({ area: 'Shibuya', city: 'Tokyo' });
-  return areas;
+  return AREA_LEXICON.filter((entry) => entry.aliases.some((alias) => lower.includes(alias))).map(
+    ({ area, city }) => ({ area, city }),
+  );
+}
+
+/** Resolve a raw locality/area phrase to its parent city when known. */
+export function matchAreaName(raw: string): { area: string; city: string } | undefined {
+  const lower = raw.trim().toLowerCase();
+  return AREA_LEXICON.find(
+    (entry) => entry.area.toLowerCase() === lower || entry.aliases.some((alias) => lower === alias || lower.includes(alias)),
+  );
 }

@@ -1,4 +1,4 @@
-import { findAreaMentions, findPlacesInText, PLACES } from './places';
+import { findAreaMentions, findPlacesInText, matchAreaName, PLACES } from './places';
 import type {
   ApproximateDate,
   ConversationState,
@@ -349,24 +349,65 @@ const DESTINATION_CHANGE_STOPWORDS = new Set([
   'maybe', 'perhaps', 'tonight', 'today', 'tomorrow', 'yesterday', 'please', 'now',
 ]);
 
-function extractDestinationChange(text: string): string | undefined {
+type DestinationChange = {
+  destination: string;
+  area?: string;
+};
+
+function normalizeDestinationCandidate(raw: string): DestinationChange | undefined {
+  const trimmed = raw.trim().replace(/[.,!?;:]+$/g, '').trim();
+  if (!trimmed || DESTINATION_CHANGE_STOPWORDS.has(trimmed.toLowerCase())) return undefined;
+
+  const area = matchAreaName(trimmed);
+  if (area) {
+    return { destination: area.city, area: area.area };
+  }
+
+  const name = resolvePlaceName(trimmed);
+  if (!name || DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) return undefined;
+  // Reject vague multi-word captures that are not known places
+  const known = PLACES.some((p) => p.name.toLowerCase() === name.toLowerCase());
+  if (!known && trimmed.split(/\s+/).length > 2) return undefined;
+  return { destination: name };
+}
+
+function hasDestinationReplacementLanguage(text: string): boolean {
+  return /\b(?:change of plans|instead of|actually\b|make it\b|change the destination|destination is|destination to|go to\b[\s\S]{0,40}\binstead|not\s+[A-Za-z])/i.test(
+    text,
+  );
+}
+
+function extractDestinationChange(text: string): DestinationChange | undefined {
   // Never treat day-shift phrasing as a destination change
   if (/\b(?:one|a|1)\s+day\s+(?:earlier|later)\b/i.test(text)) return undefined;
 
-  const patterns = [
-    /\b(?:actually\s+)?make it\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*(?:instead)?\b/i,
-    /\b(?:actually\s+)?(?:change|switch)\s+(?:the\s+)?destination\s+to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
-    /\b(?:actually\s+)?(?:change|switch)\s+(?:it\s+)?to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
-    /\binstead\s+(?:make it\s+|go to\s+|to\s+)([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+  const patterns: Array<{ re: RegExp; group: number }> = [
+    { re: /\b(?:actually\s+)?make it\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*(?:instead)?\b/i, group: 1 },
+    { re: /\b(?:actually\s+)?(?:change|switch)\s+(?:the\s+)?destination\s+to\s+(.+?)(?:\.|$)/i, group: 1 },
+    { re: /\bdestination\s+is\s+(.+?)(?:\.|$)/i, group: 1 },
+    { re: /\b(?:actually\s+)?(?:change|switch)\s+(?:it\s+)?to\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, group: 1 },
+    {
+      re: /\b(?:go to|travel to|fly to|going to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead of\b/i,
+      group: 1,
+    },
+    { re: /\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+instead of\b/i, group: 1 },
+    { re: /\binstead(?:\s+make it|\s+to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, group: 1 },
+    {
+      re: /\bnot\s+[A-Za-z][a-zA-Z]+(?:\s+[A-Za-z][a-zA-Z]+)?\s*[—\-,:]+\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      group: 1,
+    },
+    {
+      re: /\bchange of plans\b[\s\S]{0,120}?\b(?:go to|travel to|fly to|make it|to)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      group: 1,
+    },
   ];
-  for (const re of patterns) {
+
+  for (const { re, group } of patterns) {
     const m = text.match(re);
-    if (!m?.[1]) continue;
-    const raw = m[1].trim();
-    if (DESTINATION_CHANGE_STOPWORDS.has(raw.toLowerCase())) continue;
-    const name = resolvePlaceName(raw);
-    if (DESTINATION_CHANGE_STOPWORDS.has(name.toLowerCase())) continue;
-    return name;
+    const raw = m?.[group];
+    if (!raw) continue;
+    const normalized = normalizeDestinationCandidate(raw);
+    if (normalized) return normalized;
   }
   return undefined;
 }
@@ -491,10 +532,24 @@ export function extractRequirements(message: string, previous?: ConversationStat
     patch.changedFields!.push('origin');
   }
 
-  // Explicit destination-change language always updates destination.
+  // Explicit destination-change language always updates destination (confirmed).
   if (destinationChange) {
-    patch.destination = field(destinationChange);
+    patch.destination = field(destinationChange.destination, 'confirmed');
     patch.changedFields!.push('destination');
+    if (destinationChange.area) {
+      patch.accommodationArea = field(destinationChange.area, 'confirmed');
+      patch.changedFields!.push('accommodationArea');
+    } else if (previous?.accommodationArea) {
+      const previousAreaMeta = matchAreaName(previous.accommodationArea.value);
+      if (
+        previousAreaMeta &&
+        previousAreaMeta.city !== destinationChange.destination &&
+        findAreaMentions(text).length === 0
+      ) {
+        patch.clearAccommodationArea = true;
+        patch.changedFields!.push('accommodationArea');
+      }
+    }
   }
 
   // When a clarification asked for a place field, short replies fill that field —
@@ -552,13 +607,21 @@ export function extractRequirements(message: string, previous?: ConversationStat
   // Bare place → destination, unless this turn answered an origin clarification
   const answeredOriginClarification = pendingPlaceField === 'origin' && Boolean(patch.origin);
   if (!patch.destination && places.length > 0 && !answeredOriginClarification) {
-    const originName = patch.origin?.value.toLowerCase();
-    const preferred =
-      places.find((p) => p.name === 'Melbourne' && p.name.toLowerCase() !== originName) ??
-      places.find((p) => p.name.toLowerCase() !== originName) ??
-      places[0];
+    const originName = (patch.origin?.value ?? previous?.origin?.value)?.toLowerCase();
+    const previousDestination = previous?.destination?.value;
+    let preferred;
+    if (hasDestinationReplacementLanguage(text) && previousDestination) {
+      // Prefer the new place, not the destination being replaced
+      preferred =
+        places.find((p) => p.name.toLowerCase() !== previousDestination.toLowerCase()) ?? places[0];
+    } else {
+      preferred =
+        places.find((p) => p.name === 'Melbourne' && p.name.toLowerCase() !== originName) ??
+        places.find((p) => p.name.toLowerCase() !== originName) ??
+        places[0];
+    }
     if (preferred && preferred.name.toLowerCase() !== originName) {
-      patch.destination = field(preferred.name);
+      patch.destination = field(preferred.name, 'confirmed');
       patch.changedFields!.push('destination');
     }
   }
@@ -566,7 +629,10 @@ export function extractRequirements(message: string, previous?: ConversationStat
   if (areas.length > 0) {
     patch.accommodationArea = field(areas[0]!.area);
     patch.changedFields!.push('accommodationArea');
-    if (!patch.destination) patch.destination = field(areas[0]!.city, 'inferred');
+    if (!patch.destination) {
+      // Explicit "destination is <locality>" already handled above; area-only mentions stay inferred
+      patch.destination = field(areas[0]!.city, 'inferred');
+    }
   }
 
   const removals = extractRemovals(text);

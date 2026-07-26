@@ -20,7 +20,8 @@ describe('Aleya Intelligence Layer — Phase 2', () => {
     expect(second.state.destination?.value).toBe('Brisbane');
     expect(second.state.origin?.value).toBe('Sydney');
     expect(second.state.departureDate?.value.isoDate).toBe('2026-08-28');
-    expect(second.state.accommodationArea?.value).toBe('Docklands');
+    // Docklands is Melbourne-bound — clear stale area when destination city changes
+    expect(second.state.accommodationArea).toBeUndefined();
     expect(second.state.requestedServices).toEqual(
       expect.arrayContaining(['flights', 'accommodation', 'car_hire']),
     );
