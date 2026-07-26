@@ -1,7 +1,9 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { SectionCard } from './SectionCard';
 import { TripPlatform } from './trip-platform/TripPlatform';
+import { CurrencyBootstrap } from './CurrencyBootstrap';
 import { travelSections } from '../data/sections';
+import { detectUserCurrency } from '../lib/currency';
 
 const normaliseAirport = (value: string) => value.trim().toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
 const compactDate = (value: string) => value.replaceAll('-', '').slice(2);
@@ -16,6 +18,7 @@ export function AppShell() {
   const [flightError, setFlightError] = useState<string | null>(null);
   const departureInputRef = useRef<HTMLInputElement>(null);
   const returnInputRef = useRef<HTMLInputElement>(null);
+  const preferredCurrency = detectUserCurrency();
 
   const openCalendar = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -44,12 +47,13 @@ export function AppShell() {
     setFlightError(null);
     const outbound = compactDate(departDate);
     const inbound = returnDate ? `/${compactDate(returnDate)}` : '';
-    const url = `https://www.skyscanner.com.au/transport/flights/${from}/${to}/${outbound}${inbound}/?adultsv2=${travellers}&cabinclass=economy&currency=AUD`;
+    const url = `https://www.skyscanner.com.au/transport/flights/${from}/${to}/${outbound}${inbound}/?adultsv2=${travellers}&cabinclass=economy&currency=${preferredCurrency}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
+      <CurrencyBootstrap />
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <a href="#top" className="block" aria-label="Aleya Travel home">
@@ -111,8 +115,8 @@ export function AppShell() {
               </label>
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
-            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">Search flights in AUD</button>
-            <p className="mt-3 text-xs leading-5 text-slate-400">Click either date field or calendar icon to open the full calendar. Search results open with Skyscanner Australia.</p>
+            <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">Search flights in {preferredCurrency}</button>
+            <p className="mt-3 text-xs leading-5 text-slate-400">Click either date field or calendar icon to open the full calendar. Results use your regional currency ({preferredCurrency}).</p>
           </form>
         </section>
 
