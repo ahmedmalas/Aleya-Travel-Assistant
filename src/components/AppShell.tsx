@@ -4,6 +4,8 @@ import { TripPlatform } from './trip-platform/TripPlatform';
 import { CurrencyBootstrap } from './CurrencyBootstrap';
 import { UserProfilePanel } from './UserProfilePanel';
 import { MoneyServicesPanel } from './MoneyServicesPanel';
+import { WelcomeAuthGate } from './WelcomeAuthGate';
+import { TripStoreProvider } from '../store/TripStoreContext';
 import { travelSections } from '../data/sections';
 import { detectUserCurrency } from '../lib/currency';
 
@@ -11,7 +13,8 @@ const normaliseAirport = (value: string) => value.trim().toLowerCase().replace(/
 const compactDate = (value: string) => value.replaceAll('-', '').slice(2);
 const today = new Date().toISOString().split('T')[0];
 
-export function AppShell() {
+function CustomerApp() {
+  const [entered, setEntered] = useState(false);
   const [origin, setOrigin] = useState('SYD');
   const [destination, setDestination] = useState('MEL');
   const [departDate, setDepartDate] = useState('');
@@ -21,6 +24,8 @@ export function AppShell() {
   const departureInputRef = useRef<HTMLInputElement>(null);
   const returnInputRef = useRef<HTMLInputElement>(null);
   const preferredCurrency = detectUserCurrency();
+
+  if (!entered) return <WelcomeAuthGate onEnter={() => setEntered(true)} />;
 
   const openCalendar = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -57,21 +62,21 @@ export function AppShell() {
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <a href="#top" className="block" aria-label="Aleya Travel home"><p className="text-sm uppercase tracking-[0.4em] text-sky-300">Aleya Travel</p><h1 className="mt-1 text-xl font-bold">AI Travel Assistant</h1></a>
-          <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Main navigation">
+          <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Customer navigation">
             <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#user-profile">My profile</a>
             <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#money-services">Money & ATMs</a>
-            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#flight-search">Search flights</a>
-            <a className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30" href="#trip-platform">Open trip planner</a>
+            <a className="rounded-full border border-white/15 px-4 py-2 text-sm text-slate-200 hover:border-sky-300" href="#flight-search">Search</a>
+            <a className="rounded-full bg-sky-400/20 px-4 py-2 text-sm text-sky-100 hover:bg-sky-400/30" href="#trip-platform">My trips</a>
           </nav>
         </div>
       </header>
 
       <main id="top">
         <section className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
-          <div><p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Search. Compare. Plan.</p><h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Your entire trip starts with Aleya.</h2><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one place.</p><div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300"><a href="#flight-search" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Flights</a><a href="#trip-platform?tab=stays&group=book" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Hotels</a><a href="#trip-platform?tab=itinerary&group=plan" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Itineraries</a><a href="#user-profile" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">My profile</a><a href="#money-services" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Exchange & ATMs</a></div></div>
+          <div><p className="text-sm font-semibold uppercase tracking-[0.4em] text-sky-300">Welcome to your travel dashboard</p><h2 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-white md:text-6xl">Where will Aleya take you next?</h2><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Search flights, organise accommodation, build itineraries, track bookings and manage your travel plans from one personalised place.</p><div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300"><a href="#flight-search" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Flights</a><a href="#trip-platform?tab=stays&group=book" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Hotels</a><a href="#trip-platform?tab=itinerary&group=plan" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Itineraries</a><a href="#user-profile" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">My profile</a><a href="#money-services" className="rounded-full bg-white/10 px-4 py-2 hover:bg-sky-400/20">Exchange & ATMs</a></div></div>
 
           <form id="flight-search" onSubmit={searchFlights} className="scroll-mt-28 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30">
-            <p className="text-sm uppercase tracking-[0.32em] text-sky-300">Flight search</p><h3 className="mt-2 text-2xl font-bold">Find available flights</h3>
+            <p className="text-sm uppercase tracking-[0.32em] text-sky-300">Quick search</p><h3 className="mt-2 text-2xl font-bold">Find available flights</h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
               <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
@@ -81,7 +86,7 @@ export function AppShell() {
             </div>
             {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}
             <button type="submit" className="mt-5 w-full rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">Search flights in {preferredCurrency}</button>
-            <p className="mt-3 text-xs leading-5 text-slate-400">Click either date field or calendar icon to open the full calendar. Results use your regional currency ({preferredCurrency}).</p>
+            <p className="mt-3 text-xs leading-5 text-slate-400">Results use your regional currency ({preferredCurrency}).</p>
           </form>
         </section>
 
@@ -92,5 +97,13 @@ export function AppShell() {
       </main>
       <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-slate-500">Aleya Travel — search, plan and manage your journey.</footer>
     </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <TripStoreProvider>
+      <CustomerApp />
+    </TripStoreProvider>
   );
 }
