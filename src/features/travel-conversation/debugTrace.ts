@@ -1,6 +1,6 @@
 /**
  * Runtime conversation-engine instrumentation.
- * Captures intent → compose branch selection without mutating canonical state.
+ * Captures post-requirements → compose branch selection.
  */
 
 export type ComposeBranch =
@@ -9,8 +9,6 @@ export type ComposeBranch =
   | 'new_conversation'
   | 'summary_incomplete'
   | 'summary_review'
-  | 'soft_affirm_ready'
-  | 'soft_affirm_needs_clarification'
   | 'final_confirmation_locked'
   | 'final_confirmation_needs_clarification'
   | 'start_search'
@@ -20,7 +18,8 @@ export type ComposeBranch =
   | 'pricing_request'
   | 'hotel_recommendation'
   | 'flight_recommendation'
-  | 'stage_query'
+  | 'decline_search'
+  | 'search_offer'
   | 'needs_clarification'
   | 'clarification_question'
   | 'rejection'
@@ -39,6 +38,7 @@ export type ComposeTraceEntry = {
   phaseAfter?: string;
   pendingClarification?: string;
   composeBranch?: ComposeBranch;
+  activateSearch?: boolean;
   replyPreview?: string;
 };
 
@@ -53,12 +53,11 @@ export function pushComposeTrace(entry: ComposeTraceEntry): void {
     '[aleya-compose-trace]',
     `messageClass=${entry.messageClass ?? '?'}`,
     `phase=${entry.phaseBefore ?? '?'}→${entry.phaseAfter ?? '?'}`,
-    `pendingClarification=${entry.pendingClarification ?? 'none'}`,
+    `activateSearch=${entry.activateSearch ? 'yes' : 'no'}`,
     `branch=${entry.composeBranch ?? '?'}`,
     `msg=${JSON.stringify(entry.message)}`,
   ].join(' ');
 
-  // Browser + Node
   // eslint-disable-next-line no-console
   console.info(line);
 

@@ -1,23 +1,23 @@
 /**
- * Authoritative pipeline (intent-router rebuild):
- * normalise → classify intent → (extract → assign → merge | control path)
- * → readiness phase → compose → persist
+ * Authoritative pipeline:
+ * normalise → classify → (extract → assign → merge | control)
+ * → post-requirements decision → compose → persist
  *
- * Phase is readiness only. Intent is always classified; compose answers the intent.
+ * Parser / extraction / merge untouched. Post-requirements owns search approval.
  */
 
 import { assignRoles } from './assign';
 import { extractCandidates } from './candidates';
-import { classifyMessage } from './classify';
+import { classifyMessage, isControlMessageClass } from './classify';
 import { evaluateClarification } from './clarify';
 import { decideComposeReply } from './compose';
 import { pushComposeTrace } from './debugTrace';
-import {
-  isControlIntent,
-  resolveReadinessPhase,
-} from './intentRouter';
 import { mergeTravelState } from './merge';
 import { normalizeInput } from './normalize';
+import {
+  decidePostRequirements,
+  requirementsReady,
+} from './postRequirements';
 import {
   getTravelConversation,
   resetTravelConversation,
@@ -51,10 +51,6 @@ function fieldResolved(state: ConversationState, field: ClarificationField): boo
   return false;
 }
 
-function requirementsComplete(state: ConversationState): boolean {
-  return Boolean(state.destination) && !evaluateClarification(state).needed;
-}
-
 function bumpMeta(state: ConversationState, now: Date): ConversationState {
   return {
     ...state,
@@ -83,33 +79,59 @@ function finishTurn(input: {
   clarification: ReturnType<typeof evaluateClarification>;
   normalized: string;
   now: Date;
+  forceMutateCompose?: boolean;
 }): TravelTurnResult {
   const { send, previous, state, patch, clarification, normalized, now } = input;
+
+  const postDecision = decidePostRequirements({
+    text: send.message,
+    previous,
+    state,
+    clarification,
+    baseClass: patch.messageClass ?? 'general_conversation',
+  });
+
+  // Mutations that post-requirements detected after a control classify still need extract —
+  // handled by caller. Here we only compose.
   const decision = decideComposeReply({
-    patch,
+    patch: { ...patch, messageClass: postDecision.messageClass },
     previous,
     state,
     clarification,
     travellerName: send.travellerName,
+    postDecision: input.forceMutateCompose
+      ? { ...postDecision, action: 'mutate', reply: '' }
+      : postDecision,
   });
+
+  const nextState: ConversationState = {
+    ...state,
+    phase: decision.phase ?? postDecision.phase ?? state.phase,
+    lastOffer: decision.lastOffer,
+  };
+
   pushComposeTrace({
     at: now.toISOString(),
     message: send.message,
     normalized,
-    messageClass: patch.messageClass,
+    messageClass: postDecision.messageClass,
     phaseBefore: previous.phase,
-    phaseAfter: state.phase,
-    pendingClarification: state.pendingClarification,
+    phaseAfter: nextState.phase,
+    pendingClarification: nextState.pendingClarification,
     composeBranch: decision.branch,
+    activateSearch: decision.activateSearch,
     replyPreview: decision.reply.slice(0, 120),
   });
+
   const result: TravelTurnResult = {
-    state,
+    state: nextState,
     reply: decision.reply,
     clarification,
-    searchPerformed: false,
+    activateSearch: decision.activateSearch,
+    servicesToSearch: decision.servicesToSearch,
+    searchPerformed: decision.activateSearch,
   };
-  commitIfNeeded(send, state);
+  commitIfNeeded(send, nextState);
   return result;
 }
 
@@ -120,9 +142,9 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 
   const normalized = normalizeInput(input.message);
   const classification = classifyMessage(normalized, previous);
-  const intent = classification.messageClass;
+  const baseClass = classification.messageClass;
 
-  if (intent === 'new_conversation') {
+  if (baseClass === 'new_conversation') {
     const empty =
       input.previousState !== undefined
         ? createEmptyConversationState()
@@ -142,43 +164,47 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     });
   }
 
-  if (intent === 'greeting' || intent === 'thanks') {
-    return finishTurn({
-      send: input,
-      previous,
-      state: previous,
-      patch: {
-        messageClass: intent,
-        explicitChanges: [],
-        clearFields: [],
-      },
-      clarification: { needed: false },
-      normalized,
-      now,
-    });
-  }
+  // Peek post-requirements early: only skip extract for true control actions.
+  // Place names / fragments must still extract even when requirements look ready.
+  const peek = decidePostRequirements({
+    text: input.message,
+    previous,
+    state: previous,
+    clarification: evaluateClarification(previous),
+    baseClass,
+  });
 
-  // Control intents: answer the request without extract/merge.
-  if (isControlIntent(intent)) {
+  const skipExtract =
+    peek.action === 'start_search' ||
+    peek.action === 'summary' ||
+    peek.action === 'decline_search' ||
+    peek.action === 'lock' ||
+    peek.action === 'restart' ||
+    peek.action === 'clarify' ||
+    (peek.action === 'booking' && peek.activateSearch) ||
+    (peek.action === 'itinerary' && peek.activateSearch) ||
+    (peek.action === 'answer' &&
+      (baseClass === 'greeting' ||
+        baseClass === 'thanks' ||
+        baseClass === 'rejection'));
+
+  if (skipExtract && isControlMessageClass(baseClass)) {
     const clarification = evaluateClarification(previous);
-    const phase = resolveReadinessPhase({
-      previous,
-      intent,
-      requirementsComplete: requirementsComplete(previous),
-      clarificationNeeded: clarification.needed,
-      mutated: false,
-    });
     const state = {
       ...bumpMeta(previous, now),
-      phase,
       pendingClarification: clarification.needed ? clarification.field : undefined,
+      phase: requirementsReady(previous)
+        ? previous.phase === 'locked'
+          ? ('locked' as const)
+          : ('ready' as const)
+        : ('requirements' as const),
     };
     return finishTurn({
       send: input,
       previous,
       state,
       patch: {
-        messageClass: intent,
+        messageClass: baseClass,
         explicitChanges: [],
         clearFields: [],
       },
@@ -196,7 +222,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 
   const candidates = extractCandidates(text, now, previous);
   const patch = assignRoles(candidates, previous, classification.answersField);
-  patch.messageClass = intent;
+  patch.messageClass = baseClass;
 
   let state = mergeTravelState(previous, patch, now, text);
 
@@ -207,17 +233,15 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   }
 
   const clarification = evaluateClarification(state);
-  const mutated = state.lastChangedFields.length > 0;
+  const ready = requirementsReady(state);
   state = {
     ...state,
     pendingClarification: clarification.needed ? clarification.field : undefined,
-    phase: resolveReadinessPhase({
-      previous,
-      intent,
-      requirementsComplete: requirementsComplete(state),
-      clarificationNeeded: clarification.needed,
-      mutated,
-    }),
+    phase: clarification.needed || !ready
+      ? 'requirements'
+      : previous.phase === 'locked'
+        ? 'locked'
+        : 'ready',
   };
 
   return finishTurn({
@@ -228,6 +252,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     clarification,
     normalized,
     now,
+    forceMutateCompose: true,
   });
 }
 

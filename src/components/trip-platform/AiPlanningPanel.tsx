@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
-  isExplicitSearchRequest,
   resetTravelConversation,
   sendTravelMessage,
   useTravelConversation,
+  type TravelServiceKind,
 } from '../../features/travel-conversation';
 import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
 import { useSharedTripStore } from '../../store/TripStoreContext';
@@ -46,8 +46,8 @@ const STARTERS = [
 ];
 
 export type AiPlanningPanelProps = {
-  /** Called once when the traveller explicitly asks to search (not on planning/confirm). */
-  onActivateSearch?: () => void;
+  /** Called once when the engine decides start_search for this turn. */
+  onActivateSearch?: (services: TravelServiceKind[]) => void;
 };
 
 export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {}) {
@@ -100,13 +100,10 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
         travellerName,
       });
 
-      // Engine replies only — do not invent itineraries/bookings from chat.
-      reply(result.reply);
-
-      // Search handoff is UI-only and only on explicit search phrases — not planning/confirm.
-      if (isExplicitSearchRequest(request)) {
-        onActivateSearch?.();
+      if (result.activateSearch) {
+        onActivateSearch?.(result.servicesToSearch);
       }
+      reply(result.reply);
     } catch (error) {
       reply(error instanceof Error ? error.message : 'Something went wrong while processing your request.');
     } finally {
@@ -172,7 +169,11 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
           <PrimaryButton
             type="button"
             data-testid="continue-to-search"
-            onClick={() => onActivateSearch?.()}
+            onClick={() =>
+              onActivateSearch?.(
+                travelState.services.length > 0 ? travelState.services : ['flights'],
+              )
+            }
           >
             Continue to search
           </PrimaryButton>

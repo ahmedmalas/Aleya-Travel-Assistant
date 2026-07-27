@@ -23,21 +23,21 @@ afterEach(() => {
 });
 
 describe('compose runtime trace', () => {
-  it('traces soft affirm and summary after requirements', () => {
+  it('traces go ahead as start_search with activateSearch', () => {
     sendTravelMessage({ message: COMPLETE, now: NOW });
     clearComposeTraces();
 
-    const affirm = sendTravelMessage({ message: 'go ahead', now: NOW });
-    const affirmTrace = getComposeTraces().at(-1);
+    const next = sendTravelMessage({ message: 'go ahead', now: NOW });
+    const trace = getComposeTraces().at(-1);
 
-    expect(affirmTrace?.messageClass).toBe('soft_affirm');
-    expect(affirmTrace?.composeBranch).toBe('soft_affirm_ready');
-    expect(affirm.reply).not.toMatch(/I’ve saved/i);
-    expect(affirm.reply).not.toMatch(/We’re in planning/i);
+    expect(trace?.messageClass).toBe('start_search');
+    expect(trace?.composeBranch).toBe('start_search');
+    expect(trace?.activateSearch).toBe(true);
+    expect(next.activateSearch).toBe(true);
+    expect(next.reply).toMatch(/Starting live search/i);
+  });
 
-    clearComposeTraces();
-    resetTravelConversation();
-    localStorage.clear();
+  it('traces summary without activating search', () => {
     sendTravelMessage({ message: COMPLETE, now: NOW });
     clearComposeTraces();
 
@@ -46,20 +46,7 @@ describe('compose runtime trace', () => {
 
     expect(summaryTrace?.messageClass).toBe('summary');
     expect(summaryTrace?.composeBranch).toBe('summary_review');
-    expect(summary.reply).not.toMatch(/I’ve saved/i);
-    expect(summary.reply).toMatch(/Here’s what I’ve got for your trip/i);
-  });
-
-  it('traces booking generation while ready — never planning_idle', () => {
-    sendTravelMessage({ message: COMPLETE, now: NOW });
-    sendTravelMessage({ message: 'go ahead', now: NOW });
-    clearComposeTraces();
-
-    const next = sendTravelMessage({ message: 'invent the booking', now: NOW });
-    const trace = getComposeTraces().at(-1);
-
-    expect(trace?.messageClass).toBe('booking_generation');
-    expect(trace?.composeBranch).toBe('booking_generation');
-    expect(next.reply).not.toMatch(/We’re in planning/i);
+    expect(summaryTrace?.activateSearch).toBe(false);
+    expect(summary.activateSearch).toBe(false);
   });
 });

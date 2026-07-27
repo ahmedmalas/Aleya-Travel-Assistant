@@ -2,10 +2,10 @@
  * Travel Understanding Engine (schema v5)
  *
  * Pipeline:
- * normalise → classify intent → extract/assign/merge (when mutating)
- * → readiness phase → compose from intent → project → persist
+ * normalise → classify → extract/assign/merge (when mutating)
+ * → post-requirements decision → compose → project → persist
  *
- * Phase is readiness only. Intent always wins over phase.
+ * Post-requirements owns natural search approval and continuity.
  */
 
 export { sendTravelMessage, processTravelTurn } from './pipeline';
@@ -48,9 +48,12 @@ export type {
   TravelTurnResult,
   TravelServiceKind,
 } from './types';
-export { isExplicitSearchRequest } from './ui/searchActivation';
 export {
-  classifyIntent,
-  isSoftAffirmMessage,
-  resolveReadinessPhase,
-} from './intentRouter';
+  decidePostRequirements,
+  isSearchApprovalMessage,
+  isDeclineSearchMessage,
+  requirementsReady,
+  servicesForSearch,
+} from './postRequirements';
+export { runLiveSearchFromState } from './ui/runLiveSearch';
+export type { LiveSearchResult } from './ui/runLiveSearch';

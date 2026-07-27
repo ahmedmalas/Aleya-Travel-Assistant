@@ -8,7 +8,9 @@ import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
 import {
   projectSearchForm,
+  runLiveSearchFromState,
   useTravelConversation,
+  type TravelServiceKind,
 } from '../features/travel-conversation';
 import { TripStoreProvider } from '../store/TripStoreContext';
 import { detectUserCurrency } from '../lib/currency';
@@ -65,20 +67,22 @@ function CustomerApp() {
   };
 
   /**
-   * Explicit search handoff from chat ("search now" / Continue to search).
-   * Planning/confirm must NOT call this — requirements stay in the conversation.
+   * Live search handoff from chat — projects canonical requirements and opens
+   * provider search for every selected service. No manual re-entry.
    */
-  const activateSearchFromChat = () => {
+  const activateSearchFromChat = (services?: TravelServiceKind[]) => {
     setWorkspace(null);
     window.setTimeout(() => {
-      const form = document.getElementById('flight-search') as HTMLFormElement | null;
-      form?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Projected fields are already bound from canonical state; run search when ready.
-      const from = normaliseAirport(origin);
-      const to = normaliseAirport(destination);
-      if (from.length === 3 && to.length === 3 && departDate) {
-        form?.requestSubmit();
-      }
+      const target =
+        services && services.length > 0
+          ? services
+          : travelState.services.length > 0
+            ? travelState.services
+            : (['flights'] as TravelServiceKind[]);
+      runLiveSearchFromState(travelState, target, {
+        currency: preferredCurrency,
+        cabinClass,
+      });
     }, 50);
   };
 

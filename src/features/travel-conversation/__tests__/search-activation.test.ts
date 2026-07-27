@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { isExplicitSearchRequest } from '../ui/searchActivation';
+import { isSearchApprovalMessage } from '../postRequirements';
 
-describe('explicit search activation (UI handoff)', () => {
+describe('search approval phrases', () => {
   it.each([
     'search now',
     'find flights',
@@ -13,19 +13,24 @@ describe('explicit search activation (UI handoff)', () => {
     'start searching',
     'begin search',
     'Please search now',
-  ])('activates search for: %s', (message) => {
-    expect(isExplicitSearchRequest(message)).toBe(true);
-  });
-
-  it.each([
+    'ready for live options',
     'go ahead',
     'proceed',
     'continue',
-    'all confirmed',
-    'show me what you got',
+    'find everything',
+    "let's do it",
+  ])('treats as search approval: %s', (message) => {
+    expect(isSearchApprovalMessage(message)).toBe(true);
+  });
+
+  it.each([
+    'go ahead and change the destination to Brisbane',
+    'continue but remove car hire',
+    'show me a summary',
+    "I'm not ready yet",
     'Find me affordable flights to Bali',
-    'I need a hotel in Singapore next weekend',
-  ])('does not activate search for: %s', (message) => {
-    expect(isExplicitSearchRequest(message)).toBe(false);
+    'all confirmed',
+  ])('does not treat as bare search approval: %s', (message) => {
+    expect(isSearchApprovalMessage(message)).toBe(false);
   });
 });

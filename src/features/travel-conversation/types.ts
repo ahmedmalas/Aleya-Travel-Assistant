@@ -56,8 +56,8 @@ export type ReturnDate = {
 export type ClarificationField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
 
 /**
- * User intent — classified every turn before compose.
- * Phase never suppresses intent recognition.
+ * Base message classes from classify. Post-requirements decisions may remap
+ * natural approvals to start_search before compose.
  */
 export type MessageClass =
   | 'greeting'
@@ -68,7 +68,6 @@ export type MessageClass =
   | 'explicit_change'
   | 'explicit_removal'
   | 'summary'
-  | 'soft_affirm'
   | 'final_confirmation'
   | 'start_search'
   | 'booking_generation'
@@ -76,17 +75,18 @@ export type MessageClass =
   | 'pricing_request'
   | 'hotel_recommendation'
   | 'flight_recommendation'
-  | 'stage_query'
+  | 'decline_search'
   | 'rejection'
   | 'general_conversation';
 
-/**
- * Readiness state only — not a conversation controller.
- * - requirements: still gathering
- * - ready: requirements complete (was wrongly treated as a chat trap called "planning")
- * - locked: traveller finalised the snapshot
- */
+/** Readiness only — not a conversation controller. */
 export type ConversationPhase = 'requirements' | 'ready' | 'locked';
+
+/** Last assistant-offered action — enables human continuity. */
+export type AssistantOffer = {
+  kind: 'start_search';
+  atTurn: number;
+};
 
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
@@ -103,6 +103,8 @@ export type ConversationState = {
   travellers?: FieldValue<number>;
   preferences: string[];
   pendingClarification?: ClarificationField;
+  /** When set, short approvals ("go ahead", "ready…") continue this offer. */
+  lastOffer?: AssistantOffer;
   changeHistory: Array<{ turn: number; fields: string[]; snippet: string }>;
   turnCount: number;
   updatedAt: string;
@@ -135,7 +137,10 @@ export type TravelTurnResult = {
   state: ConversationState;
   reply: string;
   clarification: Clarification;
-  searchPerformed: false;
+  /** True only on the turn that starts live search. */
+  activateSearch: boolean;
+  servicesToSearch: TravelServiceKind[];
+  searchPerformed: boolean;
 };
 
 export function createEmptyConversationState(conversationId?: string): ConversationState {
