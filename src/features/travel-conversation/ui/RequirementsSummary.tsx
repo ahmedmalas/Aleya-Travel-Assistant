@@ -1,9 +1,9 @@
-import { useCanonicalTravelState } from './canonicalStore';
-import { projectRequirementsSummary } from './projectors';
+import { projectRequirementsSummary } from '../project';
+import { useTravelConversation } from '../store';
 
-/** Live requirements card bound to the canonical ConversationState. */
+/** Saved requirements — always projected from the canonical conversation state. */
 export function RequirementsSummary() {
-  const state = useCanonicalTravelState();
+  const state = useTravelConversation();
   const view = projectRequirementsSummary(state);
   const hasAnything =
     view.origin ||
@@ -24,23 +24,23 @@ export function RequirementsSummary() {
   if (view.accommodation) rows.push({ label: 'Accommodation', value: view.accommodation });
   if (view.duration) rows.push({ label: 'Duration', value: view.duration });
   if (view.serviceLabels.length) {
-    rows.push({
-      label: 'Services',
-      value: view.serviceLabels.join(', '),
-    });
+    rows.push({ label: 'Services', value: view.serviceLabels.join(', ') });
   }
 
   return (
     <aside
       className="border-b border-white/10 bg-slate-950/50 px-5 py-4 md:px-7"
       aria-label="Saved travel requirements"
+      data-testid="requirements-summary"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Saved requirements</p>
       <dl className="mt-3 grid gap-2 sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label} className="flex gap-2 text-sm">
             <dt className="shrink-0 text-slate-400">{row.label}:</dt>
-            <dd className="font-medium text-slate-100">{row.value}</dd>
+            <dd className="font-medium text-slate-100" data-field={row.label.toLowerCase()}>
+              {row.value}
+            </dd>
           </div>
         ))}
       </dl>

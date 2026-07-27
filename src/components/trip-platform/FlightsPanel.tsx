@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   projectSearchForm,
-  useCanonicalTravelState,
-} from '../../features/aleya-intelligence';
+  useTravelConversation,
+} from '../../features/travel-conversation';
 import { searchFlights, type FlightOffer } from '../../providers';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import {
@@ -77,7 +77,7 @@ export function FlightsPanel() {
   const [adults, setAdults] = useState(Math.max(1, activeVaultTrip.travellerCount || 1));
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
-  const travelState = useCanonicalTravelState();
+  const travelState = useTravelConversation();
   const searchProjection = projectSearchForm(travelState);
 
   useEffect(() => {

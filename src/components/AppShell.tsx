@@ -7,9 +7,10 @@ import { MoneyServicesPanel } from './MoneyServicesPanel';
 import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
 import {
+  hydrateTravelConversation,
   projectSearchForm,
-  useCanonicalTravelState,
-} from '../features/aleya-intelligence';
+  useTravelConversation,
+} from '../features/travel-conversation';
 import { TripStoreProvider } from '../store/TripStoreContext';
 import { detectUserCurrency } from '../lib/currency';
 
@@ -33,8 +34,12 @@ function CustomerApp() {
   const departureInputRef = useRef<HTMLInputElement>(null);
   const returnInputRef = useRef<HTMLInputElement>(null);
   const preferredCurrency = detectUserCurrency();
-  const travelState = useCanonicalTravelState();
+  const travelState = useTravelConversation();
   const searchProjection = projectSearchForm(travelState);
+
+  useEffect(() => {
+    hydrateTravelConversation();
+  }, []);
 
   useEffect(() => {
     if (searchProjection.originCode) setOrigin(searchProjection.originCode);

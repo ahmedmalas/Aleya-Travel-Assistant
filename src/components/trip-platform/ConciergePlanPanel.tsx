@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { handleTravelChatMessage } from '../../features/aleya-intelligence';
-import { RequirementsSummary } from '../../features/aleya-intelligence/RequirementsSummary';
+import { sendTravelMessage } from '../../features/travel-conversation';
+import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
@@ -90,10 +90,9 @@ export function ConciergePlanPanel() {
     const userMessage: ConciergeMessage = { id: crypto.randomUUID(), role: 'user', text: trimmed };
     setQuestion('');
     setFeedback(null);
-    // Use the canonical store only — never seed vault destination as confirmed
-    // conversation state (that blocked "go to Gold Coast" and desynced clarify).
-    const result = handleTravelChatMessage({ message: trimmed });
-    const title = result.stage === 'clarify' ? 'Need a detail' : 'Concierge planning update';
+    // Canonical store only — never seed vault/profile fields into conversation state.
+    const result = sendTravelMessage({ message: trimmed });
+    const title = result.clarification.needed ? 'Need a detail' : 'Concierge planning update';
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
