@@ -2,7 +2,8 @@ import { assignRoles } from './assign';
 import { extractCandidates } from './candidates';
 import { classifyMessage } from './classify';
 import { evaluateClarification } from './clarify';
-import { composeReply } from './compose';
+import { decideComposeReply } from './compose';
+import { pushComposeTrace } from './debugTrace';
 import { mergeTravelState } from './merge';
 import { normalizeInput } from './normalize';
 import {
@@ -104,15 +105,27 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
       explicitChanges: [],
       clearFields: [],
     };
+    const decision = decideComposeReply({
+      patch,
+      previous,
+      state: empty,
+      clarification: { needed: false },
+      travellerName: input.travellerName,
+    });
+    pushComposeTrace({
+      at: now.toISOString(),
+      message: input.message,
+      normalized,
+      messageClass: classification.messageClass,
+      phaseBefore: previous.phase,
+      phaseAfter: empty.phase,
+      pendingClarification: undefined,
+      composeBranch: decision.branch,
+      replyPreview: decision.reply.slice(0, 120),
+    });
     const result: TravelTurnResult = {
       state: empty,
-      reply: composeReply({
-        patch,
-        previous,
-        state: empty,
-        clarification: { needed: false },
-        travellerName: input.travellerName,
-      }),
+      reply: decision.reply,
       clarification: { needed: false },
       searchPerformed: false,
     };
@@ -129,15 +142,27 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
       explicitChanges: [],
       clearFields: [],
     };
+    const decision = decideComposeReply({
+      patch,
+      previous,
+      state: previous,
+      clarification: { needed: false },
+      travellerName: input.travellerName,
+    });
+    pushComposeTrace({
+      at: now.toISOString(),
+      message: input.message,
+      normalized,
+      messageClass: classification.messageClass,
+      phaseBefore: previous.phase,
+      phaseAfter: previous.phase,
+      pendingClarification: previous.pendingClarification,
+      composeBranch: decision.branch,
+      replyPreview: decision.reply.slice(0, 120),
+    });
     return {
       state: previous,
-      reply: composeReply({
-        patch,
-        previous,
-        state: previous,
-        clarification: { needed: false },
-        travellerName: input.travellerName,
-      }),
+      reply: decision.reply,
       clarification: { needed: false },
       searchPerformed: false,
     };
@@ -164,16 +189,27 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
       explicitChanges: [],
       clearFields: [],
     };
-    const reply = composeReply({
+    const decision = decideComposeReply({
       patch,
       previous,
       state,
       clarification,
       travellerName: input.travellerName,
     });
+    pushComposeTrace({
+      at: now.toISOString(),
+      message: input.message,
+      normalized,
+      messageClass: classification.messageClass,
+      phaseBefore: previous.phase,
+      phaseAfter: state.phase,
+      pendingClarification: state.pendingClarification,
+      composeBranch: decision.branch,
+      replyPreview: decision.reply.slice(0, 120),
+    });
     const result: TravelTurnResult = {
       state,
-      reply,
+      reply: decision.reply,
       clarification,
       searchPerformed: false,
     };
@@ -206,17 +242,28 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     phase: advancePhase(previous, state, classification.messageClass, clarification.needed),
   };
 
-  const reply = composeReply({
+  const decision = decideComposeReply({
     patch,
     previous,
     state,
     clarification,
     travellerName: input.travellerName,
   });
+  pushComposeTrace({
+    at: now.toISOString(),
+    message: input.message,
+    normalized,
+    messageClass: classification.messageClass,
+    phaseBefore: previous.phase,
+    phaseAfter: state.phase,
+    pendingClarification: state.pendingClarification,
+    composeBranch: decision.branch,
+    replyPreview: decision.reply.slice(0, 120),
+  });
 
   const result: TravelTurnResult = {
     state,
-    reply,
+    reply: decision.reply,
     clarification,
     searchPerformed: false,
   };

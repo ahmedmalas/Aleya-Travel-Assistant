@@ -1,5 +1,6 @@
 import { projectRequirementsSummary, summarizeKnown } from './project';
 import { evaluateClarification } from './clarify';
+import type { ComposeBranch } from './debugTrace';
 import type { Clarification, ConversationState, TravelPatch } from './types';
 
 function requirementsReady(state: ConversationState): boolean {
@@ -24,34 +25,54 @@ function formatTripReview(state: ConversationState): string {
   return `Here’s what I’ve got for your trip:\n${lines.join('\n')}`;
 }
 
+export type ComposeDecision = {
+  reply: string;
+  branch: ComposeBranch;
+};
+
 /** Stage 9 — Reply from final merged canonical state only. */
-export function composeReply(input: {
+export function decideComposeReply(input: {
   patch: TravelPatch;
   previous: ConversationState;
   state: ConversationState;
   clarification: Clarification;
   travellerName?: string;
-}): string {
+}): ComposeDecision {
   const { patch, previous, state, clarification, travellerName } = input;
 
   if (patch.messageClass === 'greeting') {
-    return travellerName
-      ? `Hi ${travellerName}. Tell me where you want to go and I’ll capture the details.`
-      : 'Hi. Tell me where you want to go and I’ll capture the details.';
+    return {
+      branch: 'greeting',
+      reply: travellerName
+        ? `Hi ${travellerName}. Tell me where you want to go and I’ll capture the details.`
+        : 'Hi. Tell me where you want to go and I’ll capture the details.',
+    };
   }
   if (patch.messageClass === 'thanks') {
-    return 'You’re welcome. What would you like to adjust next?';
+    return {
+      branch: 'thanks',
+      reply: 'You’re welcome. What would you like to adjust next?',
+    };
   }
   if (patch.messageClass === 'new_conversation') {
-    return 'Starting fresh — tell me the trip you have in mind.';
+    return {
+      branch: 'new_conversation',
+      reply: 'Starting fresh — tell me the trip you have in mind.',
+    };
   }
 
   if (patch.messageClass === 'summary') {
     const review = formatTripReview(state);
     if (!requirementsReady(state) && clarification.needed && clarification.question) {
-      return `${review}\n\nStill needed: ${clarification.question}`;
+      return {
+        branch: 'summary_incomplete',
+        reply: `${review}\n\nStill needed: ${clarification.question}`,
+      };
     }
-    return `${review}\n\nTell me what to change, or say go ahead when you’re ready to continue.`;
+    return {
+      branch: 'summary_review',
+      reply: `${review}\n\nTell me what to change, or say go ahead when you’re ready to continue.`,
+    };
   }
 
   if (patch.messageClass === 'confirmation') {
@@ -61,11 +82,17 @@ export function composeReply(input: {
         known.length > 0
           ? `Almost — I’ve got ${known.join('; ')}.`
           : 'Almost ready.';
-      return `${lead} ${clarification.question}`;
+      return {
+        branch: 'confirmation_needs_clarification',
+        reply: `${lead} ${clarification.question}`,
+      };
     }
     const known = summarizeKnown(state);
     const trip = known.length > 0 ? ` (${known.join('; ')})` : '';
-    return `Perfect — moving into planning and search next${trip}. I won’t invent prices or bookings; the next step uses the requirements we’ve confirmed.`;
+    return {
+      branch: 'confirmation_planning',
+      reply: `Perfect — moving into planning and search next${trip}. I won’t invent prices or bookings; the next step uses the requirements we’ve confirmed.`,
+    };
   }
 
   const known = summarizeKnown(state);
@@ -75,7 +102,10 @@ export function composeReply(input: {
       known.length > 0
         ? `I’ve got ${known.join('; ')}.`
         : 'I’ve started capturing your travel requirements.';
-    return `${lead} ${clarification.question}`;
+    return {
+      branch: 'clarification_question',
+      reply: `${lead} ${clarification.question}`,
+    };
   }
 
   const ready = requirementsReady(state);
@@ -89,31 +119,66 @@ export function composeReply(input: {
     requirementsReady(previous);
 
   if (patch.messageClass === 'rejection') {
-    return known.length > 0
-      ? `Okay — I’ve still got ${known.join('; ')}. What would you like to change?`
-      : 'Okay. What would you like to change?';
+    return {
+      branch: 'rejection',
+      reply:
+        known.length > 0
+          ? `Okay — I’ve still got ${known.join('; ')}. What would you like to change?`
+          : 'Okay. What would you like to change?',
+    };
   }
 
   if (ready && state.phase === 'planning') {
-    return known.length > 0
-      ? `We’re in planning with ${known.join('; ')}. Tell me what to adjust, or ask for a summary.`
-      : 'We’re ready to plan — share any remaining details you want included.';
+    return {
+      branch: 'planning_idle',
+      reply:
+        known.length > 0
+          ? `We’re in planning with ${known.join('; ')}. Tell me what to adjust, or ask for a summary.`
+          : 'We’re ready to plan — share any remaining details you want included.',
+    };
   }
 
   if (ready && alreadyAcknowledged && state.lastChangedFields.length === 0) {
-    return 'I’ve still got your trip details. Ask for a summary to review them, or say go ahead when you’re ready to continue.';
+    return {
+      branch: 'ack_still_have',
+      reply:
+        'I’ve still got your trip details. Ask for a summary to review them, or say go ahead when you’re ready to continue.',
+    };
   }
 
   if (ready && alreadyAcknowledged && state.lastChangedFields.length > 0) {
-    return `Updated — ${known.join('; ')}. Ask for a summary to review, or say go ahead when you’re ready.`;
+    return {
+      branch: 'ack_updated',
+      reply: `Updated — ${known.join('; ')}. Ask for a summary to review, or say go ahead when you’re ready.`,
+    };
   }
 
   if (known.length > 0) {
     if (ready) {
-      return `Understood — I’ve saved ${known.join('; ')}. Ask for a summary whenever you want to review, or say go ahead when you’re ready to continue.`;
+      return {
+        branch: 'ack_saved_ready',
+        reply: `Understood — I’ve saved ${known.join('; ')}. Ask for a summary whenever you want to review, or say go ahead when you’re ready to continue.`,
+      };
     }
-    return `Understood — I’ve saved ${known.join('; ')}. I won’t build an itinerary unless you ask for one. Tell me anything to add, change, or remove.`;
+    return {
+      branch: 'ack_saved_incomplete',
+      reply: `Understood — I’ve saved ${known.join('; ')}. I won’t build an itinerary unless you ask for one. Tell me anything to add, change, or remove.`,
+    };
   }
 
-  return 'Share a destination, dates, or the services you need (flights, accommodation, car hire) and I’ll take it from there.';
+  return {
+    branch: 'empty_prompt',
+    reply:
+      'Share a destination, dates, or the services you need (flights, accommodation, car hire) and I’ll take it from there.',
+  };
+}
+
+export function composeReply(input: {
+  patch: TravelPatch;
+  previous: ConversationState;
+  state: ConversationState;
+  clarification: Clarification;
+  travellerName?: string;
+}): string {
+  return decideComposeReply(input).reply;
 }

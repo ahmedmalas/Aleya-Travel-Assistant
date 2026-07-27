@@ -11,6 +11,12 @@
 export { sendTravelMessage, processTravelTurn } from './pipeline';
 export type { SendTravelMessageInput } from './pipeline';
 export {
+  clearComposeTraces,
+  getComposeTraces,
+  pushComposeTrace,
+} from './debugTrace';
+export type { ComposeBranch, ComposeTraceEntry } from './debugTrace';
+export {
   getTravelConversation,
   resetTravelConversation,
   hydrateTravelConversation,
