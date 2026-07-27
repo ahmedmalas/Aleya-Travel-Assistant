@@ -13,6 +13,7 @@ export type RequirementsSummaryView = {
   durationNights?: number;
   services: TravelServiceKind[];
   serviceLabels: string[];
+  excludedServices: TravelServiceKind[];
 };
 
 export type SearchFormProjection = {
@@ -44,15 +45,6 @@ function formatAu(iso?: string): string | undefined {
   return `${d}/${m}/${y}`;
 }
 
-function departureDisplay(state: ConversationState): { label?: string; iso?: string } {
-  const dep = state.departureDate?.value;
-  if (!dep) return {};
-  if (dep.kind === 'exact') return { label: formatAu(dep.isoDate), iso: dep.isoDate };
-  if (dep.kind === 'mid_month') return { label: `mid-${monthName(dep.month)} ${dep.year}` };
-  if (dep.kind === 'month_end') return { label: dep.label };
-  return { label: dep.label };
-}
-
 function monthName(month: number): string {
   return [
     '',
@@ -71,7 +63,21 @@ function monthName(month: number): string {
   ][month] ?? '';
 }
 
-/** Single projector for UI summary, compose, and acceptance checks. */
+function departureDisplay(state: ConversationState): { label?: string; iso?: string } {
+  const dep = state.departureDate?.value;
+  if (!dep) return {};
+  if (dep.kind === 'exact') return { label: formatAu(dep.isoDate), iso: dep.isoDate };
+  if (dep.kind === 'approximate') {
+    const prefix =
+      dep.period === 'mid' ? 'mid-' : dep.period === 'early' ? 'early ' : 'late ';
+    const month = monthName(dep.month);
+    return {
+      label: dep.period === 'mid' ? `${prefix}${month} ${dep.year}` : `${prefix}${month} ${dep.year}`,
+    };
+  }
+  return { label: dep.label };
+}
+
 export function projectRequirementsSummary(state: ConversationState): RequirementsSummaryView {
   const dep = departureDisplay(state);
   const retIso = state.returnDate?.value.isoDate;
@@ -88,6 +94,7 @@ export function projectRequirementsSummary(state: ConversationState): Requiremen
     durationNights: nights,
     services: [...state.services],
     serviceLabels: state.services.map(serviceLabel),
+    excludedServices: [...state.excludedServices],
   };
 }
 
@@ -100,7 +107,7 @@ export function projectSearchForm(state: ConversationState): SearchFormProjectio
     destinationCode: iataForPlace(summary.destination),
     departDate: summary.departingIso,
     returnDate: summary.returningIso,
-    adults: 1,
+    adults: state.travellers?.value ?? 1,
   };
 }
 
@@ -123,8 +130,7 @@ export function summarizeKnown(state: ConversationState): string[] {
   if (view.destination) bits.push(`destination ${view.destination}`);
   if (view.departing) bits.push(`departing ${view.departing}`);
   if (view.returning) {
-    const returning = view.returning.replace(/^returning\s+/i, '');
-    bits.push(`returning ${returning}`);
+    bits.push(`returning ${view.returning.replace(/^returning\s+/i, '')}`);
   }
   if (view.accommodation) bits.push(`stay in ${view.accommodation}`);
   if (view.duration) bits.push(view.duration);

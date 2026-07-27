@@ -1,9 +1,11 @@
 /**
- * Travel Conversation Engine (schema v4)
+ * Travel Understanding Engine (schema v5)
  *
- * One canonical ConversationState owns the full lifecycle:
- * read active clarification → extract → assign location roles → merge once
+ * Pipeline:
+ * normalise → classify → extract candidates → assign roles → merge once
  * → clear resolved clarification → validate → compose → project → persist
+ *
+ * One engine. One canonical store. No legacy fallbacks.
  */
 
 export { sendTravelMessage, processTravelTurn } from './pipeline';

@@ -1,3 +1,5 @@
+/** Place / calendar lexicon — specification data only (airport codes, names). */
+
 export type PlaceRef = { name: string; aliases: string[]; iata?: string };
 
 export const PLACES: PlaceRef[] = [
@@ -41,6 +43,11 @@ export const WEEKDAYS: Record<string, number> = {
   saturday: 6, sat: 6,
 };
 
+export const MONTH_PATTERN =
+  'january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
+
+export const WEEKDAY_PATTERN = 'sunday|monday|tuesday|wednesday|thursday|friday|saturday';
+
 export function resolvePlaceName(raw: string): string | undefined {
   const lower = raw.trim().toLowerCase().replace(/^the\s+/, '');
   const hit = PLACES.find(
@@ -56,12 +63,16 @@ export function matchArea(raw: string): { area: string; city: string } | undefin
   );
 }
 
-export function findAreasInText(text: string): Array<{ area: string; city: string }> {
+export function findAreasInText(text: string): Array<{ area: string; city: string; index: number }> {
   const lower = text.toLowerCase();
-  return AREAS.filter((a) => a.aliases.some((alias) => lower.includes(alias))).map((a) => ({
-    area: a.area,
-    city: a.city,
-  }));
+  const hits: Array<{ area: string; city: string; index: number }> = [];
+  for (const a of AREAS) {
+    for (const alias of a.aliases) {
+      const index = lower.indexOf(alias);
+      if (index >= 0) hits.push({ area: a.area, city: a.city, index });
+    }
+  }
+  return hits.sort((x, y) => x.index - y.index);
 }
 
 export function iataForPlace(name?: string): string | undefined {
@@ -70,7 +81,7 @@ export function iataForPlace(name?: string): string | undefined {
   return PLACES.find((p) => p.name.toLowerCase() === lower)?.iata;
 }
 
-/** Longest-first place alias matcher for capture groups. */
+/** Longest-first place capture group for cue patterns. */
 export function placeCapturePattern(): string {
   const aliases = PLACES.flatMap((p) => [p.name, ...p.aliases])
     .map((a) => a.replace(/^the\s+/i, ''))

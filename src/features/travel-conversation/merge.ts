@@ -1,5 +1,5 @@
-import { deriveReturn } from './extract/dates';
-import type { ConversationState, ExtractionPatch, FieldValue } from './types';
+import { deriveReturnFromConstraints } from './assign';
+import type { ConversationState, FieldValue, TravelPatch } from './types';
 import { createEmptyConversationState } from './types';
 
 function prefer<T>(
@@ -28,20 +28,25 @@ function prefer<T>(
   return incoming;
 }
 
-/** One merge per turn into canonical conversation state. */
+/** Stage 6 — Single merge into canonical state. */
 export function mergeTravelState(
   previous: ConversationState | undefined,
-  patch: ExtractionPatch,
+  patch: TravelPatch,
   now: Date,
+  messageSnippet: string,
 ): ConversationState {
-  if (patch.isNewConversation) {
-    return createEmptyConversationState();
-  }
+  const base = previous
+    ? {
+        ...previous,
+        services: [...previous.services],
+        excludedServices: [...previous.excludedServices],
+        preferences: [...previous.preferences],
+        changeHistory: [...previous.changeHistory],
+      }
+    : createEmptyConversationState();
 
-  const base = previous ? { ...previous, services: [...previous.services] } : createEmptyConversationState();
   const changed: string[] = [];
   const explicit = patch.explicitChanges;
-
   const next: ConversationState = {
     ...base,
     turnCount: base.turnCount + 1,
@@ -50,50 +55,16 @@ export function mergeTravelState(
   };
 
   for (const field of patch.clearFields) {
-    if (field === 'departureDate') {
-      next.departureDate = undefined;
-      changed.push('departureDate');
-    }
-    if (field === 'returnDate') {
-      next.returnDate = undefined;
-      changed.push('returnDate');
-    }
-    if (field === 'origin') {
-      next.origin = undefined;
-      changed.push('origin');
-    }
-    if (field === 'destination') {
-      next.destination = undefined;
-      changed.push('destination');
-    }
+    if (field === 'departureDate') next.departureDate = undefined;
+    if (field === 'returnDate') next.returnDate = undefined;
+    if (field === 'origin') next.origin = undefined;
+    if (field === 'destination') next.destination = undefined;
+    changed.push(field);
   }
 
   next.origin = prefer(patch.origin, next.origin, 'origin', explicit, changed);
   next.destination = prefer(patch.destination, next.destination, 'destination', explicit, changed);
-  next.departureDate = prefer(
-    patch.departureDate,
-    next.departureDate,
-    'departureDate',
-    explicit,
-    changed,
-  );
-
-  // Exact return ISO is invalid once departure is no longer an exact date.
-  if (
-    next.departureDate &&
-    next.departureDate.value.kind !== 'exact' &&
-    next.returnDate?.value.isoDate
-  ) {
-    next.returnDate = {
-      ...next.returnDate,
-      value: {
-        label: next.returnDate.value.label,
-        weekday: next.returnDate.value.weekday,
-      },
-      confirmed: false,
-    };
-    changed.push('returnDate');
-  }
+  next.departureDate = prefer(patch.departureDate, next.departureDate, 'departureDate', explicit, changed);
   next.accommodationArea = prefer(
     patch.accommodationArea,
     next.accommodationArea,
@@ -108,18 +79,36 @@ export function mergeTravelState(
     explicit,
     changed,
   );
+  next.travellers = prefer(patch.travellers, next.travellers, 'travellers', explicit, changed);
 
-  // Return: explicit patch wins; else derive from new exact departure + nights/weekday
   if (patch.returnDate && explicit.includes('returnDate')) {
     next.returnDate = prefer(patch.returnDate, next.returnDate, 'returnDate', explicit, changed);
   } else if (patch.returnDate && !next.returnDate) {
     next.returnDate = prefer(patch.returnDate, next.returnDate, 'returnDate', explicit, changed);
   }
 
+  // Exact departure invalidates ISO return until re-derived
+  if (
+    next.departureDate &&
+    next.departureDate.value.kind !== 'exact' &&
+    next.returnDate?.value.isoDate
+  ) {
+    next.returnDate = {
+      ...next.returnDate,
+      value: {
+        label: next.returnDate.value.label,
+        weekday: next.returnDate.value.weekday,
+        weekend: next.returnDate.value.weekend,
+      },
+      confirmed: false,
+    };
+    changed.push('returnDate');
+  }
+
   const depIso =
     next.departureDate?.value.kind === 'exact' ? next.departureDate.value.isoDate : undefined;
   if (depIso && (changed.includes('departureDate') || changed.includes('durationNights'))) {
-    const derived = deriveReturn(
+    const derived = deriveReturnFromConstraints(
       depIso,
       next.returnDate?.value ?? patch.returnDate?.value,
       next.durationNights?.value,
@@ -139,17 +128,36 @@ export function mergeTravelState(
 
   if (patch.servicesRemove?.length) {
     next.services = next.services.filter((s) => !patch.servicesRemove!.includes(s));
+    next.excludedServices = Array.from(
+      new Set([...next.excludedServices, ...patch.servicesRemove]),
+    );
     changed.push('services');
   }
   if (patch.servicesAdd?.length) {
     const before = next.services.join(',');
     next.services = Array.from(new Set([...next.services, ...patch.servicesAdd]));
+    next.excludedServices = next.excludedServices.filter((s) => !patch.servicesAdd!.includes(s));
     if (next.services.join(',') !== before) changed.push('services');
   }
 
-  // pendingClarification is owned by the pipeline (clear → re-evaluate), not by merge.
-  next.pendingClarification = base.pendingClarification;
+  if (patch.preferencesAdd?.length) {
+    next.preferences = Array.from(new Set([...next.preferences, ...patch.preferencesAdd]));
+    changed.push('preferences');
+  }
 
   next.lastChangedFields = Array.from(new Set(changed));
+  if (next.lastChangedFields.length) {
+    next.changeHistory = [
+      ...next.changeHistory,
+      {
+        turn: next.turnCount,
+        fields: next.lastChangedFields,
+        snippet: messageSnippet.slice(0, 120),
+      },
+    ].slice(-40);
+  }
+
+  // pendingClarification owned by pipeline after merge
+  next.pendingClarification = base.pendingClarification;
   return next;
 }

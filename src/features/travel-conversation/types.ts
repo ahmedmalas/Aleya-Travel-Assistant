@@ -1,6 +1,6 @@
-/** Travel Conversation Engine — schema v4 (clarification-aware locations). */
+/** Travel Understanding Engine — schema v5 (clean rebuild). */
 
-export const CONVERSATION_SCHEMA_VERSION = 4 as const;
+export const CONVERSATION_SCHEMA_VERSION = 5 as const;
 
 export type TravelServiceKind =
   | 'flights'
@@ -14,7 +14,6 @@ export type FieldSource = 'explicit' | 'inferred';
 export type FieldValue<T> = {
   value: T;
   source: FieldSource;
-  /** True when the user stated or confirmed this value. */
   confirmed: boolean;
 };
 
@@ -27,19 +26,12 @@ export type ExactDate = {
   year: number;
 };
 
-export type MidMonthDate = {
-  kind: 'mid_month';
+export type ApproximateDate = {
+  kind: 'approximate';
+  period: 'early' | 'mid' | 'late';
   month: number;
   year: number;
   label: string;
-};
-
-export type MonthEndDate = {
-  kind: 'month_end';
-  month: number;
-  year: number;
-  label: string;
-  weekday?: number;
 };
 
 export type UnresolvedDate = {
@@ -49,19 +41,31 @@ export type UnresolvedDate = {
   year?: number;
 };
 
-export type DepartureDate = ExactDate | MidMonthDate | MonthEndDate | UnresolvedDate;
+export type DepartureDate = ExactDate | ApproximateDate | UnresolvedDate;
 
 export type ReturnDate = {
   isoDate?: string;
   label: string;
   weekday?: number;
+  weekend?: boolean;
   day?: number;
   month?: number;
   year?: number;
 };
 
-/** Fields the engine may ask about and remember across turns. */
-export type ClarificationField = 'origin' | 'destination' | 'departureDate';
+export type ClarificationField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
+
+export type MessageClass =
+  | 'greeting'
+  | 'thanks'
+  | 'new_conversation'
+  | 'clarification_answer'
+  | 'travel_request'
+  | 'explicit_change'
+  | 'explicit_removal'
+  | 'confirmation'
+  | 'rejection'
+  | 'non_travel';
 
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
@@ -70,36 +74,33 @@ export type ConversationState = {
   destination?: FieldValue<string>;
   departureDate?: FieldValue<DepartureDate>;
   returnDate?: FieldValue<ReturnDate>;
-  accommodationArea?: FieldValue<string>;
   durationNights?: FieldValue<number>;
+  accommodationArea?: FieldValue<string>;
   services: TravelServiceKind[];
-  /**
-   * Active clarification from the previous assistant turn.
-   * Standalone location answers resolve against this field only.
-   */
+  excludedServices: TravelServiceKind[];
+  travellers?: FieldValue<number>;
+  preferences: string[];
   pendingClarification?: ClarificationField;
+  changeHistory: Array<{ turn: number; fields: string[]; snippet: string }>;
   turnCount: number;
   updatedAt: string;
-  /** Internal: fields changed on the last turn. */
   lastChangedFields: string[];
 };
 
-export type ExtractionPatch = {
+export type TravelPatch = {
   origin?: FieldValue<string>;
   destination?: FieldValue<string>;
   departureDate?: FieldValue<DepartureDate>;
   returnDate?: FieldValue<ReturnDate>;
-  accommodationArea?: FieldValue<string>;
   durationNights?: FieldValue<number>;
+  accommodationArea?: FieldValue<string>;
   servicesAdd?: TravelServiceKind[];
   servicesRemove?: TravelServiceKind[];
-  /** Fields the user explicitly set or corrected this turn. */
+  travellers?: FieldValue<number>;
+  preferencesAdd?: string[];
   explicitChanges: string[];
-  /** Clear these fields entirely (e.g. forget that date). */
   clearFields: string[];
-  isGreeting?: boolean;
-  isThanks?: boolean;
-  isNewConversation?: boolean;
+  messageClass?: MessageClass;
 };
 
 export type Clarification = {
@@ -120,6 +121,9 @@ export function createEmptyConversationState(conversationId?: string): Conversat
     schemaVersion: CONVERSATION_SCHEMA_VERSION,
     conversationId: conversationId ?? `conv-${Math.random().toString(36).slice(2, 10)}`,
     services: [],
+    excludedServices: [],
+    preferences: [],
+    changeHistory: [],
     turnCount: 0,
     updatedAt: new Date().toISOString(),
     lastChangedFields: [],

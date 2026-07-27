@@ -7,14 +7,15 @@ import {
 
 type Listener = () => void;
 
-/** Schema v4 — incompatible prior payloads are discarded. */
-export const STORAGE_KEY = 'aleya-travel:conversation:v4';
+/** Schema v5 — only this key is authoritative. */
+export const STORAGE_KEY = 'aleya-travel:conversation:v5';
 
-/** Keys from deleted / prior implementations — always purged on boot. */
+/** All prior engines / schemas — purged on hydrate and reset. */
 export const LEGACY_STORAGE_KEYS = [
   'aleya-travel:conversation:v1',
   'aleya-travel:conversation:v2',
   'aleya-travel:conversation:v3',
+  'aleya-travel:conversation:v4',
   'aleya-intelligence:conversation',
   'aleya-intelligence:state',
   'aleya:conversationState',
@@ -82,11 +83,10 @@ function writePersisted(state: ConversationState): void {
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
   } catch {
-    // ignore quota / private mode
+    // ignore
   }
 }
 
-/** Hydrate once from v4 storage; discard incompatible / legacy data. */
 export function hydrateTravelConversation(): ConversationState {
   if (hydrated) return memoryState;
   purgeLegacyKeys();
@@ -96,7 +96,6 @@ export function hydrateTravelConversation(): ConversationState {
   return memoryState;
 }
 
-/** Test / refresh simulation — re-read storage into memory. */
 export function rehydrateTravelConversation(): ConversationState {
   hydrated = false;
   return hydrateTravelConversation();
@@ -108,6 +107,7 @@ export function getTravelConversation(): ConversationState {
 }
 
 export function setTravelConversation(next: ConversationState): void {
+  purgeLegacyKeys();
   memoryState = next;
   writePersisted(next);
   emit();

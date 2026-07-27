@@ -12,14 +12,30 @@ function hasTravelIntent(state: ConversationState): boolean {
   );
 }
 
+function monthName(month: number): string {
+  return [
+    '',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ][month] ?? 'that month';
+}
+
 /**
- * Clarification runs ONLY after the complete merge.
- * Ask solely for genuinely missing / unresolved information.
+ * Stage 8 — Clarification from final merged state only.
+ * One question at a time; never ask for already-supplied facts.
  */
 export function evaluateClarification(state: ConversationState): Clarification {
-  if (!hasTravelIntent(state)) {
-    return { needed: false };
-  }
+  if (!hasTravelIntent(state)) return { needed: false };
 
   if (!state.destination) {
     return {
@@ -44,27 +60,28 @@ export function evaluateClarification(state: ConversationState): Clarification {
         question: 'Which date would you like to travel?',
       };
     }
-    if (dep.kind === 'mid_month') {
+    if (dep.kind === 'approximate') {
+      const label =
+        dep.period === 'mid'
+          ? `mid-${monthName(dep.month)}`
+          : dep.period === 'early'
+            ? `early ${monthName(dep.month)}`
+            : `late ${monthName(dep.month)}`;
       return {
         needed: true,
         field: 'departureDate',
-        question: `Which date around mid-${monthName(dep.month)} would you prefer?`,
+        question: `Which date around ${label} would you prefer?`,
       };
     }
-    if (dep.kind === 'unresolved' || dep.kind === 'month_end') {
+    if (dep.kind === 'unresolved') {
       return {
         needed: true,
         field: 'departureDate',
-        question:
-          dep.kind === 'unresolved'
-            ? 'Which date would you like to travel?'
-            : `Which exact date around ${dep.label} did you mean?`,
+        question: 'Which date would you like to travel?',
       };
     }
   }
 
-  // Once a destination is known, a missing origin is always asked next.
-  // Standalone replies resolve against pendingClarification=origin.
   if (!state.origin) {
     return {
       needed: true,
@@ -74,22 +91,4 @@ export function evaluateClarification(state: ConversationState): Clarification {
   }
 
   return { needed: false };
-}
-
-function monthName(month: number): string {
-  return [
-    '',
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ][month] ?? 'that month';
 }
