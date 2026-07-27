@@ -25,7 +25,7 @@ export function evaluateClarification(state: ConversationState): Clarification {
     return {
       needed: true,
       field: 'destination',
-      question: 'Which city or destination are you travelling to?',
+      question: 'Where would you like to go?',
     };
   }
 
@@ -63,10 +63,9 @@ export function evaluateClarification(state: ConversationState): Clarification {
     }
   }
 
-  if (
-    (state.services.includes('flights') || state.services.includes('transfers')) &&
-    !state.origin
-  ) {
+  // Once a destination is known, a missing origin is always asked next.
+  // Standalone replies resolve against pendingClarification=origin.
+  if (!state.origin) {
     return {
       needed: true,
       field: 'origin',

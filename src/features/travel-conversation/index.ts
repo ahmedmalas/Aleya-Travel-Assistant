@@ -1,8 +1,9 @@
 /**
- * Travel Conversation Engine (schema v3)
+ * Travel Conversation Engine (schema v4)
  *
  * One canonical ConversationState owns the full lifecycle:
- * extract → merge once → clarify → compose → project → persist
+ * read active clarification → extract → assign location roles → merge once
+ * → clear resolved clarification → validate → compose → project → persist
  */
 
 export { sendTravelMessage, processTravelTurn } from './pipeline';
@@ -32,6 +33,7 @@ export {
   createEmptyConversationState,
 } from './types';
 export type {
+  ClarificationField,
   ConversationState,
   DepartureDate,
   TravelTurnResult,

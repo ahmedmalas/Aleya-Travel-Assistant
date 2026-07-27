@@ -7,7 +7,7 @@ import {
   resetTravelConversation,
   setTravelConversation,
 } from './store';
-import type { TravelTurnResult } from './types';
+import type { ClarificationField, ConversationState, TravelTurnResult } from './types';
 import { createEmptyConversationState } from './types';
 
 export type SendTravelMessageInput = {
@@ -22,9 +22,25 @@ export type SendTravelMessageInput = {
   commit?: boolean;
 };
 
+function fieldFilled(state: ConversationState, field: ClarificationField): boolean {
+  if (field === 'origin') return Boolean(state.origin?.value);
+  if (field === 'destination') return Boolean(state.destination?.value);
+  if (field === 'departureDate') {
+    const dep = state.departureDate?.value;
+    return Boolean(dep && dep.kind === 'exact');
+  }
+  return false;
+}
+
 /**
  * Authoritative turn lifecycle:
- * extract → merge once → clarify → compose → persist/project same state
+ * read active clarification
+ * → extract (locations assign roles with clarification context)
+ * → merge once
+ * → clear resolved clarification
+ * → validate remaining missing fields
+ * → compose reply from the merged state
+ * → persist
  */
 export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResult {
   const now = input.now ?? new Date();
@@ -33,6 +49,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
       ? input.previousState
       : getTravelConversation();
 
+  const activeClarification = previous.pendingClarification;
   const patch = extractTravelRequirements(input.message, previous, now);
 
   if (patch.isNewConversation) {
@@ -68,8 +85,21 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     return result;
   }
 
-  const state = mergeTravelState(previous, patch, now);
+  let state = mergeTravelState(previous, patch, now);
+
+  // Clear the clarification that this turn resolved (before asking the next one)
+  if (activeClarification && fieldFilled(state, activeClarification)) {
+    state = { ...state, pendingClarification: undefined };
+  } else {
+    state = { ...state, pendingClarification: activeClarification };
+  }
+
   const clarification = evaluateClarification(state);
+  state = {
+    ...state,
+    pendingClarification: clarification.needed ? clarification.field : undefined,
+  };
+
   const reply = composeReply({
     patch,
     previous,
@@ -88,7 +118,6 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   if (input.commit !== false && input.previousState === undefined) {
     setTravelConversation(state);
   } else if (input.commit && input.previousState !== undefined) {
-    // Test helper path that still wants store updated
     setTravelConversation(state);
   }
 
@@ -96,7 +125,9 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 }
 
 /** Live UI entrypoint — always uses and commits canonical store. */
-export function sendTravelMessage(input: Omit<SendTravelMessageInput, 'previousState' | 'commit'>): TravelTurnResult {
+export function sendTravelMessage(
+  input: Omit<SendTravelMessageInput, 'previousState' | 'commit'>,
+): TravelTurnResult {
   hydrateIfNeeded();
   return processTravelTurn({ ...input, commit: true });
 }

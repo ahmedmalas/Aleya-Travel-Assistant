@@ -1,6 +1,6 @@
 import type { ConversationState, ExtractionPatch } from '../types';
+import { extractLocations } from '../locations';
 import { extractDates } from './dates';
-import { extractPlaces } from './places';
 import { extractDuration, extractServices } from './services';
 
 function mergePatches(parts: Array<Partial<ExtractionPatch>>): ExtractionPatch {
@@ -37,11 +37,12 @@ function mergePatches(parts: Array<Partial<ExtractionPatch>>): ExtractionPatch {
 
 /**
  * Single extraction pass — identifies all supplied values and explicit changes.
+ * Location roles consult previous.pendingClarification before any defaults.
  * Does not merge into state; does not clarify.
  */
 export function extractTravelRequirements(
   message: string,
-  _previous: ConversationState,
+  previous: ConversationState,
   now: Date,
 ): ExtractionPatch {
   const raw = message.trim();
@@ -62,7 +63,9 @@ export function extractTravelRequirements(
   );
 
   const duration = extractDuration(text);
-  const places = extractPlaces(text);
+  const locations = extractLocations(text, {
+    pendingClarification: previous.pendingClarification,
+  });
   const dates = extractDates(text, now, duration);
   const services = extractServices(text);
 
@@ -72,5 +75,5 @@ export function extractTravelRequirements(
     durationPatch.explicitChanges = ['durationNights'];
   }
 
-  return mergePatches([places, durationPatch, dates, services]);
+  return mergePatches([locations, durationPatch, dates, services]);
 }

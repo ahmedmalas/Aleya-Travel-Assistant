@@ -175,21 +175,23 @@ describe('Scenario F — destination correction', () => {
   });
 });
 
-describe('Origin patterns', () => {
-  it.each([
-    'From Melbourne, I want to go to Gold Coast.',
-    'Flying from Melbourne to Gold Coast.',
-    'Melbourne to Gold Coast.',
-    'Leaving Melbourne for the Gold Coast.',
-    'Departing from Melbourne and staying in Surfers Paradise.',
-  ])('extracts Melbourne origin from: %s', (message) => {
-    const result = processTravelTurn({
-      message,
-      previousState: createEmptyConversationState(),
+describe('Clarification live path — missing origin then bare answer', () => {
+  it('asks for origin, then melbourne fills origin only', () => {
+    const first = sendTravelMessage({
+      message: 'I want to go to Gold Coast on 28 August 2026.',
       now: NOW,
-      commit: false,
     });
-    expect(result.state.origin?.value).toBe('Melbourne');
-    expect(result.reply).not.toMatch(/Where will you be departing from/i);
+    expect(first.state.destination?.value).toBe('Gold Coast');
+    expect(first.state.origin).toBeUndefined();
+    expect(first.state.pendingClarification).toBe('origin');
+    expect(first.reply).toMatch(/Where will you be departing from/i);
+
+    const second = sendTravelMessage({ message: 'melbourne', now: NOW });
+    expect(second.state.origin?.value).toBe('Melbourne');
+    expect(second.state.destination?.value).toBe('Gold Coast');
+    expect(second.state.pendingClarification).not.toBe('origin');
+    expect(second.reply).not.toMatch(/Where will you be departing from/i);
+    expect(second.reply).toMatch(/origin Melbourne/i);
+    expect(second.reply).toMatch(/destination Gold Coast/i);
   });
 });

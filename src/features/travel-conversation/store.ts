@@ -7,13 +7,14 @@ import {
 
 type Listener = () => void;
 
-/** New schema — incompatible prior payloads are discarded. */
-export const STORAGE_KEY = 'aleya-travel:conversation:v3';
+/** Schema v4 — incompatible prior payloads are discarded. */
+export const STORAGE_KEY = 'aleya-travel:conversation:v4';
 
-/** Keys from deleted implementations — always purged on boot. */
+/** Keys from deleted / prior implementations — always purged on boot. */
 export const LEGACY_STORAGE_KEYS = [
   'aleya-travel:conversation:v1',
   'aleya-travel:conversation:v2',
+  'aleya-travel:conversation:v3',
   'aleya-intelligence:conversation',
   'aleya-intelligence:state',
   'aleya:conversationState',
@@ -85,7 +86,7 @@ function writePersisted(state: ConversationState): void {
   }
 }
 
-/** Hydrate once from v3 storage; discard incompatible / legacy data. */
+/** Hydrate once from v4 storage; discard incompatible / legacy data. */
 export function hydrateTravelConversation(): ConversationState {
   if (hydrated) return memoryState;
   purgeLegacyKeys();

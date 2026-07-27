@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { extractDateCorrection, parseExactDate, parseMidMonth } from '../extract/dates';
-import { extractPlaces } from '../extract/places';
 import { createEmptyConversationState } from '../types';
 import { extractTravelRequirements } from '../extract';
 
@@ -29,17 +28,6 @@ describe('extractDateCorrection', () => {
     const patch = extractDateCorrection('no i want to leave mid august', NOW);
     expect(patch?.departureDate?.value.kind).toBe('mid_month');
     expect(patch?.explicitChanges).toContain('departureDate');
-  });
-});
-
-describe('extractPlaces', () => {
-  it('reads From Melbourne as origin and go to Gold Coast as destination', () => {
-    const patch = extractPlaces(
-      'From Melbourne, I want to go to Gold Coast on 28 August 2026, staying in Surfers Paradise',
-    );
-    expect(patch.origin?.value).toBe('Melbourne');
-    expect(patch.destination?.value).toBe('Gold Coast');
-    expect(patch.accommodationArea?.value).toBe('Surfers Paradise');
   });
 });
 

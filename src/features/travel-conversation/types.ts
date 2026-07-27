@@ -1,6 +1,6 @@
-/** Travel Conversation Engine — schema v3 (clean rebuild). */
+/** Travel Conversation Engine — schema v4 (clarification-aware locations). */
 
-export const CONVERSATION_SCHEMA_VERSION = 3 as const;
+export const CONVERSATION_SCHEMA_VERSION = 4 as const;
 
 export type TravelServiceKind =
   | 'flights'
@@ -60,6 +60,9 @@ export type ReturnDate = {
   year?: number;
 };
 
+/** Fields the engine may ask about and remember across turns. */
+export type ClarificationField = 'origin' | 'destination' | 'departureDate';
+
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
   conversationId: string;
@@ -70,6 +73,11 @@ export type ConversationState = {
   accommodationArea?: FieldValue<string>;
   durationNights?: FieldValue<number>;
   services: TravelServiceKind[];
+  /**
+   * Active clarification from the previous assistant turn.
+   * Standalone location answers resolve against this field only.
+   */
+  pendingClarification?: ClarificationField;
   turnCount: number;
   updatedAt: string;
   /** Internal: fields changed on the last turn. */
@@ -96,7 +104,7 @@ export type ExtractionPatch = {
 
 export type Clarification = {
   needed: boolean;
-  field?: string;
+  field?: ClarificationField;
   question?: string;
 };
 

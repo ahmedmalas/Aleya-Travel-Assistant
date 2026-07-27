@@ -147,6 +147,9 @@ export function mergeTravelState(
     if (next.services.join(',') !== before) changed.push('services');
   }
 
+  // pendingClarification is owned by the pipeline (clear → re-evaluate), not by merge.
+  next.pendingClarification = base.pendingClarification;
+
   next.lastChangedFields = Array.from(new Set(changed));
   return next;
 }
