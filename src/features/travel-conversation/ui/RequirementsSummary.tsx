@@ -35,11 +35,18 @@ export function RequirementsSummary() {
       data-testid="requirements-summary"
       data-engine="travel-conversation"
       data-schema={String(state.schemaVersion ?? CONVERSATION_SCHEMA_VERSION)}
+      data-phase={state.phase}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
         Saved requirements
         <span className="ml-2 font-normal tracking-normal text-slate-500" data-testid="engine-schema">
           schema v{state.schemaVersion ?? CONVERSATION_SCHEMA_VERSION}
+        </span>
+        <span
+          className="ml-2 font-normal tracking-normal text-slate-500"
+          data-testid="conversation-phase"
+        >
+          phase {state.phase}
         </span>
       </p>
       <dl className="mt-3 grid gap-2 sm:grid-cols-2">

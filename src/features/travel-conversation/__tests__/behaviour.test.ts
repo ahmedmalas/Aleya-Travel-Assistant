@@ -81,6 +81,42 @@ describe('confirmation intent', () => {
     expect(next.reply).toMatch(/planning and search/i);
     expect(next.reply).not.toMatch(/I’ve saved/i);
   });
+
+  it.each([
+    "That's all for now, you can go ahead",
+    "That's all, go ahead",
+    'Looks good, you can proceed',
+    "That's correct, continue",
+    'Perfect, proceed',
+    'Everything looks good, you can proceed',
+    'That will do, you can continue',
+    'Looks good, go ahead',
+  ])('accepts combined confirmation phrases: %s', (message) => {
+    const before = sendTravelMessage({ message: COMPLETE, now: NOW });
+    expect(before.state.phase).toBe('requirements');
+    const snapshot = {
+      origin: before.state.origin?.value,
+      destination: before.state.destination?.value,
+      departure: before.state.departureDate?.value,
+      returnIso: before.state.returnDate?.value.isoDate,
+      area: before.state.accommodationArea?.value,
+      services: [...before.state.services],
+      nights: before.state.durationNights?.value,
+    };
+
+    const next = sendTravelMessage({ message, now: NOW });
+    expect(next.state.phase).toBe('planning');
+    expect(next.reply).toMatch(/planning and search/i);
+    expect(next.reply).not.toMatch(/I’ve saved/i);
+    expect(next.state.origin?.value).toBe(snapshot.origin);
+    expect(next.state.destination?.value).toBe(snapshot.destination);
+    expect(next.state.departureDate?.value).toEqual(snapshot.departure);
+    expect(next.state.returnDate?.value.isoDate).toBe(snapshot.returnIso);
+    expect(next.state.accommodationArea?.value).toBe(snapshot.area);
+    expect(next.state.services).toEqual(snapshot.services);
+    expect(next.state.durationNights?.value).toBe(snapshot.nights);
+    expect(next.state.lastChangedFields).toEqual([]);
+  });
 });
 
 describe('conversation phases', () => {
@@ -118,5 +154,28 @@ describe('classify isolation', () => {
     });
     expect(result.state.destination?.value).toBe('Gold Coast');
     expect(result.state.phase).not.toBe('planning');
+  });
+
+  it('does not treat destination-change instructions as plain confirmation', () => {
+    sendTravelMessage({ message: COMPLETE, now: NOW });
+    const next = sendTravelMessage({
+      message: 'Go ahead and change the destination to Brisbane',
+      now: NOW,
+    });
+    // Must continue through normal extraction — not the confirmation short-circuit.
+    expect(next.state.phase).not.toBe('planning');
+    expect(next.reply).not.toMatch(/planning and search/i);
+    expect(next.reply).not.toMatch(/^Perfect — moving into planning/i);
+  });
+
+  it('does not treat service mutations as plain confirmation', () => {
+    sendTravelMessage({ message: COMPLETE, now: NOW });
+    const next = sendTravelMessage({
+      message: 'Proceed with flights but remove the hotel',
+      now: NOW,
+    });
+    expect(next.state.phase).not.toBe('planning');
+    expect(next.state.services).toContain('flights');
+    expect(next.state.services).not.toContain('accommodation');
   });
 });

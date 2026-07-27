@@ -9,8 +9,55 @@ export type Classification = {
 const SUMMARY_RE =
   /^(?:show me (?:what you(?:'?ve| have)? got|the trip|everything)|let'?s review(?: it)?|what have you got|give me a (?:summary|recap)|review (?:the )?(?:trip|it)|summar(?:y|ise|ize)(?:\s+(?:the\s+)?(?:trip|it))?)\s*[!.?]*$/i;
 
-const CONFIRMATION_RE =
-  /^(?:that'?s all(?:\s+for now)?|looks good(?:\s+to me)?|go ahead(?:\s+please)?|continue|proceed|perfect|that'?s correct|yes|yep|yeah|correct|that'?s right|sounds good)(?:[.!]|\s+thanks)?\.?$/i;
+/** Soft wrappers allowed around a confirmation clause. */
+const SOFT_PREFIX = /^(?:(?:you\s+can|please)\s+)/i;
+const SOFT_SUFFIX = /\s+(?:please)$/i;
+
+/**
+ * Atomic confirmation clauses. Combined messages are accepted when every
+ * clause (split on commas / and / then / but) matches one of these.
+ */
+const CONFIRMATION_CLAUSE_RE =
+  /^(?:that'?s all(?:\s+for now)?|that will do|everything looks good(?:\s+to me)?|looks good(?:\s+to me)?|go ahead|continue|proceed|perfect|that'?s correct|yes|yep|yeah|correct|that'?s right|sounds good)$/i;
+
+const CLAUSE_SPLIT_RE = /\s*[,;]+\s*|\s+\band\b\s+|\s+\bthen\b\s+|\s+\bbut\b\s+/i;
+
+function normalizeIntentText(text: string): string {
+  return text
+    .trim()
+    .replace(/[\u2018\u2019\u2032]/g, "'")
+    .replace(/[.!?]+$/g, '')
+    .trim();
+}
+
+function stripSoftWrappers(clause: string): string {
+  return clause.replace(SOFT_PREFIX, '').replace(SOFT_SUFFIX, '').trim();
+}
+
+function matchesConfirmationClause(clause: string): boolean {
+  const core = stripSoftWrappers(normalizeIntentText(clause));
+  return core.length > 0 && CONFIRMATION_CLAUSE_RE.test(core);
+}
+
+/**
+ * True when the message is only confirmation clause(s), including natural
+ * combinations like "That's all for now, you can go ahead".
+ * Messages with travel details or mutations fail and fall through.
+ */
+export function isConfirmationMessage(text: string): boolean {
+  const normalized = normalizeIntentText(text);
+  if (!normalized) return false;
+
+  if (matchesConfirmationClause(normalized)) return true;
+
+  const clauses = normalized
+    .split(CLAUSE_SPLIT_RE)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (clauses.length < 2) return false;
+  return clauses.every(matchesConfirmationClause);
+}
 
 /**
  * Stage 2 — Classify before extraction.
@@ -33,7 +80,7 @@ export function classifyMessage(
   if (SUMMARY_RE.test(trimmed)) {
     return { messageClass: 'summary' };
   }
-  if (CONFIRMATION_RE.test(trimmed)) {
+  if (isConfirmationMessage(trimmed)) {
     return { messageClass: 'confirmation' };
   }
   if (/^(no|nope|nah)\.?$/i.test(trimmed)) {
