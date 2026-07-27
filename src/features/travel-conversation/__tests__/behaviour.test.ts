@@ -119,6 +119,84 @@ describe('confirmation intent', () => {
   });
 });
 
+describe('final confirmation intent', () => {
+  function enterPlanning() {
+    sendTravelMessage({ message: COMPLETE, now: NOW });
+    return sendTravelMessage({ message: 'go ahead', now: NOW });
+  }
+
+  it('all confirmed moves planning → confirmed without mutating trip state', () => {
+    const planning = enterPlanning();
+    expect(planning.state.phase).toBe('planning');
+    const snapshot = {
+      origin: planning.state.origin?.value,
+      destination: planning.state.destination?.value,
+      departure: planning.state.departureDate?.value,
+      returnIso: planning.state.returnDate?.value.isoDate,
+      area: planning.state.accommodationArea?.value,
+      services: [...planning.state.services],
+      nights: planning.state.durationNights?.value,
+    };
+
+    const locked = sendTravelMessage({ message: 'all confirmed', now: NOW });
+    expect(locked.state.phase).toBe('confirmed');
+    expect(locked.reply).toBe(
+      'All confirmed. Your travel requirements are locked in and ready for search.',
+    );
+    expect(locked.reply).not.toMatch(/We’re in planning/i);
+    expect(locked.reply).not.toMatch(/Tell me what to adjust/i);
+    expect(locked.reply).not.toMatch(/planning and search next/i);
+    expect(locked.reply).not.toMatch(/I’ve saved/i);
+    expect(locked.state.origin?.value).toBe(snapshot.origin);
+    expect(locked.state.destination?.value).toBe(snapshot.destination);
+    expect(locked.state.departureDate?.value).toEqual(snapshot.departure);
+    expect(locked.state.returnDate?.value.isoDate).toBe(snapshot.returnIso);
+    expect(locked.state.accommodationArea?.value).toBe(snapshot.area);
+    expect(locked.state.services).toEqual(snapshot.services);
+    expect(locked.state.durationNights?.value).toBe(snapshot.nights);
+    expect(locked.state.lastChangedFields).toEqual([]);
+  });
+
+  it.each([
+    'confirmed',
+    'everything is confirmed',
+    "everything’s confirmed",
+    'all good and confirmed',
+    'yes, all confirmed',
+    "that’s all confirmed",
+    'finalise it',
+    'finalize it',
+    'lock it in',
+  ])('final confirmation phrase works: %s', (message) => {
+    enterPlanning();
+    const locked = sendTravelMessage({ message, now: NOW });
+    expect(locked.state.phase).toBe('confirmed');
+    expect(locked.reply).toMatch(/locked in and ready for search/i);
+    expect(locked.reply).not.toMatch(/Tell me what to adjust/i);
+  });
+
+  it('keeps go ahead as planning and summary as review', () => {
+    sendTravelMessage({ message: COMPLETE, now: NOW });
+    const summary = sendTravelMessage({ message: 'show me what you got', now: NOW });
+    expect(summary.state.phase).toBe('review');
+    const planning = sendTravelMessage({ message: 'go ahead', now: NOW });
+    expect(planning.state.phase).toBe('planning');
+    expect(planning.reply).toMatch(/planning and search/i);
+  });
+
+  it('does not short-circuit travel changes that mention confirmed', () => {
+    enterPlanning();
+    const next = sendTravelMessage({
+      message: 'confirmed, but change Docklands to Southbank',
+      now: NOW,
+    });
+    // Must not take the final-confirmation short-circuit — continues through normal extraction.
+    expect(next.state.phase).not.toBe('confirmed');
+    expect(next.reply).not.toMatch(/^All confirmed\. Your travel requirements are locked in/i);
+    expect(next.reply).not.toMatch(/locked in and ready for search/i);
+  });
+});
+
 describe('conversation phases', () => {
   it('stops repeating requirements acknowledgement after requirements are complete', () => {
     const first = sendTravelMessage({ message: COMPLETE, now: NOW });

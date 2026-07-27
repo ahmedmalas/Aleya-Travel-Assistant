@@ -52,11 +52,24 @@ function advancePhase(
 ): ConversationPhase {
   if (messageClass === 'new_conversation') return 'requirements';
   if (messageClass === 'summary') return 'review';
+  if (messageClass === 'final_confirmation') {
+    if (clarificationNeeded) {
+      return previous.phase === 'planning' || previous.phase === 'confirmed'
+        ? previous.phase
+        : 'requirements';
+    }
+    return 'confirmed';
+  }
   if (messageClass === 'confirmation') {
-    if (clarificationNeeded) return previous.phase === 'planning' ? 'planning' : 'requirements';
+    if (clarificationNeeded) {
+      return previous.phase === 'planning' || previous.phase === 'confirmed'
+        ? previous.phase
+        : 'requirements';
+    }
     return 'planning';
   }
   if (clarificationNeeded) return 'requirements';
+  if (previous.phase === 'confirmed' && requirementsReady(state)) return 'confirmed';
   if (previous.phase === 'planning' && requirementsReady(state)) return 'planning';
   if (previous.phase === 'review' && requirementsReady(state)) return 'review';
   if (previous.phase === 'confirmation' && requirementsReady(state)) return 'confirmation';
@@ -170,7 +183,8 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 
   if (
     classification.messageClass === 'summary' ||
-    classification.messageClass === 'confirmation'
+    classification.messageClass === 'confirmation' ||
+    classification.messageClass === 'final_confirmation'
   ) {
     const clarification = evaluateClarification(previous);
     const phase = advancePhase(

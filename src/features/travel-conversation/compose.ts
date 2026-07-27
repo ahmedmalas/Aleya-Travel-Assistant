@@ -95,6 +95,25 @@ export function decideComposeReply(input: {
     };
   }
 
+  if (patch.messageClass === 'final_confirmation') {
+    if (clarification.needed && clarification.question) {
+      const known = summarizeKnown(state);
+      const lead =
+        known.length > 0
+          ? `Almost — I’ve got ${known.join('; ')}.`
+          : 'Almost ready.';
+      return {
+        branch: 'final_confirmation_needs_clarification',
+        reply: `${lead} ${clarification.question}`,
+      };
+    }
+    return {
+      branch: 'final_confirmation_locked',
+      reply:
+        'All confirmed. Your travel requirements are locked in and ready for search.',
+    };
+  }
+
   const known = summarizeKnown(state);
 
   if (clarification.needed && clarification.question) {
@@ -114,7 +133,8 @@ export function decideComposeReply(input: {
     (previous.phase === 'requirements' ||
       previous.phase === 'review' ||
       previous.phase === 'confirmation' ||
-      previous.phase === 'planning') &&
+      previous.phase === 'planning' ||
+      previous.phase === 'confirmed') &&
     previous.turnCount > 0 &&
     requirementsReady(previous);
 
@@ -125,6 +145,14 @@ export function decideComposeReply(input: {
         known.length > 0
           ? `Okay — I’ve still got ${known.join('; ')}. What would you like to change?`
           : 'Okay. What would you like to change?',
+    };
+  }
+
+  if (ready && state.phase === 'confirmed') {
+    return {
+      branch: 'confirmed_idle',
+      reply:
+        'Your travel requirements are locked in and ready for search. Say start over if you want to begin a new trip.',
     };
   }
 

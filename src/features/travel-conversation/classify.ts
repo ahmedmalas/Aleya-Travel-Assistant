@@ -9,13 +9,20 @@ export type Classification = {
 const SUMMARY_RE =
   /^(?:show me (?:what you(?:'?ve| have)? got|the trip|everything)|let'?s review(?: it)?|what have you got|give me a (?:summary|recap)|review (?:the )?(?:trip|it)|summar(?:y|ise|ize)(?:\s+(?:the\s+)?(?:trip|it))?)\s*[!.?]*$/i;
 
+/**
+ * Final lock-in phrases — distinct from planning confirmation ("go ahead").
+ * Whole-message match only so mutations like "confirmed, but change…" fall through.
+ */
+const FINAL_CONFIRMATION_RE =
+  /^(?:(?:yes[,.]?\s+)?(?:all(?:\s+good\s+and)?\s+)?confirmed|everything(?:'s| is)\s+confirmed|that'?s all confirmed|finali[sz]e it|lock it in)$/i;
+
 /** Soft wrappers allowed around a confirmation clause. */
 const SOFT_PREFIX = /^(?:(?:you\s+can|please)\s+)/i;
 const SOFT_SUFFIX = /\s+(?:please)$/i;
 
 /**
- * Atomic confirmation clauses. Combined messages are accepted when every
- * clause (split on commas / and / then / but) matches one of these.
+ * Atomic planning-confirmation clauses ("go ahead"). Combined messages are
+ * accepted when every clause (split on commas / and / then / but) matches.
  */
 const CONFIRMATION_CLAUSE_RE =
   /^(?:that'?s all(?:\s+for now)?|that will do|everything looks good(?:\s+to me)?|looks good(?:\s+to me)?|go ahead|continue|proceed|perfect|that'?s correct|yes|yep|yeah|correct|that'?s right|sounds good)$/i;
@@ -39,14 +46,20 @@ function matchesConfirmationClause(clause: string): boolean {
   return core.length > 0 && CONFIRMATION_CLAUSE_RE.test(core);
 }
 
+/** True when the message is a final lock-in (not planning "go ahead"). */
+export function isFinalConfirmationMessage(text: string): boolean {
+  return FINAL_CONFIRMATION_RE.test(normalizeIntentText(text));
+}
+
 /**
- * True when the message is only confirmation clause(s), including natural
- * combinations like "That's all for now, you can go ahead".
+ * True when the message is only planning-confirmation clause(s), including
+ * natural combinations like "That's all for now, you can go ahead".
  * Messages with travel details or mutations fail and fall through.
  */
 export function isConfirmationMessage(text: string): boolean {
   const normalized = normalizeIntentText(text);
   if (!normalized) return false;
+  if (isFinalConfirmationMessage(normalized)) return false;
 
   if (matchesConfirmationClause(normalized)) return true;
 
@@ -79,6 +92,9 @@ export function classifyMessage(
   }
   if (SUMMARY_RE.test(trimmed)) {
     return { messageClass: 'summary' };
+  }
+  if (isFinalConfirmationMessage(trimmed)) {
+    return { messageClass: 'final_confirmation' };
   }
   if (isConfirmationMessage(trimmed)) {
     return { messageClass: 'confirmation' };

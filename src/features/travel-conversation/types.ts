@@ -65,15 +65,17 @@ export type MessageClass =
   | 'explicit_removal'
   | 'summary'
   | 'confirmation'
+  | 'final_confirmation'
   | 'rejection'
   | 'non_travel';
 
-/** Conversation workflow phase — requirements gathering through planning. */
+/** Conversation workflow phase — requirements gathering through locked confirmation. */
 export type ConversationPhase =
   | 'requirements'
   | 'review'
   | 'confirmation'
-  | 'planning';
+  | 'planning'
+  | 'confirmed';
 
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
