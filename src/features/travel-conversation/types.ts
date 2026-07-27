@@ -55,6 +55,10 @@ export type ReturnDate = {
 
 export type ClarificationField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
 
+/**
+ * User intent — classified every turn before compose.
+ * Phase never suppresses intent recognition.
+ */
 export type MessageClass =
   | 'greeting'
   | 'thanks'
@@ -64,18 +68,25 @@ export type MessageClass =
   | 'explicit_change'
   | 'explicit_removal'
   | 'summary'
-  | 'confirmation'
+  | 'soft_affirm'
   | 'final_confirmation'
+  | 'start_search'
+  | 'booking_generation'
+  | 'itinerary_generation'
+  | 'pricing_request'
+  | 'hotel_recommendation'
+  | 'flight_recommendation'
+  | 'stage_query'
   | 'rejection'
-  | 'non_travel';
+  | 'general_conversation';
 
-/** Conversation workflow phase — requirements gathering through locked confirmation. */
-export type ConversationPhase =
-  | 'requirements'
-  | 'review'
-  | 'confirmation'
-  | 'planning'
-  | 'confirmed';
+/**
+ * Readiness state only — not a conversation controller.
+ * - requirements: still gathering
+ * - ready: requirements complete (was wrongly treated as a chat trap called "planning")
+ * - locked: traveller finalised the snapshot
+ */
+export type ConversationPhase = 'requirements' | 'ready' | 'locked';
 
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;

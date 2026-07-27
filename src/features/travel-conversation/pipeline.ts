@@ -1,9 +1,21 @@
+/**
+ * Authoritative pipeline (intent-router rebuild):
+ * normalise → classify intent → (extract → assign → merge | control path)
+ * → readiness phase → compose → persist
+ *
+ * Phase is readiness only. Intent is always classified; compose answers the intent.
+ */
+
 import { assignRoles } from './assign';
 import { extractCandidates } from './candidates';
 import { classifyMessage } from './classify';
 import { evaluateClarification } from './clarify';
 import { decideComposeReply } from './compose';
 import { pushComposeTrace } from './debugTrace';
+import {
+  isControlIntent,
+  resolveReadinessPhase,
+} from './intentRouter';
 import { mergeTravelState } from './merge';
 import { normalizeInput } from './normalize';
 import {
@@ -13,7 +25,6 @@ import {
 } from './store';
 import type {
   ClarificationField,
-  ConversationPhase,
   ConversationState,
   TravelPatch,
   TravelTurnResult,
@@ -40,40 +51,8 @@ function fieldResolved(state: ConversationState, field: ClarificationField): boo
   return false;
 }
 
-function requirementsReady(state: ConversationState): boolean {
+function requirementsComplete(state: ConversationState): boolean {
   return Boolean(state.destination) && !evaluateClarification(state).needed;
-}
-
-function advancePhase(
-  previous: ConversationState,
-  state: ConversationState,
-  messageClass: TravelPatch['messageClass'],
-  clarificationNeeded: boolean,
-): ConversationPhase {
-  if (messageClass === 'new_conversation') return 'requirements';
-  if (messageClass === 'summary') return 'review';
-  if (messageClass === 'final_confirmation') {
-    if (clarificationNeeded) {
-      return previous.phase === 'planning' || previous.phase === 'confirmed'
-        ? previous.phase
-        : 'requirements';
-    }
-    return 'confirmed';
-  }
-  if (messageClass === 'confirmation') {
-    if (clarificationNeeded) {
-      return previous.phase === 'planning' || previous.phase === 'confirmed'
-        ? previous.phase
-        : 'requirements';
-    }
-    return 'planning';
-  }
-  if (clarificationNeeded) return 'requirements';
-  if (previous.phase === 'confirmed' && requirementsReady(state)) return 'confirmed';
-  if (previous.phase === 'planning' && requirementsReady(state)) return 'planning';
-  if (previous.phase === 'review' && requirementsReady(state)) return 'review';
-  if (previous.phase === 'confirmation' && requirementsReady(state)) return 'confirmation';
-  return 'requirements';
 }
 
 function bumpMeta(state: ConversationState, now: Date): ConversationState {
@@ -96,11 +75,44 @@ function commitIfNeeded(
   }
 }
 
-/**
- * Authoritative pipeline:
- * normalise → classify → extract candidates → assign roles → merge once
- * → clear resolved clarification → validate → compose → persist
- */
+function finishTurn(input: {
+  send: SendTravelMessageInput;
+  previous: ConversationState;
+  state: ConversationState;
+  patch: TravelPatch;
+  clarification: ReturnType<typeof evaluateClarification>;
+  normalized: string;
+  now: Date;
+}): TravelTurnResult {
+  const { send, previous, state, patch, clarification, normalized, now } = input;
+  const decision = decideComposeReply({
+    patch,
+    previous,
+    state,
+    clarification,
+    travellerName: send.travellerName,
+  });
+  pushComposeTrace({
+    at: now.toISOString(),
+    message: send.message,
+    normalized,
+    messageClass: patch.messageClass,
+    phaseBefore: previous.phase,
+    phaseAfter: state.phase,
+    pendingClarification: state.pendingClarification,
+    composeBranch: decision.branch,
+    replyPreview: decision.reply.slice(0, 120),
+  });
+  const result: TravelTurnResult = {
+    state,
+    reply: decision.reply,
+    clarification,
+    searchPerformed: false,
+  };
+  commitIfNeeded(send, state);
+  return result;
+}
+
 export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResult {
   const now = input.now ?? new Date();
   const previous =
@@ -108,127 +120,72 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 
   const normalized = normalizeInput(input.message);
   const classification = classifyMessage(normalized, previous);
+  const intent = classification.messageClass;
 
-  if (classification.messageClass === 'new_conversation') {
-    const empty = input.previousState !== undefined
-      ? createEmptyConversationState()
-      : resetTravelConversation();
-    const patch: TravelPatch = {
-      messageClass: 'new_conversation',
-      explicitChanges: [],
-      clearFields: [],
-    };
-    const decision = decideComposeReply({
-      patch,
+  if (intent === 'new_conversation') {
+    const empty =
+      input.previousState !== undefined
+        ? createEmptyConversationState()
+        : resetTravelConversation();
+    return finishTurn({
+      send: input,
       previous,
       state: empty,
+      patch: {
+        messageClass: 'new_conversation',
+        explicitChanges: [],
+        clearFields: [],
+      },
       clarification: { needed: false },
-      travellerName: input.travellerName,
-    });
-    pushComposeTrace({
-      at: now.toISOString(),
-      message: input.message,
       normalized,
-      messageClass: classification.messageClass,
-      phaseBefore: previous.phase,
-      phaseAfter: empty.phase,
-      pendingClarification: undefined,
-      composeBranch: decision.branch,
-      replyPreview: decision.reply.slice(0, 120),
+      now,
     });
-    const result: TravelTurnResult = {
-      state: empty,
-      reply: decision.reply,
-      clarification: { needed: false },
-      searchPerformed: false,
-    };
-    commitIfNeeded(input, empty);
-    return result;
   }
 
-  if (
-    classification.messageClass === 'greeting' ||
-    classification.messageClass === 'thanks'
-  ) {
-    const patch: TravelPatch = {
-      messageClass: classification.messageClass,
-      explicitChanges: [],
-      clearFields: [],
-    };
-    const decision = decideComposeReply({
-      patch,
+  if (intent === 'greeting' || intent === 'thanks') {
+    return finishTurn({
+      send: input,
       previous,
       state: previous,
+      patch: {
+        messageClass: intent,
+        explicitChanges: [],
+        clearFields: [],
+      },
       clarification: { needed: false },
-      travellerName: input.travellerName,
-    });
-    pushComposeTrace({
-      at: now.toISOString(),
-      message: input.message,
       normalized,
-      messageClass: classification.messageClass,
-      phaseBefore: previous.phase,
-      phaseAfter: previous.phase,
-      pendingClarification: previous.pendingClarification,
-      composeBranch: decision.branch,
-      replyPreview: decision.reply.slice(0, 120),
+      now,
     });
-    return {
-      state: previous,
-      reply: decision.reply,
-      clarification: { needed: false },
-      searchPerformed: false,
-    };
   }
 
-  if (
-    classification.messageClass === 'summary' ||
-    classification.messageClass === 'confirmation' ||
-    classification.messageClass === 'final_confirmation'
-  ) {
+  // Control intents: answer the request without extract/merge.
+  if (isControlIntent(intent)) {
     const clarification = evaluateClarification(previous);
-    const phase = advancePhase(
+    const phase = resolveReadinessPhase({
       previous,
-      previous,
-      classification.messageClass,
-      clarification.needed,
-    );
+      intent,
+      requirementsComplete: requirementsComplete(previous),
+      clarificationNeeded: clarification.needed,
+      mutated: false,
+    });
     const state = {
       ...bumpMeta(previous, now),
       phase,
       pendingClarification: clarification.needed ? clarification.field : undefined,
     };
-    const patch: TravelPatch = {
-      messageClass: classification.messageClass,
-      explicitChanges: [],
-      clearFields: [],
-    };
-    const decision = decideComposeReply({
-      patch,
+    return finishTurn({
+      send: input,
       previous,
       state,
+      patch: {
+        messageClass: intent,
+        explicitChanges: [],
+        clearFields: [],
+      },
       clarification,
-      travellerName: input.travellerName,
-    });
-    pushComposeTrace({
-      at: now.toISOString(),
-      message: input.message,
       normalized,
-      messageClass: classification.messageClass,
-      phaseBefore: previous.phase,
-      phaseAfter: state.phase,
-      pendingClarification: state.pendingClarification,
-      composeBranch: decision.branch,
-      replyPreview: decision.reply.slice(0, 120),
+      now,
     });
-    const result: TravelTurnResult = {
-      state,
-      reply: decision.reply,
-      clarification,
-      searchPerformed: false,
-    };
-    commitIfNeeded(input, state);
-    return result;
   }
 
   const activeClarification = previous.pendingClarification;
@@ -239,7 +196,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
 
   const candidates = extractCandidates(text, now, previous);
   const patch = assignRoles(candidates, previous, classification.answersField);
-  patch.messageClass = classification.messageClass;
+  patch.messageClass = intent;
 
   let state = mergeTravelState(previous, patch, now, text);
 
@@ -250,40 +207,28 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   }
 
   const clarification = evaluateClarification(state);
+  const mutated = state.lastChangedFields.length > 0;
   state = {
     ...state,
     pendingClarification: clarification.needed ? clarification.field : undefined,
-    phase: advancePhase(previous, state, classification.messageClass, clarification.needed),
+    phase: resolveReadinessPhase({
+      previous,
+      intent,
+      requirementsComplete: requirementsComplete(state),
+      clarificationNeeded: clarification.needed,
+      mutated,
+    }),
   };
 
-  const decision = decideComposeReply({
-    patch,
+  return finishTurn({
+    send: input,
     previous,
     state,
+    patch,
     clarification,
-    travellerName: input.travellerName,
-  });
-  pushComposeTrace({
-    at: now.toISOString(),
-    message: input.message,
     normalized,
-    messageClass: classification.messageClass,
-    phaseBefore: previous.phase,
-    phaseAfter: state.phase,
-    pendingClarification: state.pendingClarification,
-    composeBranch: decision.branch,
-    replyPreview: decision.reply.slice(0, 120),
+    now,
   });
-
-  const result: TravelTurnResult = {
-    state,
-    reply: decision.reply,
-    clarification,
-    searchPerformed: false,
-  };
-
-  commitIfNeeded(input, state);
-  return result;
 }
 
 export function sendTravelMessage(

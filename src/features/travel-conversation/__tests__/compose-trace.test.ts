@@ -23,23 +23,19 @@ afterEach(() => {
 });
 
 describe('compose runtime trace', () => {
-  it('traces go ahead and show me what you got after requirements', () => {
+  it('traces soft affirm and summary after requirements', () => {
     sendTravelMessage({ message: COMPLETE, now: NOW });
     clearComposeTraces();
 
-    const confirm = sendTravelMessage({ message: 'go ahead', now: NOW });
-    const confirmTrace = getComposeTraces().at(-1);
-    // eslint-disable-next-line no-console
-    console.log('TRACE go ahead', JSON.stringify(confirmTrace, null, 2));
-    // eslint-disable-next-line no-console
-    console.log('REPLY go ahead', confirm.reply);
+    const affirm = sendTravelMessage({ message: 'go ahead', now: NOW });
+    const affirmTrace = getComposeTraces().at(-1);
 
-    expect(confirmTrace?.messageClass).toBe('confirmation');
-    expect(confirmTrace?.composeBranch).toBe('confirmation_planning');
-    expect(confirm.reply).not.toMatch(/I’ve saved/i);
+    expect(affirmTrace?.messageClass).toBe('soft_affirm');
+    expect(affirmTrace?.composeBranch).toBe('soft_affirm_ready');
+    expect(affirm.reply).not.toMatch(/I’ve saved/i);
+    expect(affirm.reply).not.toMatch(/We’re in planning/i);
 
     clearComposeTraces();
-    // Reset to requirements-complete state for summary check in isolation
     resetTravelConversation();
     localStorage.clear();
     sendTravelMessage({ message: COMPLETE, now: NOW });
@@ -47,14 +43,23 @@ describe('compose runtime trace', () => {
 
     const summary = sendTravelMessage({ message: 'show me what you got', now: NOW });
     const summaryTrace = getComposeTraces().at(-1);
-    // eslint-disable-next-line no-console
-    console.log('TRACE show me what you got', JSON.stringify(summaryTrace, null, 2));
-    // eslint-disable-next-line no-console
-    console.log('REPLY show me what you got', summary.reply);
 
     expect(summaryTrace?.messageClass).toBe('summary');
     expect(summaryTrace?.composeBranch).toBe('summary_review');
     expect(summary.reply).not.toMatch(/I’ve saved/i);
     expect(summary.reply).toMatch(/Here’s what I’ve got for your trip/i);
+  });
+
+  it('traces booking generation while ready — never planning_idle', () => {
+    sendTravelMessage({ message: COMPLETE, now: NOW });
+    sendTravelMessage({ message: 'go ahead', now: NOW });
+    clearComposeTraces();
+
+    const next = sendTravelMessage({ message: 'invent the booking', now: NOW });
+    const trace = getComposeTraces().at(-1);
+
+    expect(trace?.messageClass).toBe('booking_generation');
+    expect(trace?.composeBranch).toBe('booking_generation');
+    expect(next.reply).not.toMatch(/We’re in planning/i);
   });
 });

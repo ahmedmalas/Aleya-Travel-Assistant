@@ -7,7 +7,6 @@ import {
   useTravelConversation,
 } from '../../features/travel-conversation';
 import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
-import { detectUserCurrency } from '../../lib/currency';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
 
@@ -39,11 +38,6 @@ const getTravellerName = () => {
   return fullName ? fullName.split(/\s+/)[0] : '';
 };
 
-const getTravellerCurrency = () => {
-  const savedCurrency = readSavedProfile().currency;
-  return savedCurrency?.trim().toUpperCase() || detectUserCurrency();
-};
-
 const STARTERS = [
   'I want to visit Japan next April',
   'Find me affordable flights to Bali',
@@ -57,7 +51,7 @@ export type AiPlanningPanelProps = {
 };
 
 export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {}) {
-  const { trip, generateAndPreviewAiPlan, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
+  const { trip, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
   const travelState = useTravelConversation();
   const travellerName = getTravellerName();
   const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
@@ -76,7 +70,7 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
   const searchReady =
-    travelState.phase === 'planning' || travelState.phase === 'confirmed';
+    travelState.phase === 'ready' || travelState.phase === 'locked';
 
   /** Keep the user in chat — scroll only inside the chat pane, never the page. */
   const scrollChatToEnd = () => {
@@ -106,17 +100,8 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
         travellerName,
       });
 
-      let plan: AiTravelPlan | undefined;
-      if (/\b(?:itinerary|day[- ]by[- ]day plan)\b/i.test(request)) {
-        const travellerCurrency = getTravellerCurrency();
-        const generated = generateAndPreviewAiPlan('complete');
-        plan = {
-          ...generated,
-          budgetSuggestion: { ...generated.budgetSuggestion, currency: travellerCurrency },
-        };
-      }
-
-      reply(result.reply, plan);
+      // Engine replies only — do not invent itineraries/bookings from chat.
+      reply(result.reply);
 
       // Search handoff is UI-only and only on explicit search phrases — not planning/confirm.
       if (isExplicitSearchRequest(request)) {

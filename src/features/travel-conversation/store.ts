@@ -64,8 +64,14 @@ function readPersisted(): ConversationState | undefined {
       return undefined;
     }
     const state = parsed.state;
-    if (!state.phase) {
+    // Migrate deleted planning/confirmation/review phases → readiness model.
+    const legacy = state.phase as string | undefined;
+    if (!legacy) {
       state.phase = 'requirements';
+    } else if (legacy === 'planning' || legacy === 'review' || legacy === 'confirmation') {
+      state.phase = 'ready';
+    } else if (legacy === 'confirmed') {
+      state.phase = 'locked';
     }
     return state;
   } catch {

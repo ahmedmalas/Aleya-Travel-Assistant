@@ -1,6 +1,6 @@
 /**
  * Runtime conversation-engine instrumentation.
- * Captures classify → compose branch selection without mutating canonical state.
+ * Captures intent → compose branch selection without mutating canonical state.
  */
 
 export type ComposeBranch =
@@ -9,14 +9,21 @@ export type ComposeBranch =
   | 'new_conversation'
   | 'summary_incomplete'
   | 'summary_review'
-  | 'confirmation_needs_clarification'
-  | 'confirmation_planning'
+  | 'soft_affirm_ready'
+  | 'soft_affirm_needs_clarification'
   | 'final_confirmation_locked'
   | 'final_confirmation_needs_clarification'
+  | 'start_search'
+  | 'start_search_incomplete'
+  | 'booking_generation'
+  | 'itinerary_generation'
+  | 'pricing_request'
+  | 'hotel_recommendation'
+  | 'flight_recommendation'
+  | 'stage_query'
+  | 'needs_clarification'
   | 'clarification_question'
-  | 'confirmed_idle'
   | 'rejection'
-  | 'planning_idle'
   | 'ack_still_have'
   | 'ack_updated'
   | 'ack_saved_ready'

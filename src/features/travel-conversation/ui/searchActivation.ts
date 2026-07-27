@@ -1,6 +1,7 @@
 /**
  * UI-layer search activation — not a conversation phase.
- * Planning/confirmed mean requirements are ready; search starts only on explicit request.
+ * Requirements ready/locked only means the snapshot is complete; search starts
+ * on explicit request (or the Continue to search button).
  */
 
 const EXPLICIT_SEARCH_RE =
