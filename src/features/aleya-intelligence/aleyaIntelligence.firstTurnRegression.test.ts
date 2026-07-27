@@ -4,6 +4,29 @@ import { processTravelMessage } from './pipeline';
 const NOW = new Date('2026-07-27T10:00:00+10:00');
 
 describe('First-turn requirement extraction regression', () => {
+  it('canonical single-pass first turn (rebuild contract)', () => {
+    const result = processTravelMessage({
+      message:
+        'I want to go to Gold Coast on 28 August departing from Melbourne, staying in Surfers Paradise for three nights, returning Monday. I need flights, hotel and car hire.',
+      now: NOW,
+    });
+    expect(result.state.origin?.value).toBe('Melbourne');
+    expect(result.state.destination?.value).toBe('Gold Coast');
+    expect(result.state.departureDate?.value.isoDate).toBe('2026-08-28');
+    expect(result.state.returnDate?.value.isoDate).toBe('2026-08-31');
+    expect(result.state.durationNights?.value).toBe(3);
+    expect(result.state.accommodationArea?.value).toBe('Surfers Paradise');
+    expect(result.state.requestedServices).toEqual(
+      expect.arrayContaining(['flights', 'accommodation', 'car_hire']),
+    );
+    expect(result.state.requestedServices).toHaveLength(3);
+    expect(result.reply).not.toMatch(/which city or destination/i);
+    expect(result.reply).not.toMatch(/which date would you like to travel/i);
+    expect(result.reply).toMatch(/Melbourne/i);
+    expect(result.reply).toMatch(/Gold Coast/i);
+    expect(result.reply).toMatch(/Surfers Paradise/i);
+  });
+
   it('mandatory rich first turn — Gold Coast / Melbourne / Surfers / three services', () => {
     const first = processTravelMessage({
       message:

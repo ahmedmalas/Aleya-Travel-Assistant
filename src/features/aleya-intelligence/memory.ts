@@ -9,9 +9,28 @@ function preferField<T>(
   fieldName: string,
   updated: string[],
   askFields: string[],
+  explicitChanges?: string[],
 ): FieldValue<T> | undefined {
   if (!incoming) return existing;
   if (typeof incoming.value === 'string' && incoming.value.trim() === '') return existing;
+
+  // Confirmed state is sticky unless this turn explicitly changes the field
+  // (or there is no existing value yet).
+  if (
+    existing?.source === 'confirmed' &&
+    incoming.source === 'inferred' &&
+    !explicitChanges?.includes(fieldName)
+  ) {
+    return existing;
+  }
+  if (
+    existing?.source === 'confirmed' &&
+    JSON.stringify(existing.value) !== JSON.stringify(incoming.value) &&
+    !explicitChanges?.includes(fieldName) &&
+    incoming.confidenceLevel !== 'high'
+  ) {
+    return existing;
+  }
 
   const decision = mayCommitField(
     incoming as FieldValue<unknown>,
@@ -116,7 +135,14 @@ export function mergeConversationState(
       askFields.push('destination');
       updated.push('destination');
     } else {
-      next.destination = preferField(incoming, existing, 'destination', updated, askFields);
+      next.destination = preferField(
+        incoming,
+        existing,
+        'destination',
+        updated,
+        askFields,
+        patch.explicitChanges,
+      );
       if (incoming.confidenceLevel !== 'low') {
         next.pendingDestination = undefined;
         next.awaitingDestinationConfirmation = false;
@@ -124,15 +150,24 @@ export function mergeConversationState(
     }
   }
 
-  next.origin = preferField(patch.origin, next.origin, 'origin', updated, askFields);
-  next.departureDate = preferField(patch.departureDate, next.departureDate, 'departureDate', updated, askFields);
-  next.returnDate = preferField(patch.returnDate, next.returnDate, 'returnDate', updated, askFields);
+  const explicit = patch.explicitChanges;
+  next.origin = preferField(patch.origin, next.origin, 'origin', updated, askFields, explicit);
+  next.departureDate = preferField(
+    patch.departureDate,
+    next.departureDate,
+    'departureDate',
+    updated,
+    askFields,
+    explicit,
+  );
+  next.returnDate = preferField(patch.returnDate, next.returnDate, 'returnDate', updated, askFields, explicit);
   next.departureTimePreference = preferField(
     patch.departureTimePreference,
     next.departureTimePreference,
     'departureTimePreference',
     updated,
     askFields,
+    explicit,
   );
   next.returnTimePreference = preferField(
     patch.returnTimePreference,
@@ -140,14 +175,23 @@ export function mergeConversationState(
     'returnTimePreference',
     updated,
     askFields,
+    explicit,
   );
-  next.dateFlexibility = preferField(patch.dateFlexibility, next.dateFlexibility, 'dateFlexibility', updated, askFields);
+  next.dateFlexibility = preferField(
+    patch.dateFlexibility,
+    next.dateFlexibility,
+    'dateFlexibility',
+    updated,
+    askFields,
+    explicit,
+  );
   next.accommodationArea = preferField(
     patch.accommodationArea,
     next.accommodationArea,
     'accommodationArea',
     updated,
     askFields,
+    explicit,
   );
   next.durationNights = preferField(
     patch.durationNights,
@@ -155,17 +199,26 @@ export function mergeConversationState(
     'durationNights',
     updated,
     askFields,
+    explicit,
   );
-  next.travellers = preferField(patch.travellers, next.travellers, 'travellers', updated, askFields);
-  next.tripPurpose = preferField(patch.tripPurpose, next.tripPurpose, 'tripPurpose', updated, askFields);
-  next.budget = preferField(patch.budget, next.budget, 'budget', updated, askFields);
-  next.roomRequirements = preferField(patch.roomRequirements, next.roomRequirements, 'roomRequirements', updated, askFields);
+  next.travellers = preferField(patch.travellers, next.travellers, 'travellers', updated, askFields, explicit);
+  next.tripPurpose = preferField(patch.tripPurpose, next.tripPurpose, 'tripPurpose', updated, askFields, explicit);
+  next.budget = preferField(patch.budget, next.budget, 'budget', updated, askFields, explicit);
+  next.roomRequirements = preferField(
+    patch.roomRequirements,
+    next.roomRequirements,
+    'roomRequirements',
+    updated,
+    askFields,
+    explicit,
+  );
   next.airlinePreferences = preferField(
     patch.airlinePreferences,
     next.airlinePreferences,
     'airlinePreferences',
     updated,
     askFields,
+    explicit,
   );
   next.hotelPreferences = preferField(
     patch.hotelPreferences,
@@ -173,8 +226,16 @@ export function mergeConversationState(
     'hotelPreferences',
     updated,
     askFields,
+    explicit,
   );
-  next.transportNotes = preferField(patch.transportNotes, next.transportNotes, 'transportNotes', updated, askFields);
+  next.transportNotes = preferField(
+    patch.transportNotes,
+    next.transportNotes,
+    'transportNotes',
+    updated,
+    askFields,
+    explicit,
+  );
 
   next.activities = mergeStringLists(patch.activities, next.activities);
   next.dietaryRequirements = mergeStringLists(patch.dietaryRequirements, next.dietaryRequirements);

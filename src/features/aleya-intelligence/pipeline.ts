@@ -11,8 +11,9 @@ import { createEmptyConversationState } from './types';
 import { validateRequirements } from './validate';
 
 /**
- * Intelligence pipeline:
- * Understand → Extract → Resolve references → Confidence → Store → Infer → Validate → Clarify → Compress → Continue
+ * Intelligence pipeline (deterministic order):
+ * 1. Extract (single pass) → 2. Resolve references → 3. Confidence
+ * 4. Merge once → 5. Infer → 6. Validate → 7. Clarify → 8. Compress → Continue
  * No search, booking, or recommendation tools are invoked.
  */
 export function processTravelMessage(input: ProcessMessageInput): IntelligenceResult {
@@ -45,7 +46,25 @@ export function processTravelMessage(input: ProcessMessageInput): IntelligenceRe
 
   state = inferContext(state);
 
-  if (patch.isDateConfirmation && state.lastSuggestedDate?.isoDate && !state.departureDate?.value.isoDate) {
+  // Date confirmation: extraction already placed absolute departure on the patch;
+  // ensure await flags clear and source is confirmed after merge.
+  if (patch.isDateConfirmation && state.departureDate?.value.isoDate) {
+    state = {
+      ...state,
+      awaitingDateConfirmation: false,
+      departureDate: {
+        ...state.departureDate,
+        value: { ...state.departureDate.value, kind: 'absolute' },
+        source: 'confirmed',
+        confidence: 0.95,
+        confidenceLevel: 'high',
+      },
+    };
+  } else if (
+    patch.isDateConfirmation &&
+    state.lastSuggestedDate?.isoDate &&
+    !state.departureDate?.value.isoDate
+  ) {
     state = {
       ...state,
       awaitingDateConfirmation: false,
@@ -56,21 +75,6 @@ export function processTravelMessage(input: ProcessMessageInput): IntelligenceRe
           isoDate: state.lastSuggestedDate.isoDate,
           label: patch.confirmedDateLabel ?? state.lastSuggestedDate.label,
         },
-        source: 'confirmed',
-        confidence: 0.95,
-        confidenceLevel: 'high',
-      },
-    };
-  }
-
-  // If confirmation provided an absolute date on the patch, ensure kind is absolute
-  if (patch.isDateConfirmation && patch.departureDate?.value.isoDate) {
-    state = {
-      ...state,
-      awaitingDateConfirmation: false,
-      departureDate: {
-        ...patch.departureDate,
-        value: { ...patch.departureDate.value, kind: 'absolute' },
         source: 'confirmed',
         confidence: 0.95,
         confidenceLevel: 'high',
