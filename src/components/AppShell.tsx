@@ -64,6 +64,24 @@ function CustomerApp() {
     window.setTimeout(() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   };
 
+  /**
+   * Explicit search handoff from chat ("search now" / Continue to search).
+   * Planning/confirm must NOT call this — requirements stay in the conversation.
+   */
+  const activateSearchFromChat = () => {
+    setWorkspace(null);
+    window.setTimeout(() => {
+      const form = document.getElementById('flight-search') as HTMLFormElement | null;
+      form?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Projected fields are already bound from canonical state; run search when ready.
+      const from = normaliseAirport(origin);
+      const to = normaliseAirport(destination);
+      if (from.length === 3 && to.length === 3 && departDate) {
+        form?.requestSubmit();
+      }
+    }, 50);
+  };
+
   const showAssistant = () => {
     setWorkspace(null);
     window.setTimeout(() => document.getElementById('aleya-assistant')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -134,7 +152,7 @@ function CustomerApp() {
               <h2 className="mt-5 text-4xl font-black tracking-tight text-white md:text-6xl">Plan your entire journey with Aleya</h2>
               <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">Ask naturally, build an itinerary, compare ideas, work within your budget and organise every part of your trip in one conversation.</p>
             </div>
-            <AiPlanningPanel />
+            <AiPlanningPanel onActivateSearch={activateSearchFromChat} />
           </div>
         </section>
 

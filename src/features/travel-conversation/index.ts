@@ -48,3 +48,4 @@ export type {
   TravelTurnResult,
   TravelServiceKind,
 } from './types';
+export { isExplicitSearchRequest } from './ui/searchActivation';

@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
+  isExplicitSearchRequest,
   resetTravelConversation,
   sendTravelMessage,
+  useTravelConversation,
 } from '../../features/travel-conversation';
 import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
 import { detectUserCurrency } from '../../lib/currency';
@@ -49,8 +51,14 @@ const STARTERS = [
   'Plan a family trip to Queenstown with car hire',
 ];
 
-export function AiPlanningPanel() {
+export type AiPlanningPanelProps = {
+  /** Called once when the traveller explicitly asks to search (not on planning/confirm). */
+  onActivateSearch?: () => void;
+};
+
+export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {}) {
   const { trip, generateAndPreviewAiPlan, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
+  const travelState = useTravelConversation();
   const travellerName = getTravellerName();
   const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
   const [input, setInput] = useState('');
@@ -64,12 +72,22 @@ export function AiPlanningPanel() {
       createdAt: new Date().toISOString(),
     },
   ]);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
+  const searchReady =
+    travelState.phase === 'planning' || travelState.phase === 'confirmed';
+
+  /** Keep the user in chat — scroll only inside the chat pane, never the page. */
+  const scrollChatToEnd = () => {
+    const pane = chatScrollRef.current;
+    if (!pane) return;
+    pane.scrollTo({ top: pane.scrollHeight, behavior: 'smooth' });
+  };
 
   const reply = (text: string, plan?: AiTravelPlan) => {
     setMessages((current) => [...current, { id: createId(), role: 'aleya', text, createdAt: new Date().toISOString(), plan }]);
-    window.setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    window.setTimeout(scrollChatToEnd, 0);
   };
 
   const sendMessage = async (event?: FormEvent) => {
@@ -99,6 +117,11 @@ export function AiPlanningPanel() {
       }
 
       reply(result.reply, plan);
+
+      // Search handoff is UI-only and only on explicit search phrases — not planning/confirm.
+      if (isExplicitSearchRequest(request)) {
+        onActivateSearch?.();
+      }
     } catch (error) {
       reply(error instanceof Error ? error.message : 'Something went wrong while processing your request.');
     } finally {
@@ -107,7 +130,11 @@ export function AiPlanningPanel() {
   };
 
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30" aria-labelledby="aleya-assistant-title">
+    <section
+      className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30"
+      aria-labelledby="aleya-assistant-title"
+      data-testid="aleya-planning-panel"
+    >
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
         <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">Aleya AI Assistant</h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the travel conversation engine — one shared requirements state for chat, summary, and search. Itineraries only when you ask.</p>
@@ -117,7 +144,12 @@ export function AiPlanningPanel() {
 
       <RequirementsSummary />
 
-      <div className="max-h-[680px] min-h-[420px] space-y-5 overflow-y-auto px-4 py-6 md:px-7" aria-live="polite">
+      <div
+        ref={chatScrollRef}
+        className="max-h-[680px] min-h-[420px] space-y-5 overflow-y-auto px-4 py-6 md:px-7"
+        aria-live="polite"
+        data-testid="aleya-chat-scroll"
+      >
         {messages.map((message) => (
           <article key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-3xl ${message.role === 'user' ? 'rounded-3xl rounded-br-md bg-sky-400 px-5 py-3 text-slate-950' : 'rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-5 py-4 text-slate-100'}`}>
@@ -146,6 +178,21 @@ export function AiPlanningPanel() {
       </div>
 
       {messages.length === 1 ? <div className="px-5 pb-4 md:px-7"><p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-400">Try asking</p><div className="flex flex-wrap gap-2">{STARTERS.map((starter) => <button key={starter} type="button" onClick={() => { setInput(starter); window.setTimeout(() => document.getElementById('aleya-chat-input')?.focus(), 0); }} className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs text-slate-200 hover:border-sky-300 hover:text-white">{starter}</button>)}</div></div> : null}
+
+      {searchReady ? (
+        <div className="border-t border-white/10 px-5 py-3 md:px-7" data-testid="search-handoff-actions">
+          <p className="mb-2 text-xs text-slate-400">
+            Requirements are ready. Stay in chat, or continue to search when you want.
+          </p>
+          <PrimaryButton
+            type="button"
+            data-testid="continue-to-search"
+            onClick={() => onActivateSearch?.()}
+          >
+            Continue to search
+          </PrimaryButton>
+        </div>
+      ) : null}
 
       <form onSubmit={sendMessage} className="border-t border-white/10 bg-slate-950/70 p-4 md:p-5">
         <label className="sr-only" htmlFor="aleya-chat-input">Message Aleya</label>
