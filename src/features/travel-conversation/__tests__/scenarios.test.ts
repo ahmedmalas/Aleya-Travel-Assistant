@@ -16,6 +16,11 @@ const NOW = new Date('2026-07-27T10:00:00+10:00');
 const SCENARIO_A =
   'From Melbourne, I want to go to Gold Coast on 28 August 2026, returning Monday, staying in Surfers Paradise for 3 nights. I need flights, accommodation and car hire.';
 
+/** Exact live-paste shape (newlines) — must still resolve in one turn. */
+const SCENARIO_A_MULTILINE = `From Melbourne, I want to go to Gold Coast on 28 August 2026,
+returning Monday, staying in Surfers Paradise for 3 nights.
+I need flights, accommodation and car hire.`;
+
 beforeEach(() => {
   resetTravelConversation();
   localStorage.clear();
@@ -27,10 +32,15 @@ afterEach(() => {
 });
 
 describe('Scenario A — complete first turn', () => {
-  it('extracts origin/destination/dates/area/services without asking for origin', () => {
-    const result = sendTravelMessage({ message: SCENARIO_A, now: NOW });
+  it.each([
+    ['single-line', SCENARIO_A],
+    ['multiline live paste', SCENARIO_A_MULTILINE],
+  ])('extracts origin/destination/dates/area/services without asking for origin (%s)', (_label, message) => {
+    resetTravelConversation();
+    const result = sendTravelMessage({ message, now: NOW });
     expect(result.state.origin?.value).toBe('Melbourne');
     expect(result.state.destination?.value).toBe('Gold Coast');
+    expect(result.state.destination?.source).toBe('explicit');
     expect(result.state.departureDate?.value).toMatchObject({
       kind: 'exact',
       isoDate: '2026-08-28',
@@ -42,6 +52,7 @@ describe('Scenario A — complete first turn', () => {
       expect.arrayContaining(['flights', 'accommodation', 'car_hire']),
     );
     expect(result.clarification.needed).toBe(false);
+    expect(result.state.pendingClarification).toBeUndefined();
     expect(result.reply).not.toMatch(/Where will you be departing from/i);
     expect(result.reply).not.toMatch(/Which date would you like to travel/i);
     expect(result.reply).toMatch(/Melbourne/i);

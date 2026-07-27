@@ -114,3 +114,25 @@ describe('route message inventory (engine contract)', () => {
     expect(ROUTE_MESSAGES.length).toBeGreaterThanOrEqual(8);
   });
 });
+
+describe('multiline Scenario A destination source', () => {
+  it('marks Gold Coast as explicit, not stay-area inference', () => {
+    const message = `From Melbourne, I want to go to Gold Coast on 28 August 2026,
+returning Monday, staying in Surfers Paradise for 3 nights.
+I need flights, accommodation and car hire.`;
+    const assignment = resolveLocations(message);
+    expect(assignment.origin).toBe('Melbourne');
+    expect(assignment.destination).toBe('Gold Coast');
+    expect(assignment.destinationInferred).toBeFalsy();
+
+    const turn = processTravelTurn({
+      message,
+      previousState: createEmptyConversationState(),
+      now: NOW,
+      commit: false,
+    });
+    expect(turn.state.destination?.source).toBe('explicit');
+    expect(turn.state.turnCount).toBe(1);
+    expect(turn.clarification.needed).toBe(false);
+  });
+});
