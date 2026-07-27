@@ -57,8 +57,24 @@ export function extractLocationCandidates(text: string): LocationCandidate[] {
     if (raw) pushCandidate(found, raw, 'destination', 100, 'destination-change');
   }
 
-  // Route pairs — allow intervening words/punctuation between origin and destination
-  const routePatterns: Array<{ re: RegExp; source: string; strength: number }> = [
+  // Route pairs — capture BOTH roles; never treat departure city as destination.
+  const routePatterns: Array<{
+    re: RegExp;
+    source: string;
+    strength: number;
+    /** When true, capture group 1 is destination and group 2 is origin. */
+    destFirst?: boolean;
+  }> = [
+    {
+      // I want to go to Gold Coast departing Melbourne / ... and departing from Melbourne
+      re: new RegExp(
+        `\\b(?:(?:want\\s+to\\s+)?go(?:ing)?\\s+to|travell?(?:ing)?\\s+to|fly(?:ing)?\\s+to)\\s+${place}(?:(?!\\b(?:go(?:ing)?\\s+to|to)\\b)[\\s\\S]){0,100}?\\bdeparting\\s+(?:from\\s+)?${place}\\b`,
+        'i',
+      ),
+      source: 'go-to-departing',
+      strength: 96,
+      destFirst: true,
+    },
     {
       re: new RegExp(
         `\\bleaving\\s+${place}\\s+for\\s+${place}\\b`,
@@ -77,7 +93,7 @@ export function extractLocationCandidates(text: string): LocationCandidate[] {
     },
     {
       re: new RegExp(
-        `\\bdeparting\\s+from\\s+${place}(?:(?!\\bfrom\\b)[\\s\\S]){0,60}?\\bgoing\\s+to\\s+${place}\\b`,
+        `\\bdeparting\\s+(?:from\\s+)?${place}(?:(?!\\bfrom\\b)[\\s\\S]){0,80}?\\b(?:going\\s+to|to)\\s+${place}\\b`,
         'i',
       ),
       source: 'departing-going-to',
@@ -93,31 +109,34 @@ export function extractLocationCandidates(text: string): LocationCandidate[] {
       strength: 90,
     },
     {
-      re: new RegExp(`(?:^|[.!?]\\s+|\\b)${place}\\s+to\\s+${place}\\b`, 'i'),
+      // "Melbourne to Gold Coast" — require start/punctuation so "want to go" cannot invert roles
+      re: new RegExp(`(?:^|[.!?]\\s+)${place}\\s+to\\s+${place}\\b`, 'i'),
       source: 'x-to-y',
       strength: 85,
     },
   ];
 
-  for (const { re, source, strength } of routePatterns) {
+  for (const { re, source, strength, destFirst } of routePatterns) {
     const m = text.match(re);
     if (m?.[1] && m?.[2]) {
-      const origin = normalizeCaptured(m[1]);
-      const dest = normalizeCaptured(m[2]);
+      const originRaw = destFirst ? m[2] : m[1];
+      const destRaw = destFirst ? m[1] : m[2];
+      const origin = normalizeCaptured(originRaw);
+      const dest = normalizeCaptured(destRaw);
       if (origin && dest && origin.toLowerCase() !== dest.toLowerCase()) {
-        pushCandidate(found, m[1], 'origin', strength, `${source}:origin`);
-        pushCandidate(found, m[2], 'destination', strength, `${source}:destination`);
+        pushCandidate(found, originRaw, 'origin', strength, `${source}:origin`);
+        pushCandidate(found, destRaw, 'destination', strength, `${source}:destination`);
         break;
       }
     }
   }
 
-  // Solo origin cues
+  // Solo origin cues — "departing Melbourne" must never become destination
   const originSolo: Array<{ re: RegExp; source: string }> = [
     { re: new RegExp(`\\bmy\\s+departure\\s+city\\s+is\\s+${place}\\b`, 'i'), source: 'departure-city-is' },
     { re: new RegExp(`\\bi'?m\\s+leaving\\s+from\\s+${place}\\b`, 'i'), source: 'im-leaving-from' },
     { re: new RegExp(`\\bleaving\\s+from\\s+${place}\\b`, 'i'), source: 'leaving-from' },
-    { re: new RegExp(`\\bdeparting\\s+from\\s+${place}\\b`, 'i'), source: 'departing-from' },
+    { re: new RegExp(`\\bdeparting\\s+(?:from\\s+)?${place}\\b`, 'i'), source: 'departing' },
     { re: new RegExp(`\\bflying\\s+from\\s+${place}\\b`, 'i'), source: 'flying-from' },
     { re: new RegExp(`\\bfrom\\s+${place}\\b`, 'i'), source: 'from' },
     { re: new RegExp(`\\bleaving\\s+${place}\\b`, 'i'), source: 'leaving' },

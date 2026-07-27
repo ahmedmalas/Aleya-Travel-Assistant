@@ -122,7 +122,10 @@ export function summarizeKnown(state: ConversationState): string[] {
   if (view.origin) bits.push(`origin ${view.origin}`);
   if (view.destination) bits.push(`destination ${view.destination}`);
   if (view.departing) bits.push(`departing ${view.departing}`);
-  if (view.returning) bits.push(`returning ${view.returning}`);
+  if (view.returning) {
+    const returning = view.returning.replace(/^returning\s+/i, '');
+    bits.push(`returning ${returning}`);
+  }
   if (view.accommodation) bits.push(`stay in ${view.accommodation}`);
   if (view.duration) bits.push(view.duration);
   if (view.serviceLabels.length) bits.push(`services: ${view.serviceLabels.join(', ')}`);

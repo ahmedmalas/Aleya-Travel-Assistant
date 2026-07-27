@@ -8,6 +8,8 @@ const NOW = new Date('2026-07-27T10:00:00+10:00');
 describe('parseExactDate', () => {
   it('parses natural and numeric AU dates', () => {
     expect(parseExactDate('28 August 2026', NOW)?.isoDate).toBe('2026-08-28');
+    expect(parseExactDate('14th of August', NOW)?.isoDate).toBe('2026-08-14');
+    expect(parseExactDate('Friday 14 August', NOW)?.isoDate).toBe('2026-08-14');
     expect(parseExactDate('15-08-26', NOW)?.isoDate).toBe('2026-08-15');
     expect(parseExactDate('15/08/2026', NOW)?.isoDate).toBe('2026-08-15');
   });

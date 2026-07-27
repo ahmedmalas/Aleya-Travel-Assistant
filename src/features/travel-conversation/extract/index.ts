@@ -66,7 +66,7 @@ export function extractTravelRequirements(
   const locations = extractLocations(text, {
     pendingClarification: previous.pendingClarification,
   });
-  const dates = extractDates(text, now, duration);
+  const dates = extractDates(text, now, duration, previous);
   const services = extractServices(text);
 
   const durationPatch: Partial<ExtractionPatch> = { explicitChanges: [], clearFields: [] };

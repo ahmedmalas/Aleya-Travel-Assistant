@@ -1,5 +1,6 @@
 import { MONTHS, WEEKDAYS } from '../lexicon';
 import type {
+  ConversationState,
   DepartureDate,
   ExactDate,
   ExtractionPatch,
@@ -9,6 +10,8 @@ import type {
 
 const MONTH_NAMES =
   'january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
+
+const WEEKDAY_NAMES = 'sunday|monday|tuesday|wednesday|thursday|friday|saturday';
 
 function fieldExact(value: DepartureDate): FieldValue<DepartureDate> {
   return { value, source: 'explicit', confirmed: value.kind === 'exact' };
@@ -26,12 +29,47 @@ function resolveYear(month: number, explicitYear: number | undefined, now: Date)
   return year;
 }
 
+function monthContextFromState(previous?: ConversationState): { month: number; year: number } | undefined {
+  const dep = previous?.departureDate?.value;
+  if (!dep) return undefined;
+  if (dep.kind === 'mid_month' || dep.kind === 'month_end') {
+    return { month: dep.month, year: dep.year };
+  }
+  if (dep.kind === 'unresolved' && dep.month != null && dep.year != null) {
+    return { month: dep.month, year: dep.year };
+  }
+  if (dep.kind === 'exact') {
+    return { month: dep.month, year: dep.year };
+  }
+  return undefined;
+}
+
 /** Parse absolute / numeric AU dates from a fragment. */
-export function parseExactDate(text: string, now: Date): ExactDate | undefined {
+export function parseExactDate(
+  text: string,
+  now: Date,
+  monthContext?: { month: number; year: number },
+): ExactDate | undefined {
   const lower = text.toLowerCase().trim();
 
+  // Friday 14th of August / Friday the 14th of August 2026
+  const weekdayDayMonth = lower.match(
+    new RegExp(
+      `\\b(?:${WEEKDAY_NAMES})\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+of)?\\s+(${MONTH_NAMES})(?:\\s+(\\d{2,4}))?\\b`,
+    ),
+  );
+  if (weekdayDayMonth) {
+    const day = Number(weekdayDayMonth[1]);
+    const month = MONTHS[weekdayDayMonth[2]!];
+    const year = resolveYear(month, weekdayDayMonth[3] ? Number(weekdayDayMonth[3]) : undefined, now);
+    return buildExact(day, month, year, weekdayDayMonth[0]!);
+  }
+
+  // 14th of August / 14 August 2026
   const dayMonthYear = lower.match(
-    new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTH_NAMES})(?:\\s+(\\d{2,4}))?\\b`),
+    new RegExp(
+      `\\b(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+of)?\\s+(${MONTH_NAMES})(?:\\s+(\\d{2,4}))?\\b`,
+    ),
   );
   if (dayMonthYear) {
     const day = Number(dayMonthYear[1]);
@@ -40,6 +78,7 @@ export function parseExactDate(text: string, now: Date): ExactDate | undefined {
     return buildExact(day, month, year, dayMonthYear[0]!);
   }
 
+  // August 14 / August 14th 2026
   const monthDayYear = lower.match(
     new RegExp(`\\b(${MONTH_NAMES})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+(\\d{2,4}))?\\b`),
   );
@@ -61,17 +100,41 @@ export function parseExactDate(text: string, now: Date): ExactDate | undefined {
     }
   }
 
+  // Clarification answers: "14th", "the 14th", "14" against retained month context
+  if (monthContext) {
+    const dayOnly = lower.match(/^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?$/);
+    if (dayOnly) {
+      const day = Number(dayOnly[1]);
+      if (day >= 1 && day <= 31) {
+        return buildExact(day, monthContext.month, monthContext.year, dayOnly[0]!);
+      }
+    }
+  }
+
   return undefined;
 }
 
 export function parseMidMonth(text: string, now: Date): DepartureDate | undefined {
+  return parseMonthPeriod(text, now);
+}
+
+/** early / mid / late <month> → retained period until an exact day is given. */
+export function parseMonthPeriod(text: string, now: Date): DepartureDate | undefined {
   const match = text.toLowerCase().match(
-    new RegExp(`\\bmid[-\\s]?(${MONTH_NAMES})(?:\\s+(\\d{2,4}))?\\b`),
+    new RegExp(`\\b(early|mid|late)[-\\s]?(${MONTH_NAMES})(?:\\s+(\\d{2,4}))?\\b`),
   );
   if (!match) return undefined;
-  const month = MONTHS[match[1]!];
-  const year = resolveYear(month, match[2] ? Number(match[2]) : undefined, now);
-  return { kind: 'mid_month', month, year, label: match[0]! };
+  const period = match[1]!;
+  const month = MONTHS[match[2]!];
+  const year = resolveYear(month, match[3] ? Number(match[3]) : undefined, now);
+  const label = match[0]!;
+  if (period === 'mid') {
+    return { kind: 'mid_month', month, year, label };
+  }
+  if (period === 'late') {
+    return { kind: 'month_end', month, year, label };
+  }
+  return { kind: 'unresolved', label, month, year };
 }
 
 function nextWeekdayAfter(isoDate: string, weekday: number): ReturnDate {
@@ -113,7 +176,7 @@ function addNights(isoDate: string, nights: number): ReturnDate {
 export function extractDateCorrection(text: string, now: Date): Partial<ExtractionPatch> | undefined {
   const lower = text.toLowerCase().trim();
   const correctionCue =
-    /^(no\b|nope\b|nah\b)|^\s*actually\b|\bchange\s+(?:the\s+)?(?:departure\s+)?date\b|\bforget\s+(?:that\s+)?date\b|\bhaven'?t\s+decided\b|\bnot\s+the\s+\d|\bi want to leave\b|\bleave\s+(?:mid|earlier|later)\b|\bmake it\b/i.test(
+    /^(no\b|nope\b|nah\b)|^\s*actually\b|\bchange\s+(?:the\s+)?(?:departure\s+)?date\b|\bforget\s+(?:that\s+)?date\b|\bhaven'?t\s+decided\b|\bnot\s+the\s+\d|\bi want to leave\b|\bleave\s+(?:mid|early|late|earlier|later)\b|\bmake it\b/i.test(
       lower,
     );
 
@@ -129,12 +192,18 @@ export function extractDateCorrection(text: string, now: Date): Partial<Extracti
     };
   }
 
-  const mid = parseMidMonth(text, now);
-  if (mid && (correctionCue || /\bmid[- ]?(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(lower))) {
+  const period = parseMonthPeriod(text, now);
+  if (
+    period &&
+    (correctionCue ||
+      /\b(?:early|mid|late)[- ]?(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
+        lower,
+      ))
+  ) {
     return {
       clearFields: [],
       explicitChanges: ['departureDate'],
-      departureDate: fieldExact(mid),
+      departureDate: fieldExact(period),
     };
   }
 
@@ -175,8 +244,12 @@ export function extractDates(
   text: string,
   now: Date,
   durationNights?: number,
+  previous?: ConversationState,
 ): Partial<ExtractionPatch> {
   const patch: Partial<ExtractionPatch> = { explicitChanges: [], clearFields: [] };
+  const monthContext = monthContextFromState(previous);
+  const pendingDate = previous?.pendingClarification === 'departureDate';
+
   const correction = extractDateCorrection(text, now);
   if (correction?.departureDate) {
     patch.departureDate = correction.departureDate;
@@ -187,34 +260,45 @@ export function extractDates(
   }
 
   if (!patch.departureDate) {
-    // Prefer exact over mid when both appear ("mid August" alone vs "28 August")
-    const midOnly =
-      /\bmid[- ]?(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
+    // Exact day answers must win while a departure clarification is pending,
+    // including "14th of August" and day-only replies against mid-August context.
+    const exact = parseExactDate(text, now, pendingDate || monthContext ? monthContext : undefined);
+    const periodOnly =
+      /\b(?:early|mid|late)[- ]?(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
         text,
-      ) && !/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)/i.test(text);
-    if (midOnly) {
-      const mid = parseMidMonth(text, now);
-      if (mid) {
-        patch.departureDate = fieldExact(mid);
+      ) &&
+      !/\b\d{1,2}(?:st|nd|rd|th)?(?:\s+of)?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)/i.test(
+        text,
+      );
+
+    if (exact && (!periodOnly || pendingDate)) {
+      patch.departureDate = fieldExact(exact);
+      patch.explicitChanges = [...(patch.explicitChanges ?? []), 'departureDate'];
+    } else if (periodOnly) {
+      const period = parseMonthPeriod(text, now);
+      if (period) {
+        patch.departureDate = fieldExact(period);
         patch.explicitChanges = [...(patch.explicitChanges ?? []), 'departureDate'];
       }
-    } else {
-      const exact = parseExactDate(text, now);
-      if (exact) {
-        patch.departureDate = fieldExact(exact);
-        patch.explicitChanges = [...(patch.explicitChanges ?? []), 'departureDate'];
-      }
+    } else if (exact) {
+      patch.departureDate = fieldExact(exact);
+      patch.explicitChanges = [...(patch.explicitChanges ?? []), 'departureDate'];
     }
   }
 
   const returnWeekday = text.match(
-    /\b(?:return(?:ing)?|come back)(?:\s+on)?\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i,
+    new RegExp(
+      `\\b(?:return(?:ing)?|come back)(?:\\s+on)?\\s+(${WEEKDAY_NAMES})\\b`,
+      'i',
+    ),
   );
+  const weekendCue = /\b(?:over\s+the\s+weekend|this\s+weekend|for\s+the\s+weekend)\b/i.test(text);
   const depIso =
     patch.departureDate?.value.kind === 'exact' ? patch.departureDate.value.isoDate : undefined;
 
   if (returnWeekday?.[1]) {
-    const weekday = WEEKDAYS[returnWeekday[1].toLowerCase()]!;
+    const weekdayName = returnWeekday[1].toLowerCase();
+    const weekday = WEEKDAYS[weekdayName]!;
     if (depIso) {
       patch.returnDate = {
         value: nextWeekdayAfter(depIso, weekday),
@@ -222,12 +306,25 @@ export function extractDates(
         confirmed: true,
       };
     } else {
+      // Preserve Monday (and weekend) constraint until an exact departure is known.
       patch.returnDate = {
-        value: { label: returnWeekday[0]!, weekday },
+        value: {
+          label: weekendCue ? `weekend, ${weekdayName}` : weekdayName,
+          weekday,
+        },
         source: 'explicit',
         confirmed: false,
       };
     }
+    patch.explicitChanges = [...(patch.explicitChanges ?? []), 'returnDate'];
+  } else if (weekendCue && !depIso) {
+    // Weekend without an explicit return weekday → prefer Friday departure later;
+    // keep a Monday return constraint as the common weekend pattern.
+    patch.returnDate = {
+      value: { label: 'weekend, monday', weekday: 1 },
+      source: 'inferred',
+      confirmed: false,
+    };
     patch.explicitChanges = [...(patch.explicitChanges ?? []), 'returnDate'];
   } else if (depIso && durationNights != null && durationNights > 0) {
     patch.returnDate = {
@@ -251,7 +348,6 @@ export function deriveReturn(
   }
   if (nights != null && nights > 0) return addNights(departureIso, nights);
   if (previousReturn?.isoDate) {
-    // Shift return by the same gap if both were exact — caller may replace.
     return previousReturn;
   }
   return undefined;
