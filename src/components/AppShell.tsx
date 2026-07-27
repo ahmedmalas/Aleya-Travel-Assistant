@@ -42,17 +42,20 @@ function CustomerApp() {
   }, []);
 
   useEffect(() => {
-    if (searchProjection.originCode) setOrigin(searchProjection.originCode);
-    if (searchProjection.destinationCode) setDestination(searchProjection.destinationCode);
-    if (searchProjection.departDate) setDepartDate(searchProjection.departDate);
-    if (searchProjection.returnDate) setReturnDate(searchProjection.returnDate);
-    if (searchProjection.adults) setTravellers(searchProjection.adults);
+    // Mirror canonical state exactly — including clears after reset / field removal.
+    setOrigin(searchProjection.originCode ?? '');
+    setDestination(searchProjection.destinationCode ?? '');
+    setDepartDate(searchProjection.departDate ?? '');
+    setReturnDate(searchProjection.returnDate ?? '');
+    setTravellers(searchProjection.adults || 1);
   }, [
     searchProjection.originCode,
     searchProjection.destinationCode,
     searchProjection.departDate,
     searchProjection.returnDate,
     searchProjection.adults,
+    travelState.conversationId,
+    travelState.turnCount,
   ]);
 
   if (!entered) return <WelcomeAuthGate onEnter={() => setEntered(true)} />;

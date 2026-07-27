@@ -81,23 +81,19 @@ export function FlightsPanel() {
   const searchProjection = projectSearchForm(travelState);
 
   useEffect(() => {
-    if (searchProjection.originLabel || searchProjection.originCode) {
-      setPlanOrigin(
-        searchProjection.originCode
-          ? `${searchProjection.originLabel ?? ''} (${searchProjection.originCode})`.trim()
-          : (searchProjection.originLabel ?? ''),
-      );
-    }
-    if (searchProjection.destinationLabel || searchProjection.destinationCode) {
-      setPlanDestination(
-        searchProjection.destinationCode
-          ? `${searchProjection.destinationLabel ?? ''} (${searchProjection.destinationCode})`.trim()
-          : (searchProjection.destinationLabel ?? ''),
-      );
-    }
-    if (searchProjection.departDate) setPlanDepart(searchProjection.departDate);
-    if (searchProjection.returnDate) setPlanReturn(searchProjection.returnDate);
-    if (searchProjection.adults) setAdults(searchProjection.adults);
+    setPlanOrigin(
+      searchProjection.originCode
+        ? `${searchProjection.originLabel ?? ''} (${searchProjection.originCode})`.trim()
+        : (searchProjection.originLabel ?? ''),
+    );
+    setPlanDestination(
+      searchProjection.destinationCode
+        ? `${searchProjection.destinationLabel ?? ''} (${searchProjection.destinationCode})`.trim()
+        : (searchProjection.destinationLabel ?? ''),
+    );
+    setPlanDepart(searchProjection.departDate ?? '');
+    setPlanReturn(searchProjection.returnDate ?? '');
+    setAdults(searchProjection.adults || 1);
   }, [
     searchProjection.originLabel,
     searchProjection.originCode,
@@ -106,6 +102,8 @@ export function FlightsPanel() {
     searchProjection.departDate,
     searchProjection.returnDate,
     searchProjection.adults,
+    travelState.conversationId,
+    travelState.turnCount,
   ]);
   const [planCabin, setPlanCabin] = useState('Economy');
   const [directOnly, setDirectOnly] = useState(false);
