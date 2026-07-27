@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  createEmptyConversationState,
   handleTravelChatMessage,
-  type ConversationState,
+  resetCanonicalTravelState,
 } from '../features/aleya-intelligence';
+import { RequirementsSummary } from '../features/aleya-intelligence/RequirementsSummary';
 
 type PreviewMessage = {
   id: string;
@@ -21,7 +21,6 @@ const STARTERS = [
 export function AssistantPreview() {
   const [question, setQuestion] = useState(STARTERS[0]!);
   const [busy, setBusy] = useState(false);
-  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const [messages, setMessages] = useState<PreviewMessage[]>([
     {
       id: 'welcome',
@@ -39,11 +38,7 @@ export function AssistantPreview() {
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text: trimmed }]);
     setQuestion('');
     try {
-      const result = handleTravelChatMessage({
-        message: trimmed,
-        previousState: conversationRef.current,
-      });
-      conversationRef.current = result.state;
+      const result = handleTravelChatMessage({ message: trimmed });
       setMessages((current) => [
         ...current,
         { id: crypto.randomUUID(), role: 'assistant', text: result.reply },
@@ -77,6 +72,9 @@ export function AssistantPreview() {
       <p className="mt-3 text-sm text-slate-300">
         Interactive preview powered by the Aleya Intelligence Layer. Connected to the same workflows in the trip platform below.
       </p>
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+        <RequirementsSummary />
+      </div>
       <div className="mt-5 max-h-64 space-y-3 overflow-y-auto text-sm text-slate-200">
         {messages.map((message) => (
           <p
@@ -124,6 +122,22 @@ export function AssistantPreview() {
           Ask
         </button>
       </div>
+      <button
+        type="button"
+        className="mt-3 text-xs text-slate-500 hover:text-sky-200"
+        onClick={() => {
+          resetCanonicalTravelState();
+          setMessages([
+            {
+              id: 'welcome',
+              role: 'assistant',
+              text: 'Ask about flights, hotels, itineraries, destinations, nearby ideas, transport, cruises, leisure, budgets, or booking organisation. Every message goes through the Aleya Intelligence Layer — it does not invent live availability or confirm bookings.',
+            },
+          ]);
+        }}
+      >
+        Clear saved requirements
+      </button>
       <a
         href="#trip-platform"
         className="mt-4 inline-flex text-sm text-sky-300 underline-offset-4 hover:underline"

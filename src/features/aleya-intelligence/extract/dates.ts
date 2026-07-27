@@ -73,6 +73,18 @@ export function parseAbsoluteDate(
     return buildAbsoluteDate(day, month, year, monthDay[0]!);
   }
 
+  // Numeric AU formats: 28/08/2026, 28-08-26, 28.08.2026
+  const numeric = lower.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})\b/);
+  if (numeric) {
+    const day = Number(numeric[1]);
+    const month = Number(numeric[2]);
+    let year = Number(numeric[3]);
+    if (year < 100) year += year >= 70 ? 1900 : 2000;
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000 && year <= 2100) {
+      return buildAbsoluteDate(day, month, year, numeric[0]!);
+    }
+  }
+
   const dayOnly = lower.match(
     new RegExp(`\\b(?:(${weekdays})\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)\\b`),
   );
@@ -130,6 +142,8 @@ export function dateContextFromState(previous?: ConversationState): DateParseCon
 
 export function awaitingExactDepartureDate(previous?: ConversationState): boolean {
   if (!previous) return false;
+  // Concrete ISO departure is settled — never treat leftover suggestions as pending.
+  if (previous.departureDate?.value.isoDate) return false;
   if (previous.awaitingDateConfirmation) return true;
   if (previous.lastSuggestedDate) return true;
   if (previous.missingRequiredFields.includes('departureDate')) return true;

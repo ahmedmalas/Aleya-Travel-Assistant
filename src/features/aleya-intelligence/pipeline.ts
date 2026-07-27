@@ -110,12 +110,19 @@ export function processTravelMessage(input: ProcessMessageInput): IntelligenceRe
   };
 
   const clarification = evaluateClarifications(state, now, validation);
+  const hasConcreteDeparture = Boolean(state.departureDate?.value.isoDate);
   state = {
     ...state,
+    // Clarification list is authoritative for this turn — do not accumulate stale asks.
     missingRequiredFields: clarification.missingRequiredFields,
-    lastSuggestedDate: clarification.suggestedDate ?? state.lastSuggestedDate,
+    lastSuggestedDate: clarification.suggestedDate
+      ? clarification.suggestedDate
+      : hasConcreteDeparture
+        ? undefined
+        : state.lastSuggestedDate,
     awaitingDateConfirmation: Boolean(
-      clarification.suggestedDate && clarification.missingRequiredFields.includes('departureDateConfirmation'),
+      clarification.suggestedDate &&
+        clarification.missingRequiredFields.includes('departureDateConfirmation'),
     ),
   };
 

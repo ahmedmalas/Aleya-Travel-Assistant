@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { TripPlatform } from './trip-platform/TripPlatform';
 import { AiPlanningPanel } from './trip-platform/AiPlanningPanel';
 import { CurrencyBootstrap } from './CurrencyBootstrap';
@@ -6,6 +6,10 @@ import { AccountDrawer } from './AccountDrawer';
 import { MoneyServicesPanel } from './MoneyServicesPanel';
 import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
+import {
+  projectSearchForm,
+  useCanonicalTravelState,
+} from '../features/aleya-intelligence';
 import { TripStoreProvider } from '../store/TripStoreContext';
 import { detectUserCurrency } from '../lib/currency';
 
@@ -19,8 +23,8 @@ function CustomerApp() {
   const [entered, setEntered] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [workspace, setWorkspace] = useState<WorkspaceView>(null);
-  const [origin, setOrigin] = useState('SYD');
-  const [destination, setDestination] = useState('MEL');
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
   const [departDate, setDepartDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [travellers, setTravellers] = useState(1);
@@ -29,6 +33,22 @@ function CustomerApp() {
   const departureInputRef = useRef<HTMLInputElement>(null);
   const returnInputRef = useRef<HTMLInputElement>(null);
   const preferredCurrency = detectUserCurrency();
+  const travelState = useCanonicalTravelState();
+  const searchProjection = projectSearchForm(travelState);
+
+  useEffect(() => {
+    if (searchProjection.originCode) setOrigin(searchProjection.originCode);
+    if (searchProjection.destinationCode) setDestination(searchProjection.destinationCode);
+    if (searchProjection.departDate) setDepartDate(searchProjection.departDate);
+    if (searchProjection.returnDate) setReturnDate(searchProjection.returnDate);
+    if (searchProjection.adults) setTravellers(searchProjection.adults);
+  }, [
+    searchProjection.originCode,
+    searchProjection.destinationCode,
+    searchProjection.departDate,
+    searchProjection.returnDate,
+    searchProjection.adults,
+  ]);
 
   if (!entered) return <WelcomeAuthGate onEnter={() => setEntered(true)} />;
 
@@ -127,8 +147,8 @@ function CustomerApp() {
 
             <form id="flight-search" onSubmit={searchFlights} className="mx-auto mt-10 max-w-5xl scroll-mt-36 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder="SYD" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder="MEL" className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setOrigin(event.target.value.toUpperCase())} placeholder={searchProjection.originCode || 'MEL'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setDestination(event.target.value.toUpperCase())} placeholder={searchProjection.destinationCode || 'OOL'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
                 <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
                 <label className="block text-sm text-slate-200"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
                 <label className="block text-sm text-slate-200"><span className="mb-2 block">Travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>

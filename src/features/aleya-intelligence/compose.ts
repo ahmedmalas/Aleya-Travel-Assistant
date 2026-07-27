@@ -1,20 +1,13 @@
 import type { ClarificationResult } from './clarify';
 import type { ExtractionPatch } from './extract';
+import { projectRequirementsSummary, summarizeKnownFromProjection } from './projectors';
 import type { ConversationState, IntelligenceResult } from './types';
 
-function serviceLabel(service: string): string {
-  return service.replace(/_/g, ' ');
-}
-
 function summarizeKnown(state: ConversationState): string[] {
-  const bits: string[] = [];
-  if (state.origin) bits.push(`origin ${state.origin.value}`);
-  if (state.destination) bits.push(`destination ${state.destination.value}`);
-  if (state.departureDate?.value.isoDate) {
-    bits.push(`departing ${state.departureDate.value.label || state.departureDate.value.isoDate}`);
-  } else if (state.departureDate) {
-    bits.push(`around ${state.departureDate.value.label}`);
-  }
+  const view = projectRequirementsSummary(state);
+  const bits = summarizeKnownFromProjection(view);
+
+  // Extra confirmed details not in the core summary projector
   if (state.departureTimePreference) {
     const label =
       state.departureTimePreference.value === 'after_5pm'
@@ -22,14 +15,8 @@ function summarizeKnown(state: ConversationState): string[] {
         : state.departureTimePreference.value;
     bits.push(`outbound ${label}`);
   }
-  if (state.returnDate?.value.label) bits.push(state.returnDate.value.label);
-  else if (state.returnTimePreference) bits.push(`return ${state.returnTimePreference.value}`);
-  if (state.accommodationArea) bits.push(`stay in ${state.accommodationArea.value}`);
-  if (state.durationNights) {
-    bits.push(`${state.durationNights.value} night${state.durationNights.value === 1 ? '' : 's'}`);
-  }
-  if (state.requestedServices.length) {
-    bits.push(`services: ${state.requestedServices.map(serviceLabel).join(', ')}`);
+  if (!view.returning && state.returnTimePreference) {
+    bits.push(`return ${state.returnTimePreference.value}`);
   }
   if (state.travellers && state.travellers.source === 'confirmed') {
     const t = state.travellers.value;

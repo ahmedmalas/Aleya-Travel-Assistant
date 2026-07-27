@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  projectSearchForm,
+  useCanonicalTravelState,
+} from '../../features/aleya-intelligence';
 import { searchFlights, type FlightOffer } from '../../providers';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import {
@@ -73,6 +77,36 @@ export function FlightsPanel() {
   const [adults, setAdults] = useState(Math.max(1, activeVaultTrip.travellerCount || 1));
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
+  const travelState = useCanonicalTravelState();
+  const searchProjection = projectSearchForm(travelState);
+
+  useEffect(() => {
+    if (searchProjection.originLabel || searchProjection.originCode) {
+      setPlanOrigin(
+        searchProjection.originCode
+          ? `${searchProjection.originLabel ?? ''} (${searchProjection.originCode})`.trim()
+          : (searchProjection.originLabel ?? ''),
+      );
+    }
+    if (searchProjection.destinationLabel || searchProjection.destinationCode) {
+      setPlanDestination(
+        searchProjection.destinationCode
+          ? `${searchProjection.destinationLabel ?? ''} (${searchProjection.destinationCode})`.trim()
+          : (searchProjection.destinationLabel ?? ''),
+      );
+    }
+    if (searchProjection.departDate) setPlanDepart(searchProjection.departDate);
+    if (searchProjection.returnDate) setPlanReturn(searchProjection.returnDate);
+    if (searchProjection.adults) setAdults(searchProjection.adults);
+  }, [
+    searchProjection.originLabel,
+    searchProjection.originCode,
+    searchProjection.destinationLabel,
+    searchProjection.destinationCode,
+    searchProjection.departDate,
+    searchProjection.returnDate,
+    searchProjection.adults,
+  ]);
   const [planCabin, setPlanCabin] = useState('Economy');
   const [directOnly, setDirectOnly] = useState(false);
   const [maxStops, setMaxStops] = useState(2);

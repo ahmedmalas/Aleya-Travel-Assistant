@@ -1,9 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
-import {
-  createEmptyConversationState,
-  handleTravelChatMessage,
-  type ConversationState,
-} from '../../features/aleya-intelligence';
+import { useMemo, useState } from 'react';
+import { handleTravelChatMessage } from '../../features/aleya-intelligence';
+import { RequirementsSummary } from '../../features/aleya-intelligence/RequirementsSummary';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
@@ -53,7 +50,6 @@ const emptyWorkspace = (): ConciergeWorkspace => ({
 export function ConciergePlanPanel() {
   const { activeVaultTrip, addStop, canEditTrip, updateVaultTripMeta } = useSharedTripStore();
   const [question, setQuestion] = useState('');
-  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const [workspace, setWorkspace] = useState<ConciergeWorkspace>(() => {
     try {
       const match = /\[concierge-workspace\]([\s\S]*?)\[\/concierge-workspace\]/.exec(activeVaultTrip.notes || '');
@@ -94,18 +90,9 @@ export function ConciergePlanPanel() {
     const userMessage: ConciergeMessage = { id: crypto.randomUUID(), role: 'user', text: trimmed };
     setQuestion('');
     setFeedback(null);
-    const seeded =
-      activeVaultTrip.destination && !conversationRef.current.destination
-        ? {
-            ...conversationRef.current,
-            destination: { value: activeVaultTrip.destination, source: 'confirmed' as const },
-          }
-        : conversationRef.current;
-    const result = handleTravelChatMessage({
-      message: trimmed,
-      previousState: seeded,
-    });
-    conversationRef.current = result.state;
+    // Use the canonical store only — never seed vault destination as confirmed
+    // conversation state (that blocked "go to Gold Coast" and desynced clarify).
+    const result = handleTravelChatMessage({ message: trimmed });
     const title = result.stage === 'clarify' ? 'Need a detail' : 'Concierge planning update';
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
@@ -136,6 +123,9 @@ export function ConciergePlanPanel() {
       description="Full concierge workspace: goals, constraints, must-dos, dining/transport/accessibility planning, backups, checklist, and approvals. Recommendations are planning-only."
     >
       <p className="mb-3 text-xs uppercase tracking-[0.16em] text-slate-400">Trip context: {contextLabel}</p>
+      <div className="mb-4 overflow-hidden rounded-2xl border border-white/10">
+        <RequirementsSummary />
+      </div>
       {feedback ? <StatusBanner kind="success" message={feedback} /> : null}
 
       <section className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">

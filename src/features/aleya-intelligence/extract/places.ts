@@ -502,13 +502,16 @@ export function applyDestinationIntent(
   }
 
   if (intent.kind === 'assign') {
-    // Do not overwrite confirmed destination without replacement language
-    if (previous?.destination && !hasDestinationReplacementLanguage(text, previous)) {
-      return patch;
-    }
+    const previousDest = previous?.destination?.value?.toLowerCase();
+    const nextDest = intent.place.toLowerCase();
+    // Same place — nothing to change (retention / no-op).
+    if (previousDest && previousDest === nextDest) return patch;
+    // "go to / travel to / fly to / visit X" is an explicit destination statement.
+    // Retention language is handled earlier via classify → retain.
+    // Do not silently keep a stale vault/seed destination over a clear "go to X".
     patch.destination = field(intent.place, intent.source);
     markChanged(changed, 'destination');
-    if (intent.source === 'confirmed') explicit.push('destination');
+    explicit.push('destination');
   }
 
   return patch;

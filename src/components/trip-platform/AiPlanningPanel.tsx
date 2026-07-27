@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
-  createEmptyConversationState,
   handleTravelChatMessage,
-  type ConversationState,
+  resetCanonicalTravelState,
 } from '../../features/aleya-intelligence';
+import { RequirementsSummary } from '../../features/aleya-intelligence/RequirementsSummary';
 import { detectUserCurrency } from '../../lib/currency';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
@@ -64,7 +64,6 @@ export function AiPlanningPanel() {
       createdAt: new Date().toISOString(),
     },
   ]);
-  const conversationRef = useRef<ConversationState>(createEmptyConversationState());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
 
@@ -84,12 +83,11 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
+      // Canonical store is previousState — no panel-local conversation copy.
       const result = handleTravelChatMessage({
         message: request,
-        previousState: conversationRef.current,
         travellerName,
       });
-      conversationRef.current = result.state;
 
       // Phase 1: only generate an itinerary when the user explicitly asked for one.
       let plan: AiTravelPlan | undefined;
@@ -118,6 +116,8 @@ export function AiPlanningPanel() {
       </header>
 
       {feedback ? <div className="px-5 pt-4 md:px-7"><StatusBanner kind="info" message={feedback} /></div> : null}
+
+      <RequirementsSummary />
 
       <div className="max-h-[680px] min-h-[420px] space-y-5 overflow-y-auto px-4 py-6 md:px-7" aria-live="polite">
         {messages.map((message) => (
@@ -155,6 +155,24 @@ export function AiPlanningPanel() {
           <textarea id="aleya-chat-input" rows={2} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Message Aleya…" className="min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-slate-500" />
           <button type="submit" disabled={!input.trim() || busy} className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-40">{busy ? '…' : 'Send'}</button>
         </div>
+        <button
+          type="button"
+          className="mt-2 text-xs text-slate-500 hover:text-sky-200"
+          onClick={() => {
+            resetCanonicalTravelState();
+            setMessages([
+              {
+                id: createId(),
+                role: 'aleya',
+                text: greeting,
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+            setFeedback('Started a fresh requirements conversation.');
+          }}
+        >
+          Clear saved requirements
+        </button>
       </form>
 
       {versions.length > 0 ? <details className="border-t border-white/10 px-5 py-4 md:px-7"><summary className="cursor-pointer text-sm font-medium text-slate-300">Previous itinerary versions ({versions.length})</summary><ul className="mt-3 space-y-2">{versions.map((version) => <li key={version.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-300"><span>{version.label} · {new Date(version.createdAt).toLocaleString('en-AU')} · {version.stops.length} items</span><SecondaryButton type="button" disabled={!canEditTrip} onClick={() => { restoreItineraryVersion(version.id); setFeedback(`Restored ${version.label}.`); }}>Restore</SecondaryButton></li>)}</ul></details> : <div className="border-t border-white/10 px-5 py-3 text-right md:px-7"><button type="button" disabled={!canEditTrip} onClick={() => { saveItineraryVersion('Saved by traveller'); setFeedback('Your current itinerary has been saved.'); }} className="text-xs text-slate-400 hover:text-sky-200 disabled:opacity-40">Save current itinerary</button></div>}
