@@ -63,13 +63,22 @@ export type MessageClass =
   | 'travel_request'
   | 'explicit_change'
   | 'explicit_removal'
+  | 'summary'
   | 'confirmation'
   | 'rejection'
   | 'non_travel';
 
+/** Conversation workflow phase — requirements gathering through planning. */
+export type ConversationPhase =
+  | 'requirements'
+  | 'review'
+  | 'confirmation'
+  | 'planning';
+
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
   conversationId: string;
+  phase: ConversationPhase;
   origin?: FieldValue<string>;
   destination?: FieldValue<string>;
   departureDate?: FieldValue<DepartureDate>;
@@ -120,6 +129,7 @@ export function createEmptyConversationState(conversationId?: string): Conversat
   return {
     schemaVersion: CONVERSATION_SCHEMA_VERSION,
     conversationId: conversationId ?? `conv-${Math.random().toString(36).slice(2, 10)}`,
+    phase: 'requirements',
     services: [],
     excludedServices: [],
     preferences: [],

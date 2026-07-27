@@ -10,7 +10,13 @@ import {
   resetTravelConversation,
   setTravelConversation,
 } from './store';
-import type { ClarificationField, ConversationState, TravelPatch, TravelTurnResult } from './types';
+import type {
+  ClarificationField,
+  ConversationPhase,
+  ConversationState,
+  TravelPatch,
+  TravelTurnResult,
+} from './types';
 import { createEmptyConversationState } from './types';
 
 export type SendTravelMessageInput = {
@@ -33,6 +39,49 @@ function fieldResolved(state: ConversationState, field: ClarificationField): boo
   return false;
 }
 
+function requirementsReady(state: ConversationState): boolean {
+  return Boolean(state.destination) && !evaluateClarification(state).needed;
+}
+
+function advancePhase(
+  previous: ConversationState,
+  state: ConversationState,
+  messageClass: TravelPatch['messageClass'],
+  clarificationNeeded: boolean,
+): ConversationPhase {
+  if (messageClass === 'new_conversation') return 'requirements';
+  if (messageClass === 'summary') return 'review';
+  if (messageClass === 'confirmation') {
+    if (clarificationNeeded) return previous.phase === 'planning' ? 'planning' : 'requirements';
+    return 'planning';
+  }
+  if (clarificationNeeded) return 'requirements';
+  if (previous.phase === 'planning' && requirementsReady(state)) return 'planning';
+  if (previous.phase === 'review' && requirementsReady(state)) return 'review';
+  if (previous.phase === 'confirmation' && requirementsReady(state)) return 'confirmation';
+  return 'requirements';
+}
+
+function bumpMeta(state: ConversationState, now: Date): ConversationState {
+  return {
+    ...state,
+    turnCount: state.turnCount + 1,
+    updatedAt: now.toISOString(),
+    lastChangedFields: [],
+  };
+}
+
+function commitIfNeeded(
+  input: SendTravelMessageInput,
+  state: ConversationState,
+): void {
+  if (input.commit !== false && input.previousState === undefined) {
+    setTravelConversation(state);
+  } else if (input.commit && input.previousState !== undefined) {
+    setTravelConversation(state);
+  }
+}
+
 /**
  * Authoritative pipeline:
  * normalise → classify → extract candidates → assign roles → merge once
@@ -47,13 +96,15 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   const classification = classifyMessage(normalized, previous);
 
   if (classification.messageClass === 'new_conversation') {
-    const empty = resetTravelConversation();
+    const empty = input.previousState !== undefined
+      ? createEmptyConversationState()
+      : resetTravelConversation();
     const patch: TravelPatch = {
       messageClass: 'new_conversation',
       explicitChanges: [],
       clearFields: [],
     };
-    return {
+    const result: TravelTurnResult = {
       state: empty,
       reply: composeReply({
         patch,
@@ -65,6 +116,8 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
       clarification: { needed: false },
       searchPerformed: false,
     };
+    commitIfNeeded(input, empty);
+    return result;
   }
 
   if (
@@ -90,6 +143,44 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     };
   }
 
+  if (
+    classification.messageClass === 'summary' ||
+    classification.messageClass === 'confirmation'
+  ) {
+    const clarification = evaluateClarification(previous);
+    const phase = advancePhase(
+      previous,
+      previous,
+      classification.messageClass,
+      clarification.needed,
+    );
+    const state = {
+      ...bumpMeta(previous, now),
+      phase,
+      pendingClarification: clarification.needed ? clarification.field : undefined,
+    };
+    const patch: TravelPatch = {
+      messageClass: classification.messageClass,
+      explicitChanges: [],
+      clearFields: [],
+    };
+    const reply = composeReply({
+      patch,
+      previous,
+      state,
+      clarification,
+      travellerName: input.travellerName,
+    });
+    const result: TravelTurnResult = {
+      state,
+      reply,
+      clarification,
+      searchPerformed: false,
+    };
+    commitIfNeeded(input, state);
+    return result;
+  }
+
   const activeClarification = previous.pendingClarification;
   const text = normalized.replace(
     /^(hi|hello|hey|good morning|good afternoon|good evening)(?:\s+\w+)?[!,.]?\s+/i,
@@ -112,6 +203,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   state = {
     ...state,
     pendingClarification: clarification.needed ? clarification.field : undefined,
+    phase: advancePhase(previous, state, classification.messageClass, clarification.needed),
   };
 
   const reply = composeReply({
@@ -129,12 +221,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     searchPerformed: false,
   };
 
-  if (input.commit !== false && input.previousState === undefined) {
-    setTravelConversation(state);
-  } else if (input.commit && input.previousState !== undefined) {
-    setTravelConversation(state);
-  }
-
+  commitIfNeeded(input, state);
   return result;
 }
 

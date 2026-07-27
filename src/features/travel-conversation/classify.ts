@@ -6,6 +6,12 @@ export type Classification = {
   answersField?: ClarificationField;
 };
 
+const SUMMARY_RE =
+  /^(?:show me (?:what you(?:'?ve| have)? got|the trip|everything)|let'?s review(?: it)?|what have you got|give me a (?:summary|recap)|review (?:the )?(?:trip|it)|summar(?:y|ise|ize)(?:\s+(?:the\s+)?(?:trip|it))?)\s*[!.?]*$/i;
+
+const CONFIRMATION_RE =
+  /^(?:that'?s all(?:\s+for now)?|looks good(?:\s+to me)?|go ahead(?:\s+please)?|continue|proceed|perfect|that'?s correct|yes|yep|yeah|correct|that'?s right|sounds good)(?:[.!]|\s+thanks)?\.?$/i;
+
 /**
  * Stage 2 — Classify before extraction.
  * Active clarification is consulted before generic travel parsing.
@@ -24,7 +30,10 @@ export function classifyMessage(
   if (/\b(?:start over|new (?:trip|conversation)|clear (?:everything|requirements))\b/i.test(trimmed)) {
     return { messageClass: 'new_conversation' };
   }
-  if (/^(yes|yep|yeah|correct|that's right|sounds good)\.?$/i.test(trimmed)) {
+  if (SUMMARY_RE.test(trimmed)) {
+    return { messageClass: 'summary' };
+  }
+  if (CONFIRMATION_RE.test(trimmed)) {
     return { messageClass: 'confirmation' };
   }
   if (/^(no|nope|nah)\.?$/i.test(trimmed)) {

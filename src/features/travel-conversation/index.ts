@@ -36,6 +36,7 @@ export {
 } from './types';
 export type {
   ClarificationField,
+  ConversationPhase,
   ConversationState,
   DepartureDate,
   TravelTurnResult,

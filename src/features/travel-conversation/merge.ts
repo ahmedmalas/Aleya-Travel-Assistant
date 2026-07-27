@@ -140,6 +140,22 @@ export function mergeTravelState(
     if (next.services.join(',') !== before) changed.push('services');
   }
 
+  // Accommodation area implies accommodation service unless explicitly removed.
+  // A newly captured area re-engages accommodation even after a prior exclusion.
+  if (next.accommodationArea?.value) {
+    const areaJustSet = changed.includes('accommodationArea');
+    if (areaJustSet) {
+      next.excludedServices = next.excludedServices.filter((s) => s !== 'accommodation');
+    }
+    if (
+      !next.excludedServices.includes('accommodation') &&
+      !next.services.includes('accommodation')
+    ) {
+      next.services = [...next.services, 'accommodation'];
+      changed.push('services');
+    }
+  }
+
   if (patch.preferencesAdd?.length) {
     next.preferences = Array.from(new Set([...next.preferences, ...patch.preferencesAdd]));
     changed.push('preferences');

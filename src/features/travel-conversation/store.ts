@@ -63,7 +63,11 @@ function readPersisted(): ConversationState | undefined {
       window.localStorage.removeItem(STORAGE_KEY);
       return undefined;
     }
-    return parsed.state;
+    const state = parsed.state;
+    if (!state.phase) {
+      state.phase = 'requirements';
+    }
+    return state;
   } catch {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
