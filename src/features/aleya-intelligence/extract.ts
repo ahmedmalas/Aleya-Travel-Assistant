@@ -577,6 +577,12 @@ function looksLikeDateConfirmation(text: string, previous?: ConversationState, n
   if (previous?.awaitingDestinationConfirmation) return false;
   if (!awaitingExactDepartureDate(previous)) return false;
 
+  // Compound turns with return / service ops are not pure date confirmations —
+  // let the normal extractors capture every clause in the same message.
+  if (/\b(?:come back|return|remove|forget|add|keep|don'?t need)\b/i.test(text)) {
+    return false;
+  }
+
   if (/^(yes|yep|yeah|correct|confirm|that works|sounds good)\b/.test(t)) return true;
   if (t.includes('friday') && (t.includes('28') || t.includes('august'))) return true;
 
@@ -585,6 +591,41 @@ function looksLikeDateConfirmation(text: string, previous?: ConversationState, n
     return true;
   }
   return false;
+}
+
+/** Next occurrence of weekday on or after the day following departure. */
+function resolveReturnWeekdayAfterDeparture(
+  departureIso: string,
+  weekday: number,
+  label: string,
+): ApproximateDate {
+  const d = new Date(`${departureIso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  let guard = 0;
+  while (d.getUTCDay() !== weekday && guard < 8) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    guard += 1;
+  }
+  const isoDate = d.toISOString().slice(0, 10);
+  return {
+    kind: 'absolute',
+    isoDate,
+    label,
+    weekday,
+    month: d.getUTCMonth() + 1,
+    year: d.getUTCFullYear(),
+  };
+}
+
+function extractReturnWeekdayPhrase(text: string): { weekday: number; label: string } | undefined {
+  const match = text.match(
+    /\b(?:come back|return)(?:\s+on)?\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i,
+  );
+  if (!match?.[1]) return undefined;
+  const key = match[1].toLowerCase();
+  const weekday = WEEKDAYS[key];
+  if (weekday == null) return undefined;
+  return { weekday, label: match[0]!.trim() };
 }
 
 /** Resolve yes/no against a pending soft destination candidate. */
@@ -813,6 +854,11 @@ function extractClarificationPlaceReply(text: string): string | undefined {
   const cleaned = text.trim().replace(/[.!?]+$/, '').trim();
   if (!cleaned || cleaned.length > 80) return undefined;
 
+  // Stay areas (Surfers Paradise, Docklands, …) are never origin clarification replies.
+  if (matchAreaName(cleaned) || findAreaMentions(cleaned).length > 0) {
+    return undefined;
+  }
+
   const prefixed = cleaned.match(
     /^(?:from|leaving from|departing from|flying from)\s+(.+)$/i,
   );
@@ -963,13 +1009,15 @@ export function extractRequirements(message: string, previous?: ConversationStat
   }
 
   // Place reply while a non-place field is pending (e.g. date): treat as origin, never
-  // silently overwrite a confirmed destination.
+  // silently overwrite a confirmed destination. Stay-area names are excluded above.
   const placeReply = !destinationChange && !pendingPlaceField ? extractClarificationPlaceReply(text) : undefined;
   const datePendingNonPlace =
     Boolean(previous?.destination) &&
     awaitingExactDepartureDate(previous) &&
     !looksLikeDateConfirmation(text, previous, now);
   if (placeReply && datePendingNonPlace && !hasDestinationReplacementLanguage(text, previous)) {
+    // Bare city/airport replies can fill or correct origin; never clobber with areas
+    // (areas are handled by accommodationArea extraction).
     if (!patch.origin) {
       patch.origin = field(placeReply);
       patch.changedFields!.push('origin');
@@ -1177,15 +1225,30 @@ export function extractRequirements(message: string, previous?: ConversationStat
       ? text.match(/\bfriday\b[\s\S]{0,80}?(?=come back|return|$)/i)?.[0] ?? ''
       : '';
     if (fridayWindow) {
+      // Only set outbound time when the Friday clause itself states one —
+      // do not default to afternoon and overwrite a prior after_5pm preference
+      // when the user is confirming a date and also specifying return timing.
       const pref = /after\s*5|after work/.test(fridayWindow.toLowerCase())
         ? 'after_5pm'
-        : extractTimePreference(fridayWindow) ?? 'afternoon';
-      patch.departureTimePreference = field(pref);
-      patch.changedFields!.push('departureTimePreference');
+        : extractTimePreference(fridayWindow);
+      if (pref) {
+        patch.departureTimePreference = field(pref);
+        patch.changedFields!.push('departureTimePreference');
+      }
+      const outboundPref = pref ?? previous?.departureTimePreference?.value;
       if (patch.departureDate) {
-        patch.departureDate = field({ ...patch.departureDate.value, weekday: 5, timePreference: pref });
-      } else {
-        patch.departureDate = field({ kind: 'relative', label: 'Friday', weekday: 5, timePreference: pref });
+        patch.departureDate = field({
+          ...patch.departureDate.value,
+          weekday: 5,
+          timePreference: outboundPref ?? patch.departureDate.value.timePreference,
+        });
+      } else if (!parseAbsoluteDate(text, now, dateCtx)) {
+        patch.departureDate = field({
+          kind: 'relative',
+          label: 'Friday',
+          weekday: 5,
+          timePreference: outboundPref,
+        });
         patch.changedFields!.push('departureDate');
       }
     } else if (/after\s*5|after work/.test(lower) && !/\b(?:come back|return)[\s\S]{0,40}(?:after\s*5|afternoon)/.test(lower)) {
@@ -1224,8 +1287,29 @@ export function extractRequirements(message: string, previous?: ConversationStat
       const returnBit = returnClause[0]!;
       const returnAbs = parseAbsoluteDate(returnBit, now);
       const returnTime = extractTimePreference(returnBit);
+      const returnWeekday = extractReturnWeekdayPhrase(text);
       if (returnAbs) {
         patch.returnDate = field({ ...returnAbs, timePreference: returnTime });
+        patch.changedFields!.push('returnDate');
+      } else if (returnWeekday) {
+        const departureIso = patch.departureDate?.value.isoDate ?? previous?.departureDate?.value.isoDate;
+        patch.returnDate = field(
+          departureIso
+            ? {
+                ...resolveReturnWeekdayAfterDeparture(
+                  departureIso,
+                  returnWeekday.weekday,
+                  returnTime ? `${returnWeekday.label} ${returnTime}` : returnWeekday.label,
+                ),
+                timePreference: returnTime,
+              }
+            : {
+                kind: 'relative',
+                label: returnTime ? `${returnWeekday.label} ${returnTime}` : returnWeekday.label,
+                weekday: returnWeekday.weekday,
+                timePreference: returnTime,
+              },
+        );
         patch.changedFields!.push('returnDate');
       } else if (returnTime) {
         patch.returnDate = field({
@@ -1244,31 +1328,80 @@ export function extractRequirements(message: string, previous?: ConversationStat
       patch.changedFields!.push('returnTimePreference');
     }
 
-    const returnDay = text.match(/\breturn\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s+(afternoon|morning|evening)/i);
+    const returnDay = text.match(
+      /\b(?:come back|return)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s+(afternoon|morning|evening)/i,
+    );
     if (returnDay) {
       patch.returnTimePreference = field(extractTimePreference(returnDay[2]!) ?? 'afternoon');
-      patch.returnDate = field({
-        kind: 'relative',
-        label: `return ${returnDay[1]} ${returnDay[2]}`,
-        weekday: WEEKDAYS[returnDay[1]!.toLowerCase()],
-        timePreference: extractTimePreference(returnDay[2]!) ?? 'afternoon',
-      });
+      const weekday = WEEKDAYS[returnDay[1]!.toLowerCase()]!;
+      const departureIso = patch.departureDate?.value.isoDate ?? previous?.departureDate?.value.isoDate;
+      const label = `return ${returnDay[1]} ${returnDay[2]}`;
+      patch.returnDate = field(
+        departureIso
+          ? {
+              ...resolveReturnWeekdayAfterDeparture(departureIso, weekday, label),
+              timePreference: extractTimePreference(returnDay[2]!) ?? 'afternoon',
+            }
+          : {
+              kind: 'relative',
+              label,
+              weekday,
+              timePreference: extractTimePreference(returnDay[2]!) ?? 'afternoon',
+            },
+      );
       patch.changedFields!.push('returnDate', 'returnTimePreference');
     }
   }
 
+  // Also apply return weekday when the turn was a pure date confirmation
+  // ("28th August and come back Monday" used to skip the block above).
+  if (!patch.returnDate) {
+    const returnWeekday = extractReturnWeekdayPhrase(text);
+    if (returnWeekday) {
+      const departureIso = patch.departureDate?.value.isoDate ?? previous?.departureDate?.value.isoDate;
+      const returnTime = extractTimePreference(text.match(/\b(?:come back|return)([\s\S]{0,40})/i)?.[0] ?? '');
+      const resolved = departureIso
+        ? {
+            ...resolveReturnWeekdayAfterDeparture(departureIso, returnWeekday.weekday, returnWeekday.label),
+            timePreference: returnTime,
+          }
+        : {
+            kind: 'relative' as const,
+            label: returnWeekday.label,
+            weekday: returnWeekday.weekday,
+            timePreference: returnTime,
+          };
+      patch.returnDate = field(resolved);
+      patch.changedFields!.push('returnDate');
+      if (returnTime) {
+        patch.returnTimePreference = field(returnTime);
+        patch.changedFields!.push('returnTimePreference');
+      }
+    }
+  }
+
   const returnDay = text.match(
-    /\breturn\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)?\s*(afternoon|morning|evening)?/i,
+    /\b(?:come back|return)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)?\s*(afternoon|morning|evening)?/i,
   );
-  if (returnDay && (returnDay[1] || returnDay[2])) {
+  if (!patch.returnDate && returnDay && (returnDay[1] || returnDay[2])) {
     const time = returnDay[2] ? extractTimePreference(returnDay[2]) : undefined;
     if (time) patch.returnTimePreference = field(time);
-    patch.returnDate = field({
-      kind: 'relative',
-      label: returnDay[0]!.trim(),
-      weekday: returnDay[1] ? WEEKDAYS[returnDay[1].toLowerCase()] : undefined,
-      timePreference: time,
-    });
+    const weekday = returnDay[1] ? WEEKDAYS[returnDay[1].toLowerCase()] : undefined;
+    const departureIso = patch.departureDate?.value.isoDate ?? previous?.departureDate?.value.isoDate;
+    if (weekday != null && departureIso) {
+      patch.returnDate = field({
+        ...resolveReturnWeekdayAfterDeparture(departureIso, weekday, returnDay[0]!.trim()),
+        timePreference: time,
+      });
+    } else {
+      patch.returnDate = field({
+        kind: 'relative',
+        label: returnDay[0]!.trim(),
+        weekday,
+        timePreference: time,
+      });
+    }
+    patch.changedFields!.push('returnDate');
   }
 
   const travellers = extractTravellers(text, previous);
