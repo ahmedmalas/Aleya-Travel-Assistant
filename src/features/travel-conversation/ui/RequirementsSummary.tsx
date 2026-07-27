@@ -1,3 +1,4 @@
+import { CONVERSATION_SCHEMA_VERSION } from '../types';
 import { projectRequirementsSummary } from '../project';
 import { useTravelConversation } from '../store';
 
@@ -32,8 +33,15 @@ export function RequirementsSummary() {
       className="border-b border-white/10 bg-slate-950/50 px-5 py-4 md:px-7"
       aria-label="Saved travel requirements"
       data-testid="requirements-summary"
+      data-engine="travel-conversation"
+      data-schema={String(state.schemaVersion ?? CONVERSATION_SCHEMA_VERSION)}
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Saved requirements</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+        Saved requirements
+        <span className="ml-2 font-normal tracking-normal text-slate-500" data-testid="engine-schema">
+          schema v{state.schemaVersion ?? CONVERSATION_SCHEMA_VERSION}
+        </span>
+      </p>
       <dl className="mt-3 grid gap-2 sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label} className="flex gap-2 text-sm">

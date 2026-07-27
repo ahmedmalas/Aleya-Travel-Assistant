@@ -135,10 +135,18 @@ export function subscribeTravelConversation(listener: Listener): () => void {
   };
 }
 
+/** Stable SSR/prerender snapshot — must not allocate a new object per call. */
+const SERVER_SNAPSHOT = createEmptyConversationState('ssr-empty');
+
+/** Hydrate once on first client import so UI and engine share the same store immediately. */
+if (typeof window !== 'undefined') {
+  hydrateTravelConversation();
+}
+
 export function useTravelConversation(): ConversationState {
   return useSyncExternalStore(
     subscribeTravelConversation,
     getTravelConversation,
-    createEmptyConversationState,
+    () => SERVER_SNAPSHOT,
   );
 }
