@@ -1,0 +1,6 @@
+{
+  "framework": null,
+  "buildCommand": "mkdir -p dist && true",
+  "installCommand": "true",
+  "outputDirectory": "dist"
+}
