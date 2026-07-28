@@ -78,6 +78,19 @@ export type {
   TurnGoal,
 } from './conversation';
 export {
+  resolveContextualReference,
+  validateContextualResolution,
+  buildServicesOptionSet,
+  buildOptionSet,
+  getActiveOptionSet,
+} from './contextual-reference';
+export type {
+  ActiveOptionSet,
+  ConversationalOption,
+  ContextualReferenceResolution,
+  CombinedValidatedSelections,
+} from './contextual-reference';
+export {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
 } from './types';

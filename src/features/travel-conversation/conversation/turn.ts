@@ -2,14 +2,28 @@
  * Sole production entry point: runConversationTurn
  *
  * Mandatory order:
- * 1 context → 2 objective → 3 goals → 4 apply trip changes →
- * 5–6 completeness / nextRequiredField → 7 plan → 8–9 execute/observe →
- * 9b browser-safe provider launch outcomes →
- * 10 next conversational step → 11 one natural response
+ * 1 assemble complete context (incl. active option set)
+ * 2 load / resolve contextual references against structured options
+ * 3 detect explicit goals and facts
+ * 4 combine contextual + explicit → validate
+ * 5 apply / merge canonical state
+ * 6 completeness / nextRequiredField
+ * 7 plan → 8–9 execute/observe → 9b provider launch
+ * 10 next conversational step (publishes new option sets)
+ * 11 one natural response
  */
 
 import { normalizeInput } from '../normalize';
 import type { ConversationState, TravelServiceKind } from '../types';
+import { extractServiceCandidates } from '../candidates/services';
+import {
+  consumeActiveOptionSetAfterResolution,
+  resolveContextualReference,
+  validateContextualResolution,
+  type ActiveOptionSet,
+  type CombinedValidatedSelections,
+  type ContextualReferenceResolution,
+} from '../contextual-reference';
 import { applyValidatedTripChanges } from './apply';
 import { calculateTripCompleteness } from './completeness';
 import { assembleContext } from './context';
@@ -40,43 +54,73 @@ export type ProviderLauncher = (
   services: TravelServiceKind[],
 ) => ProviderLaunchResult[];
 
+function explicitServiceIdsFromMessage(
+  message: string,
+  optionSet: ActiveOptionSet | null,
+): string[] {
+  if (!optionSet || optionSet.options[0]?.category !== 'service') return [];
+  const candidates = extractServiceCandidates(message);
+  const adds = candidates.filter((c) => c.operation === 'add').map((c) => c.service);
+  const valid = new Set(optionSet.options.map((o) => o.id));
+  return adds.filter((id) => valid.has(id));
+}
+
 export function runConversationTurn(input: {
   message: string;
   previousState: ConversationState;
   now?: Date;
   commitTranscript?: boolean;
-  /**
-   * Browser-safe provider launcher. Defaults to opening at most the first
-   * provider from the current call stack; remaining stay ready_for_user.
-   */
   launchProviders?: ProviderLauncher;
 }): ConversationTurnResult {
   const now = input.now ?? new Date();
   const normalized = normalizeInput(input.message);
   const stateBefore = input.previousState;
 
-  // 1. Assemble complete conversational context
+  // 1. Assemble complete conversational context (includes active option set)
   const ctx = assembleContext({
     userMessage: input.message,
     normalizedMessage: normalized,
     trip: stateBefore,
     now,
   });
+  const activeOptionSet = ctx.activeOptionSet ?? null;
 
-  // 2. Determine the user’s current objective
+  // 2. Resolve contextual references against structured options
+  const contextualResolution: ContextualReferenceResolution = resolveContextualReference(
+    normalized,
+    activeOptionSet,
+  );
+  const contextualReferenceDetected = contextualResolution.resolved;
+
+  // Explicit option ids mentioned by name (services) for combine step
+  const explicitSelectionIds = explicitServiceIdsFromMessage(normalized, activeOptionSet);
+
+  // 3–4. Validate combined contextual + explicit selections
+  const combinedSelections: CombinedValidatedSelections = validateContextualResolution(
+    contextualResolution,
+    activeOptionSet,
+    explicitSelectionIds,
+  );
+
+  // 2b. Objective
   const objective = determineObjective(ctx);
 
-  // 3. Detect every goal in the current message
-  const goals = detectGoals(ctx, objective);
+  // 3. Detect every goal (explicit + contextual combined)
+  const goals = detectGoals(ctx, objective, combinedSelections);
 
-  // 4. Apply validated trip changes to canonical state
+  // 5. Apply validated trip changes to canonical state
   const applied = applyValidatedTripChanges({
     ctx,
     goals,
     state: stateBefore,
+    combinedSelections,
   });
   let state = applied.state;
   const applyResults = applied.results;
+
+  if (combinedSelections.ok) {
+    consumeActiveOptionSetAfterResolution();
+  }
 
   const servicesJustAdded = state.services.filter(
     (s) => !stateBefore.services.includes(s),
@@ -101,7 +145,7 @@ export function runConversationTurn(input: {
 
   const addedServices = servicesJustAdded;
 
-  // 5–6. Known / missing / nextRequiredField from canonical state after changes
+  // 6. Known / missing / nextRequiredField from canonical state after changes
   const tripType = getTripType();
   const completeness = calculateTripCompleteness(state, tripType);
 
@@ -149,10 +193,9 @@ export function runConversationTurn(input: {
       .join('; ');
   }
 
-  // Recompute completeness after provider mutations (e.g. flights defaulted into state)
   const completenessAfter = calculateTripCompleteness(state, getTripType());
 
-  // 10. Decide the next conversational step
+  // 10. Decide the next conversational step (may publish a new option set)
   const step = decideNextStep({
     goals,
     completeness: completenessAfter,
@@ -161,7 +204,7 @@ export function runConversationTurn(input: {
     servicesJustAdded: addedServices,
   });
 
-  // 11. Generate one natural final response (only after actions + launch observation)
+  // 11. Generate one natural final response
   const generated = generateResponse({
     ctx,
     state,
@@ -193,6 +236,23 @@ export function runConversationTurn(input: {
     blockedServices: launchSummary.blockedServices,
     failedServices: launchSummary.failedServices,
     responseObservation: executed.provider.resultsSummary ?? null,
+    activeOptionSet,
+    contextualReferenceDetected,
+    contextualReferenceResolution: contextualResolution,
+    selectedOptionIds: combinedSelections.selectedOptionIds,
+    excludedOptionIds: combinedSelections.excludedOptionIds,
+    explicitSelections: explicitSelectionIds,
+    combinedValidatedSelections: combinedSelections,
+    canonicalStateBefore: {
+      origin: stateBefore.origin?.value,
+      destination: stateBefore.destination?.value,
+      services: [...stateBefore.services],
+    },
+    canonicalStateAfter: {
+      origin: state.origin?.value,
+      destination: state.destination?.value,
+      services: [...state.services],
+    },
   });
 
   if (input.commitTranscript !== false) {

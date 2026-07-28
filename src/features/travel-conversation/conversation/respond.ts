@@ -135,7 +135,9 @@ export function generateResponse(input: {
     case 'offer_search': {
       const services = state.services.map(serviceLabel);
       const svc = services.length ? ` with ${joinList(services)}` : '';
-      if (from && to && when) {
+      if (added.length) {
+        reply = `Perfect — I’ve added ${joinList(added)}. I can start looking whenever you’re ready.`;
+      } else if (from && to && when) {
         reply = `Perfect — ${from} to ${to} on ${when}${svc}. I can start looking whenever you’re ready.`;
       } else {
         reply = 'I can start looking whenever you’re ready.';

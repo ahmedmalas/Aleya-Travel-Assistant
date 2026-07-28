@@ -1,9 +1,25 @@
-/** Stage 3 — Detect every goal in the current message. */
+/** Stage 3 — Detect every goal in the current message (+ contextual selections). */
 
 import { extractServiceCandidates } from '../candidates/services';
+import type { TravelServiceKind } from '../types';
+import type { CombinedValidatedSelections } from '../contextual-reference';
 import type { ConversationContext, TurnGoal, UserObjective } from './contracts';
 
-export function detectGoals(ctx: ConversationContext, objective: UserObjective): TurnGoal[] {
+function isService(value: unknown): value is TravelServiceKind {
+  return (
+    value === 'flights' ||
+    value === 'accommodation' ||
+    value === 'car_hire' ||
+    value === 'transfers' ||
+    value === 'activities'
+  );
+}
+
+export function detectGoals(
+  ctx: ConversationContext,
+  objective: UserObjective,
+  combinedSelections?: CombinedValidatedSelections | null,
+): TurnGoal[] {
   const text = ctx.normalizedMessage;
   const goals: TurnGoal[] = [];
 
@@ -25,18 +41,40 @@ export function detectGoals(ctx: ConversationContext, objective: UserObjective):
     goals.push({ kind: 'set_area', area: 'Docklands' });
   }
 
-  // Service goals from domain extractor — not a parallel phrase matcher for dialogue
+  // Explicit service goals from domain extractor
   const serviceCandidates = extractServiceCandidates(text);
   const add = serviceCandidates.filter((c) => c.operation === 'add').map((c) => c.service);
   const remove = serviceCandidates.filter((c) => c.operation === 'remove').map((c) => c.service);
-  if (remove.length) {
-    goals.push({ kind: 'remove_services', services: Array.from(new Set(remove)) });
-  }
-  if (add.length) {
-    goals.push({ kind: 'add_services', services: Array.from(new Set(add)) });
+
+  // Contextual service selections (already validated) — combine with explicit
+  if (combinedSelections?.ok && combinedSelections.category === 'service') {
+    const contextualAdd = combinedSelections.selectedValues.filter(isService);
+    const contextualRemove = combinedSelections.excludedOptionIds.filter(isService);
+    const mergedAdd = Array.from(new Set([...contextualAdd, ...add]));
+    const mergedRemove = Array.from(new Set([...contextualRemove, ...remove]));
+    // Explicit instructions override: removals win over adds
+    const finalAdd = mergedAdd.filter((s) => !mergedRemove.includes(s));
+    if (mergedRemove.length) {
+      goals.push({ kind: 'remove_services', services: mergedRemove });
+    }
+    if (finalAdd.length) {
+      goals.push({ kind: 'add_services', services: finalAdd });
+    }
+  } else {
+    if (remove.length) {
+      goals.push({ kind: 'remove_services', services: Array.from(new Set(remove)) });
+    }
+    if (add.length) {
+      goals.push({ kind: 'add_services', services: Array.from(new Set(add)) });
+    }
   }
 
-  if (/\b(one[- ]?way|oneway)\b/i.test(text)) {
+  if (combinedSelections?.ok && combinedSelections.category === 'trip_type') {
+    const value = combinedSelections.selectedValues[0];
+    if (value === 'one_way' || value === 'return') {
+      goals.push({ kind: 'set_trip_type', value });
+    }
+  } else if (/\b(one[- ]?way|oneway)\b/i.test(text)) {
     goals.push({ kind: 'set_trip_type', value: 'one_way' });
   } else if (
     /\b(return(?:ing)?(?: trip)?|round[- ]?trip)\b/i.test(text) &&

@@ -1,9 +1,13 @@
 /**
- * Engine runtime memory — transcript, search session, awaiting field, trip type.
- * Not canonical trip state. Not a dialogue planner.
+ * Engine runtime memory — transcript, search session, awaiting field, trip type,
+ * active structured option set. Not canonical trip state. Not a dialogue planner.
  */
 
 import type { TripField } from '../types';
+import {
+  getActiveOptionSet,
+  resetContextualReferenceRuntime,
+} from '../contextual-reference';
 import type {
   ActiveSearchSession,
   TranscriptTurn,
@@ -24,7 +28,10 @@ export function resetConversationRuntime(): void {
   tripType = undefined;
   searchOffered = false;
   traces = [];
+  resetContextualReferenceRuntime();
 }
+
+export { getActiveOptionSet };
 
 export function getTranscript(): TranscriptTurn[] {
   return transcript;

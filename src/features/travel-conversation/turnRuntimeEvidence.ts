@@ -6,6 +6,11 @@
 
 import type { TravelServiceKind } from './types';
 import type { ProviderLaunchResult } from './search-projection/types';
+import type {
+  ActiveOptionSet,
+  CombinedValidatedSelections,
+  ContextualReferenceResolution,
+} from './contextual-reference';
 
 export type TurnRuntimeEvidence = {
   hostname: string;
@@ -36,6 +41,24 @@ export type TurnRuntimeEvidence = {
   blockedServices: TravelServiceKind[];
   failedServices: TravelServiceKind[];
   responseObservation: string | null;
+  /** Contextual reference observation. */
+  activeOptionSet: ActiveOptionSet | null;
+  contextualReferenceDetected: boolean;
+  contextualReferenceResolution: ContextualReferenceResolution | null;
+  selectedOptionIds: string[];
+  excludedOptionIds: string[];
+  explicitSelections: string[];
+  combinedValidatedSelections: CombinedValidatedSelections | null;
+  canonicalStateBefore: {
+    origin?: string;
+    destination?: string;
+    services: TravelServiceKind[];
+  };
+  canonicalStateAfter: {
+    origin?: string;
+    destination?: string;
+    services: TravelServiceKind[];
+  };
 };
 
 function resolveTravelChunkFromModuleUrl(): string {
@@ -123,6 +146,23 @@ export function captureTurnRuntimeEvidence(input: {
   blockedServices?: TravelServiceKind[];
   failedServices?: TravelServiceKind[];
   responseObservation?: string | null;
+  activeOptionSet?: ActiveOptionSet | null;
+  contextualReferenceDetected?: boolean;
+  contextualReferenceResolution?: ContextualReferenceResolution | null;
+  selectedOptionIds?: string[];
+  excludedOptionIds?: string[];
+  explicitSelections?: string[];
+  combinedValidatedSelections?: CombinedValidatedSelections | null;
+  canonicalStateBefore?: {
+    origin?: string;
+    destination?: string;
+    services: TravelServiceKind[];
+  };
+  canonicalStateAfter?: {
+    origin?: string;
+    destination?: string;
+    services: TravelServiceKind[];
+  };
 }): TurnRuntimeEvidence {
   const fingerprint = resolveLiveBuildFingerprint();
   const scriptUrls = listScriptUrls();
@@ -149,6 +189,15 @@ export function captureTurnRuntimeEvidence(input: {
     blockedServices: input.blockedServices ?? [],
     failedServices: input.failedServices ?? [],
     responseObservation: input.responseObservation ?? null,
+    activeOptionSet: input.activeOptionSet ?? null,
+    contextualReferenceDetected: input.contextualReferenceDetected ?? false,
+    contextualReferenceResolution: input.contextualReferenceResolution ?? null,
+    selectedOptionIds: input.selectedOptionIds ?? [],
+    excludedOptionIds: input.excludedOptionIds ?? [],
+    explicitSelections: input.explicitSelections ?? [],
+    combinedValidatedSelections: input.combinedValidatedSelections ?? null,
+    canonicalStateBefore: input.canonicalStateBefore ?? { services: [] },
+    canonicalStateAfter: input.canonicalStateAfter ?? { services: [] },
   };
 
   if (typeof window !== 'undefined') {

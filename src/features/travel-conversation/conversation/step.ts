@@ -1,6 +1,7 @@
 /**
  * Stage 10 — Decide the next conversational step from completeness + observations.
  * Ranked missing requirements drive the step — never a generic clarification.
+ * Publishes structured option sets when asking option-based questions.
  */
 
 import type {
@@ -13,10 +14,33 @@ import type {
 } from './contracts';
 import { setAwaitingField, setSearchOffered } from './runtime';
 import type { TripField } from '../types';
+import {
+  buildServicesOptionSet,
+  buildTripTypeOptionSet,
+  clearActiveOptionSet,
+  replaceActiveOptionSet,
+} from '../contextual-reference';
 
 function toTripField(id: MissingRequirement['id']): TripField | undefined {
-  if (id === 'origin' || id === 'destination' || id === 'departureDate') return id;
+  if (id === 'origin') return 'origin';
+  if (id === 'destination') return 'destination';
+  if (id === 'departureDate') return 'departureDate';
+  if (id === 'tripType') return 'tripType';
+  if (id === 'services') return 'services';
   return undefined;
+}
+
+function publishOptionsFor(field: MissingRequirement): void {
+  if (field.id === 'services') {
+    replaceActiveOptionSet(buildServicesOptionSet(field.question));
+    return;
+  }
+  if (field.id === 'tripType') {
+    replaceActiveOptionSet(buildTripTypeOptionSet(field.question));
+    return;
+  }
+  // Non-option questions must not leave a stale set active.
+  clearActiveOptionSet();
 }
 
 export function decideNextStep(input: {
@@ -31,6 +55,7 @@ export function decideNextStep(input: {
 
   if (provider.activateSearch) {
     setAwaitingField(undefined);
+    clearActiveOptionSet();
     setSearchOffered(false);
     return {
       kind: 'report_search_started',
@@ -52,6 +77,7 @@ export function decideNextStep(input: {
   );
   if (searchBlocked && next) {
     setAwaitingField(toTripField(next.id));
+    publishOptionsFor(next);
     setSearchOffered(false);
     return { kind: 'ask_missing_field', field: next };
   }
@@ -63,12 +89,16 @@ export function decideNextStep(input: {
         ? 'Docklands works well for many visitors — trams and walking cover the waterfront and links into the CBD. A hire car helps more if you’re planning day trips further out.'
         : 'Happy to factor that into the stay.';
     setAwaitingField(next ? toTripField(next.id) : undefined);
+    if (next) publishOptionsFor(next);
+    else clearActiveOptionSet();
     return { kind: 'answer_then_continue', answer, continueWith: next };
   }
 
   if (goals.some((g) => g.kind === 'decline_search')) {
     setSearchOffered(false);
     setAwaitingField(next ? toTripField(next.id) : undefined);
+    if (next) publishOptionsFor(next);
+    else clearActiveOptionSet();
     if (input.servicesJustAdded.length && next) {
       return {
         kind: 'acknowledge_and_continue',
@@ -85,6 +115,7 @@ export function decideNextStep(input: {
 
   if (next) {
     setAwaitingField(toTripField(next.id));
+    publishOptionsFor(next);
     setSearchOffered(false);
     if (input.servicesJustAdded.length) {
       return {
@@ -103,12 +134,13 @@ export function decideNextStep(input: {
         continueWith: next,
       };
     }
-    // Destination-only / origin-only / date-only: ask the ranked field
+    // Destination-only / origin-only / date-only / services / trip type
     return { kind: 'ask_missing_field', field: next };
   }
 
   // Complete enough to offer search (once)
   setAwaitingField(undefined);
+  clearActiveOptionSet();
   setSearchOffered(true);
   return { kind: 'offer_search' };
 }

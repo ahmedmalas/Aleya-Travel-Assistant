@@ -132,6 +132,8 @@ export type ConversationContext = {
   lastAleyaReply?: string;
   /** Field the previous turn asked for — domain hint for assignRoles. */
   awaitingField?: TripField;
+  /** Structured options from the latest option-based Aleya question. */
+  activeOptionSet?: import('../contextual-reference').ActiveOptionSet | null;
   searchSession: ActiveSearchSession | null;
   searchPreviouslyOffered: boolean;
   tripType?: 'one_way' | 'return';

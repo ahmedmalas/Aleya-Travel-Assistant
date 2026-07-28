@@ -57,7 +57,13 @@ export type ReturnDate = {
  * Trip field identity for role assignment when the engine is awaiting an answer.
  * Domain tool input — not a dialogue planner.
  */
-export type TripField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
+export type TripField =
+  | 'origin'
+  | 'destination'
+  | 'departureDate'
+  | 'returnDate'
+  | 'services'
+  | 'tripType';
 
 /** Canonical trip requirements — facts only. No dialogue orchestration. */
 export type ConversationState = {

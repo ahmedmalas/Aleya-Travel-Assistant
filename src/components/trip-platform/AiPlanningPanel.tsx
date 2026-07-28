@@ -81,6 +81,33 @@ function TurnRuntimeDebugPanel({ evidence }: { evidence: TurnRuntimeEvidence }) 
       <p>replySource: {evidence.replySource}</p>
       <p>nextRequiredField: {evidence.nextRequiredField ?? 'null'}</p>
       <p>generatedReply: {evidence.generatedReply}</p>
+      <p>
+        activeOptionSet:{' '}
+        {evidence.activeOptionSet
+          ? evidence.activeOptionSet.options.map((o) => o.id).join(',')
+          : '—'}
+      </p>
+      <p>
+        contextualReferenceDetected:{' '}
+        {evidence.contextualReferenceDetected ? 'true' : 'false'}
+      </p>
+      <p>selectedOptionIds: {evidence.selectedOptionIds.join(',') || '—'}</p>
+      <p>excludedOptionIds: {evidence.excludedOptionIds.join(',') || '—'}</p>
+      <p>explicitSelections: {evidence.explicitSelections.join(',') || '—'}</p>
+      <p>
+        combinedValidatedSelections:{' '}
+        {evidence.combinedValidatedSelections?.ok
+          ? evidence.combinedValidatedSelections.selectedOptionIds.join(',')
+          : '—'}
+      </p>
+      <p>
+        canonicalStateBefore.services:{' '}
+        {evidence.canonicalStateBefore.services.join(',') || '—'}
+      </p>
+      <p>
+        canonicalStateAfter.services:{' '}
+        {evidence.canonicalStateAfter.services.join(',') || '—'}
+      </p>
       <p>requestedServices: {evidence.requestedServices.join(',') || '—'}</p>
       <p>openedServices: {evidence.openedServices.join(',') || '—'}</p>
       <p>readyForUserServices: {evidence.readyForUserServices.join(',') || '—'}</p>
