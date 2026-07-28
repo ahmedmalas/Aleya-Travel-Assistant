@@ -7,7 +7,7 @@ import { MoneyServicesPanel } from './MoneyServicesPanel';
 import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
 import {
-  projectSearchForm,
+  projectCanonicalSearch,
   runLiveSearchFromState,
   useTravelConversation,
   type TravelServiceKind,
@@ -36,7 +36,7 @@ function CustomerApp() {
   const returnInputRef = useRef<HTMLInputElement>(null);
   const preferredCurrency = detectUserCurrency();
   const travelState = useTravelConversation();
-  const searchProjection = projectSearchForm(travelState);
+  const searchProjection = projectCanonicalSearch(travelState);
 
   // Canonical conversation always wins over stale manual edits after each turn/reset.
   useEffect(() => {
@@ -47,11 +47,12 @@ function CustomerApp() {
     setManualTravellers(null);
   }, [travelState.conversationId, travelState.turnCount]);
 
-  const origin = manualOrigin ?? searchProjection.originCode ?? '';
-  const destination = manualDestination ?? searchProjection.destinationCode ?? '';
-  const departDate = manualDepartDate ?? searchProjection.departDate ?? '';
+  const origin = manualOrigin ?? searchProjection.origin.airportCode ?? '';
+  const destination = manualDestination ?? searchProjection.destination.airportCode ?? '';
+  const departDate = manualDepartDate ?? searchProjection.departureDate ?? '';
   const returnDate = manualReturnDate ?? searchProjection.returnDate ?? '';
-  const travellers = manualTravellers ?? searchProjection.adults ?? 1;
+  const travellers = manualTravellers ?? searchProjection.adults;
+  const travellerSource = manualTravellers != null ? 'explicit' : searchProjection.travellerSource;
 
   if (!entered) return <WelcomeAuthGate onEnter={() => setEntered(true)} />;
 
@@ -168,13 +169,25 @@ function CustomerApp() {
               <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">Compare flights in your regional currency and preferred cabin class.</p>
             </div>
 
-            <form id="flight-search" onSubmit={searchFlights} className="mx-auto mt-10 max-w-5xl scroll-mt-36 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8">
+            <form
+              id="flight-search"
+              onSubmit={searchFlights}
+              className="mx-auto mt-10 max-w-5xl scroll-mt-36 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-sky-950/30 md:p-8"
+              data-testid="canonical-search-form"
+              data-origin={origin}
+              data-destination={destination}
+              data-depart={departDate}
+              data-return={returnDate}
+              data-adults={String(travellers)}
+              data-traveller-source={travellerSource}
+              data-route={`${origin || '?'}→${destination || '?'}`}
+            >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setManualOrigin(event.target.value.toUpperCase())} placeholder={searchProjection.originCode || 'MEL'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setManualDestination(event.target.value.toUpperCase())} placeholder={searchProjection.destinationCode || 'OOL'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /></label>
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setManualDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setManualReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setManualReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
-                <label className="block text-sm text-slate-200"><span className="mb-2 block">Travellers</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setManualTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40">{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">From</span><input aria-label="Origin airport" required maxLength={3} value={origin} onChange={(event) => setManualOrigin(event.target.value.toUpperCase())} placeholder={searchProjection.origin.airportCode || 'SYD'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" data-testid="search-origin" /></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">To</span><input aria-label="Destination airport" required maxLength={3} value={destination} onChange={(event) => setManualDestination(event.target.value.toUpperCase())} placeholder={searchProjection.destination.airportCode || 'MEL'} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" data-testid="search-destination" /></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">Departure</span><div className="relative"><input ref={departureInputRef} aria-label="Departure date" required type="date" min={today} value={departDate} onClick={() => openCalendar(departureInputRef.current)} onChange={(event) => { setManualDepartDate(event.target.value); if (returnDate && returnDate < event.target.value) setManualReturnDate(''); }} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" data-testid="search-depart" /><button type="button" aria-label="Open departure calendar" onClick={() => openCalendar(departureInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">Return</span><div className="relative"><input ref={returnInputRef} aria-label="Return date" type="date" min={departDate || today} value={returnDate} onClick={() => openCalendar(returnInputRef.current)} onChange={(event) => setManualReturnDate(event.target.value)} style={{ colorScheme: 'dark' }} className="w-full cursor-pointer rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 pr-11 text-white outline-none focus:ring-2 focus:ring-sky-300/40" data-testid="search-return" /><button type="button" aria-label="Open return calendar" onClick={() => openCalendar(returnInputRef.current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-sky-200">📅</button></div></label>
+                <label className="block text-sm text-slate-200"><span className="mb-2 block">Travellers{travellerSource === 'product_default' ? ' (default 1 adult)' : ''}</span><select aria-label="Adult travellers" value={travellers} onChange={(event) => setManualTravellers(Number(event.target.value))} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40" data-testid="search-travellers" data-traveller-source={travellerSource}>{[1,2,3,4,5,6,7,8].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
                 <label className="block text-sm text-slate-200"><span className="mb-2 block">Cabin</span><select aria-label="Cabin class" value={cabinClass} onChange={(event) => setCabinClass(event.target.value as CabinClass)} className="w-full rounded-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-sky-300/40"><option value="economy">Economy</option><option value="premiumeconomy">Premium economy</option><option value="business">Business</option><option value="first">First class</option></select></label>
               </div>
               {flightError ? <p className="mt-4 rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100" role="alert">{flightError}</p> : null}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  projectSearchForm,
+  projectCanonicalSearch,
   useTravelConversation,
 } from '../../features/travel-conversation';
 import { searchFlights, type FlightOffer } from '../../providers';
@@ -74,32 +74,33 @@ export function FlightsPanel() {
     { origin: '', destination: '', date: '' },
     { origin: '', destination: '', date: '' },
   ]);
-  const [adults, setAdults] = useState(Math.max(1, activeVaultTrip.travellerCount || 1));
+  // Adults come only from canonical search projection — never vault travellerCount defaults.
+  const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
   const travelState = useTravelConversation();
-  const searchProjection = projectSearchForm(travelState);
+  const searchProjection = projectCanonicalSearch(travelState);
 
   useEffect(() => {
     setPlanOrigin(
-      searchProjection.originCode
-        ? `${searchProjection.originLabel ?? ''} (${searchProjection.originCode})`.trim()
-        : (searchProjection.originLabel ?? ''),
+      searchProjection.origin.airportCode
+        ? `${searchProjection.origin.label ?? ''} (${searchProjection.origin.airportCode})`.trim()
+        : (searchProjection.origin.label ?? ''),
     );
     setPlanDestination(
-      searchProjection.destinationCode
-        ? `${searchProjection.destinationLabel ?? ''} (${searchProjection.destinationCode})`.trim()
-        : (searchProjection.destinationLabel ?? ''),
+      searchProjection.destination.airportCode
+        ? `${searchProjection.destination.label ?? ''} (${searchProjection.destination.airportCode})`.trim()
+        : (searchProjection.destination.label ?? ''),
     );
-    setPlanDepart(searchProjection.departDate ?? '');
+    setPlanDepart(searchProjection.departureDate ?? '');
     setPlanReturn(searchProjection.returnDate ?? '');
-    setAdults(searchProjection.adults || 1);
+    setAdults(searchProjection.adults);
   }, [
-    searchProjection.originLabel,
-    searchProjection.originCode,
-    searchProjection.destinationLabel,
-    searchProjection.destinationCode,
-    searchProjection.departDate,
+    searchProjection.origin.label,
+    searchProjection.origin.airportCode,
+    searchProjection.destination.label,
+    searchProjection.destination.airportCode,
+    searchProjection.departureDate,
     searchProjection.returnDate,
     searchProjection.adults,
     travelState.conversationId,

@@ -1,5 +1,9 @@
-import { iataForPlace } from './lexicon';
 import type { ConversationState, TravelServiceKind } from './types';
+
+/**
+ * Requirements summary projection for the chat UI only.
+ * Live search projection lives in ./search-projection (sole authority).
+ */
 
 export type RequirementsSummaryView = {
   origin?: string;
@@ -14,25 +18,6 @@ export type RequirementsSummaryView = {
   services: TravelServiceKind[];
   serviceLabels: string[];
   excludedServices: TravelServiceKind[];
-};
-
-export type SearchFormProjection = {
-  originCode?: string;
-  destinationCode?: string;
-  originLabel?: string;
-  destinationLabel?: string;
-  departDate?: string;
-  returnDate?: string;
-  adults: number;
-};
-
-export type SearchRequestProjection = {
-  origin?: string;
-  destination?: string;
-  departDate?: string;
-  returnDate?: string;
-  services: TravelServiceKind[];
-  adults: number;
 };
 
 function serviceLabel(service: TravelServiceKind): string {
@@ -95,31 +80,6 @@ export function projectRequirementsSummary(state: ConversationState): Requiremen
     services: [...state.services],
     serviceLabels: state.services.map(serviceLabel),
     excludedServices: [...state.excludedServices],
-  };
-}
-
-export function projectSearchForm(state: ConversationState): SearchFormProjection {
-  const summary = projectRequirementsSummary(state);
-  return {
-    originLabel: summary.origin,
-    destinationLabel: summary.destination,
-    originCode: iataForPlace(summary.origin),
-    destinationCode: iataForPlace(summary.destination),
-    departDate: summary.departingIso,
-    returnDate: summary.returningIso,
-    adults: state.travellers?.value ?? 1,
-  };
-}
-
-export function projectSearchRequest(state: ConversationState): SearchRequestProjection {
-  const form = projectSearchForm(state);
-  return {
-    origin: form.originCode ?? form.originLabel,
-    destination: form.destinationCode ?? form.destinationLabel,
-    departDate: form.departDate,
-    returnDate: form.returnDate,
-    services: [...state.services],
-    adults: form.adults,
   };
 }
 

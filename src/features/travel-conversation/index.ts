@@ -3,7 +3,10 @@
  *
  * Pipeline:
  * normalise → classify → extract/assign/merge (when mutating)
- * → post-requirements decision → compose → project → persist
+ * → post-requirements decision → compose → persist
+ *
+ * Live search handoff:
+ * ConversationState → search-projection (sole authority) → providers
  *
  * Post-requirements owns natural search approval and continuity.
  */
@@ -27,15 +30,27 @@ export {
 } from './store';
 export {
   projectRequirementsSummary,
-  projectSearchForm,
-  projectSearchRequest,
   summarizeKnown,
 } from './project';
+export type { RequirementsSummaryView } from './project';
+export {
+  projectCanonicalSearch,
+  projectSearchForm,
+  projectSearchRequest,
+  buildProviderSearches,
+  runLiveSearchFromState,
+  getLiveSearchActivationCount,
+  getLastLiveSearchActivationId,
+  resetLiveSearchActivationTracking,
+} from './search-projection';
 export type {
-  RequirementsSummaryView,
+  CanonicalSearchProjection,
   SearchFormProjection,
   SearchRequestProjection,
-} from './project';
+  TravellerCountSource,
+  ProviderSearchOpen,
+  LiveSearchResult,
+} from './search-projection';
 export {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
@@ -55,5 +70,3 @@ export {
   requirementsReady,
   servicesForSearch,
 } from './postRequirements';
-export { runLiveSearchFromState } from './ui/runLiveSearch';
-export type { LiveSearchResult } from './ui/runLiveSearch';

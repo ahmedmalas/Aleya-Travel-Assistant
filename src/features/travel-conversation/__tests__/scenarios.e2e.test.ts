@@ -83,8 +83,11 @@ describe('Scenario 2 — Approximate date then clarification', () => {
       destinationCode: 'OOL',
       departDate: '2026-08-14',
       returnDate: '2026-08-17',
+      adults: 1,
+      travellerSource: 'product_default',
     });
     expect(projectSearchRequest(second.state).origin).toBe('MEL');
+    expect(projectSearchRequest(second.state).travellerSource).toBe('product_default');
   });
 });
 
