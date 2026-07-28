@@ -11,6 +11,11 @@ export const PLACES: PlaceRef[] = [
   { name: 'Canberra', aliases: ['canberra', 'cbr'], iata: 'CBR' },
   { name: 'Gold Coast', aliases: ['gold coast', 'the gold coast', 'ool'], iata: 'OOL' },
   { name: 'Cairns', aliases: ['cairns', 'cns'], iata: 'CNS' },
+  {
+    name: 'Hamilton Island',
+    aliases: ['hamilton island', 'hamilton islands', 'hamilton', 'htl'],
+    iata: 'HTI',
+  },
   { name: 'Auckland', aliases: ['auckland', 'akl'], iata: 'AKL' },
   { name: 'Queenstown', aliases: ['queenstown', 'zqn'], iata: 'ZQN' },
   { name: 'Tokyo', aliases: ['tokyo', 'tyo', 'japan'], iata: 'TYO' },
