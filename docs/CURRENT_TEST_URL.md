@@ -1,36 +1,57 @@
-# Current authoritative test URL (PR #29)
+# Current authoritative PR #29 test URL
 
-> **Status:** ACTIVE tip for personal verification  
-> **Supersedes:** all earlier PR #29 immutable pins listed below  
-> **Do not open any “SUPERSEDED” host.** Immutable hosts never upgrade.
+**Use this URL only.** Do not open any other `*.vercel.app` hostname for conversation-progression verification.
 
-## Active build identity
-
-| Field | Value |
-|---|---|
-| Immutable URL | https://travel-buddy-assistant-1kemub2h8-ahmedmalas-projects.vercel.app/ |
-| Deployment ID | `dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc` |
-| Baked Git SHA | `ee924c3` |
-| Dist Git SHA | `117db29` |
-| Loaded chunk | `travel-conversation-CuR8-RFq.js` |
-| PR | [#29](https://github.com/ahmedmalas/Aleya-Travel-Assistant/pull/29) (Draft) |
-| Timestamp (UTC) | 2026-07-28T11:38:14Z |
-
-Contains: contextual reference layer (`972c310`) + chat start-of-reply scroll fix (`ee924c3`).
-
-On-page must show:
 ```text
-buildGitSha: ee924c3
-loadedTravelChunk: travel-conversation-CuR8-RFq.js
-deploymentId: dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc
+https://travel-buddy-assistant-1kemub2h8-ahmedmalas-projects.vercel.app/
 ```
 
-## Superseded — do not use
+## Expected identity (must match before testing)
 
-| Host | Deployment | Chunk | SHA | Why |
-|---|---|---|---|---|
-| `…40wg4wfhx…` | `dpl_EBo8Rch…` | `B6zQeu8l` | `18511d7` | Session-identity pin; **no contextual references**. Prior agent “single recommended URL”. |
-| `…q3fvjxed4…` | `dpl_F9DKVB…` | `C_wkFoyi` | `cf59dc9` | Search-launch only |
-| `…lmttqef7g…` | `dpl_BLKENwn…` | `SFityODo` | `972c310` | Contextual OK; **pre-scroll-fix** |
+| Field | Value |
+| --- | --- |
+| `buildGitSha` | `ee924c3` |
+| `loadedTravelChunk` | `travel-conversation-CuR8-RFq.js` |
+| `deploymentId` | `dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc` |
+| Host marker | `1kemub2h8` |
 
-Branch alias `…git-cursor-5147e3…` moves every tip push — not a permanent pin.
+Open DevTools → Console:
+
+```js
+window.__ALEYA_BUILD__
+```
+
+If any of those fields differ, **stop**. You are on the wrong deployment.
+
+## Branch alias (tracks tip — may differ from the pinned immutable host)
+
+```text
+https://travel-buddy-assistant-ai-git-cursor-5147e3-ahmedmalas-projects.vercel.app/
+```
+
+Prefer the immutable tip URL above for verification. The alias should eventually show the same tip identity after SSO.
+
+## Do not test superseded immutable deployments
+
+Earlier agent handoffs pinned an obsolete immutable hostname. That deployment is **superseded**. It still fails `all the above please` / `all please` and keeps `nextRequiredField: services` because it predates contextual reference resolution.
+
+**Do not bookmark, reopen, or paste any older immutable host.** If a bookmarked or SSO-cached preview opens an obsolete host, discard it and paste the tip URL from this document only.
+
+If a build that includes the superseded-preview gate loads on an obsolete host marker, the app shows a full-page block:
+
+```text
+THIS IS A SUPERSEDED PR #29 BUILD.
+DO NOT TEST THIS DEPLOYMENT.
+```
+
+with a link to the tip URL above. Builds that predate that gate cannot self-warn — delete those deployments in the Vercel dashboard if they remain reachable.
+
+## Stale artifact quarantine
+
+Do **not** follow verification URLs from:
+
+- `/opt/cursor/artifacts/conversation-progression/VERIFIED_TEST_URL.md` (pre-tip pin — obsolete)
+- `/opt/cursor/artifacts/conversation-progression/EVIDENCE_REPORT.md` (pre-tip pin — obsolete)
+- Older PR review comments that named an immutable host other than `1kemub2h8`
+
+Those artifacts are historical only. This file is the sole active handoff.

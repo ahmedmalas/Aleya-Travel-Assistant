@@ -1,5 +1,10 @@
 import { AppShell } from './components/AppShell';
+import { SupersededPreviewGate } from './components/SupersededPreviewGate';
 
 export default function App() {
-  return <AppShell />;
+  return (
+    <SupersededPreviewGate>
+      <AppShell />
+    </SupersededPreviewGate>
+  );
 }
