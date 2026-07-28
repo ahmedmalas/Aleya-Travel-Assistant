@@ -12,7 +12,7 @@ export function normalizeInput(raw: string): string {
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/\s+([,.!?;:])/g, '$1')
-    .replace(/([,.!?;:])(\S)/g, '$1 $2')
+    .replace(/([,.!?;:])(\S)/g, '$1: $2'.replace(': ', ' '))
     .replace(/\bwanna\b/gi, 'want to')
     .replace(/\bgonna\b/gi, 'going to')
     .replace(/\bthru\b/gi, 'through')
@@ -43,5 +43,12 @@ export function normalizeInput(raw: string): string {
   for (const [re, repl] of spelling) {
     text = text.replace(re, repl);
   }
+
+  // Canonicalise explicit destination replacement into the existing destination cue.
+  text = text
+    .replace(/\b(?:change|switch)\s+it\s+the\s+destination\s+to\b/gi, 'go to')
+    .replace(/\b(?:change|switch)\s+(?:the\s+)?destination\s+to\b/gi, 'go to')
+    .replace(/\b(?:change|switch)\s+it\s+to\b/gi, 'go to');
+
   return text;
 }
