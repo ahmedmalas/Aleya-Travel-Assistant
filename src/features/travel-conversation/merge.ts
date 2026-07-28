@@ -57,13 +57,32 @@ export function mergeTravelState(
   for (const field of patch.clearFields) {
     if (field === 'departureDate') next.departureDate = undefined;
     if (field === 'returnDate') next.returnDate = undefined;
-    if (field === 'origin') next.origin = undefined;
-    if (field === 'destination') next.destination = undefined;
+    if (field === 'origin') {
+      next.origin = undefined;
+      next.originPlace = undefined;
+    }
+    if (field === 'destination') {
+      next.destination = undefined;
+      next.destinationPlace = undefined;
+    }
+    if (field === 'accommodationArea') {
+      next.accommodationArea = undefined;
+      next.accommodationPlace = undefined;
+    }
     changed.push(field);
   }
 
   next.origin = prefer(patch.origin, next.origin, 'origin', explicit, changed);
   next.destination = prefer(patch.destination, next.destination, 'destination', explicit, changed);
+  if (patch.originPlace && explicit.includes('origin')) {
+    next.originPlace = patch.originPlace;
+  }
+  if (patch.destinationPlace && explicit.includes('destination')) {
+    next.destinationPlace = patch.destinationPlace;
+  }
+  if (patch.accommodationPlace && explicit.includes('accommodationArea')) {
+    next.accommodationPlace = patch.accommodationPlace;
+  }
   next.departureDate = prefer(patch.departureDate, next.departureDate, 'departureDate', explicit, changed);
   next.accommodationArea = prefer(
     patch.accommodationArea,

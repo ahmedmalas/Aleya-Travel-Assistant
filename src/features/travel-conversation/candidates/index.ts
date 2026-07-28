@@ -18,7 +18,10 @@ export function extractCandidates(
   awaitingField?: TripField,
 ): CandidateBundle {
   return {
-    locations: extractLocationCandidates(text),
+    locations: extractLocationCandidates(text, awaitingField, {
+      origin: previous.origin?.value,
+      destination: previous.destination?.value,
+    }),
     dates: extractDateCandidates(text, now, previous, awaitingField),
     durations: extractDurationCandidates(text),
     services: extractServiceCandidates(text),

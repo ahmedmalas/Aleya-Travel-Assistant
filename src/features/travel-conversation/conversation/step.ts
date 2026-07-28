@@ -20,6 +20,7 @@ import {
   clearActiveOptionSet,
   replaceActiveOptionSet,
 } from '../contextual-reference';
+import { consumePendingLocationAmbiguity } from '../locationAmbiguityPending';
 
 function toTripField(id: MissingRequirement['id']): TripField | undefined {
   if (id === 'origin') return 'origin';
@@ -52,6 +53,21 @@ export function decideNextStep(input: {
 }): ConversationalStep {
   const { goals, completeness, provider, executed } = input;
   const next = completeness.nextRequiredField;
+
+  const ambiguity = consumePendingLocationAmbiguity();
+  if (ambiguity) {
+    replaceActiveOptionSet(ambiguity.optionSet);
+    setAwaitingField('destination');
+    setSearchOffered(false);
+    return {
+      kind: 'ask_missing_field',
+      field: {
+        id: 'destination',
+        priority: 1,
+        question: ambiguity.question,
+      },
+    };
+  }
 
   if (provider.activateSearch) {
     setAwaitingField(undefined);

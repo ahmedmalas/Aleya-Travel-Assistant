@@ -15,6 +15,7 @@
 
 import { normalizeInput } from '../normalize';
 import type { ConversationState, TravelServiceKind } from '../types';
+import { getLastLocationResolutionPass } from '../candidates/locations';
 import { extractServiceCandidates } from '../candidates/services';
 import {
   consumeActiveOptionSetAfterResolution,
@@ -253,6 +254,30 @@ export function runConversationTurn(input: {
       destination: state.destination?.value,
       services: [...state.services],
     },
+    ...(() => {
+      const pass = getLastLocationResolutionPass();
+      const ev = pass?.evidence;
+      return {
+        locationResolutionAttempted: ev?.locationResolutionAttempted,
+        locationQuery: ev?.locationQuery,
+        normalisedLocationQuery: ev?.normalisedLocationQuery,
+        locationProvider: ev?.locationProvider,
+        locationCandidates: ev?.locationCandidates,
+        selectedLocationCandidate: ev?.selectedLocationCandidate,
+        locationAmbiguityDetected: ev?.locationAmbiguityDetected,
+        locationMatchType: ev?.locationMatchType,
+        locationConfidence: ev?.locationConfidence,
+        locationRole: ev?.locationRole,
+        locationOperation: ev?.locationOperation,
+        canonicalLocationBefore: ev?.canonicalLocationBefore ?? stateBefore.destination?.value,
+        canonicalLocationAfter: ev?.canonicalLocationAfter ?? state.destination?.value,
+        dependentFieldsCleared: pass?.replaceDestination
+          ? ['destination', ...(stateBefore.accommodationArea ? ['accommodationArea'] : [])]
+          : [],
+        airportResolution: ev?.airportResolution,
+        originPreserved: state.origin?.value ?? null,
+      };
+    })(),
   });
 
   if (input.commitTranscript !== false) {

@@ -1,6 +1,7 @@
 /**
  * Stage 1 — Input normalisation.
  * Tidies surface form and common misspellings without inventing travel meaning.
+ * Destination geography is resolved by travel-location-intelligence (not this list).
  */
 export function normalizeInput(raw: string): string {
   let text = raw
@@ -32,23 +33,21 @@ export function normalizeInput(raw: string): string {
     [/\bsydny\b/gi, 'Sydney'],
     [/\bmelborne\b/gi, 'Melbourne'],
     [/\bgoldcoast\b/gi, 'Gold Coast'],
-    [/\bhmilton\s+islands?\b/gi, 'Hamilton Island'],
-    [/\bhmailton\s+islands?\b/gi, 'Hamilton Island'],
-    [/\bhamilton\s+islands\b/gi, 'Hamilton Island'],
     [/\bchnage\b/gi, 'change'],
     [/\bned\b/gi, 'need'],
     [/\bactvities\b/gi, 'activities'],
     [/\bcar\s+hire\d+\b/gi, 'car hire'],
+    [/\bcains\b/gi, 'Cairns'],
+    [/\bhmilton\b/gi, 'hamilton'],
+    [/\bhmailton\b/gi, 'hamilton'],
+    [/\bhamilton\s+islands\b/gi, 'hamilton island'],
   ];
   for (const [re, repl] of spelling) {
     text = text.replace(re, repl);
   }
 
-  // Canonicalise explicit destination replacement into the existing destination cue.
-  text = text
-    .replace(/\b(?:change|switch)\s+it\s+the\s+destination\s+to\b/gi, 'go to')
-    .replace(/\b(?:change|switch)\s+(?:the\s+)?destination\s+to\b/gi, 'go to')
-    .replace(/\b(?:change|switch)\s+it\s+to\b/gi, 'go to');
+  // Preserve destination-replacement phrasing for location intelligence
+  // (do not rewrite to bare "go to" — that drops replace_destination semantics).
 
   return text;
 }

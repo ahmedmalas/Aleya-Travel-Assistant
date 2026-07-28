@@ -32,6 +32,14 @@ describe('previewTipPin', () => {
     ).toBe(true);
   });
 
+  it('does not flag fresh immutable tips (pin may lag one deploy)', () => {
+    expect(
+      isSupersededPreviewHost(
+        'travel-buddy-assistant-fresh12345-ahmedmalas-projects.vercel.app',
+      ),
+    ).toBe(false);
+  });
+
   it('does not flag production or local hosts', () => {
     expect(isSupersededPreviewHost('travel-buddy-assistant-ai.vercel.app')).toBe(
       false,

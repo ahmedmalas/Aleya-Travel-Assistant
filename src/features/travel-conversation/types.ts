@@ -1,6 +1,8 @@
-/** Travel Understanding Engine — schema v5 (canonical trip state only). */
+/** Travel Understanding Engine — schema v6 (structured locations + string display). */
 
-export const CONVERSATION_SCHEMA_VERSION = 5 as const;
+export const CONVERSATION_SCHEMA_VERSION = 6 as const;
+
+export type StoredTravelLocation = import('../travel-location-intelligence').StoredTravelLocation;
 
 export type TravelServiceKind =
   | 'flights'
@@ -71,6 +73,12 @@ export type ConversationState = {
   conversationId: string;
   origin?: FieldValue<string>;
   destination?: FieldValue<string>;
+  /** Structured geography for origin (optional; string fields remain canonical display). */
+  originPlace?: StoredTravelLocation;
+  /** Structured geography for destination. */
+  destinationPlace?: StoredTravelLocation;
+  /** Structured accommodation locality (suburb / neighbourhood / beach). */
+  accommodationPlace?: StoredTravelLocation;
   departureDate?: FieldValue<DepartureDate>;
   returnDate?: FieldValue<ReturnDate>;
   durationNights?: FieldValue<number>;
@@ -88,6 +96,9 @@ export type ConversationState = {
 export type TravelPatch = {
   origin?: FieldValue<string>;
   destination?: FieldValue<string>;
+  originPlace?: StoredTravelLocation;
+  destinationPlace?: StoredTravelLocation;
+  accommodationPlace?: StoredTravelLocation;
   departureDate?: FieldValue<DepartureDate>;
   returnDate?: FieldValue<ReturnDate>;
   durationNights?: FieldValue<number>;

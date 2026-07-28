@@ -6,7 +6,7 @@ import {
   isSearchActive,
   resetLiveSearchActivationTracking,
   resetTravelConversation,
-  sendTravelMessage,
+  sendTravelMessageAsync,
   tripReadyForSearch,
   useTravelConversation,
   type SearchLaunchSession,
@@ -204,8 +204,8 @@ export function AiPlanningPanel() {
     ]);
   };
 
-  const runEngineTurn = (request: string) => {
-    const result = sendTravelMessage({
+  const runEngineTurn = async (request: string) => {
+    const result = await sendTravelMessageAsync({
       message: request,
       travellerName,
     });
@@ -231,7 +231,7 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
-      runEngineTurn(request);
+      await runEngineTurn(request);
     } catch (error) {
       reply(
         error instanceof Error
@@ -422,21 +422,23 @@ export function AiPlanningPanel() {
             data-testid="continue-to-search"
             disabled={busy}
             onClick={() => {
-              setBusy(true);
-              try {
-                setMessages((current) => [
-                  ...current,
-                  {
-                    id: createId(),
-                    role: 'user',
-                    text: 'Yes please',
-                    createdAt: new Date().toISOString(),
-                  },
-                ]);
-                runEngineTurn('Yes please');
-              } finally {
-                setBusy(false);
-              }
+              void (async () => {
+                setBusy(true);
+                try {
+                  setMessages((current) => [
+                    ...current,
+                    {
+                      id: createId(),
+                      role: 'user',
+                      text: 'Yes please',
+                      createdAt: new Date().toISOString(),
+                    },
+                  ]);
+                  await runEngineTurn('Yes please');
+                } finally {
+                  setBusy(false);
+                }
+              })();
             }}
           >
             Continue to search

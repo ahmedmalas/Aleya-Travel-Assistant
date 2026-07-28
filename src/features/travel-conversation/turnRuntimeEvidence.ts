@@ -59,6 +59,33 @@ export type TurnRuntimeEvidence = {
     destination?: string;
     services: TravelServiceKind[];
   };
+  /** Location intelligence observation. */
+  locationResolutionAttempted?: boolean;
+  locationQuery?: string | null;
+  normalisedLocationQuery?: string | null;
+  locationProvider?: string | null;
+  locationCandidates?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    confidence: number;
+    matchType: string;
+    provider: string;
+  }>;
+  selectedLocationCandidate?: string | null;
+  locationAmbiguityDetected?: boolean;
+  locationMatchType?: string | null;
+  locationConfidence?: number | null;
+  locationRole?: string | null;
+  locationOperation?: string | null;
+  canonicalLocationBefore?: string | null;
+  canonicalLocationAfter?: string | null;
+  dependentFieldsCleared?: string[];
+  airportResolution?: {
+    iataCode?: string;
+    nearestAirportCodes?: string[];
+  } | null;
+  originPreserved?: string | null;
 };
 
 function resolveTravelChunkFromModuleUrl(): string {
@@ -163,6 +190,32 @@ export function captureTurnRuntimeEvidence(input: {
     destination?: string;
     services: TravelServiceKind[];
   };
+  locationResolutionAttempted?: boolean;
+  locationQuery?: string | null;
+  normalisedLocationQuery?: string | null;
+  locationProvider?: string | null;
+  locationCandidates?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    confidence: number;
+    matchType: string;
+    provider: string;
+  }>;
+  selectedLocationCandidate?: string | null;
+  locationAmbiguityDetected?: boolean;
+  locationMatchType?: string | null;
+  locationConfidence?: number | null;
+  locationRole?: string | null;
+  locationOperation?: string | null;
+  canonicalLocationBefore?: string | null;
+  canonicalLocationAfter?: string | null;
+  dependentFieldsCleared?: string[];
+  airportResolution?: {
+    iataCode?: string;
+    nearestAirportCodes?: string[];
+  } | null;
+  originPreserved?: string | null;
 }): TurnRuntimeEvidence {
   const fingerprint = resolveLiveBuildFingerprint();
   const scriptUrls = listScriptUrls();
@@ -198,6 +251,22 @@ export function captureTurnRuntimeEvidence(input: {
     combinedValidatedSelections: input.combinedValidatedSelections ?? null,
     canonicalStateBefore: input.canonicalStateBefore ?? { services: [] },
     canonicalStateAfter: input.canonicalStateAfter ?? { services: [] },
+    locationResolutionAttempted: input.locationResolutionAttempted ?? false,
+    locationQuery: input.locationQuery ?? null,
+    normalisedLocationQuery: input.normalisedLocationQuery ?? null,
+    locationProvider: input.locationProvider ?? null,
+    locationCandidates: input.locationCandidates ?? [],
+    selectedLocationCandidate: input.selectedLocationCandidate ?? null,
+    locationAmbiguityDetected: input.locationAmbiguityDetected ?? false,
+    locationMatchType: input.locationMatchType ?? null,
+    locationConfidence: input.locationConfidence ?? null,
+    locationRole: input.locationRole ?? null,
+    locationOperation: input.locationOperation ?? null,
+    canonicalLocationBefore: input.canonicalLocationBefore ?? null,
+    canonicalLocationAfter: input.canonicalLocationAfter ?? null,
+    dependentFieldsCleared: input.dependentFieldsCleared ?? [],
+    airportResolution: input.airportResolution ?? null,
+    originPreserved: input.originPreserved ?? null,
   };
 
   if (typeof window !== 'undefined') {

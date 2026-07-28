@@ -60,8 +60,14 @@ export function projectCanonicalSearch(
 ): CanonicalSearchProjection {
   const originLabel = state.origin?.value;
   const destinationLabel = state.destination?.value;
-  const originCode = iataForPlace(originLabel);
-  const destinationCode = iataForPlace(destinationLabel);
+  const originCode =
+    state.originPlace?.iataCode ??
+    state.originPlace?.nearestAirportCodes?.[0] ??
+    iataForPlace(originLabel);
+  const destinationCode =
+    state.destinationPlace?.iataCode ??
+    state.destinationPlace?.nearestAirportCodes?.[0] ??
+    iataForPlace(destinationLabel);
   const { adults, travellerSource } = resolveTravellers(state);
 
   // Direction invariant: origin field → departure, destination field → arrival.

@@ -5,6 +5,15 @@ import type { ConversationContext, UserObjective } from './contracts';
 export function determineObjective(ctx: ConversationContext): UserObjective {
   const text = ctx.normalizedMessage;
 
+  // Destination field replacement is NOT a full trip reset
+  if (
+    /\b(?:change|switch|update|set)\s+(?:(?:it|the)\s+)*(?:destination\s+)?(?:to|for)\b/i.test(text) ||
+    /\bactually\s+\w+/i.test(text) ||
+    /\bnot\s+\w+.+\b(?:anymore|any more)\b/i.test(text)
+  ) {
+    return 'collect_trip_requirements';
+  }
+
   if (
     (/\b(new trip|start over|let'?s go to)\b/i.test(text) ||
       (/\binstead\b/i.test(text) && /\b(forget|go to|gold coast|melbourne)\b/i.test(text)) ||

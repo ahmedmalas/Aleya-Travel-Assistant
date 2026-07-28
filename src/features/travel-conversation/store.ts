@@ -1,17 +1,18 @@
 import { useSyncExternalStore } from 'react';
 import { resetConversationRuntime } from './conversation/runtime';
-import type { ConversationState } from './types';
+import type { ConversationState, StoredTravelLocation } from './types';
 import {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
 } from './types';
+import { getDefaultLocationProvider, toStoredTravelLocation } from '../travel-location-intelligence';
 
 type Listener = () => void;
 
-/** Schema v5 — only this key is authoritative. */
-export const STORAGE_KEY = 'aleya-travel:conversation:v5';
+/** Schema v6 — authoritative key. */
+export const STORAGE_KEY = 'aleya-travel:conversation:v6';
 
-/** All prior engines / schemas — purged on hydrate and reset. */
+/** All prior engines / schemas — purged on hydrate and reset (v5 migrated when possible). */
 export const LEGACY_STORAGE_KEYS = [
   'aleya-travel:conversation:v1',
   'aleya-travel:conversation:v2',
@@ -21,6 +22,8 @@ export const LEGACY_STORAGE_KEYS = [
   'aleya-intelligence:state',
   'aleya:conversationState',
 ];
+
+const V5_STORAGE_KEY = 'aleya-travel:conversation:v5';
 
 type PersistedEnvelope = {
   schemaVersion: number;
@@ -50,6 +53,37 @@ function purgeLegacyKeys(): void {
   }
 }
 
+function placeFromString(name?: string): StoredTravelLocation | undefined {
+  if (!name) return undefined;
+  const hit = getDefaultLocationProvider().resolveSync(name, { allowFuzzy: false })[0]?.place;
+  if (!hit) {
+    return {
+      displayName: name,
+      canonicalName: name,
+      type: 'unknown',
+    };
+  }
+  return toStoredTravelLocation(hit);
+}
+
+/** Migrate schema-v5 string-only locations into structured v6 fields. */
+export function migrateConversationStateFromV5(raw: ConversationState): ConversationState {
+  const state = sanitizeState({
+    ...raw,
+    schemaVersion: CONVERSATION_SCHEMA_VERSION,
+  });
+  if (!state.originPlace && state.origin?.value) {
+    state.originPlace = placeFromString(state.origin.value);
+  }
+  if (!state.destinationPlace && state.destination?.value) {
+    state.destinationPlace = placeFromString(state.destination.value);
+  }
+  if (!state.accommodationPlace && state.accommodationArea?.value) {
+    state.accommodationPlace = placeFromString(state.accommodationArea.value);
+  }
+  return state;
+}
+
 /** Strip deleted orchestration fields from older persisted blobs. */
 function sanitizeState(raw: ConversationState): ConversationState {
   const state = { ...raw };
@@ -66,24 +100,41 @@ function sanitizeState(raw: ConversationState): ConversationState {
   if (!Array.isArray(state.preferences)) state.preferences = [];
   if (!Array.isArray(state.changeHistory)) state.changeHistory = [];
   if (!Array.isArray(state.lastChangedFields)) state.lastChangedFields = [];
+  state.schemaVersion = CONVERSATION_SCHEMA_VERSION;
   return state;
 }
 
 function readPersisted(): ConversationState | undefined {
   if (!canUseStorage()) return undefined;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as PersistedEnvelope;
-    if (parsed.schemaVersion !== CONVERSATION_SCHEMA_VERSION) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      return undefined;
+    const rawV6 = window.localStorage.getItem(STORAGE_KEY);
+    if (rawV6) {
+      const parsed = JSON.parse(rawV6) as PersistedEnvelope;
+      if (
+        parsed.schemaVersion === CONVERSATION_SCHEMA_VERSION &&
+        parsed.state?.schemaVersion === CONVERSATION_SCHEMA_VERSION
+      ) {
+        return sanitizeState(parsed.state);
+      }
     }
-    if (parsed.state?.schemaVersion !== CONVERSATION_SCHEMA_VERSION) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      return undefined;
+
+    const rawV5 = window.localStorage.getItem(V5_STORAGE_KEY);
+    if (rawV5) {
+      const parsed = JSON.parse(rawV5) as PersistedEnvelope;
+      if (parsed.schemaVersion === 5 && parsed.state) {
+        const migrated = migrateConversationStateFromV5(parsed.state as ConversationState);
+        writePersisted(migrated);
+        try {
+          window.localStorage.removeItem(V5_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        return migrated;
+      }
     }
-    return sanitizeState(parsed.state);
+
+    window.localStorage.removeItem(STORAGE_KEY);
+    return undefined;
   } catch {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -122,50 +173,35 @@ export function rehydrateTravelConversation(): ConversationState {
 }
 
 export function getTravelConversation(): ConversationState {
-  if (!hydrated) hydrateTravelConversation();
+  hydrateTravelConversation();
+  purgeLegacyKeys();
   return memoryState;
 }
 
-export function setTravelConversation(next: ConversationState): void {
+export function setTravelConversation(state: ConversationState): void {
   purgeLegacyKeys();
-  memoryState = sanitizeState(next);
+  memoryState = sanitizeState(state);
   writePersisted(memoryState);
   emit();
 }
 
 export function resetTravelConversation(): ConversationState {
-  purgeLegacyKeys();
-  memoryState = createEmptyConversationState();
-  if (canUseStorage()) {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }
   resetConversationRuntime();
-  hydrated = true;
+  memoryState = createEmptyConversationState();
+  writePersisted(memoryState);
   emit();
   return memoryState;
 }
 
 export function subscribeTravelConversation(listener: Listener): () => void {
   listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const SERVER_SNAPSHOT = createEmptyConversationState('ssr-empty');
-
-if (typeof window !== 'undefined') {
-  hydrateTravelConversation();
+  return () => listeners.delete(listener);
 }
 
 export function useTravelConversation(): ConversationState {
   return useSyncExternalStore(
     subscribeTravelConversation,
     getTravelConversation,
-    () => SERVER_SNAPSHOT,
+    createEmptyConversationState,
   );
 }

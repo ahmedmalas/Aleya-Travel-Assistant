@@ -1,5 +1,10 @@
 /** Place / calendar lexicon — specification data only (airport codes, names). */
 
+import {
+  getDefaultLocationProvider,
+  primaryIataForPlace,
+} from '../travel-location-intelligence';
+
 export type PlaceRef = { name: string; aliases: string[]; iata?: string };
 
 export const PLACES: PlaceRef[] = [
@@ -83,7 +88,10 @@ export function findAreasInText(text: string): Array<{ area: string; city: strin
 export function iataForPlace(name?: string): string | undefined {
   if (!name) return undefined;
   const lower = name.toLowerCase();
-  return PLACES.find((p) => p.name.toLowerCase() === lower)?.iata;
+  const legacy = PLACES.find((p) => p.name.toLowerCase() === lower)?.iata;
+  if (legacy) return legacy;
+  const hit = getDefaultLocationProvider().resolveSync(name, { allowFuzzy: false })[0]?.place;
+  return primaryIataForPlace(hit) ?? hit?.nearestAirportCodes?.[0];
 }
 
 /** Longest-first place capture group for cue patterns. */

@@ -2,9 +2,12 @@
  * Authoritative pipeline — conversation progression is the sole production path.
  *
  * sendTravelMessage / processTravelTurn → runConversationTurn → domain tools
+ * sendTravelMessageAsync warms the remote location provider cache first.
  */
 
+import { resolveLocationsForMessageAsync } from '../travel-location-intelligence';
 import {
+  getAwaitingField,
   runConversationTurn,
   resetConversationRuntime as resetProgressionRuntime,
 } from './conversation';
@@ -59,6 +62,27 @@ export function sendTravelMessage(
 ): TravelTurnResult {
   getTravelConversation();
   return processTravelTurn({ ...input, commit: true });
+}
+
+/**
+ * Production chat path: warm remote geocoder cache, then run the sync turn.
+ * Remote failure must not block or corrupt the conversation.
+ */
+export async function sendTravelMessageAsync(
+  input: Omit<SendTravelMessageInput, 'previousState' | 'commit'>,
+): Promise<TravelTurnResult> {
+  const previous = getTravelConversation();
+  try {
+    await resolveLocationsForMessageAsync({
+      message: input.message,
+      awaitingField: getAwaitingField(),
+      destinationBefore: previous.destination?.value,
+      originBefore: previous.origin?.value,
+    });
+  } catch {
+    // Provider failure must not destroy conversation state.
+  }
+  return sendTravelMessage(input);
 }
 
 export function resetConversationRuntime(): ConversationState {

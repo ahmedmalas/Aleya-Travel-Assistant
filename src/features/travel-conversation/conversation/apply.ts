@@ -5,6 +5,8 @@
 
 import { assignRoles } from '../assign';
 import { extractCandidates } from '../candidates';
+import { getLastLocationResolutionPass } from '../candidates/locations';
+import { setPendingLocationAmbiguity } from '../locationAmbiguityPending';
 import { mergeTravelState } from '../merge';
 import type { ConversationState, TravelPatch, TravelServiceKind } from '../types';
 import { createEmptyConversationState } from '../types';
@@ -60,13 +62,23 @@ export function applyValidatedTripChanges(input: {
 
   if (input.goals.some((g) => g.kind === 'provide_trip_facts' || g.kind === 'start_new_trip')) {
     const candidates = extractCandidates(text, input.ctx.now, state, input.ctx.awaitingField);
-    const patch = assignRoles(candidates, state, input.ctx.awaitingField);
-    state = mergeTravelState(state, patch, input.ctx.now, text);
-    results.push({
-      type: 'apply_validated_trip_changes',
-      detail: state.lastChangedFields.join(',') || 'none',
-      ok: true,
-    });
+    const locationPass = getLastLocationResolutionPass();
+    if (locationPass?.ambiguity && locationPass.ambiguityQuestion) {
+      setPendingLocationAmbiguity(locationPass.ambiguity, locationPass.ambiguityQuestion);
+      results.push({
+        type: 'location_ambiguity',
+        detail: locationPass.ambiguityQuestion,
+        ok: true,
+      });
+    } else {
+      const patch = assignRoles(candidates, state, input.ctx.awaitingField);
+      state = mergeTravelState(state, patch, input.ctx.now, text);
+      results.push({
+        type: 'apply_validated_trip_changes',
+        detail: state.lastChangedFields.join(',') || 'none',
+        ok: true,
+      });
+    }
   }
 
   // Contextual + explicit option selections (validated) → canonical merge
@@ -120,21 +132,42 @@ export function applyValidatedTripChanges(input: {
         });
       }
     } else if (combined.category === 'location') {
-      const label = String(combined.selectedValues[0] ?? '');
+      const raw = combined.selectedValues[0];
+      const label =
+        typeof raw === 'string'
+          ? raw
+          : raw && typeof raw === 'object' && 'canonicalName' in raw
+            ? String((raw as { canonicalName: string }).canonicalName)
+            : '';
       if (label) {
         const field = input.ctx.awaitingField;
         const patch: TravelPatch = {
           explicitChanges: [],
           clearFields: [],
         };
+        const structured =
+          raw && typeof raw === 'object' && 'canonicalName' in raw
+            ? {
+                displayName: String(
+                  (raw as { displayName?: string }).displayName ?? label,
+                ),
+                canonicalName: label,
+                type: (raw as { type?: import('../../travel-location-intelligence').TravelPlaceType })
+                  .type,
+                countryCode: (raw as { countryCode?: string }).countryCode,
+                iataCode: (raw as { iataCode?: string }).iataCode,
+                nearestAirportCodes: (raw as { nearestAirportCodes?: string[] })
+                  .nearestAirportCodes,
+                providerId: (raw as { placeId?: string }).placeId,
+              }
+            : undefined;
         if (field === 'origin') {
           patch.origin = { value: label, source: 'explicit', confirmed: true };
+          patch.originPlace = structured;
           patch.explicitChanges.push('origin');
-        } else if (field === 'destination') {
-          patch.destination = { value: label, source: 'explicit', confirmed: true };
-          patch.explicitChanges.push('destination');
         } else {
           patch.destination = { value: label, source: 'explicit', confirmed: true };
+          patch.destinationPlace = structured;
           patch.explicitChanges.push('destination');
         }
         state = mergeTravelState(state, patch, input.ctx.now, text);

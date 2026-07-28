@@ -37,13 +37,17 @@ const PRODUCTION_HOSTS = new Set([
   'www.travel-buddy-assistant-ai.vercel.app',
 ]);
 
+/**
+ * Quarantine known-obsolete immutable markers and moving branch aliases.
+ * Fresh immutable tips are allowed so a newly shipped tip can be tested before
+ * the pin constants are updated to match it (pin update lands in the next tip).
+ */
 export function isSupersededPreviewHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
   if (!host.includes('vercel.app')) return false;
   if (host === AUTHORITATIVE_HOST) return false;
   if (PRODUCTION_HOSTS.has(host)) return false;
-  if (host.includes('-git-main-')) return false;
-  // Quarantine every other project preview host (immutable + branch alias).
-  if (host.includes('travel-buddy-assistant')) return true;
+  // Moving git branch aliases must not be used as the verification pin.
+  if (host.includes('-git-')) return true;
   return SUPERSEDED_HOST_MARKERS.some((marker) => host.includes(marker));
 }

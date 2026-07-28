@@ -1,3 +1,5 @@
+import { toStoredTravelLocation } from '../travel-location-intelligence';
+import { getLastLocationResolutionPass } from './candidates/locations';
 import type { CandidateBundle, DateCandidate, LocationCandidate } from './candidates/types';
 import type {
   ApproximateDate,
@@ -88,18 +90,34 @@ export function assignRoles(
     destination = { ...standalone, roleHint: 'destination', cue: 'awaiting:destination' };
   }
 
+  const locationPass = getLastLocationResolutionPass();
+  const replaceDestination = Boolean(locationPass?.replaceDestination);
+
   if (origin) {
     patch.origin = explicit(origin.normalized);
     patch.explicitChanges.push('origin');
+    const originPlace = locationPass?.selectedPlaces.origin;
+    if (originPlace) patch.originPlace = toStoredTravelLocation(originPlace);
   }
   if (destination) {
+    if (replaceDestination && previous.destination) {
+      patch.clearFields.push('destination');
+      // Clear incompatible accommodation when destination is replaced
+      if (previous.accommodationArea) {
+        patch.clearFields.push('accommodationArea');
+      }
+    }
     patch.destination =
       destination.source === 'inferred' ? inferred(destination.normalized) : explicit(destination.normalized);
     patch.explicitChanges.push('destination');
+    const destinationPlace = locationPass?.selectedPlaces.destination;
+    if (destinationPlace) patch.destinationPlace = toStoredTravelLocation(destinationPlace);
   }
   if (accommodation) {
     patch.accommodationArea = explicit(accommodation.normalized);
     patch.explicitChanges.push('accommodationArea');
+    const accommodationPlace = locationPass?.selectedPlaces.accommodation;
+    if (accommodationPlace) patch.accommodationPlace = toStoredTravelLocation(accommodationPlace);
   }
 
   // Never let origin overwrite an already-confirmed destination with the same city
