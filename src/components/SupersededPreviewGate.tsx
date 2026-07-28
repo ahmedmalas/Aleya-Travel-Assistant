@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react';
-import { AUTHORITATIVE_TEST_URL, isSupersededPreviewHost } from '../features/travel-conversation/previewTipPin';
+import {
+  AUTHORITATIVE_DEPLOYMENT_ID,
+  AUTHORITATIVE_HOST,
+  AUTHORITATIVE_TEST_URL,
+  isSupersededPreviewHost,
+} from '../features/travel-conversation/previewTipPin';
 
 /**
- * Full-page block when this tip bundle is somehow loaded on a known-obsolete
- * immutable preview host. Cannot rewrite older immutable deploys that predate
- * this component — those must be deleted in the Vercel dashboard.
+ * Full-page block for known-obsolete immutable preview hosts when this tip
+ * bundle is loaded there. Older immutable deploys that predate this component
+ * cannot self-warn — delete them in the Vercel dashboard.
  */
 export function SupersededPreviewGate({ children }: { children: ReactNode }) {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -37,7 +42,9 @@ export function SupersededPreviewGate({ children }: { children: ReactNode }) {
         {AUTHORITATIVE_TEST_URL}
       </a>
       <p className="mt-4 font-mono text-[11px] text-rose-200/80">
-        Expected: buildGitSha ee924c3 · chunk CuR8-RFq · dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc
+        Expected host {AUTHORITATIVE_HOST}
+        <br />
+        Expected: buildGitSha ee924c3 · chunk CuR8-RFq · {AUTHORITATIVE_DEPLOYMENT_ID}
       </p>
     </div>
   );
