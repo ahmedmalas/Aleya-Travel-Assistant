@@ -7,7 +7,7 @@ import {
 
 describe('previewTipPin', () => {
   it('keeps the sole tip URL on the authoritative host', () => {
-    expect(AUTHORITATIVE_TEST_URL).toContain('1kemub2h8');
+    expect(AUTHORITATIVE_TEST_URL).toContain('58jmbjjc2');
     expect(isSupersededPreviewHost(AUTHORITATIVE_HOST)).toBe(false);
   });
 
