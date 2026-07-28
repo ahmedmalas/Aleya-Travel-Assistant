@@ -119,9 +119,10 @@ export type TravelTurnResult = {
   servicesToSearch: TravelServiceKind[];
   searchPerformed: boolean;
   searchSessionActive: boolean;
-  /** Structured dialogue decision for this turn (traces / tests). */
-  decision?: import('./dialogue/types').DialogueDecision;
-  trace?: import('./dialogue/types').DialogueTrace;
+  /** Structured consultant decision for this turn (traces / tests). */
+  decision?: import('./consultant/types').ConsultantTurnDecision;
+  trace?: import('./consultant/types').ConsultantTrace;
+  observation?: import('./consultant/types').ActionObservation;
 };
 
 export function createEmptyConversationState(conversationId?: string): ConversationState {

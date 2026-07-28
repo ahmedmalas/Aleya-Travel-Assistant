@@ -1,11 +1,11 @@
 /**
- * Travel Understanding Engine + Conversational Consultant (schema v5)
+ * Travel Understanding Engine + Consultant Agent (schema v5)
  *
- * Sole production dialogue path:
- *   normalize → dialogue orchestration (context → goals → decide → execute → NLG)
+ * Sole production conversation path:
+ *   normalize → consultant agent loop (context → reason → validate → execute → respond)
  *
  * Internal tools (do not speak for Aleya):
- *   extract / assign / merge / clarify / search-projection / search memory
+ *   extract / assign / merge / clarify / search-projection / search session
  */
 
 export { sendTravelMessage, processTravelTurn, resetConversationRuntime } from './pipeline';
@@ -43,21 +43,22 @@ export type {
   LiveSearchResult,
 } from './search-projection';
 export {
-  runDialogueTurn,
-  resetDialogueRuntime,
-  getDialogueTraces,
-  clearDialogueTraces,
-  getSearchMemory,
+  runConsultantTurn,
+  resetConsultantRuntime,
+  getConsultantTraces,
+  clearConsultantTraces,
+  getSearchSession,
   isSearchActive,
   assertHumanReply,
-} from './dialogue';
+} from './consultant';
 export type {
-  DialogueDecision,
-  DialogueTurnResult,
-  DialogueTrace,
-  UserGoal,
-  ConversationContext,
-} from './dialogue';
+  ConsultantTurnDecision,
+  ConsultantTurnResult,
+  ConsultantTrace,
+  ConsultantGoal,
+  ConsultantContext,
+  ActionObservation,
+} from './consultant';
 export {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
