@@ -14,9 +14,9 @@ export const AUTHORITATIVE_HOST =
   'travel-buddy-assistant-1kemub2h8-ahmedmalas-projects.vercel.app';
 
 /**
- * Immutable hostname markers known to be obsolete (blocklist).
- * Kept for explicit documentation and tests; broader vercel preview
- * quarantine also blocks any non-authoritative travel-buddy preview host.
+ * Technical host-marker blocklist for tip builds that include SupersededPreviewGate.
+ * These strings are NOT test URLs and MUST NOT be used as verification links.
+ * Tip-side gate cannot alter immutable deploys that predate the gate.
  */
 export const SUPERSEDED_HOST_MARKERS = [
   '40wg4wfhx',
