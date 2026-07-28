@@ -7,15 +7,21 @@
 
 | Field | Value |
 |---|---|
-| Immutable URL | _filled after deploy_ |
-| Deployment ID | _filled after deploy_ |
+| Immutable URL | https://travel-buddy-assistant-lmttqef7g-ahmedmalas-projects.vercel.app/ |
+| Deployment ID | `dpl_BLKENwnWiLBAmDDoRwBhQ5UBj1Ps` |
 | Feature Git SHA | `972c310` |
-| Dist Git SHA | _filled after dist commit_ |
-| Loaded chunk | _filled after build_ |
+| Dist Git SHA | `40a9212` |
+| Loaded chunk | `travel-conversation-SFityODo.js` |
 | PR | [#29](https://github.com/ahmedmalas/Aleya-Travel-Assistant/pull/29) (Draft) |
-| Timestamp (UTC) | _filled after deploy_ |
+| Timestamp (UTC) | 2026-07-28T11:19:39Z |
 
 Before trusting any transcript, confirm the page shows matching **deploymentId / buildGitSha / loadedTravelChunk**.
+
+Expected on-page identity:
+```text
+buildGitSha: 972c310
+loadedTravelChunk: travel-conversation-SFityODo.js
+```
 
 ## Superseded — do not use for tip verification
 
@@ -23,6 +29,7 @@ Before trusting any transcript, confirm the page shows matching **deploymentId /
 |---|---|---|---|---|
 | `…40wg4wfhx…` | `dpl_EBo8RchGLXLZfjXNwF8dJgLQsuNN` | `travel-conversation-B6zQeu8l.js` | `18511d7` / `2f6f5bf` | Turn-evidence preview; no contextual reference layer |
 | `…q3fvjxed4…` | `dpl_F9DKVBfhyoVANg4MhcP5CmtB2szi` | `travel-conversation-C_wkFoyi.js` | `cf59dc9` / `ca5f678` | Search-launch workspace; contextual references still failed |
+| `…` tip before force-add | `dpl` from `aebba7f` | broken index without `SFityODo` assets | `aebba7f` | Incomplete dist push (gitignore); superseded by `40a9212` |
 
 Branch alias `…git-cursor-5147e3…` moves on every tip push — never treat it as a permanent pin.
 
