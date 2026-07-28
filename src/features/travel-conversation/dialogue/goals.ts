@@ -17,6 +17,15 @@ function has(text: string, re: RegExp) {
   return re.test(text);
 }
 
+function asFocus(
+  service: string | undefined,
+): GoalAnalysis['focusService'] {
+  if (service === 'flights' || service === 'accommodation' || service === 'car_hire') {
+    return service;
+  }
+  return undefined;
+}
+
 /**
  * Context-aware goal understanding — uses full conversation context, not only
  * the latest sentence in isolation.
@@ -97,7 +106,7 @@ export function analyzeGoals(ctx: ConversationContext): GoalAnalysis {
 
   if (has(lower, /\b(?:cheaper|less expensive|budget|good value|not too expensive|not ridiculously expensive)\b/)) {
     goals.add('refine_results');
-    if (!focusService) focusService = ctx.searchSession?.focusService ?? 'accommodation';
+    if (!focusService) focusService = asFocus(ctx.searchSession?.focusService) ?? 'accommodation';
     if (focusService === 'accommodation') {
       searchFilters.accommodation = { ...searchFilters.accommodation, style: 'value' };
     }
@@ -168,12 +177,13 @@ export function analyzeGoals(ctx: ConversationContext): GoalAnalysis {
       if (svc?.startsWith('hotel')) resultService = 'accommodation';
       else if (svc?.startsWith('flight')) resultService = 'flights';
       else if (svc?.startsWith('car')) resultService = 'car_hire';
-      else if (ctx.searchSession?.focusService) resultService = ctx.searchSession.focusService;
-      else resultService = 'accommodation';
+      else if (asFocus(ctx.searchSession?.focusService)) {
+        resultService = asFocus(ctx.searchSession?.focusService);
+      } else resultService = 'accommodation';
     } else if (bareOrdinal) {
       const word = lower.match(/\b(first|second|third|1st|2nd|3rd)\b/)?.[1];
       resultOrdinal = word ? map[word] : undefined;
-      resultService = ctx.searchSession?.focusService ?? 'accommodation';
+      resultService = asFocus(ctx.searchSession?.focusService) ?? 'accommodation';
     }
     if (has(lower, /\bbetter flights?|earlier\b/)) {
       goals.add('refine_results');
