@@ -24,12 +24,18 @@ describe('previewTipPin', () => {
     ).toBe(true);
   });
 
-  it('does not flag the branch alias or unrelated hosts', () => {
+  it('flags the moving branch alias so Preview-button tips redirect to the pin', () => {
     expect(
       isSupersededPreviewHost(
         'travel-buddy-assistant-ai-git-cursor-5147e3-ahmedmalas-projects.vercel.app',
       ),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it('does not flag production or local hosts', () => {
+    expect(isSupersededPreviewHost('travel-buddy-assistant-ai.vercel.app')).toBe(
+      false,
+    );
     expect(isSupersededPreviewHost('localhost')).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Preview tip pin — single source of truth for PR #29 verification.
- * Baked into the bundle at build time. Update when tip redeploys.
+ * Baked into the bundle at build time. Update when the sole tip changes.
  */
 
 /** Sole authoritative immutable preview for personal testing. */
@@ -9,14 +9,14 @@ export const AUTHORITATIVE_TEST_URL =
 
 export const AUTHORITATIVE_DEPLOYMENT_ID = 'dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc';
 
-/** Hostname slug of the authoritative immutable host (no protocol). */
+/** Hostname of the authoritative immutable host (no protocol). */
 export const AUTHORITATIVE_HOST =
   'travel-buddy-assistant-1kemub2h8-ahmedmalas-projects.vercel.app';
 
 /**
- * Immutable hostname markers that must never be used for tip verification.
- * Matching hosts show a full-page DO-NOT-TEST gate when this tip code is loaded.
- * (Obsolete deploys that predate this gate cannot self-warn — delete them in Vercel.)
+ * Immutable hostname markers known to be obsolete (blocklist).
+ * Kept for explicit documentation and tests; broader vercel preview
+ * quarantine also blocks any non-authoritative travel-buddy preview host.
  */
 export const SUPERSEDED_HOST_MARKERS = [
   '40wg4wfhx',
@@ -32,10 +32,18 @@ export const SUPERSEDED_HOST_MARKERS = [
   'c2qc3eo70',
 ] as const;
 
+const PRODUCTION_HOSTS = new Set([
+  'travel-buddy-assistant-ai.vercel.app',
+  'www.travel-buddy-assistant-ai.vercel.app',
+]);
+
 export function isSupersededPreviewHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
   if (!host.includes('vercel.app')) return false;
   if (host === AUTHORITATIVE_HOST) return false;
-  // Branch alias moves — not treated as superseded by marker, but tip pin prefers immutable.
+  if (PRODUCTION_HOSTS.has(host)) return false;
+  if (host.includes('-git-main-')) return false;
+  // Quarantine every other project preview host (immutable + branch alias).
+  if (host.includes('travel-buddy-assistant')) return true;
   return SUPERSEDED_HOST_MARKERS.some((marker) => host.includes(marker));
 }
