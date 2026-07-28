@@ -141,11 +141,14 @@ describe('Multi-goal search authorisation', () => {
     expect(second.activateSearch).toBe(true);
     expect(second.searchSessionActive).toBe(true);
     expect(second.reply).toMatch(/added/i);
-    expect(second.reply).toMatch(/starting the search|searching|search now/i);
+    expect(second.reply).toMatch(/ready|opened/i);
+    expect(second.reply).not.toMatch(/I’m searching flights, accommodation, and car hire now/i);
     expect(second.reply).not.toMatch(/whenever you.?re ready/i);
     expect(second.progression.trace.executedResults.some((r) => r.type === 'start_search' && r.ok)).toBe(
       true,
     );
+    expect(second.runtimeEvidence.readyForUserServices.length + second.runtimeEvidence.openedServices.length).toBeGreaterThan(0);
+    expect(second.progression.provider.launchResults?.length).toBe(3);
   });
 
   it('acceptance after offer starts search without asking again', () => {

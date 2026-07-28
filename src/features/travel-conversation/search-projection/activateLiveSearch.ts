@@ -1,84 +1,78 @@
 /**
- * Single entry for live search activation.
- * Projects canonical state once, then opens every selected provider search
- * from that same payload. No manual re-entry.
+ * Search activation entry — browser-safe provider launch.
+ *
+ * Replaces the deferred multi-popup loop. At most one automatic open from the
+ * current user gesture; remaining providers stay ready_for_user.
  */
 
 import type { ConversationState, TravelServiceKind } from '../types';
-import { projectCanonicalSearch } from './projectFromCanonical';
 import {
-  buildProviderSearches,
-  type ProviderHandoffOptions,
-} from './providerHandoff';
+  launchProviderSearches,
+  type LaunchProviderOptions,
+} from './providerLaunch';
 import type { LiveSearchResult } from './types';
 
-let activationCount = 0;
-let lastActivationId: number | null = null;
-
-function openUrl(url: string): void {
-  if (typeof window === 'undefined') return;
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
-export function getLiveSearchActivationCount(): number {
-  return activationCount;
-}
-
-export function getLastLiveSearchActivationId(): number | null {
-  return lastActivationId;
-}
-
-export function resetLiveSearchActivationTracking(): void {
-  activationCount = 0;
-  lastActivationId = null;
-}
+export {
+  getLiveSearchActivationCount,
+  getLastLiveSearchActivationId,
+  resetLiveSearchActivationTracking,
+  getActiveSearchLaunchSession,
+  launchProviderSearches,
+  openProviderLaunchAction,
+  tryOpenProviderUrl,
+  defaultProviderLauncher,
+  describeProviderLaunchReply,
+  summarizeLaunchResults,
+  providerDisplayName,
+} from './providerLaunch';
+export type {
+  LaunchProviderOptions,
+  ProviderLaunchBatch,
+} from './providerLaunch';
 
 /**
- * Run live provider searches from canonical conversation state.
- * Projects once; every service shares origin/destination/dates/travellers.
+ * Run live provider search activation from canonical state.
+ * Does not fire multiple popups. Prefer reading `launchResults`.
  */
 export function runLiveSearchFromState(
   state: ConversationState,
   services: TravelServiceKind[],
-  options?: ProviderHandoffOptions & { openWindows?: boolean },
+  options?: LaunchProviderOptions & { openWindows?: boolean },
 ): LiveSearchResult {
-  const projection = projectCanonicalSearch(state);
-  const openWindows = options?.openWindows !== false;
-  const target = services.length > 0 ? services : projection.services;
+  const allowAutoOpen = options?.openWindows !== false;
+  // At most one automatic open — never a multi-popup loop.
+  const openFirst = allowAutoOpen && options?.openFirst !== false;
 
-  const handoff = buildProviderSearches(projection, target, {
+  const batch = launchProviderSearches(state, services, {
     currency: options?.currency,
     cabinClass: options?.cabinClass,
-    accommodationQuery:
-      options?.accommodationQuery ?? state.accommodationArea?.value,
+    accommodationQuery: options?.accommodationQuery,
+    openFirst,
   });
 
-  activationCount += 1;
-  const activationId = activationCount;
-  lastActivationId = activationId;
-
-  if (openWindows) {
-    for (const search of handoff.searches) {
-      openUrl(search.url);
-    }
-  }
-
-  if (
-    openWindows &&
-    typeof document !== 'undefined' &&
-    handoff.searches.some((s) => s.service === 'flights')
-  ) {
-    document.getElementById('flight-search')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
-  }
-
   return {
-    projection,
-    opened: handoff.searches.map((s) => s.service),
-    providerSearches: handoff.searches,
-    unavailable: handoff.unavailable,
-    activationId,
+    projection: batch.projection,
+    opened: batch.results
+      .filter((r) => r.status === 'opened')
+      .map((r) => r.service),
+    providerSearches: batch.results
+      .filter((r) => r.url)
+      .map((r) => ({
+        service: r.service,
+        url: r.url,
+        destinationLabel: r.destinationLabel,
+        departDate: r.departDate,
+        returnDate: r.returnDate,
+        adults: batch.projection.adults,
+        travellerSource: batch.projection.travellerSource,
+      })),
+    unavailable: batch.results
+      .filter((r) => r.status === 'failed')
+      .map((r) => ({
+        service: r.service,
+        reason: r.reason ?? 'unavailable',
+      })),
+    activationId: batch.activationId,
+    launchResults: batch.results,
   };
 }

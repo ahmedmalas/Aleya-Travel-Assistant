@@ -84,12 +84,18 @@ export type ProviderObservation = {
   continueSearch: boolean;
   servicesToSearch: TravelService[];
   resultsSummary?: string;
+  /** Verified provider launch outcomes — required before describing search start. */
+  launchResults?: import('../search-projection/types').ProviderLaunchResult[];
 };
 
 export type ConversationalStep =
   | { kind: 'ask_missing_field'; field: MissingRequirement }
   | { kind: 'offer_search' }
-  | { kind: 'report_search_started'; services: TravelService[] }
+  | {
+      kind: 'report_search_started';
+      services: TravelService[];
+      launchResults: import('../search-projection/types').ProviderLaunchResult[];
+    }
   | { kind: 'report_search_refined'; services: TravelService[] }
   | { kind: 'answer_then_continue'; answer: string; continueWith?: MissingRequirement | null }
   | { kind: 'acknowledge_and_continue'; note: string; continueWith: MissingRequirement | null };

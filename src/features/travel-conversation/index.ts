@@ -42,6 +42,12 @@ export {
   getLiveSearchActivationCount,
   getLastLiveSearchActivationId,
   resetLiveSearchActivationTracking,
+  getActiveSearchLaunchSession,
+  launchProviderSearches,
+  openProviderLaunchAction,
+  defaultProviderLauncher,
+  describeProviderLaunchReply,
+  summarizeLaunchResults,
 } from './search-projection';
 export type {
   CanonicalSearchProjection,
@@ -50,7 +56,11 @@ export type {
   TravellerCountSource,
   ProviderSearchOpen,
   LiveSearchResult,
+  ProviderLaunchResult,
+  ProviderLaunchStatus,
+  SearchLaunchSession,
 } from './search-projection';
+
 export {
   runConversationTurn,
   getConversationTraces,

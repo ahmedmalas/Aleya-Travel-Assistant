@@ -185,7 +185,15 @@ describe('canonical search projection — activation', () => {
     });
     expect(first.activationId).toBe(1);
     expect(getLiveSearchActivationCount()).toBe(1);
-    expect(first.opened).toEqual(['flights', 'accommodation', 'car_hire']);
+    expect(first.opened).toEqual([]);
+    expect(first.launchResults.map((r) => r.service)).toEqual([
+      'flights',
+      'accommodation',
+      'car_hire',
+    ]);
+    expect(
+      first.launchResults.every((r) => r.status === 'ready_for_user'),
+    ).toBe(true);
     expect(first.projection.origin.airportCode).toBe('SYD');
     expect(first.projection.destination.airportCode).toBe('MEL');
 
@@ -193,7 +201,8 @@ describe('canonical search projection — activation', () => {
     const second = runLiveSearchFromState(state, ['flights'], { openWindows: false });
     expect(second.activationId).toBe(2);
     expect(getLiveSearchActivationCount()).toBe(2);
-    expect(second.opened).toEqual(['flights']);
+    expect(second.opened).toEqual([]);
+    expect(second.launchResults.map((r) => r.service)).toEqual(['flights']);
   });
 
   it('8. no manual re-entry is required — provider URLs are fully populated from state', () => {

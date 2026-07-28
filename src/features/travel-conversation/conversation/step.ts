@@ -35,6 +35,7 @@ export function decideNextStep(input: {
     return {
       kind: 'report_search_started',
       services: provider.servicesToSearch,
+      launchResults: provider.launchResults ?? [],
     };
   }
 

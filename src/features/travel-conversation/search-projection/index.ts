@@ -1,13 +1,11 @@
 /**
- * Canonical-state → live-search projection (rebuild).
+ * Canonical-state → live-search projection + browser-safe launch.
  *
  * Architecture:
  *   ConversationState
  *     → projectCanonicalSearch()     // sole authority
  *     → buildProviderSearches()      // flights / hotels / cars
- *     → runLiveSearchFromState()     // one activation
- *
- * Parser, extraction, merge, and post-requirements routing are out of scope.
+ *     → launchProviderSearches()     // at most one auto-open + ready_for_user
  */
 
 export {
@@ -22,7 +20,16 @@ export {
   getLiveSearchActivationCount,
   getLastLiveSearchActivationId,
   resetLiveSearchActivationTracking,
+  getActiveSearchLaunchSession,
+  launchProviderSearches,
+  openProviderLaunchAction,
+  tryOpenProviderUrl,
+  defaultProviderLauncher,
+  describeProviderLaunchReply,
+  summarizeLaunchResults,
+  providerDisplayName,
 } from './activateLiveSearch';
+export type { LaunchProviderOptions, ProviderLaunchBatch } from './activateLiveSearch';
 export type {
   CanonicalSearchProjection,
   SearchFormProjection,
@@ -30,4 +37,7 @@ export type {
   TravellerCountSource,
   ProviderSearchOpen,
   LiveSearchResult,
+  ProviderLaunchResult,
+  ProviderLaunchStatus,
+  SearchLaunchSession,
 } from './types';

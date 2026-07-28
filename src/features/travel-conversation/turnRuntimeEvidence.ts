@@ -4,6 +4,9 @@
  * Remove after personal verification.
  */
 
+import type { TravelServiceKind } from './types';
+import type { ProviderLaunchResult } from './search-projection/types';
+
 export type TurnRuntimeEvidence = {
   hostname: string;
   buildGitSha: string;
@@ -20,6 +23,19 @@ export type TurnRuntimeEvidence = {
   hasP8G9cQpqScript: boolean;
   consultantChunkLoaded: boolean;
   capturedAt: string;
+  /** Search-launch observation (authorised-search turns). */
+  requestedServices: TravelServiceKind[];
+  projectedProviderActions: Array<{
+    service: TravelServiceKind;
+    provider: string;
+    url: string;
+  }>;
+  providerLaunchResults: ProviderLaunchResult[];
+  openedServices: TravelServiceKind[];
+  readyForUserServices: TravelServiceKind[];
+  blockedServices: TravelServiceKind[];
+  failedServices: TravelServiceKind[];
+  responseObservation: string | null;
 };
 
 function resolveTravelChunkFromModuleUrl(): string {
@@ -29,7 +45,6 @@ function resolveTravelChunkFromModuleUrl(): string {
     if (match?.[0]) return match[0];
     const file = url.split('/').pop();
     if (file?.includes('travel-conversation')) return file.split('?')[0] ?? file;
-    // Dev: module path rather than hashed chunk
     if (url.includes('travel-conversation')) return url.split('/').slice(-3).join('/');
   } catch {
     // ignore
@@ -48,9 +63,7 @@ function resolveGitSha(): string {
 function listScriptUrls(): string[] {
   if (typeof document === 'undefined') return [];
   try {
-    const fromDom = [...document.scripts]
-      .map((s) => s.src)
-      .filter(Boolean);
+    const fromDom = [...document.scripts].map((s) => s.src).filter(Boolean);
     const fromPerf =
       typeof performance !== 'undefined'
         ? performance
@@ -98,6 +111,18 @@ export function captureTurnRuntimeEvidence(input: {
   replySource: 'generateResponse';
   nextRequiredField: string | null;
   generatedReply: string;
+  requestedServices?: TravelServiceKind[];
+  projectedProviderActions?: Array<{
+    service: TravelServiceKind;
+    provider: string;
+    url: string;
+  }>;
+  providerLaunchResults?: ProviderLaunchResult[];
+  openedServices?: TravelServiceKind[];
+  readyForUserServices?: TravelServiceKind[];
+  blockedServices?: TravelServiceKind[];
+  failedServices?: TravelServiceKind[];
+  responseObservation?: string | null;
 }): TurnRuntimeEvidence {
   const fingerprint = resolveLiveBuildFingerprint();
   const scriptUrls = listScriptUrls();
@@ -116,6 +141,14 @@ export function captureTurnRuntimeEvidence(input: {
     hasP8G9cQpqScript: scriptUrls.some((u) => /P8G9cQpq/i.test(u)),
     consultantChunkLoaded: scriptUrls.some((u) => /consultant/i.test(u)),
     capturedAt: new Date().toISOString(),
+    requestedServices: input.requestedServices ?? [],
+    projectedProviderActions: input.projectedProviderActions ?? [],
+    providerLaunchResults: input.providerLaunchResults ?? [],
+    openedServices: input.openedServices ?? [],
+    readyForUserServices: input.readyForUserServices ?? [],
+    blockedServices: input.blockedServices ?? [],
+    failedServices: input.failedServices ?? [],
+    responseObservation: input.responseObservation ?? null,
   };
 
   if (typeof window !== 'undefined') {

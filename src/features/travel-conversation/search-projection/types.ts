@@ -70,10 +70,40 @@ export type ProviderSearchOpen = {
   travellerSource: TravellerCountSource;
 };
 
+export type ProviderLaunchStatus =
+  | 'opened'
+  | 'ready_for_user'
+  | 'blocked'
+  | 'failed';
+
+/** Real provider launch outcome — never assume attempted === opened. */
+export type ProviderLaunchResult = {
+  service: TravelServiceKind;
+  provider: string;
+  url: string;
+  status: ProviderLaunchStatus;
+  reason?: string;
+  destinationLabel?: string;
+  departDate?: string;
+  returnDate?: string;
+};
+
+export type SearchLaunchSession = {
+  id: string;
+  activationId: number;
+  createdAt: string;
+  conversationId: string;
+  projection: CanonicalSearchProjection;
+  results: ProviderLaunchResult[];
+};
+
 export type LiveSearchResult = {
   projection: CanonicalSearchProjection;
+  /** @deprecated Use launchResults — never treat this as verified opens. */
   opened: TravelServiceKind[];
   providerSearches: ProviderSearchOpen[];
   unavailable: Array<{ service: TravelServiceKind; reason: string }>;
   activationId: number;
+  /** Verified launch outcomes for conversation observation + UI. */
+  launchResults: ProviderLaunchResult[];
 };

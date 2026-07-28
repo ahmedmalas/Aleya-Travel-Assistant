@@ -4,11 +4,12 @@
  * Mandatory order:
  * 1 context → 2 objective → 3 goals → 4 apply trip changes →
  * 5–6 completeness / nextRequiredField → 7 plan → 8–9 execute/observe →
+ * 9b browser-safe provider launch outcomes →
  * 10 next conversational step → 11 one natural response
  */
 
 import { normalizeInput } from '../normalize';
-import type { ConversationState } from '../types';
+import type { ConversationState, TravelServiceKind } from '../types';
 import { applyValidatedTripChanges } from './apply';
 import { calculateTripCompleteness } from './completeness';
 import { assembleContext } from './context';
@@ -28,12 +29,27 @@ import {
 import { decideNextStep } from './step';
 import { captureTurnRuntimeEvidence } from '../turnRuntimeEvidence';
 import type { TurnRuntimeEvidence } from '../turnRuntimeEvidence';
+import {
+  defaultProviderLauncher,
+  summarizeLaunchResults,
+  type ProviderLaunchResult,
+} from '../search-projection/providerLaunch';
+
+export type ProviderLauncher = (
+  state: ConversationState,
+  services: TravelServiceKind[],
+) => ProviderLaunchResult[];
 
 export function runConversationTurn(input: {
   message: string;
   previousState: ConversationState;
   now?: Date;
   commitTranscript?: boolean;
+  /**
+   * Browser-safe provider launcher. Defaults to opening at most the first
+   * provider from the current call stack; remaining stay ready_for_user.
+   */
+  launchProviders?: ProviderLauncher;
 }): ConversationTurnResult {
   const now = input.now ?? new Date();
   const normalized = normalizeInput(input.message);
@@ -62,8 +78,12 @@ export function runConversationTurn(input: {
   let state = applied.state;
   const applyResults = applied.results;
 
-  const servicesJustAdded = state.services.filter((s) => !stateBefore.services.includes(s));
-  const servicesJustRemoved = stateBefore.services.filter((s) => !state.services.includes(s));
+  const servicesJustAdded = state.services.filter(
+    (s) => !stateBefore.services.includes(s),
+  );
+  const servicesJustRemoved = stateBefore.services.filter(
+    (s) => !state.services.includes(s),
+  );
   if (servicesJustAdded.length) {
     applyResults.push({
       type: 'add_services',
@@ -79,7 +99,6 @@ export function runConversationTurn(input: {
     });
   }
 
-  // Also detect services newly present vs before
   const addedServices = servicesJustAdded;
 
   // 5–6. Known / missing / nextRequiredField from canonical state after changes
@@ -103,6 +122,33 @@ export function runConversationTurn(input: {
   state = executed.state;
   const allResults = [...applyResults, ...executed.results];
 
+  // 9b. Browser-safe provider launch — real outcomes before describing search.
+  if (
+    (executed.provider.activateSearch || executed.provider.continueSearch) &&
+    executed.provider.servicesToSearch.length > 0
+  ) {
+    const launcher = input.launchProviders ?? defaultProviderLauncher;
+    const launchResults = launcher(state, executed.provider.servicesToSearch);
+    executed.provider.launchResults = launchResults;
+    const summary = summarizeLaunchResults(launchResults);
+    executed.provider.resultsSummary = [
+      summary.openedServices.length
+        ? `opened:${summary.openedServices.join(',')}`
+        : null,
+      summary.readyForUserServices.length
+        ? `ready:${summary.readyForUserServices.join(',')}`
+        : null,
+      summary.blockedServices.length
+        ? `blocked:${summary.blockedServices.join(',')}`
+        : null,
+      summary.failedServices.length
+        ? `failed:${summary.failedServices.join(',')}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join('; ');
+  }
+
   // Recompute completeness after provider mutations (e.g. flights defaulted into state)
   const completenessAfter = calculateTripCompleteness(state, getTripType());
 
@@ -115,7 +161,7 @@ export function runConversationTurn(input: {
     servicesJustAdded: addedServices,
   });
 
-  // 11. Generate one natural final response (only after actions)
+  // 11. Generate one natural final response (only after actions + launch observation)
   const generated = generateResponse({
     ctx,
     state,
@@ -126,12 +172,27 @@ export function runConversationTurn(input: {
   });
   const reply = generated.text;
 
+  const launchResults = executed.provider.launchResults ?? [];
+  const launchSummary = summarizeLaunchResults(launchResults);
+
   const runtimeEvidence: TurnRuntimeEvidence = captureTurnRuntimeEvidence({
     conversationSessionId: state.conversationId,
     turnNumber: state.turnCount,
     replySource: generated.replySource,
     nextRequiredField: completenessAfter.nextRequiredField?.id ?? null,
     generatedReply: reply,
+    requestedServices: executed.provider.servicesToSearch,
+    projectedProviderActions: launchResults.map((r) => ({
+      service: r.service,
+      provider: r.provider,
+      url: r.url,
+    })),
+    providerLaunchResults: launchResults,
+    openedServices: launchSummary.openedServices,
+    readyForUserServices: launchSummary.readyForUserServices,
+    blockedServices: launchSummary.blockedServices,
+    failedServices: launchSummary.failedServices,
+    responseObservation: executed.provider.resultsSummary ?? null,
   });
 
   if (input.commitTranscript !== false) {

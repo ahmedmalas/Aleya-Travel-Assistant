@@ -8,9 +8,7 @@ import { VisaEntryPanel } from './VisaEntryPanel';
 import { WelcomeAuthGate } from './WelcomeAuthGate';
 import {
   projectCanonicalSearch,
-  runLiveSearchFromState,
   useTravelConversation,
-  type TravelServiceKind,
 } from '../features/travel-conversation';
 import { TripStoreProvider } from '../store/TripStoreContext';
 import { detectUserCurrency } from '../lib/currency';
@@ -65,26 +63,6 @@ function CustomerApp() {
   const showFlights = () => {
     setWorkspace(null);
     window.setTimeout(() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-  };
-
-  /**
-   * Live search handoff from chat — projects canonical requirements and opens
-   * provider search for every selected service. No manual re-entry.
-   */
-  const activateSearchFromChat = (services?: TravelServiceKind[]) => {
-    setWorkspace(null);
-    window.setTimeout(() => {
-      const target =
-        services && services.length > 0
-          ? services
-          : travelState.services.length > 0
-            ? travelState.services
-            : (['flights'] as TravelServiceKind[]);
-      runLiveSearchFromState(travelState, target, {
-        currency: preferredCurrency,
-        cabinClass,
-      });
-    }, 50);
   };
 
   const showAssistant = () => {
@@ -157,7 +135,7 @@ function CustomerApp() {
               <h2 className="mt-5 text-4xl font-black tracking-tight text-white md:text-6xl">Plan your entire journey with Aleya</h2>
               <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">Ask naturally, build an itinerary, compare ideas, work within your budget and organise every part of your trip in one conversation.</p>
             </div>
-            <AiPlanningPanel onActivateSearch={activateSearchFromChat} />
+            <AiPlanningPanel />
           </div>
         </section>
 

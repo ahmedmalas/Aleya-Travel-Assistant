@@ -5,6 +5,7 @@
  */
 
 import type { ConversationState } from '../types';
+import { describeProviderLaunchReply } from '../search-projection/providerLaunch';
 import type {
   ConversationContext,
   ConversationalStep,
@@ -86,17 +87,12 @@ export function generateResponse(input: {
 
   switch (step.kind) {
     case 'report_search_started': {
-      const services = step.services.map(serviceLabel);
-      const route =
-        from && to && when
-          ? ` for ${from} to ${to} on ${when}`
-          : from && to
-            ? ` for ${from} to ${to}`
-            : '';
+      // Reply must describe verified launch outcomes — never planned services alone.
+      const launchReply = describeProviderLaunchReply(step.launchResults);
       if (added.length) {
-        reply = `Absolutely — I’ve added ${joinList(added)}. I’m starting the search now${route}.`;
+        reply = `Absolutely — I’ve added ${joinList(added)}. ${launchReply}`;
       } else {
-        reply = `Great — I’m searching ${joinList(services)} now${route}.`;
+        reply = launchReply;
       }
       break;
     }
