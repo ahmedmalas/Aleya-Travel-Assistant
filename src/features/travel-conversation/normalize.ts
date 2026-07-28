@@ -32,6 +32,13 @@ export function normalizeInput(raw: string): string {
     [/\bsydny\b/gi, 'Sydney'],
     [/\bmelborne\b/gi, 'Melbourne'],
     [/\bgoldcoast\b/gi, 'Gold Coast'],
+    [/\bhmilton\s+islands?\b/gi, 'Hamilton Island'],
+    [/\bhmailton\s+islands?\b/gi, 'Hamilton Island'],
+    [/\bhamilton\s+islands\b/gi, 'Hamilton Island'],
+    [/\bchnage\b/gi, 'change'],
+    [/\bned\b/gi, 'need'],
+    [/\bactvities\b/gi, 'activities'],
+    [/\bcar\s+hire\d+\b/gi, 'car hire'],
   ];
   for (const [re, repl] of spelling) {
     text = text.replace(re, repl);
