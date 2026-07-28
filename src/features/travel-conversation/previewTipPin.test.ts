@@ -7,11 +7,16 @@ import {
 
 describe('previewTipPin', () => {
   it('keeps the sole tip URL on the authoritative host', () => {
-    expect(AUTHORITATIVE_TEST_URL).toContain('58jmbjjc2');
+    expect(AUTHORITATIVE_TEST_URL).toContain('9bxidvrun');
     expect(isSupersededPreviewHost(AUTHORITATIVE_HOST)).toBe(false);
   });
 
   it('flags known superseded immutable host markers', () => {
+    expect(
+      isSupersededPreviewHost(
+        'travel-buddy-assistant-58jmbjjc2-ahmedmalas-projects.vercel.app',
+      ),
+    ).toBe(true);
     expect(
       isSupersededPreviewHost(
         'travel-buddy-assistant-40wg4wfhx-ahmedmalas-projects.vercel.app',

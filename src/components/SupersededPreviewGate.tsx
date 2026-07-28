@@ -44,7 +44,7 @@ export function SupersededPreviewGate({ children }: { children: ReactNode }) {
       <p className="mt-4 font-mono text-[11px] text-rose-200/80">
         Expected host {AUTHORITATIVE_HOST}
         <br />
-        Expected: buildGitSha a3765e1 · chunk DY7YtCx3 · {AUTHORITATIVE_DEPLOYMENT_ID}
+        Expected: buildGitSha ff28b5f · chunk DI1Mrvns · dpl_3TFsCybAFSJpkAGmh3eNV9hvMtWP
       </p>
     </div>
   );

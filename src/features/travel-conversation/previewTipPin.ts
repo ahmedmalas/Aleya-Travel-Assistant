@@ -5,13 +5,13 @@
 
 /** Sole authoritative immutable preview for personal testing. */
 export const AUTHORITATIVE_TEST_URL =
-  'https://travel-buddy-assistant-58jmbjjc2-ahmedmalas-projects.vercel.app/';
+  'https://travel-buddy-assistant-9bxidvrun-ahmedmalas-projects.vercel.app/';
 
-export const AUTHORITATIVE_DEPLOYMENT_ID = 'dpl_7zqcjeDzaxjQSmQdZVA7fFvnwK1H';
+export const AUTHORITATIVE_DEPLOYMENT_ID = 'dpl_3TFsCybAFSJpkAGmh3eNV9hvMtWP';
 
 /** Hostname of the authoritative immutable host (no protocol). */
 export const AUTHORITATIVE_HOST =
-  'travel-buddy-assistant-58jmbjjc2-ahmedmalas-projects.vercel.app';
+  'travel-buddy-assistant-9bxidvrun-ahmedmalas-projects.vercel.app';
 
 /**
  * Technical host-marker blocklist for tip builds that include SupersededPreviewGate.
@@ -19,6 +19,7 @@ export const AUTHORITATIVE_HOST =
  * Tip-side gate cannot alter immutable deploys that predate the gate.
  */
 export const SUPERSEDED_HOST_MARKERS = [
+  '58jmbjjc2',
   '1kemub2h8',
   '40wg4wfhx',
   'q3fvjxed4',

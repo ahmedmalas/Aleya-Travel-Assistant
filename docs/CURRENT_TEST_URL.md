@@ -3,16 +3,18 @@
 **Use this URL only.**
 
 ```text
-https://travel-buddy-assistant-58jmbjjc2-ahmedmalas-projects.vercel.app/
+https://travel-buddy-assistant-9bxidvrun-ahmedmalas-projects.vercel.app/
 ```
 
 ## Expected identity (must match before testing)
 
 | Field | Value |
 | --- | --- |
-| `buildGitSha` | `a3765e1` (feature tip; commit `4e6808f` ships the dist) |
-| `loadedTravelChunk` | `travel-conversation-DY7YtCx3.js` |
-| `deploymentId` | `dpl_7zqcjeDzaxjQSmQdZVA7fFvnwK1H` |
+| `buildGitSha` | `ff28b5f` (feature tip; commit `865495d` ships the dist) |
+| `loadedTravelChunk` | `travel-conversation-DI1Mrvns.js` |
+| `deploymentId` | `dpl_3TFsCybAFSJpkAGmh3eNV9hvMtWP` |
+| Engine | `runConversationTurn` |
+| Capability | Destination discovery on the conversation spine (schema v7) |
 
 Confirm in DevTools → Console:
 
@@ -27,7 +29,7 @@ If any field differs, **stop**. You are on the wrong deployment.
 
 - Do **not** open any other immutable `*.vercel.app` hostname for verification.
 - Do **not** use the Vercel PR “Preview” / branch-alias button as the verification pin. Prefer pasting the URL above.
-- Historical agent artifacts and superseded evidence files are not test instructions.
+- Historical tip `58jmbjjc2` (location-intelligence only, no discovery) is superseded.
 
 ## Tip-side quarantine gate
 
