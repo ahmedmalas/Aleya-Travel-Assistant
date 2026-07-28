@@ -1,13 +1,10 @@
 /**
- * Authoritative pipeline — dialogue orchestration is the sole production path.
+ * Authoritative pipeline — consultant agent loop is the sole production path.
  *
- * normalize → dialogue (context → goals → decide → execute tools → NLG)
- *
- * Tools used internally (not speaking for Aleya):
- * extract / assign / merge / clarify / search projection / search memory
+ * normalize → consultant (context → reason → validate → execute → respond)
  */
 
-import { runDialogueTurn, resetDialogueRuntime } from './dialogue';
+import { runConsultantTurn, resetConsultantRuntime } from './consultant';
 import {
   getTravelConversation,
   resetTravelConversation,
@@ -29,7 +26,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   const previous =
     input.previousState !== undefined ? input.previousState : getTravelConversation();
 
-  const result = runDialogueTurn({
+  const result = runConsultantTurn({
     message: input.message,
     previousState: previous,
     now: input.now,
@@ -55,6 +52,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     searchSessionActive: result.searchSessionActive,
     decision: result.decision,
     trace: result.trace,
+    observation: result.observation,
   };
 }
 
@@ -66,8 +64,8 @@ export function sendTravelMessage(
 }
 
 export function resetConversationRuntime(): ConversationState {
-  resetDialogueRuntime();
+  resetConsultantRuntime();
   return resetTravelConversation();
 }
 
-export { createEmptyConversationState, resetDialogueRuntime };
+export { createEmptyConversationState, resetConsultantRuntime };

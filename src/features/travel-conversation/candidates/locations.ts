@@ -157,6 +157,13 @@ export function extractLocationCandidates(text: string): LocationCandidate[] {
         ),
         cue: 'plan-place',
       },
+      {
+        re: new RegExp(
+          `\\b(?:look(?:ing)?\\s+at|let'?s\\s+look\\s+at)\\s+(?:(?:a|the|our|my)\\s+)?${place}\\b`,
+          'i',
+        ),
+        cue: 'look-at-place',
+      },
       { re: new RegExp(`\\bi\\s+want\\s+${place}\\b`, 'i'), cue: 'i-want-place' },
       { re: new RegExp(`\\bvisit(?:ing)?\\s+${place}\\b`, 'i'), cue: 'visit' },
     ];
