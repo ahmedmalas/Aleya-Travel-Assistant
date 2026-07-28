@@ -55,34 +55,10 @@ export type ReturnDate = {
 
 export type ClarificationField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
 
-/**
- * Base message classes from classify. Post-requirements decisions may remap
- * natural approvals to start_search before compose.
- */
-export type MessageClass =
-  | 'greeting'
-  | 'thanks'
-  | 'new_conversation'
-  | 'clarification_answer'
-  | 'travel_request'
-  | 'explicit_change'
-  | 'explicit_removal'
-  | 'summary'
-  | 'final_confirmation'
-  | 'start_search'
-  | 'booking_generation'
-  | 'itinerary_generation'
-  | 'pricing_request'
-  | 'hotel_recommendation'
-  | 'flight_recommendation'
-  | 'decline_search'
-  | 'rejection'
-  | 'general_conversation';
-
-/** Readiness only — not a conversation controller. */
+/** Readiness metadata for the Saved Requirements panel — not a dialogue controller. */
 export type ConversationPhase = 'requirements' | 'ready' | 'locked';
 
-/** Last assistant-offered action — enables human continuity. */
+/** Last assistant-offered action — used only as conversation context. */
 export type AssistantOffer = {
   kind: 'start_search';
   atTurn: number;
@@ -124,7 +100,6 @@ export type TravelPatch = {
   preferencesAdd?: string[];
   explicitChanges: string[];
   clearFields: string[];
-  messageClass?: MessageClass;
 };
 
 export type Clarification = {
@@ -137,10 +112,16 @@ export type TravelTurnResult = {
   state: ConversationState;
   reply: string;
   clarification: Clarification;
-  /** True only on the turn that starts live search. */
+  /** True only when a brand-new live search session starts. */
   activateSearch: boolean;
+  /** True when refining/refreshing an existing search session. */
+  continueSearch: boolean;
   servicesToSearch: TravelServiceKind[];
   searchPerformed: boolean;
+  searchSessionActive: boolean;
+  /** Structured dialogue decision for this turn (traces / tests). */
+  decision?: import('./dialogue/types').DialogueDecision;
+  trace?: import('./dialogue/types').DialogueTrace;
 };
 
 export function createEmptyConversationState(conversationId?: string): ConversationState {

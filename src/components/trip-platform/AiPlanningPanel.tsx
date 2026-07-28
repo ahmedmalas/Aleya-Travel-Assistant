@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
+  isSearchActive,
   resetTravelConversation,
   sendTravelMessage,
   useTravelConversation,
@@ -46,7 +47,7 @@ const STARTERS = [
 ];
 
 export type AiPlanningPanelProps = {
-  /** Called once when the engine decides start_search for this turn. */
+  /** Called when a search session starts or continues. */
   onActivateSearch?: (services: TravelServiceKind[]) => void;
 };
 
@@ -70,7 +71,8 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
   const searchReady =
-    travelState.phase === 'ready' || travelState.phase === 'locked';
+    (travelState.phase === 'ready' || travelState.phase === 'locked') && !isSearchActive();
+  const sessionActive = isSearchActive();
 
   /** Keep the user in chat — scroll only inside the chat pane, never the page. */
   const scrollChatToEnd = () => {
@@ -84,6 +86,18 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     window.setTimeout(scrollChatToEnd, 0);
   };
 
+  const runEngineTurn = (request: string) => {
+    const result = sendTravelMessage({
+      message: request,
+      travellerName,
+    });
+    if (result.activateSearch || result.continueSearch) {
+      onActivateSearch?.(result.servicesToSearch);
+    }
+    reply(result.reply);
+    return result;
+  };
+
   const sendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
@@ -95,15 +109,7 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     setBusy(true);
 
     try {
-      const result = sendTravelMessage({
-        message: request,
-        travellerName,
-      });
-
-      if (result.activateSearch) {
-        onActivateSearch?.(result.servicesToSearch);
-      }
-      reply(result.reply);
+      runEngineTurn(request);
     } catch (error) {
       reply(error instanceof Error ? error.message : 'Something went wrong while processing your request.');
     } finally {
@@ -126,6 +132,17 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
 
       <RequirementsSummary />
 
+      {sessionActive ? (
+        <div
+          className="border-b border-white/10 bg-emerald-950/30 px-5 py-2 md:px-7"
+          data-testid="search-session-active-banner"
+        >
+          <p className="text-xs font-medium text-emerald-200">
+            Live search in progress — ask naturally to refine hotels, flights, or cars.
+          </p>
+        </div>
+      ) : null}
+
       <div
         ref={chatScrollRef}
         className="max-h-[680px] min-h-[420px] space-y-5 overflow-y-auto px-4 py-6 md:px-7"
@@ -133,10 +150,14 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
         data-testid="aleya-chat-scroll"
       >
         {messages.map((message) => (
-          <article key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <article
+            key={message.id}
+            data-testid={message.role === 'aleya' ? 'aleya-message' : 'user-message'}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div className={`max-w-3xl ${message.role === 'user' ? 'rounded-3xl rounded-br-md bg-sky-400 px-5 py-3 text-slate-950' : 'rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-5 py-4 text-slate-100'}`}>
               {message.role === 'aleya' ? <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Aleya</p> : null}
-              <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
+              <p className="whitespace-pre-wrap text-sm leading-6" data-testid="chat-bubble-text">{message.text}</p>
               {message.plan ? (
                 <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -169,11 +190,24 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
           <PrimaryButton
             type="button"
             data-testid="continue-to-search"
-            onClick={() =>
-              onActivateSearch?.(
-                travelState.services.length > 0 ? travelState.services : ['flights'],
-              )
-            }
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              try {
+                setMessages((current) => [
+                  ...current,
+                  {
+                    id: createId(),
+                    role: 'user',
+                    text: 'Yes please',
+                    createdAt: new Date().toISOString(),
+                  },
+                ]);
+                runEngineTurn('Yes please');
+              } finally {
+                setBusy(false);
+              }
+            }}
           >
             Continue to search
           </PrimaryButton>

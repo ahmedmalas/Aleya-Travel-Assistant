@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { resetDialogueRuntime } from './dialogue/runtime';
 import type { ConversationState } from './types';
 import {
   CONVERSATION_SCHEMA_VERSION,
@@ -133,6 +134,7 @@ export function resetTravelConversation(): ConversationState {
       // ignore
     }
   }
+  resetDialogueRuntime();
   hydrated = true;
   emit();
   return memoryState;

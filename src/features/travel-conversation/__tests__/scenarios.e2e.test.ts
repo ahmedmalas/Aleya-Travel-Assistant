@@ -103,13 +103,13 @@ describe('Scenario 3 — Missing origin clarification', () => {
       isoDate: '2026-08-28',
     });
     expect(first.state.pendingClarification).toBe('origin');
-    expect(first.reply).toMatch(/Where will you be departing from/i);
+    expect(first.reply).toMatch(/travelling from|flying from|departure city|departing from/i);
 
     const second = sendTravelMessage({ message: 'melbourne', now: NOW });
     expect(second.state.origin?.value).toBe('Melbourne');
     expect(second.state.destination?.value).toBe('Gold Coast');
     expect(second.state.pendingClarification).not.toBe('origin');
-    expect(second.reply).not.toMatch(/Where will you be departing from/i);
+    expect(second.reply).not.toMatch(/travelling from|flying from|departure city|departing from/i);
   });
 });
 
