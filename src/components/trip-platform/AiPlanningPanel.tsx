@@ -1,21 +1,12 @@
 import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
-  getActiveSearchLaunchSession,
-  getAleyaBuildIdentity,
-  isSearchActive,
-  resetLiveSearchActivationTracking,
-  resetTravelConversation,
-  sendTravelMessageAsync,
-  tripReadyForSearch,
-  useTravelConversation,
-  type SearchLaunchSession,
-  type TurnRuntimeEvidence,
-} from '../../features/travel-conversation';
-import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
+  createInitialConversationCoreState,
+  processConversationTurn,
+  type ConversationCoreState,
+} from '../../features/conversation-core';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
-import { SearchLaunchWorkspace } from './SearchLaunchWorkspace';
 
 type ChatMessage = {
   id: string;
@@ -23,7 +14,6 @@ type ChatMessage = {
   text: string;
   createdAt: string;
   plan?: AiTravelPlan;
-  runtimeEvidence?: TurnRuntimeEvidence;
 };
 
 const PROFILE_STORAGE_KEY = 'aleya-travel:user-profile:v1';
@@ -55,83 +45,9 @@ const getTravellerName = () => {
   return fullName ? fullName.split(/\s+/)[0] : '';
 };
 
-const STARTERS = [
-  'I want to visit Japan next April',
-  'Find me affordable flights to Bali',
-  'I need a hotel in Singapore next weekend',
-  'Plan a family trip to Queenstown with car hire',
-];
-
-function TurnRuntimeDebugPanel({ evidence }: { evidence: TurnRuntimeEvidence }) {
-  return (
-    <aside
-      className="mt-3 rounded-lg border border-amber-400/50 bg-amber-950/50 px-3 py-2 font-mono text-[10px] leading-4 text-amber-50"
-      data-testid="turn-runtime-evidence"
-      aria-label="Per-turn runtime evidence"
-    >
-      <p className="mb-1 text-[9px] uppercase tracking-[0.16em] text-amber-200/80">
-        Turn runtime evidence
-      </p>
-      <p>hostname: {evidence.hostname}</p>
-      <p>buildGitSha: {evidence.buildGitSha}</p>
-      <p>loadedTravelChunk: {evidence.loadedTravelChunk}</p>
-      <p>engineEntry: {evidence.engineEntry}</p>
-      <p>conversationSessionId: {evidence.conversationSessionId}</p>
-      <p>turnNumber: {evidence.turnNumber}</p>
-      <p>replySource: {evidence.replySource}</p>
-      <p>nextRequiredField: {evidence.nextRequiredField ?? 'null'}</p>
-      <p>generatedReply: {evidence.generatedReply}</p>
-      <p>
-        activeOptionSet:{' '}
-        {evidence.activeOptionSet
-          ? evidence.activeOptionSet.options.map((o) => o.id).join(',')
-          : '—'}
-      </p>
-      <p>
-        contextualReferenceDetected:{' '}
-        {evidence.contextualReferenceDetected ? 'true' : 'false'}
-      </p>
-      <p>selectedOptionIds: {evidence.selectedOptionIds.join(',') || '—'}</p>
-      <p>excludedOptionIds: {evidence.excludedOptionIds.join(',') || '—'}</p>
-      <p>explicitSelections: {evidence.explicitSelections.join(',') || '—'}</p>
-      <p>
-        combinedValidatedSelections:{' '}
-        {evidence.combinedValidatedSelections?.ok
-          ? evidence.combinedValidatedSelections.selectedOptionIds.join(',')
-          : '—'}
-      </p>
-      <p>
-        canonicalStateBefore.services:{' '}
-        {evidence.canonicalStateBefore.services.join(',') || '—'}
-      </p>
-      <p>
-        canonicalStateAfter.services:{' '}
-        {evidence.canonicalStateAfter.services.join(',') || '—'}
-      </p>
-      <p>requestedServices: {evidence.requestedServices.join(',') || '—'}</p>
-      <p>openedServices: {evidence.openedServices.join(',') || '—'}</p>
-      <p>readyForUserServices: {evidence.readyForUserServices.join(',') || '—'}</p>
-      <p>blockedServices: {evidence.blockedServices.join(',') || '—'}</p>
-      <p>failedServices: {evidence.failedServices.join(',') || '—'}</p>
-      <p>responseObservation: {evidence.responseObservation ?? '—'}</p>
-      {evidence.deploymentIdHeader ? (
-        <p>deploymentId: {evidence.deploymentIdHeader}</p>
-      ) : null}
-      {evidence.hasP8G9cQpqScript ? (
-        <p className="text-rose-300">WARNING: P8G9cQpq script present</p>
-      ) : null}
-      {evidence.consultantChunkLoaded ? (
-        <p className="text-rose-300">WARNING: consultant asset loaded</p>
-      ) : null}
-    </aside>
-  );
-}
-
 export function AiPlanningPanel() {
   const { trip, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } =
     useSharedTripStore();
-  const travelState = useTravelConversation();
-  const buildIdentity = getAleyaBuildIdentity();
   const travellerName = getTravellerName();
   const greeting = travellerName
     ? `Hi ${travellerName}. How can I help with your travel today?`
@@ -139,7 +55,9 @@ export function AiPlanningPanel() {
   const [input, setInput] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [launchSession, setLaunchSession] = useState<SearchLaunchSession | null>(null);
+  const [coreState, setCoreState] = useState<ConversationCoreState>(() =>
+    createInitialConversationCoreState(),
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
@@ -151,15 +69,7 @@ export function AiPlanningPanel() {
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const pendingScrollMessageIdRef = useRef<string | null>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
-  const searchReady = tripReadyForSearch(travelState) && !isSearchActive();
-  const sessionActive = isSearchActive();
 
-  /**
-   * Keep the newest Aleya reply readable: align the top of that message
-   * into the chat pane. Do NOT scroll to pane.scrollHeight — that pins the
-   * viewport to the bottom of the (tall) runtime-evidence panel and pushes
-   * the answer text off-screen.
-   */
   useLayoutEffect(() => {
     const messageId = pendingScrollMessageIdRef.current;
     if (!messageId) return;
@@ -178,8 +88,6 @@ export function AiPlanningPanel() {
       return true;
     };
 
-    // First pass after commit; second after paint so evidence panel height is included
-    // without re-aiming at pane.scrollHeight.
     alignNewestReply();
     const raf = window.requestAnimationFrame(() => {
       alignNewestReply();
@@ -188,7 +96,7 @@ export function AiPlanningPanel() {
     return () => window.cancelAnimationFrame(raf);
   }, [messages]);
 
-  const reply = (text: string, plan?: AiTravelPlan, runtimeEvidence?: TurnRuntimeEvidence) => {
+  const reply = (text: string, plan?: AiTravelPlan) => {
     const id = createId();
     pendingScrollMessageIdRef.current = id;
     setMessages((current) => [
@@ -199,25 +107,21 @@ export function AiPlanningPanel() {
         text,
         createdAt: new Date().toISOString(),
         plan,
-        runtimeEvidence,
       },
     ]);
   };
 
-  const runEngineTurn = async (request: string) => {
-    const result = await sendTravelMessageAsync({
+  const runEngineTurn = (request: string) => {
+    const result = processConversationTurn({
       message: request,
-      travellerName,
+      state: coreState,
     });
-    const session = getActiveSearchLaunchSession();
-    if (result.activateSearch || result.continueSearch) {
-      setLaunchSession(session);
-    }
-    reply(result.reply, undefined, result.runtimeEvidence);
+    setCoreState(result.state);
+    reply(result.reply);
     return result;
   };
 
-  const sendMessage = async (event?: FormEvent) => {
+  const sendMessage = (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
     if (!request || busy) return;
@@ -231,7 +135,7 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
-      await runEngineTurn(request);
+      runEngineTurn(request);
     } catch (error) {
       reply(
         error instanceof Error
@@ -248,47 +152,31 @@ export function AiPlanningPanel() {
       className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30"
       aria-labelledby="aleya-assistant-title"
       data-testid="aleya-planning-panel"
+      data-conversation-boundary="conversation-core"
     >
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
         <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">
           Aleya AI Assistant
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Every request goes through the travel conversation engine — one shared requirements state
-          for chat, summary, and search. Itineraries only when you ask.
+          Conversation intelligence is being rebuilt from first principles. The previous engine has
+          been removed; this panel talks only to the empty conversation-core boundary.
         </p>
         <aside
           className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"
-          data-testid="preview-build-identity"
-          aria-label="Preview build identity"
+          data-testid="conversation-core-boundary"
+          aria-label="Conversation core boundary"
         >
-          <p>Environment: {buildIdentity.environment}</p>
-          <p>Git SHA: {buildIdentity.gitSha}</p>
-          <p>Engine: {buildIdentity.engine}</p>
-          <p>Chunk: {buildIdentity.chunk}</p>
+          <p>Boundary: conversation-core</p>
+          <p>Namespace: {coreState.namespace}</p>
+          <p>Session: {coreState.sessionId}</p>
+          <p>Persistence: disabled</p>
         </aside>
       </header>
 
       {feedback ? (
         <div className="px-5 pt-4 md:px-7">
           <StatusBanner kind="info" message={feedback} />
-        </div>
-      ) : null}
-
-      <RequirementsSummary />
-
-      {launchSession ? (
-        <SearchLaunchWorkspace session={launchSession} onSessionChange={setLaunchSession} />
-      ) : null}
-
-      {sessionActive ? (
-        <div
-          className="border-b border-white/10 bg-emerald-950/30 px-5 py-2 md:px-7"
-          data-testid="search-session-active-banner"
-        >
-          <p className="text-xs font-medium text-emerald-200">
-            Live search in progress — ask naturally to refine hotels, flights, or cars.
-          </p>
         </div>
       ) : null}
 
@@ -320,9 +208,6 @@ export function AiPlanningPanel() {
               <p className="whitespace-pre-wrap text-sm leading-6" data-testid="chat-bubble-text">
                 {message.text}
               </p>
-              {message.runtimeEvidence ? (
-                <TurnRuntimeDebugPanel evidence={message.runtimeEvidence} />
-              ) : null}
               {message.plan ? (
                 <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -391,61 +276,6 @@ export function AiPlanningPanel() {
         ))}
       </div>
 
-      {messages.length === 1 ? (
-        <div className="px-5 pb-4 md:px-7">
-          <p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-400">Try asking</p>
-          <div className="flex flex-wrap gap-2">
-            {STARTERS.map((starter) => (
-              <button
-                key={starter}
-                type="button"
-                onClick={() => {
-                  setInput(starter);
-                  window.setTimeout(() => document.getElementById('aleya-chat-input')?.focus(), 0);
-                }}
-                className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs text-slate-200 hover:border-sky-300 hover:text-white"
-              >
-                {starter}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {searchReady ? (
-        <div className="border-t border-white/10 px-5 py-3 md:px-7" data-testid="search-handoff-actions">
-          <p className="mb-2 text-xs text-slate-400">
-            Requirements are ready. Stay in chat, or continue to search when you want.
-          </p>
-          <PrimaryButton
-            type="button"
-            data-testid="continue-to-search"
-            disabled={busy}
-            onClick={() => {
-              void (async () => {
-                setBusy(true);
-                try {
-                  setMessages((current) => [
-                    ...current,
-                    {
-                      id: createId(),
-                      role: 'user',
-                      text: 'Yes please',
-                      createdAt: new Date().toISOString(),
-                    },
-                  ]);
-                  await runEngineTurn('Yes please');
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-          >
-            Continue to search
-          </PrimaryButton>
-        </div>
-      ) : null}
-
       <form onSubmit={sendMessage} className="border-t border-white/10 bg-slate-950/70 p-4 md:p-5">
         <label className="sr-only" htmlFor="aleya-chat-input">
           Message Aleya
@@ -459,7 +289,7 @@ export function AiPlanningPanel() {
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                void sendMessage();
+                sendMessage();
               }
             }}
             placeholder="Message Aleya…"
@@ -477,9 +307,7 @@ export function AiPlanningPanel() {
           type="button"
           className="mt-2 text-xs text-slate-500 hover:text-sky-200"
           onClick={() => {
-            resetTravelConversation();
-            resetLiveSearchActivationTracking();
-            setLaunchSession(null);
+            setCoreState(createInitialConversationCoreState());
             setMessages([
               {
                 id: createId(),
@@ -488,10 +316,10 @@ export function AiPlanningPanel() {
                 createdAt: new Date().toISOString(),
               },
             ]);
-            setFeedback('Started a fresh requirements conversation.');
+            setFeedback('Started a fresh empty conversation-core session.');
           }}
         >
-          Clear saved requirements
+          Reset conversation session
         </button>
       </form>
 

@@ -19,17 +19,23 @@ export {
   buildLocationAmbiguityOptionSet,
   formatAmbiguityQuestion,
   resetLocationOptionSequence,
+  type LocationAmbiguityOption,
+  type LocationAmbiguityOptionSet,
 } from './ambiguity';
-export { getDefaultLocationProvider, setDefaultLocationProviderForTests, CompositeTravelLocationProvider } from './providers/compositeProvider';
-export { LocalTravelLocationProvider } from './providers/localProvider';
-export { RemoteTravelLocationProvider, isRemoteLocationProviderEnabled } from './providers/remoteProvider';
-export { resolveAirportSync, primaryIataForPlace, iataCodesForPlace } from './airports/resolveAirport';
-export { findNearbyCurated } from './proximity/nearby';
-export { extractLocationSpans } from './conversation/buildCandidates';
 export {
-  resolveLocationsForMessageSync,
-  resolveLocationsForMessageAsync,
-  toStoredTravelLocation,
-  type LocationResolutionPass,
-} from './conversation/applyLocationResolution';
+  getDefaultLocationProvider,
+  setDefaultLocationProviderForTests,
+  CompositeTravelLocationProvider,
+} from './providers/compositeProvider';
+export { LocalTravelLocationProvider } from './providers/localProvider';
+export {
+  RemoteTravelLocationProvider,
+  isRemoteLocationProviderEnabled,
+} from './providers/remoteProvider';
+export {
+  resolveAirportSync,
+  primaryIataForPlace,
+  iataCodesForPlace,
+} from './airports/resolveAirport';
+export { findNearbyCurated } from './proximity/nearby';
 export { resolveSync, resolveAsync } from './resolve';

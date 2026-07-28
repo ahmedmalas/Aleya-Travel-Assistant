@@ -27,7 +27,7 @@ export default defineConfig({
           }
           if (id.includes('/src/deal-engine/')) return 'deal-engine';
           if (id.includes('/src/finalisation/')) return 'finalisation';
-          if (id.includes('/src/features/travel-conversation/')) return 'travel-conversation';
+          if (id.includes('/src/features/conversation-core/')) return 'conversation-core';
         },
       },
     },

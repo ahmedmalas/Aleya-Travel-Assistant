@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { sendTravelMessage } from '../../features/travel-conversation';
-import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
+import { processConversationTurn } from '../../features/conversation-core';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
@@ -90,16 +89,15 @@ export function ConciergePlanPanel() {
     const userMessage: ConciergeMessage = { id: crypto.randomUUID(), role: 'user', text: trimmed };
     setQuestion('');
     setFeedback(null);
-    // Canonical store only — never seed vault/profile fields into conversation state.
-    const result = sendTravelMessage({ message: trimmed });
-    const title = result.progression.nextRequiredField
-      ? 'Need a detail'
-      : 'Concierge planning update';
+    const result = processConversationTurn({ message: trimmed });
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       text: result.reply,
-      recommendation: { title, detail: result.reply },
+      recommendation: {
+        title: 'Conversation engine not assembled',
+        detail: result.reply,
+      },
     };
     setMessages((current) => [...current, userMessage, assistant]);
   };
@@ -124,9 +122,6 @@ export function ConciergePlanPanel() {
       description="Full concierge workspace: goals, constraints, must-dos, dining/transport/accessibility planning, backups, checklist, and approvals. Recommendations are planning-only."
     >
       <p className="mb-3 text-xs uppercase tracking-[0.16em] text-slate-400">Trip context: {contextLabel}</p>
-      <div className="mb-4 overflow-hidden rounded-2xl border border-white/10">
-        <RequirementsSummary />
-      </div>
       {feedback ? <StatusBanner kind="success" message={feedback} /> : null}
 
       <section className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">

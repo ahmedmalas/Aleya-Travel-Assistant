@@ -1,5 +1,29 @@
-import type { ActiveOptionSet, ConversationalOption } from '../travel-conversation/contextual-reference/types';
 import type { LocationResolutionResult } from './types';
+
+/** Local ambiguity option types — not coupled to any conversation engine. */
+export type LocationAmbiguityOption = {
+  id: string;
+  label: string;
+  value: {
+    canonicalName: string;
+    placeId: string;
+    type: string;
+    countryCode?: string;
+    iataCode?: string;
+    nearestAirportCodes?: string[];
+    displayName: string;
+  };
+  position: number;
+};
+
+export type LocationAmbiguityOptionSet = {
+  id: string;
+  sourceTurnId: string;
+  question: string;
+  options: LocationAmbiguityOption[];
+  selectionMode: 'single';
+  createdAt: string;
+};
 
 let locationOptionSeq = 0;
 
@@ -10,10 +34,10 @@ export function resetLocationOptionSequence(): void {
 export function buildLocationAmbiguityOptionSet(
   question: string,
   results: LocationResolutionResult[],
-): ActiveOptionSet {
+): LocationAmbiguityOptionSet {
   locationOptionSeq += 1;
   const sourceTurnId = `location-turn-${locationOptionSeq}`;
-  const options: ConversationalOption[] = results.slice(0, 5).map((row, index) => {
+  const options: LocationAmbiguityOption[] = results.slice(0, 5).map((row, index) => {
     const place = row.place;
     const where = [place.regionName ?? place.stateName, place.countryName]
       .filter(Boolean)
@@ -31,7 +55,6 @@ export function buildLocationAmbiguityOptionSet(
         nearestAirportCodes: place.nearestAirportCodes,
         displayName: place.displayName,
       },
-      category: 'location' as const,
       position: index + 1,
     };
   });
@@ -42,7 +65,6 @@ export function buildLocationAmbiguityOptionSet(
     question,
     options,
     selectionMode: 'single',
-    awaitingField: 'destination',
     createdAt: new Date().toISOString(),
   };
 }

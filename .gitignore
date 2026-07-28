@@ -1,12 +1,15 @@
-node_modules
-dist
+node_modules/
+dist/
+build/
+out/
+.vercel/
+coverage/
 .env
 .env.local
 .env.*.local
 .DS_Store
 .vscode
 .idea
-coverage
 playwright-report
 test-results
 blob-report
@@ -27,4 +30,3 @@ supabase/.temp/
 # Accidental TS emit next to sources
 playwright.config.js
 e2e/*.js
-.vercel
