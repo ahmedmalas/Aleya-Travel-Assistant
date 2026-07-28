@@ -12,8 +12,9 @@ import type {
   TripCompleteness,
   TurnGoal,
 } from './contracts';
+import { questionTextFor } from '../destination-discovery';
 import { setAwaitingField, setSearchOffered } from './runtime';
-import type { TripField } from '../types';
+import type { ConversationState, TripField } from '../types';
 import {
   buildServicesOptionSet,
   buildTripTypeOptionSet,
@@ -50,9 +51,11 @@ export function decideNextStep(input: {
   provider: ProviderObservation;
   executed: ExecutedResult[];
   servicesJustAdded: string[];
+  state?: ConversationState;
 }): ConversationalStep {
   const { goals, completeness, provider, executed } = input;
   const next = completeness.nextRequiredField;
+  const discovery = input.state?.discovery;
 
   const ambiguity = consumePendingLocationAmbiguity();
   if (ambiguity) {
@@ -67,6 +70,50 @@ export function decideNextStep(input: {
         question: ambiguity.question,
       },
     };
+  }
+
+  // Destination discovery steps win over booking missing-destination prompts
+  if (discovery?.mode === 'active') {
+    clearActiveOptionSet();
+    setAwaitingField(undefined);
+    setSearchOffered(false);
+    if (
+      executed.some(
+        (r) =>
+          (r.type === 'recommend_destinations' ||
+            r.type === 'refine_destination_recommendations') &&
+          r.ok,
+      ) &&
+      discovery.recommendations.length
+    ) {
+      return {
+        kind: 'recommend_destinations',
+        candidates: discovery.recommendations,
+      };
+    }
+    if (
+      executed.some((r) => r.type === 'ask_discovery_question') &&
+      discovery.pendingQuestionId
+    ) {
+      return {
+        kind: 'ask_discovery_question',
+        questionId: discovery.pendingQuestionId,
+        question: questionTextFor(discovery.pendingQuestionId, discovery.criteria),
+      };
+    }
+    if (discovery.recommendations.length) {
+      return {
+        kind: 'recommend_destinations',
+        candidates: discovery.recommendations,
+      };
+    }
+    if (discovery.pendingQuestionId) {
+      return {
+        kind: 'ask_discovery_question',
+        questionId: discovery.pendingQuestionId,
+        question: questionTextFor(discovery.pendingQuestionId, discovery.criteria),
+      };
+    }
   }
 
   if (provider.activateSearch) {

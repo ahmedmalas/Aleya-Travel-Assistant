@@ -9,10 +9,10 @@ import { getDefaultLocationProvider, toStoredTravelLocation } from '../travel-lo
 
 type Listener = () => void;
 
-/** Schema v6 — authoritative key. */
-export const STORAGE_KEY = 'aleya-travel:conversation:v6';
+/** Schema v7 — authoritative key (discovery + structured locations). */
+export const STORAGE_KEY = 'aleya-travel:conversation:v7';
 
-/** All prior engines / schemas — purged on hydrate and reset (v5 migrated when possible). */
+/** All prior engines / schemas — purged on hydrate and reset (v5/v6 migrated when possible). */
 export const LEGACY_STORAGE_KEYS = [
   'aleya-travel:conversation:v1',
   'aleya-travel:conversation:v2',
@@ -24,6 +24,7 @@ export const LEGACY_STORAGE_KEYS = [
 ];
 
 const V5_STORAGE_KEY = 'aleya-travel:conversation:v5';
+const V6_STORAGE_KEY = 'aleya-travel:conversation:v6';
 
 type PersistedEnvelope = {
   schemaVersion: number;
@@ -66,7 +67,7 @@ function placeFromString(name?: string): StoredTravelLocation | undefined {
   return toStoredTravelLocation(hit);
 }
 
-/** Migrate schema-v5 string-only locations into structured v6 fields. */
+/** Migrate schema-v5 string-only locations into structured fields. */
 export function migrateConversationStateFromV5(raw: ConversationState): ConversationState {
   const state = sanitizeState({
     ...raw,
@@ -82,6 +83,14 @@ export function migrateConversationStateFromV5(raw: ConversationState): Conversa
     state.accommodationPlace = placeFromString(state.accommodationArea.value);
   }
   return state;
+}
+
+export function migrateConversationStateFromV6(raw: ConversationState): ConversationState {
+  return sanitizeState({
+    ...raw,
+    schemaVersion: CONVERSATION_SCHEMA_VERSION,
+    discovery: raw.discovery,
+  });
 }
 
 /** Strip deleted orchestration fields from older persisted blobs. */
@@ -100,6 +109,16 @@ function sanitizeState(raw: ConversationState): ConversationState {
   if (!Array.isArray(state.preferences)) state.preferences = [];
   if (!Array.isArray(state.changeHistory)) state.changeHistory = [];
   if (!Array.isArray(state.lastChangedFields)) state.lastChangedFields = [];
+  if (state.discovery) {
+    const d = state.discovery;
+    if (!Array.isArray(d.criteria?.climate)) d.criteria = { ...(d.criteria ?? {}), climate: [], characters: d.criteria?.characters ?? [], activities: d.criteria?.activities ?? [], exclusions: d.criteria?.exclusions ?? [] };
+    if (!Array.isArray(d.criteria.characters)) d.criteria.characters = [];
+    if (!Array.isArray(d.criteria.activities)) d.criteria.activities = [];
+    if (!Array.isArray(d.criteria.exclusions)) d.criteria.exclusions = [];
+    if (!Array.isArray(d.recommendations)) d.recommendations = [];
+    if (!Array.isArray(d.rejectedIds)) d.rejectedIds = [];
+    if (!Array.isArray(d.lastRecommendedIds)) d.lastRecommendedIds = [];
+  }
   state.schemaVersion = CONVERSATION_SCHEMA_VERSION;
   return state;
 }
@@ -107,14 +126,29 @@ function sanitizeState(raw: ConversationState): ConversationState {
 function readPersisted(): ConversationState | undefined {
   if (!canUseStorage()) return undefined;
   try {
-    const rawV6 = window.localStorage.getItem(STORAGE_KEY);
-    if (rawV6) {
-      const parsed = JSON.parse(rawV6) as PersistedEnvelope;
+    const rawV7 = window.localStorage.getItem(STORAGE_KEY);
+    if (rawV7) {
+      const parsed = JSON.parse(rawV7) as PersistedEnvelope;
       if (
         parsed.schemaVersion === CONVERSATION_SCHEMA_VERSION &&
         parsed.state?.schemaVersion === CONVERSATION_SCHEMA_VERSION
       ) {
         return sanitizeState(parsed.state);
+      }
+    }
+
+    const rawV6 = window.localStorage.getItem(V6_STORAGE_KEY);
+    if (rawV6) {
+      const parsed = JSON.parse(rawV6) as PersistedEnvelope;
+      if (parsed.schemaVersion === 6 && parsed.state) {
+        const migrated = migrateConversationStateFromV6(parsed.state as ConversationState);
+        writePersisted(migrated);
+        try {
+          window.localStorage.removeItem(V6_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        return migrated;
       }
     }
 

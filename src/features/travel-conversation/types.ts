@@ -1,6 +1,9 @@
-/** Travel Understanding Engine — schema v6 (structured locations + string display). */
+/** Travel Understanding Engine — schema v7 (structured locations + destination discovery). */
 
-export const CONVERSATION_SCHEMA_VERSION = 6 as const;
+export const CONVERSATION_SCHEMA_VERSION = 7 as const;
+
+export type DestinationDiscoveryState =
+  import('./destination-discovery').DestinationDiscoveryState;
 
 export type StoredTravelLocation = import('../travel-location-intelligence').StoredTravelLocation;
 
@@ -87,6 +90,8 @@ export type ConversationState = {
   excludedServices: TravelServiceKind[];
   travellers?: FieldValue<number>;
   preferences: string[];
+  /** Destination-discovery session; absent/inactive = named-destination booking. */
+  discovery?: DestinationDiscoveryState;
   changeHistory: Array<{ turn: number; fields: string[]; snippet: string }>;
   turnCount: number;
   updatedAt: string;
@@ -107,6 +112,7 @@ export type TravelPatch = {
   servicesRemove?: TravelServiceKind[];
   travellers?: FieldValue<number>;
   preferencesAdd?: string[];
+  discovery?: DestinationDiscoveryState;
   explicitChanges: string[];
   clearFields: string[];
 };

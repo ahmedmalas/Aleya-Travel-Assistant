@@ -32,7 +32,7 @@ import type { ConversationTurnResult } from './contracts';
 import { executeActions } from './execute';
 import { detectGoals } from './goals';
 import { determineObjective } from './objective';
-import { createActionPlan, validateActionPlan } from './plan';
+import { createActionPlan, planDiscoveryActions, validateActionPlan } from './plan';
 import { generateResponse } from './respond';
 import {
   appendTurn,
@@ -151,10 +151,25 @@ export function runConversationTurn(input: {
   const completeness = calculateTripCompleteness(state, tripType);
 
   // 7. Create and validate ordered action plan
-  const planned = validateActionPlan(
-    createActionPlan({ ctx, goals, completeness }),
-    completeness,
+  const discoveryGoals = goals.some(
+    (g) =>
+      g.kind === 'provide_discovery_criteria' ||
+      g.kind === 'select_discovery_destination' ||
+      g.kind === 'reject_discovery_recommendations',
   );
+  const criteriaChanged = state.lastChangedFields.includes('discovery');
+  const discoveryPlan = discoveryGoals
+    ? planDiscoveryActions({
+        goals,
+        discovery: state.discovery,
+        criteriaChanged,
+      })
+    : [];
+  const basePlan =
+    discoveryPlan.length > 0
+      ? discoveryPlan
+      : createActionPlan({ ctx, goals, completeness });
+  const planned = validateActionPlan(basePlan, completeness);
 
   // 8–9. Execute authorised actions and observe provider results
   const executed = executeActions({
@@ -203,6 +218,7 @@ export function runConversationTurn(input: {
     provider: executed.provider,
     executed: allResults,
     servicesJustAdded: addedServices,
+    state,
   });
 
   // 11. Generate one natural final response

@@ -180,6 +180,11 @@ export function mergeTravelState(
     changed.push('preferences');
   }
 
+  if (patch.discovery) {
+    next.discovery = patch.discovery;
+    if (patch.explicitChanges.includes('discovery')) changed.push('discovery');
+  }
+
   next.lastChangedFields = Array.from(new Set(changed));
   if (next.lastChangedFields.length) {
     next.changeHistory = [

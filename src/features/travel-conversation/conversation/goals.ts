@@ -1,6 +1,10 @@
 /** Stage 3 — Detect every goal in the current message (+ contextual selections). */
 
 import { extractServiceCandidates } from '../candidates/services';
+import {
+  matchRejectedRecommendation,
+  matchSelectionFromMessage,
+} from '../destination-discovery';
 import type { TravelServiceKind } from '../types';
 import type { CombinedValidatedSelections } from '../contextual-reference';
 import type { ConversationContext, TurnGoal, UserObjective } from './contracts';
@@ -23,10 +27,31 @@ export function detectGoals(
   const text = ctx.normalizedMessage;
   const goals: TurnGoal[] = [];
 
-  if (objective === 'change_trip' || /\b(forget|instead|let'?s go to)\b/i.test(text)) {
+  const discoverySelection = matchSelectionFromMessage(text, ctx.trip.discovery);
+
+  if (
+    (objective === 'change_trip' || /\b(forget|instead|let'?s go to)\b/i.test(text)) &&
+    !discoverySelection &&
+    objective !== 'discover_destination'
+  ) {
     // "forget the hotel" is a service removal, not a new trip
     if (!/\bforget\s+(?:the\s+)?(?:hotel|accommodation|flights?|car)\b/i.test(text)) {
       goals.push({ kind: 'start_new_trip' });
+    }
+  }
+
+  if (objective === 'discover_destination') {
+    if (discoverySelection) {
+      goals.push({
+        kind: 'select_discovery_destination',
+        placeName: discoverySelection.placeName,
+        candidateId: discoverySelection.candidateId,
+      });
+    } else {
+      goals.push({ kind: 'provide_discovery_criteria' });
+      if (matchRejectedRecommendation(text, ctx.trip.discovery).length) {
+        goals.push({ kind: 'reject_discovery_recommendations' });
+      }
     }
   }
 

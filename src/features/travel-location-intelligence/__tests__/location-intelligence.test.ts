@@ -214,10 +214,10 @@ describe('conversation location integration', () => {
     v5.destination = { value: 'Cairns', source: 'explicit', confirmed: true };
     v5.origin = { value: 'Sydney', source: 'explicit', confirmed: true };
     const migrated = migrateConversationStateFromV5(v5);
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.destinationPlace?.canonicalName).toBe('Cairns');
     expect(migrated.destinationPlace?.iataCode).toBe('CNS');
     expect(migrated.originPlace?.iataCode).toBe('SYD');
-    expect(STORAGE_KEY).toContain('v6');
+    expect(STORAGE_KEY).toContain('v7');
   });
 });

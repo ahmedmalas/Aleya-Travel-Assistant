@@ -161,7 +161,7 @@ describe('Scenario 5 — Natural variations', () => {
 });
 
 describe('persistence and schema', () => {
-  it('uses schema v6 and purges legacy keys', () => {
+  it('uses schema v7 and purges legacy keys', () => {
     for (const key of LEGACY_STORAGE_KEYS) {
       localStorage.setItem(key, '{"schemaVersion":1}');
     }
@@ -169,9 +169,9 @@ describe('persistence and schema', () => {
       message: 'From Melbourne to Gold Coast on 28 August 2026',
       now: NOW,
     });
-    expect(CONVERSATION_SCHEMA_VERSION).toBe(6);
+    expect(CONVERSATION_SCHEMA_VERSION).toBe(7);
     const raw = localStorage.getItem(STORAGE_KEY);
-    expect(raw).toContain('"schemaVersion":6');
+    expect(raw).toContain('"schemaVersion":7');
     expect(raw).not.toContain('"phase"');
     expect(raw).not.toContain('"pendingClarification"');
     expect(raw).not.toContain('"lastOffer"');

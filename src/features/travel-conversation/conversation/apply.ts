@@ -6,6 +6,7 @@
 import { assignRoles } from '../assign';
 import { extractCandidates } from '../candidates';
 import { getLastLocationResolutionPass } from '../candidates/locations';
+import { applyDiscoveryTurn } from '../destination-discovery';
 import { setPendingLocationAmbiguity } from '../locationAmbiguityPending';
 import { mergeTravelState } from '../merge';
 import type { ConversationState, TravelPatch, TravelServiceKind } from '../types';
@@ -23,6 +24,25 @@ function clone(state: ConversationState): ConversationState {
     preferences: [...state.preferences],
     changeHistory: [...state.changeHistory],
     lastChangedFields: [...state.lastChangedFields],
+    discovery: state.discovery
+      ? {
+          ...state.discovery,
+          criteria: {
+            ...state.discovery.criteria,
+            climate: [...state.discovery.criteria.climate],
+            characters: [...state.discovery.criteria.characters],
+            activities: [...state.discovery.criteria.activities],
+            exclusions: [...state.discovery.criteria.exclusions],
+          },
+          recommendations: state.discovery.recommendations.map((r) => ({
+            ...r,
+            reasons: [...r.reasons],
+            tradeoffs: [...r.tradeoffs],
+          })),
+          rejectedIds: [...state.discovery.rejectedIds],
+          lastRecommendedIds: [...state.discovery.lastRecommendedIds],
+        }
+      : undefined,
   };
 }
 
@@ -60,6 +80,13 @@ export function applyValidatedTripChanges(input: {
     results.push({ type: 'reset_trip', detail: 'cleared obsolete trip', ok: true });
   }
 
+  const discovering = input.goals.some(
+    (g) =>
+      g.kind === 'provide_discovery_criteria' ||
+      g.kind === 'select_discovery_destination' ||
+      g.kind === 'reject_discovery_recommendations',
+  );
+
   if (input.goals.some((g) => g.kind === 'provide_trip_facts' || g.kind === 'start_new_trip')) {
     const candidates = extractCandidates(text, input.ctx.now, state, input.ctx.awaitingField);
     const locationPass = getLastLocationResolutionPass();
@@ -71,11 +98,41 @@ export function applyValidatedTripChanges(input: {
         ok: true,
       });
     } else {
-      const patch = assignRoles(candidates, state, input.ctx.awaitingField);
+      let patch = assignRoles(candidates, state, input.ctx.awaitingField);
+      // Active discovery: do not invent a destination from unresolved soft phrases
+      if (
+        discovering &&
+        patch.destination &&
+        !locationPass?.selectedPlaces?.destination &&
+        /\bsomewhere\b|tropical|relax|quiet|beach holiday|city break/i.test(text)
+      ) {
+        const { destination: _d, destinationPlace: _p, ...rest } = patch;
+        patch = {
+          ...rest,
+          explicitChanges: patch.explicitChanges.filter((f) => f !== 'destination'),
+          clearFields: patch.clearFields,
+        };
+      }
       state = mergeTravelState(state, patch, input.ctx.now, text);
       results.push({
         type: 'apply_validated_trip_changes',
         detail: state.lastChangedFields.join(',') || 'none',
+        ok: true,
+      });
+    }
+  }
+
+  if (discovering && !input.goals.some((g) => g.kind === 'select_discovery_destination')) {
+    const applied = applyDiscoveryTurn({
+      state,
+      message: text,
+      activate: true,
+    });
+    state = applied.state;
+    if (applied.discoveryChanged) {
+      results.push({
+        type: 'collect_discovery_criteria',
+        detail: state.discovery?.criteria.characters.join(',') || 'criteria',
         ok: true,
       });
     }

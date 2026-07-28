@@ -49,8 +49,11 @@ export function calculateTripCompleteness(
   };
 
   const missing: MissingRequirement[] = [];
+  const discoveryActive = state.discovery?.mode === 'active';
 
-  if (!known.destination) {
+  // Active discovery may legitimately have no destination yet — booking destination
+  // is not the next required field until discovery selects one.
+  if (!known.destination && !discoveryActive) {
     missing.push({ id: 'destination', priority: 1, question: QUESTIONS.destination });
   }
   if (!known.origin) {

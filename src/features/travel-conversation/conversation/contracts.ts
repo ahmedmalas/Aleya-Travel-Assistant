@@ -40,6 +40,7 @@ export type TripCompleteness = {
 
 export type UserObjective =
   | 'collect_trip_requirements'
+  | 'discover_destination'
   | 'authorise_search'
   | 'refine_active_search'
   | 'change_trip'
@@ -47,6 +48,13 @@ export type UserObjective =
 
 export type TurnGoal =
   | { kind: 'provide_trip_facts' }
+  | { kind: 'provide_discovery_criteria' }
+  | {
+      kind: 'select_discovery_destination';
+      placeName: string;
+      candidateId?: string;
+    }
+  | { kind: 'reject_discovery_recommendations' }
   | { kind: 'add_services'; services: TravelService[] }
   | { kind: 'remove_services'; services: TravelService[] }
   | { kind: 'set_travellers'; count: number }
@@ -64,6 +72,16 @@ export type PlannedAction =
   | { type: 'reset_trip_preserving_preferences' }
   | { type: 'end_search_session' }
   | { type: 'apply_validated_trip_changes' }
+  | { type: 'collect_discovery_criteria' }
+  | { type: 'ask_discovery_question'; questionId: string }
+  | { type: 'recommend_destinations' }
+  | { type: 'refine_destination_recommendations' }
+  | {
+      type: 'resolve_selected_destination';
+      placeName: string;
+      candidateId?: string;
+    }
+  | { type: 'transition_to_booking' }
   | { type: 'add_services'; services: TravelService[] }
   | { type: 'remove_services'; services: TravelService[] }
   | { type: 'set_travellers'; count: number }
@@ -90,6 +108,15 @@ export type ProviderObservation = {
 
 export type ConversationalStep =
   | { kind: 'ask_missing_field'; field: MissingRequirement }
+  | {
+      kind: 'ask_discovery_question';
+      questionId: string;
+      question: string;
+    }
+  | {
+      kind: 'recommend_destinations';
+      candidates: import('../destination-discovery').DiscoveryCandidate[];
+    }
   | { kind: 'offer_search' }
   | {
       kind: 'report_search_started';

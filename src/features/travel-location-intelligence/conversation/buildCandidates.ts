@@ -154,6 +154,10 @@ export function extractLocationSpans(text: string): LocationSpan[] {
         cue: 'fly-to',
       },
       {
+        re: new RegExp(String.raw`\bflights?\s+to\s+(.+?)${DEST_STOP}`, 'i'),
+        cue: 'flights-to',
+      },
+      {
         re: new RegExp(String.raw`\btravel(?:ling|ing)?\s+to\s+(.+?)${DEST_STOP}`, 'i'),
         cue: 'travel-to',
       },

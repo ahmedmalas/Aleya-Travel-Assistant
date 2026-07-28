@@ -1,5 +1,5 @@
 /**
- * Travel Understanding Engine + Conversation Progression (schema v5)
+ * Travel Understanding Engine + Conversation Progression (schema v7)
  *
  * Sole production path:
  *   sendTravelMessage / processTravelTurn → runConversationTurn → domain tools
