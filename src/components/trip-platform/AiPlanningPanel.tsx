@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
+  getAleyaBuildIdentity,
   isSearchActive,
   resetTravelConversation,
   sendTravelMessage,
@@ -11,6 +12,8 @@ import {
 import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
+
+const BUILD_IDENTITY = getAleyaBuildIdentity();
 
 type ChatMessage = {
   id: string;
@@ -126,6 +129,16 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
         <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">Aleya AI Assistant</h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the travel conversation engine — one shared requirements state for chat, summary, and search. Itineraries only when you ask.</p>
+        <aside
+          className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"
+          data-testid="preview-build-identity"
+          aria-label="Preview build identity"
+        >
+          <p>Environment: {BUILD_IDENTITY.environment}</p>
+          <p>Git SHA: {BUILD_IDENTITY.gitSha}</p>
+          <p>Engine: {BUILD_IDENTITY.engine}</p>
+          <p>Chunk: {BUILD_IDENTITY.chunk}</p>
+        </aside>
       </header>
 
       {feedback ? <div className="px-5 pt-4 md:px-7"><StatusBanner kind="info" message={feedback} /></div> : null}

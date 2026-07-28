@@ -5,8 +5,15 @@
  *   sendTravelMessage / processTravelTurn → runConversationTurn → domain tools
  */
 
+import { installAleyaBuildIdentity } from './buildIdentity';
+
+/** Temporary: bake inspectable preview identity into the travel-conversation chunk. */
+installAleyaBuildIdentity();
+
 export { sendTravelMessage, processTravelTurn, resetConversationRuntime } from './pipeline';
 export type { SendTravelMessageInput } from './pipeline';
+export { getAleyaBuildIdentity, installAleyaBuildIdentity } from './buildIdentity';
+export type { AleyaBuildIdentity } from './buildIdentity';
 export {
   getTravelConversation,
   resetTravelConversation,
