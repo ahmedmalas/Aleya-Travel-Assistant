@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
   getActiveSearchLaunchSession,
@@ -149,22 +149,52 @@ export function AiPlanningPanel() {
     },
   ]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const pendingScrollMessageIdRef = useRef<string | null>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
   const searchReady = tripReadyForSearch(travelState) && !isSearchActive();
   const sessionActive = isSearchActive();
 
-  const scrollChatToEnd = () => {
+  /**
+   * Keep the newest Aleya reply readable: align the top of that message
+   * into the chat pane. Do NOT scroll to pane.scrollHeight — that pins the
+   * viewport to the bottom of the (tall) runtime-evidence panel and pushes
+   * the answer text off-screen.
+   */
+  useLayoutEffect(() => {
+    const messageId = pendingScrollMessageIdRef.current;
+    if (!messageId) return;
     const pane = chatScrollRef.current;
     if (!pane) return;
-    pane.scrollTo({ top: pane.scrollHeight, behavior: 'smooth' });
-  };
+
+    const alignNewestReply = () => {
+      const target = pane.querySelector(
+        `[data-message-id="${messageId}"]`,
+      ) as HTMLElement | null;
+      if (!target) return false;
+      const paneRect = pane.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = pane.scrollTop + (targetRect.top - paneRect.top) - 8;
+      pane.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+      return true;
+    };
+
+    // First pass after commit; second after paint so evidence panel height is included
+    // without re-aiming at pane.scrollHeight.
+    alignNewestReply();
+    const raf = window.requestAnimationFrame(() => {
+      alignNewestReply();
+      pendingScrollMessageIdRef.current = null;
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [messages]);
 
   const reply = (text: string, plan?: AiTravelPlan, runtimeEvidence?: TurnRuntimeEvidence) => {
+    const id = createId();
+    pendingScrollMessageIdRef.current = id;
     setMessages((current) => [
       ...current,
       {
-        id: createId(),
+        id,
         role: 'aleya',
         text,
         createdAt: new Date().toISOString(),
@@ -172,7 +202,6 @@ export function AiPlanningPanel() {
         runtimeEvidence,
       },
     ]);
-    window.setTimeout(scrollChatToEnd, 0);
   };
 
   const runEngineTurn = (request: string) => {
@@ -272,6 +301,7 @@ export function AiPlanningPanel() {
         {messages.map((message) => (
           <article
             key={message.id}
+            data-message-id={message.id}
             data-testid={message.role === 'aleya' ? 'aleya-message' : 'user-message'}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
@@ -359,7 +389,6 @@ export function AiPlanningPanel() {
             </div>
           </article>
         ))}
-        <div ref={chatEndRef} />
       </div>
 
       {messages.length === 1 ? (
