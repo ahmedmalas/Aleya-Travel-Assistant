@@ -1,24 +1,15 @@
 /**
- * Travel Understanding Engine (schema v5)
+ * Travel Understanding Engine + Conversational Consultant (schema v5)
  *
- * Pipeline:
- * normalise → classify → extract/assign/merge (when mutating)
- * → post-requirements decision → compose → persist
+ * Sole production dialogue path:
+ *   normalize → dialogue orchestration (context → goals → decide → execute → NLG)
  *
- * Live search handoff:
- * ConversationState → search-projection (sole authority) → providers
- *
- * Post-requirements owns natural search approval and continuity.
+ * Internal tools (do not speak for Aleya):
+ *   extract / assign / merge / clarify / search-projection / search memory
  */
 
-export { sendTravelMessage, processTravelTurn } from './pipeline';
+export { sendTravelMessage, processTravelTurn, resetConversationRuntime } from './pipeline';
 export type { SendTravelMessageInput } from './pipeline';
-export {
-  clearComposeTraces,
-  getComposeTraces,
-  pushComposeTrace,
-} from './debugTrace';
-export type { ComposeBranch, ComposeTraceEntry } from './debugTrace';
 export {
   getTravelConversation,
   resetTravelConversation,
@@ -52,6 +43,22 @@ export type {
   LiveSearchResult,
 } from './search-projection';
 export {
+  runDialogueTurn,
+  resetDialogueRuntime,
+  getDialogueTraces,
+  clearDialogueTraces,
+  getSearchMemory,
+  isSearchActive,
+  assertHumanReply,
+} from './dialogue';
+export type {
+  DialogueDecision,
+  DialogueTurnResult,
+  DialogueTrace,
+  UserGoal,
+  ConversationContext,
+} from './dialogue';
+export {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
 } from './types';
@@ -63,10 +70,5 @@ export type {
   TravelTurnResult,
   TravelServiceKind,
 } from './types';
-export {
-  decidePostRequirements,
-  isSearchApprovalMessage,
-  isDeclineSearchMessage,
-  requirementsReady,
-  servicesForSearch,
-} from './postRequirements';
+export { evaluateClarification } from './clarify';
+export { requirementsReady } from './tools';
