@@ -62,6 +62,12 @@ function routeAck(state: ConversationState): string {
   return '';
 }
 
+export type GeneratedReply = {
+  text: string;
+  /** Exact function that produced the visible assistant text. */
+  replySource: 'generateResponse';
+};
+
 export function generateResponse(input: {
   ctx: ConversationContext;
   state: ConversationState;
@@ -69,7 +75,7 @@ export function generateResponse(input: {
   step: ConversationalStep;
   provider: ProviderObservation;
   servicesJustAdded?: string[];
-}): string {
+}): GeneratedReply {
   const { state, step, ctx } = input;
   const from = state.origin?.value;
   const to = state.destination?.value;
@@ -154,5 +160,5 @@ export function generateResponse(input: {
         : 'Where would you like to travel?';
   }
 
-  return reply.trim();
+  return { text: reply.trim(), replySource: 'generateResponse' };
 }

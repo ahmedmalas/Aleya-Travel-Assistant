@@ -168,6 +168,8 @@ export type ConversationTurnResult = {
   provider: ProviderObservation;
   conversationalStep: ConversationalStep;
   trace: TurnTrace;
+  /** Temporary PR #29 preview: per-turn runtime identity from this call. */
+  runtimeEvidence: import('../turnRuntimeEvidence').TurnRuntimeEvidence;
   activateSearch: boolean;
   continueSearch: boolean;
   servicesToSearch: TravelService[];

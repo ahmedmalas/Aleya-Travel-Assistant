@@ -106,6 +106,8 @@ export type TravelTurnResult = {
   searchSessionActive: boolean;
   /** Full progression turn (context → actions → next step → reply). */
   progression: import('./conversation/contracts').ConversationTurnResult;
+  /** Temporary PR #29: same-call runtime evidence for the visible reply. */
+  runtimeEvidence: import('./turnRuntimeEvidence').TurnRuntimeEvidence;
 };
 
 export function createEmptyConversationState(conversationId?: string): ConversationState {

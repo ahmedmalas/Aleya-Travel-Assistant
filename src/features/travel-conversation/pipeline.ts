@@ -50,6 +50,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
     searchPerformed: progression.searchPerformed,
     searchSessionActive: progression.searchSessionActive,
     progression,
+    runtimeEvidence: progression.runtimeEvidence,
   };
 }
 

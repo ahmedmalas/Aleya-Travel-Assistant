@@ -26,6 +26,8 @@ import {
   resetConversationRuntime,
 } from './runtime';
 import { decideNextStep } from './step';
+import { captureTurnRuntimeEvidence } from '../turnRuntimeEvidence';
+import type { TurnRuntimeEvidence } from '../turnRuntimeEvidence';
 
 export function runConversationTurn(input: {
   message: string;
@@ -114,13 +116,22 @@ export function runConversationTurn(input: {
   });
 
   // 11. Generate one natural final response (only after actions)
-  let reply = generateResponse({
+  const generated = generateResponse({
     ctx,
     state,
     completeness: completenessAfter,
     step,
     provider: executed.provider,
     servicesJustAdded: addedServices,
+  });
+  const reply = generated.text;
+
+  const runtimeEvidence: TurnRuntimeEvidence = captureTurnRuntimeEvidence({
+    conversationSessionId: state.conversationId,
+    turnNumber: state.turnCount,
+    replySource: generated.replySource,
+    nextRequiredField: completenessAfter.nextRequiredField?.id ?? null,
+    generatedReply: reply,
   });
 
   if (input.commitTranscript !== false) {
@@ -165,6 +176,7 @@ export function runConversationTurn(input: {
     provider: executed.provider,
     conversationalStep: step,
     trace,
+    runtimeEvidence,
     activateSearch: executed.provider.activateSearch,
     continueSearch: executed.provider.continueSearch,
     servicesToSearch: executed.provider.servicesToSearch,

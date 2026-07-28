@@ -15,6 +15,11 @@ export type { SendTravelMessageInput } from './pipeline';
 export { getAleyaBuildIdentity, installAleyaBuildIdentity } from './buildIdentity';
 export type { AleyaBuildIdentity } from './buildIdentity';
 export {
+  captureTurnRuntimeEvidence,
+  resolveLiveBuildFingerprint,
+} from './turnRuntimeEvidence';
+export type { TurnRuntimeEvidence } from './turnRuntimeEvidence';
+export {
   getTravelConversation,
   resetTravelConversation,
   hydrateTravelConversation,

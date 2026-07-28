@@ -8,12 +8,11 @@ import {
   tripReadyForSearch,
   useTravelConversation,
   type TravelServiceKind,
+  type TurnRuntimeEvidence,
 } from '../../features/travel-conversation';
 import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
-
-const BUILD_IDENTITY = getAleyaBuildIdentity();
 
 type ChatMessage = {
   id: string;
@@ -21,6 +20,8 @@ type ChatMessage = {
   text: string;
   createdAt: string;
   plan?: AiTravelPlan;
+  /** Present only when this bubble was produced by sendTravelMessage → runConversationTurn. */
+  runtimeEvidence?: TurnRuntimeEvidence;
 };
 
 const PROFILE_STORAGE_KEY = 'aleya-travel:user-profile:v1';
@@ -50,6 +51,30 @@ const STARTERS = [
   'Plan a family trip to Queenstown with car hire',
 ];
 
+function TurnRuntimeDebugPanel({ evidence }: { evidence: TurnRuntimeEvidence }) {
+  return (
+    <aside
+      className="mt-3 rounded-lg border border-amber-400/50 bg-amber-950/50 px-3 py-2 font-mono text-[10px] leading-4 text-amber-50"
+      data-testid="turn-runtime-evidence"
+      aria-label="Per-turn runtime evidence"
+    >
+      <p className="mb-1 text-[9px] uppercase tracking-[0.16em] text-amber-200/80">Turn runtime evidence</p>
+      <p>hostname: {evidence.hostname}</p>
+      <p>buildGitSha: {evidence.buildGitSha}</p>
+      <p>loadedTravelChunk: {evidence.loadedTravelChunk}</p>
+      <p>engineEntry: {evidence.engineEntry}</p>
+      <p>conversationSessionId: {evidence.conversationSessionId}</p>
+      <p>turnNumber: {evidence.turnNumber}</p>
+      <p>replySource: {evidence.replySource}</p>
+      <p>nextRequiredField: {evidence.nextRequiredField ?? 'null'}</p>
+      <p>generatedReply: {evidence.generatedReply}</p>
+      {evidence.deploymentIdHeader ? <p>deploymentId: {evidence.deploymentIdHeader}</p> : null}
+      {evidence.hasP8G9cQpqScript ? <p className="text-rose-300">WARNING: P8G9cQpq script present</p> : null}
+      {evidence.consultantChunkLoaded ? <p className="text-rose-300">WARNING: consultant asset loaded</p> : null}
+    </aside>
+  );
+}
+
 export type AiPlanningPanelProps = {
   /** Called when a search session starts or continues. */
   onActivateSearch?: (services: TravelServiceKind[]) => void;
@@ -58,6 +83,7 @@ export type AiPlanningPanelProps = {
 export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {}) {
   const { trip, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
   const travelState = useTravelConversation();
+  const buildIdentity = getAleyaBuildIdentity();
   const travellerName = getTravellerName();
   const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
   const [input, setInput] = useState('');
@@ -84,8 +110,18 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     pane.scrollTo({ top: pane.scrollHeight, behavior: 'smooth' });
   };
 
-  const reply = (text: string, plan?: AiTravelPlan) => {
-    setMessages((current) => [...current, { id: createId(), role: 'aleya', text, createdAt: new Date().toISOString(), plan }]);
+  const reply = (text: string, plan?: AiTravelPlan, runtimeEvidence?: TurnRuntimeEvidence) => {
+    setMessages((current) => [
+      ...current,
+      {
+        id: createId(),
+        role: 'aleya',
+        text,
+        createdAt: new Date().toISOString(),
+        plan,
+        runtimeEvidence,
+      },
+    ]);
     window.setTimeout(scrollChatToEnd, 0);
   };
 
@@ -97,7 +133,7 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     if (result.activateSearch || result.continueSearch) {
       onActivateSearch?.(result.servicesToSearch);
     }
-    reply(result.reply);
+    reply(result.reply, undefined, result.runtimeEvidence);
     return result;
   };
 
@@ -134,10 +170,10 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
           data-testid="preview-build-identity"
           aria-label="Preview build identity"
         >
-          <p>Environment: {BUILD_IDENTITY.environment}</p>
-          <p>Git SHA: {BUILD_IDENTITY.gitSha}</p>
-          <p>Engine: {BUILD_IDENTITY.engine}</p>
-          <p>Chunk: {BUILD_IDENTITY.chunk}</p>
+          <p>Environment: {buildIdentity.environment}</p>
+          <p>Git SHA: {buildIdentity.gitSha}</p>
+          <p>Engine: {buildIdentity.engine}</p>
+          <p>Chunk: {buildIdentity.chunk}</p>
         </aside>
       </header>
 
@@ -171,6 +207,7 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
             <div className={`max-w-3xl ${message.role === 'user' ? 'rounded-3xl rounded-br-md bg-sky-400 px-5 py-3 text-slate-950' : 'rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-5 py-4 text-slate-100'}`}>
               {message.role === 'aleya' ? <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Aleya</p> : null}
               <p className="whitespace-pre-wrap text-sm leading-6" data-testid="chat-bubble-text">{message.text}</p>
+              {message.runtimeEvidence ? <TurnRuntimeDebugPanel evidence={message.runtimeEvidence} /> : null}
               {message.plan ? (
                 <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
                   <div className="grid gap-3 sm:grid-cols-3">

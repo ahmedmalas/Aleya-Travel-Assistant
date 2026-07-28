@@ -1,11 +1,10 @@
 /**
  * Temporary preview build identity — rendered from the deployed bundle.
+ * Values resolve from this module instance (import.meta / env), not hand-written.
  * Remove after PR #29 personal verification.
- *
- * Pinned to the known-good progression ship (6882faf / BoezO4jf) so the
- * preview banner matches the investigation fingerprint. Do not rebuild the
- * travel-conversation chunk while this pin is active.
  */
+
+import { resolveLiveBuildFingerprint } from './turnRuntimeEvidence';
 
 export type AleyaBuildIdentity = {
   environment: string;
@@ -16,18 +15,16 @@ export type AleyaBuildIdentity = {
   consultantModulePresent: false;
 };
 
-/** Known-good PR #29 progression fingerprint — keep in sync with shipped dist. */
-export const PR29_PREVIEW_BUILD_IDENTITY: AleyaBuildIdentity = {
-  environment: 'PR #29 Preview',
-  gitSha: '6882faf',
-  engine: 'runConversationTurn',
-  chunk: 'travel-conversation-BoezO4jf.js',
-  entryPoint: 'runConversationTurn',
-  consultantModulePresent: false,
-};
-
 export function getAleyaBuildIdentity(): AleyaBuildIdentity {
-  return { ...PR29_PREVIEW_BUILD_IDENTITY };
+  const live = resolveLiveBuildFingerprint();
+  return {
+    environment: 'PR #29 Preview',
+    gitSha: live.gitSha,
+    engine: live.engineEntry,
+    chunk: live.chunk,
+    entryPoint: live.engineEntry,
+    consultantModulePresent: false,
+  };
 }
 
 /** Install console-inspectable identity on the travel-conversation chunk load. */
