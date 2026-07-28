@@ -1,13 +1,13 @@
 import type { CandidateBundle, DateCandidate, LocationCandidate } from './candidates/types';
 import type {
   ApproximateDate,
-  ClarificationField,
   ConversationState,
   DepartureDate,
   ExactDate,
   FieldValue,
   ReturnDate,
   TravelPatch,
+  TripField,
 } from './types';
 
 function explicit<T>(value: T): FieldValue<T> {
@@ -60,16 +60,17 @@ function addNights(isoDate: string, nights: number): ReturnDate {
 }
 
 /**
- * Stage 4 — Deterministic role assignment → one TravelPatch.
- * Precedence: labelled/cue roles → active clarification → confirmed state → inference → clarify.
+ * Deterministic role assignment → one TravelPatch.
+ * Precedence: labelled/cue roles → field the engine is awaiting → confirmed state → inference.
+ * `answersField` is supplied by the conversation engine (previous nextRequiredField), not stored on state.
  */
 export function assignRoles(
   bundle: CandidateBundle,
   previous: ConversationState,
-  answersField?: ClarificationField,
+  answersField?: TripField,
 ): TravelPatch {
   const patch: TravelPatch = { explicitChanges: [], clearFields: [] };
-  const pending = answersField ?? previous.pendingClarification;
+  const pending = answersField;
 
   // --- Locations ---
   let origin = bestLocation(bundle.locations, 'origin');
@@ -79,12 +80,12 @@ export function assignRoles(
     .filter((c) => c.roleHint === 'unspecified')
     .sort((a, b) => b.confidence - a.confidence)[0];
 
-  // Clarification answers fill only the pending field
+  // Standalone place answers the field the engine asked for
   if (pending === 'origin' && standalone && !origin) {
-    origin = { ...standalone, roleHint: 'origin', cue: 'clarification:origin' };
+    origin = { ...standalone, roleHint: 'origin', cue: 'awaiting:origin' };
   }
   if (pending === 'destination' && standalone && !destination) {
-    destination = { ...standalone, roleHint: 'destination', cue: 'clarification:destination' };
+    destination = { ...standalone, roleHint: 'destination', cue: 'awaiting:destination' };
   }
 
   if (origin) {

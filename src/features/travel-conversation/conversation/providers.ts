@@ -1,6 +1,8 @@
+/** Provider search session — domain tool, not dialogue. */
+
 import type { ConversationState, TravelServiceKind } from '../types';
-import { getSearchSession, setSearchSession } from './memory';
-import type { ActiveSearchSession, SearchResultItem } from './types';
+import type { ActiveSearchSession, SearchResultItem } from './contracts';
+import { getSearchSession, setSearchSession } from './runtime';
 
 export function endSearchSession(): void {
   setSearchSession(null);
@@ -34,7 +36,6 @@ function placeholders(
       },
     );
   }
-
   if (services.includes('accommodation')) {
     const where = area ? ` near ${area}` : ` in ${dest}`;
     items.push(
@@ -54,7 +55,6 @@ function placeholders(
       },
     );
   }
-
   if (services.includes('car_hire')) {
     items.push({
       id: 'car-1',
@@ -64,8 +64,22 @@ function placeholders(
       planningNote: 'Planning placeholder — live rates come from providers.',
     });
   }
-
   return items;
+}
+
+/** Never invent accommodation or car hire — flights default only when none set. */
+export function resolveSearchServices(state: ConversationState): TravelServiceKind[] {
+  const services = [...state.services];
+  if (
+    state.origin?.value &&
+    state.destination?.value &&
+    !services.includes('flights') &&
+    !state.excludedServices.includes('flights')
+  ) {
+    services.unshift('flights');
+  }
+  if (services.length === 0) return ['flights'];
+  return Array.from(new Set(services));
 }
 
 export function startSearchSession(
@@ -102,24 +116,7 @@ export function refineSearchSession(
     filters: merged,
     results: placeholders(queried, state, merged),
     focusService: services[0] ?? prev?.focusService,
-    selected: prev?.selected,
   };
   setSearchSession(session);
   return session;
-}
-
-export function selectResult(
-  service: TravelServiceKind,
-  ordinal: number,
-): SearchResultItem | undefined {
-  const session = getSearchSession();
-  if (!session) return undefined;
-  const ofService = session.results.filter((r) => r.service === service);
-  const item = ofService[ordinal - 1];
-  if (!item) return undefined;
-  setSearchSession({
-    ...session,
-    selected: { service, id: item.id, label: item.label },
-  });
-  return item;
 }

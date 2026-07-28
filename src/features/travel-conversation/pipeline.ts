@@ -1,10 +1,13 @@
 /**
- * Authoritative pipeline — consultant agent loop is the sole production path.
+ * Authoritative pipeline — conversation progression is the sole production path.
  *
- * normalize → consultant (context → reason → validate → execute → respond)
+ * sendTravelMessage / processTravelTurn → runConversationTurn → domain tools
  */
 
-import { runConsultantTurn, resetConsultantRuntime } from './consultant';
+import {
+  runConversationTurn,
+  resetConversationRuntime as resetProgressionRuntime,
+} from './conversation';
 import {
   getTravelConversation,
   resetTravelConversation,
@@ -12,7 +15,6 @@ import {
 } from './store';
 import type { ConversationState, TravelTurnResult } from './types';
 import { createEmptyConversationState } from './types';
-import { evaluateClarification } from './clarify';
 
 export type SendTravelMessageInput = {
   message: string;
@@ -26,7 +28,7 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   const previous =
     input.previousState !== undefined ? input.previousState : getTravelConversation();
 
-  const result = runConsultantTurn({
+  const progression = runConversationTurn({
     message: input.message,
     previousState: previous,
     now: input.now,
@@ -34,25 +36,20 @@ export function processTravelTurn(input: SendTravelMessageInput): TravelTurnResu
   });
 
   if (input.commit !== false && input.previousState === undefined) {
-    setTravelConversation(result.state);
+    setTravelConversation(progression.state);
   } else if (input.commit && input.previousState !== undefined) {
-    setTravelConversation(result.state);
+    setTravelConversation(progression.state);
   }
 
-  const clarification = evaluateClarification(result.state);
-
   return {
-    state: result.state,
-    reply: result.reply,
-    clarification,
-    activateSearch: result.activateSearch,
-    continueSearch: result.continueSearch,
-    servicesToSearch: result.servicesToSearch,
-    searchPerformed: result.searchPerformed,
-    searchSessionActive: result.searchSessionActive,
-    decision: result.decision,
-    trace: result.trace,
-    observation: result.observation,
+    state: progression.state,
+    reply: progression.reply,
+    activateSearch: progression.activateSearch,
+    continueSearch: progression.continueSearch,
+    servicesToSearch: progression.servicesToSearch,
+    searchPerformed: progression.searchPerformed,
+    searchSessionActive: progression.searchSessionActive,
+    progression,
   };
 }
 
@@ -64,8 +61,8 @@ export function sendTravelMessage(
 }
 
 export function resetConversationRuntime(): ConversationState {
-  resetConsultantRuntime();
+  resetProgressionRuntime();
   return resetTravelConversation();
 }
 
-export { createEmptyConversationState, resetConsultantRuntime };
+export { createEmptyConversationState, resetProgressionRuntime };

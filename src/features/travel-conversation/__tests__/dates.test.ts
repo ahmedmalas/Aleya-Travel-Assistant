@@ -38,13 +38,12 @@ describe('return constraints', () => {
 
   it('resolves day-only against mid-August context', () => {
     const previous = createEmptyConversationState();
-    previous.pendingClarification = 'departureDate';
     previous.departureDate = {
       value: { kind: 'approximate', period: 'mid', month: 8, year: 2026, label: 'mid August' },
       source: 'explicit',
       confirmed: false,
     };
-    const dates = extractDateCandidates('14th', NOW, previous);
+    const dates = extractDateCandidates('14th', NOW, previous, 'departureDate');
     expect(dates.find((d) => d.exact)?.exact?.isoDate).toBe('2026-08-14');
   });
 });

@@ -1,10 +1,11 @@
-/** Small internal helpers preserved as tools for the consultant agent. */
+/** Domain readiness helper — not a dialogue planner. */
 
-import { evaluateClarification } from './clarify';
+import { calculateTripCompleteness } from './conversation/completeness';
+import { getTripType } from './conversation/runtime';
 import type { ConversationState, TravelServiceKind } from './types';
 
-export function requirementsReady(state: ConversationState): boolean {
-  return Boolean(state.destination) && !evaluateClarification(state).needed;
+export function tripReadyForSearch(state: ConversationState): boolean {
+  return calculateTripCompleteness(state, getTripType()).readyToSearch;
 }
 
 /** Never invent accommodation or car hire — flights only as search default. */

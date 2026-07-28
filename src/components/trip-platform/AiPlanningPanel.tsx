@@ -4,6 +4,7 @@ import {
   isSearchActive,
   resetTravelConversation,
   sendTravelMessage,
+  tripReadyForSearch,
   useTravelConversation,
   type TravelServiceKind,
 } from '../../features/travel-conversation';
@@ -70,8 +71,7 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
-  const searchReady =
-    (travelState.phase === 'ready' || travelState.phase === 'locked') && !isSearchActive();
+  const searchReady = tripReadyForSearch(travelState) && !isSearchActive();
   const sessionActive = isSearchActive();
 
   /** Keep the user in chat — scroll only inside the chat pane, never the page. */

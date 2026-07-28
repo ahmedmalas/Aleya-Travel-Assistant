@@ -1,4 +1,4 @@
-import type { ConversationState } from '../types';
+import type { ConversationState, TripField } from '../types';
 import { extractDateCandidates, extractDurationCandidates } from './dates';
 import { extractLocationCandidates } from './locations';
 import {
@@ -10,15 +10,16 @@ import type { CandidateBundle } from './types';
 
 export type { CandidateBundle, LocationCandidate, DateCandidate } from './types';
 
-/** Stage 3 — Independent candidate extraction (no state mutation). */
+/** Independent candidate extraction (no state mutation). */
 export function extractCandidates(
   text: string,
   now: Date,
   previous: ConversationState,
+  awaitingField?: TripField,
 ): CandidateBundle {
   return {
     locations: extractLocationCandidates(text),
-    dates: extractDateCandidates(text, now, previous),
+    dates: extractDateCandidates(text, now, previous, awaitingField),
     durations: extractDurationCandidates(text),
     services: extractServiceCandidates(text),
     travellers: extractTravellerCandidates(text),

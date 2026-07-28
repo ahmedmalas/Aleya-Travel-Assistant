@@ -1,5 +1,5 @@
 import { MONTHS, MONTH_PATTERN, WEEKDAY_PATTERN, WEEKDAYS } from '../lexicon';
-import type { ConversationState } from '../types';
+import type { ConversationState, TripField } from '../types';
 import type { DateCandidate, DurationCandidate } from './types';
 
 function resolveYear(month: number, explicitYear: number | undefined, now: Date): number {
@@ -28,11 +28,12 @@ export function extractDateCandidates(
   text: string,
   now: Date,
   previous?: ConversationState,
+  awaitingField?: TripField,
 ): DateCandidate[] {
   const found: DateCandidate[] = [];
   const lower = text.toLowerCase();
   const ctx = monthContext(previous);
-  const pendingDate = previous?.pendingClarification === 'departureDate';
+  const pendingDate = awaitingField === 'departureDate';
 
   // Approximate periods
   const approx = lower.match(

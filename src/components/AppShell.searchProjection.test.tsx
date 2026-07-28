@@ -32,7 +32,6 @@ function seedSydneyMelbourneTrip() {
     label: '31/08/2026',
   });
   state.services = ['flights', 'accommodation', 'car_hire'];
-  state.phase = 'ready';
   state.turnCount = 1;
   localStorage.setItem(
     STORAGE_KEY,

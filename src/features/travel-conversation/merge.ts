@@ -173,7 +173,5 @@ export function mergeTravelState(
     ].slice(-40);
   }
 
-  // pendingClarification owned by pipeline after merge
-  next.pendingClarification = base.pendingClarification;
   return next;
 }

@@ -1,4 +1,4 @@
-/** Travel Understanding Engine — schema v5 (clean rebuild). */
+/** Travel Understanding Engine — schema v5 (canonical trip state only). */
 
 export const CONVERSATION_SCHEMA_VERSION = 5 as const;
 
@@ -53,21 +53,16 @@ export type ReturnDate = {
   year?: number;
 };
 
-export type ClarificationField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
+/**
+ * Trip field identity for role assignment when the engine is awaiting an answer.
+ * Domain tool input — not a dialogue planner.
+ */
+export type TripField = 'origin' | 'destination' | 'departureDate' | 'returnDate';
 
-/** Readiness metadata for the Saved Requirements panel — not a dialogue controller. */
-export type ConversationPhase = 'requirements' | 'ready' | 'locked';
-
-/** Last assistant-offered action — used only as conversation context. */
-export type AssistantOffer = {
-  kind: 'start_search';
-  atTurn: number;
-};
-
+/** Canonical trip requirements — facts only. No dialogue orchestration. */
 export type ConversationState = {
   schemaVersion: typeof CONVERSATION_SCHEMA_VERSION;
   conversationId: string;
-  phase: ConversationPhase;
   origin?: FieldValue<string>;
   destination?: FieldValue<string>;
   departureDate?: FieldValue<DepartureDate>;
@@ -78,9 +73,6 @@ export type ConversationState = {
   excludedServices: TravelServiceKind[];
   travellers?: FieldValue<number>;
   preferences: string[];
-  pendingClarification?: ClarificationField;
-  /** When set, short approvals ("go ahead", "ready…") continue this offer. */
-  lastOffer?: AssistantOffer;
   changeHistory: Array<{ turn: number; fields: string[]; snippet: string }>;
   turnCount: number;
   updatedAt: string;
@@ -102,16 +94,9 @@ export type TravelPatch = {
   clearFields: string[];
 };
 
-export type Clarification = {
-  needed: boolean;
-  field?: ClarificationField;
-  question?: string;
-};
-
 export type TravelTurnResult = {
   state: ConversationState;
   reply: string;
-  clarification: Clarification;
   /** True only when a brand-new live search session starts. */
   activateSearch: boolean;
   /** True when refining/refreshing an existing search session. */
@@ -119,17 +104,14 @@ export type TravelTurnResult = {
   servicesToSearch: TravelServiceKind[];
   searchPerformed: boolean;
   searchSessionActive: boolean;
-  /** Structured consultant decision for this turn (traces / tests). */
-  decision?: import('./consultant/types').ConsultantTurnDecision;
-  trace?: import('./consultant/types').ConsultantTrace;
-  observation?: import('./consultant/types').ActionObservation;
+  /** Full progression turn (context → actions → next step → reply). */
+  progression: import('./conversation/contracts').ConversationTurnResult;
 };
 
 export function createEmptyConversationState(conversationId?: string): ConversationState {
   return {
     schemaVersion: CONVERSATION_SCHEMA_VERSION,
     conversationId: conversationId ?? `conv-${Math.random().toString(36).slice(2, 10)}`,
-    phase: 'requirements',
     services: [],
     excludedServices: [],
     preferences: [],

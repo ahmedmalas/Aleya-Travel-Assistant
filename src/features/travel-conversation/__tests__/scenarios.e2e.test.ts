@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  clearConversationTraces,
+  getConversationTraces,
   processTravelTurn,
   projectRequirementsSummary,
   projectSearchForm,
@@ -15,16 +17,18 @@ import { NOW } from './helpers';
 
 beforeEach(() => {
   resetTravelConversation();
+  clearConversationTraces();
   localStorage.clear();
 });
 
 afterEach(() => {
   resetTravelConversation();
+  clearConversationTraces();
   localStorage.clear();
 });
 
 describe('Scenario 1 — Complete one-turn request', () => {
-  it('captures full trip without unnecessary clarification', () => {
+  it('captures full trip without unnecessary missing-field question', () => {
     const message =
       'I want to go to Gold Coast on the 28th of August departing from Melbourne and staying at Surfers Paradise for 3 nights returning Monday. I need flights, hotel and car hire.';
     const result = sendTravelMessage({ message, now: NOW });
@@ -40,13 +44,13 @@ describe('Scenario 1 — Complete one-turn request', () => {
     expect(result.state.services).toEqual(
       expect.arrayContaining(['flights', 'accommodation', 'car_hire']),
     );
-    expect(result.clarification.needed).toBe(false);
-    expect(result.reply).not.toMatch(/Where will you be departing from/i);
+    expect(result.progression.nextRequiredField).toBeNull();
+    expect(result.reply).not.toMatch(/Where will you be travelling from/i);
     expect(result.reply).not.toMatch(/Which date/i);
   });
 });
 
-describe('Scenario 2 — Approximate date then clarification', () => {
+describe('Scenario 2 — Approximate date then exact day', () => {
   const firstMsg =
     'I want to go to Gold Coast departing Melbourne mid August, staying at Surfers Paradise for 3 nights over the weekend and returning Monday. I need flights, car hire and accommodation.';
 
@@ -63,8 +67,9 @@ describe('Scenario 2 — Approximate date then clarification', () => {
     expect(first.state.accommodationArea?.value).toBe('Surfers Paradise');
     expect(first.state.durationNights?.value).toBe(3);
     expect(first.state.services).toHaveLength(3);
-    expect(first.clarification.field).toBe('departureDate');
-    expect(first.reply).not.toMatch(/Where will you be departing from/i);
+    expect(first.progression.nextRequiredField?.id).toBe('departureDate');
+    expect(first.reply).toMatch(/Which date/i);
+    expect(first.reply).not.toMatch(/Where will you be travelling from/i);
   });
 
   it('14th of August resolves to 14/08 and Monday return 17/08', () => {
@@ -75,8 +80,7 @@ describe('Scenario 2 — Approximate date then clarification', () => {
       isoDate: '2026-08-14',
     });
     expect(second.state.returnDate?.value.isoDate).toBe('2026-08-17');
-    expect(second.state.pendingClarification).toBeUndefined();
-    expect(second.clarification.needed).toBe(false);
+    expect(second.progression.nextRequiredField?.id).not.toBe('departureDate');
     expect(second.reply).not.toMatch(/Which date/i);
     expect(projectSearchForm(second.state)).toMatchObject({
       originCode: 'MEL',
@@ -91,7 +95,7 @@ describe('Scenario 2 — Approximate date then clarification', () => {
   });
 });
 
-describe('Scenario 3 — Missing origin clarification', () => {
+describe('Scenario 3 — Missing origin progression', () => {
   it('asks for origin then melbourne fills origin only', () => {
     const first = sendTravelMessage({
       message: 'I want to go to Gold Coast on 28 August 2026.',
@@ -102,14 +106,14 @@ describe('Scenario 3 — Missing origin clarification', () => {
       kind: 'exact',
       isoDate: '2026-08-28',
     });
-    expect(first.state.pendingClarification).toBe('origin');
-    expect(first.reply).toMatch(/travelling from|flying from|departure city|departing from/i);
+    expect(first.progression.nextRequiredField?.id).toBe('origin');
+    expect(first.reply).toMatch(/travelling from/i);
 
     const second = sendTravelMessage({ message: 'melbourne', now: NOW });
     expect(second.state.origin?.value).toBe('Melbourne');
     expect(second.state.destination?.value).toBe('Gold Coast');
-    expect(second.state.pendingClarification).not.toBe('origin');
-    expect(second.reply).not.toMatch(/travelling from|flying from|departure city|departing from/i);
+    expect(second.progression.nextRequiredField?.id).not.toBe('origin');
+    expect(second.reply).not.toMatch(/travelling from/i);
   });
 });
 
@@ -168,6 +172,9 @@ describe('persistence and schema', () => {
     expect(CONVERSATION_SCHEMA_VERSION).toBe(5);
     const raw = localStorage.getItem(STORAGE_KEY);
     expect(raw).toContain('"schemaVersion":5');
+    expect(raw).not.toContain('"phase"');
+    expect(raw).not.toContain('"pendingClarification"');
+    expect(raw).not.toContain('"lastOffer"');
     for (const key of LEGACY_STORAGE_KEYS) {
       expect(localStorage.getItem(key)).toBeNull();
     }
@@ -189,5 +196,15 @@ describe('UI projection', () => {
       accommodation: 'Surfers Paradise',
       duration: '3 nights',
     });
+  });
+});
+
+describe('traces available', () => {
+  it('records known/missing/nextRequiredField', () => {
+    sendTravelMessage({ message: 'i need to go melbourne', now: NOW });
+    const traces = getConversationTraces();
+    expect(traces.at(-1)?.knownFacts.destination).toBe('Melbourne');
+    expect(traces.at(-1)?.nextRequiredField).toBe('origin');
+    expect(traces.at(-1)?.missingRequirements).toContain('origin');
   });
 });

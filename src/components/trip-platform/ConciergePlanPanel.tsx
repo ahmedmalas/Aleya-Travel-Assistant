@@ -92,7 +92,9 @@ export function ConciergePlanPanel() {
     setFeedback(null);
     // Canonical store only — never seed vault/profile fields into conversation state.
     const result = sendTravelMessage({ message: trimmed });
-    const title = result.clarification.needed ? 'Need a detail' : 'Concierge planning update';
+    const title = result.progression.nextRequiredField
+      ? 'Need a detail'
+      : 'Concierge planning update';
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',

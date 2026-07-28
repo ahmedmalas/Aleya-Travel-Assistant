@@ -1,11 +1,8 @@
 /**
- * Travel Understanding Engine + Consultant Agent (schema v5)
+ * Travel Understanding Engine + Conversation Progression (schema v5)
  *
- * Sole production conversation path:
- *   normalize → consultant agent loop (context → reason → validate → execute → respond)
- *
- * Internal tools (do not speak for Aleya):
- *   extract / assign / merge / clarify / search-projection / search session
+ * Sole production path:
+ *   sendTravelMessage / processTravelTurn → runConversationTurn → domain tools
  */
 
 export { sendTravelMessage, processTravelTurn, resetConversationRuntime } from './pipeline';
@@ -43,33 +40,30 @@ export type {
   LiveSearchResult,
 } from './search-projection';
 export {
-  runConsultantTurn,
-  resetConsultantRuntime,
-  getConsultantTraces,
-  clearConsultantTraces,
+  runConversationTurn,
+  getConversationTraces,
+  clearConversationTraces,
   getSearchSession,
   isSearchActive,
-  assertHumanReply,
-} from './consultant';
+  calculateTripCompleteness,
+  wasSearchOffered,
+} from './conversation';
 export type {
-  ConsultantTurnDecision,
-  ConsultantTurnResult,
-  ConsultantTrace,
-  ConsultantGoal,
-  ConsultantContext,
-  ActionObservation,
-} from './consultant';
+  ConversationTurnResult,
+  TripCompleteness,
+  MissingRequirement,
+  TurnTrace,
+  TurnGoal,
+} from './conversation';
 export {
   CONVERSATION_SCHEMA_VERSION,
   createEmptyConversationState,
 } from './types';
 export type {
-  ClarificationField,
-  ConversationPhase,
   ConversationState,
   DepartureDate,
   TravelTurnResult,
   TravelServiceKind,
+  TripField,
 } from './types';
-export { evaluateClarification } from './clarify';
-export { requirementsReady } from './tools';
+export { tripReadyForSearch } from './tools';

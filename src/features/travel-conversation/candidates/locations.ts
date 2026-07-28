@@ -145,7 +145,7 @@ export function extractLocationCandidates(text: string): LocationCandidate[] {
     const destCues: Array<{ re: RegExp; cue: string }> = [
       {
         re: new RegExp(
-          `\\b(?:want\\s+to\\s+go(?:\\s+to)?|i\\s+want\\s+(?:to\\s+go\\s+to|to\\s+go|)|go(?:ing)?\\s+to|travel(?:ling|ing)?\\s+to|fly(?:ing)?\\s+to)\\s+${place}\\b`,
+          `\\b(?:need\\s+to\\s+go(?:\\s+to)?|want\\s+to\\s+go(?:\\s+to)?|i\\s+(?:need|want)\\s+(?:to\\s+go(?:\\s+to)?|to\\s+go\\s+to)|go(?:ing)?\\s+to|travel(?:ling|ing)?\\s+to|fly(?:ing)?\\s+to)\\s+${place}\\b`,
           'i',
         ),
         cue: 'go-to',

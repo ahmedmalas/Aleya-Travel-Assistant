@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { resetConsultantRuntime } from './consultant/memory';
+import { resetConversationRuntime } from './conversation/runtime';
 import type { ConversationState } from './types';
 import {
   CONVERSATION_SCHEMA_VERSION,
@@ -50,6 +50,25 @@ function purgeLegacyKeys(): void {
   }
 }
 
+/** Strip deleted orchestration fields from older persisted blobs. */
+function sanitizeState(raw: ConversationState): ConversationState {
+  const state = { ...raw };
+  const legacy = state as ConversationState & {
+    phase?: unknown;
+    pendingClarification?: unknown;
+    lastOffer?: unknown;
+  };
+  delete legacy.phase;
+  delete legacy.pendingClarification;
+  delete legacy.lastOffer;
+  if (!Array.isArray(state.services)) state.services = [];
+  if (!Array.isArray(state.excludedServices)) state.excludedServices = [];
+  if (!Array.isArray(state.preferences)) state.preferences = [];
+  if (!Array.isArray(state.changeHistory)) state.changeHistory = [];
+  if (!Array.isArray(state.lastChangedFields)) state.lastChangedFields = [];
+  return state;
+}
+
 function readPersisted(): ConversationState | undefined {
   if (!canUseStorage()) return undefined;
   try {
@@ -64,17 +83,7 @@ function readPersisted(): ConversationState | undefined {
       window.localStorage.removeItem(STORAGE_KEY);
       return undefined;
     }
-    const state = parsed.state;
-    // Migrate deleted planning/confirmation/review phases → readiness model.
-    const legacy = state.phase as string | undefined;
-    if (!legacy) {
-      state.phase = 'requirements';
-    } else if (legacy === 'planning' || legacy === 'review' || legacy === 'confirmation') {
-      state.phase = 'ready';
-    } else if (legacy === 'confirmed') {
-      state.phase = 'locked';
-    }
-    return state;
+    return sanitizeState(parsed.state);
   } catch {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -90,7 +99,7 @@ function writePersisted(state: ConversationState): void {
   try {
     const envelope: PersistedEnvelope = {
       schemaVersion: CONVERSATION_SCHEMA_VERSION,
-      state,
+      state: sanitizeState(state),
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
   } catch {
@@ -119,8 +128,8 @@ export function getTravelConversation(): ConversationState {
 
 export function setTravelConversation(next: ConversationState): void {
   purgeLegacyKeys();
-  memoryState = next;
-  writePersisted(next);
+  memoryState = sanitizeState(next);
+  writePersisted(memoryState);
   emit();
 }
 
@@ -134,7 +143,7 @@ export function resetTravelConversation(): ConversationState {
       // ignore
     }
   }
-  resetConsultantRuntime();
+  resetConversationRuntime();
   hydrated = true;
   emit();
   return memoryState;
@@ -147,10 +156,8 @@ export function subscribeTravelConversation(listener: Listener): () => void {
   };
 }
 
-/** Stable SSR/prerender snapshot — must not allocate a new object per call. */
 const SERVER_SNAPSHOT = createEmptyConversationState('ssr-empty');
 
-/** Hydrate once on first client import so UI and engine share the same store immediately. */
 if (typeof window !== 'undefined') {
   hydrateTravelConversation();
 }
