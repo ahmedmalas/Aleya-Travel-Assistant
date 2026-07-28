@@ -23,13 +23,9 @@ window.__ALEYA_BUILD__
 
 If any of those fields differ, **stop**. You are on the wrong deployment.
 
-## Branch alias (tracks tip — may differ from the pinned immutable host)
+## Do not use the Vercel PR Preview button for this verification
 
-```text
-https://travel-buddy-assistant-ai-git-cursor-5147e3-ahmedmalas-projects.vercel.app/
-```
-
-Prefer the immutable tip URL above for verification. The alias should eventually show the same tip identity after SSO.
+The PR “Preview” link is a moving branch alias. It is **not** the pin. Close it if it opens. Paste only the immutable tip URL above.
 
 ## Do not test superseded immutable deployments
 
@@ -44,14 +40,8 @@ THIS IS A SUPERSEDED PR #29 BUILD.
 DO NOT TEST THIS DEPLOYMENT.
 ```
 
-with a link to the tip URL above. Builds that predate that gate cannot self-warn — delete those deployments in the Vercel dashboard if they remain reachable.
+with a link to the tip URL above. Builds that predate that gate cannot self-warn — delete those deployments in the Vercel dashboard if they remain reachable (`dpl_EBo8RchGLXLZfjXNwF8dJgLQsuNN` and any other non-tip immutable).
 
 ## Stale artifact quarantine
 
-Do **not** follow verification URLs from:
-
-- `/opt/cursor/artifacts/conversation-progression/VERIFIED_TEST_URL.md` (pre-tip pin — obsolete)
-- `/opt/cursor/artifacts/conversation-progression/EVIDENCE_REPORT.md` (pre-tip pin — obsolete)
-- Older PR review comments that named an immutable host other than `1kemub2h8`
-
-Those artifacts are historical only. This file is the sole active handoff.
+Do **not** follow verification URLs from older agent artifacts or prior “verified test URL” notes. Those files have been rewritten to point only here. This document is the sole active handoff.
