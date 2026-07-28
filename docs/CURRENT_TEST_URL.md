@@ -1,38 +1,36 @@
 # Current authoritative test URL (PR #29)
 
 > **Status:** ACTIVE tip for personal verification  
-> **Supersedes:** all earlier PR #29 immutable pins listed below
+> **Supersedes:** all earlier PR #29 immutable pins listed below  
+> **Do not open any “SUPERSEDED” host.** Immutable hosts never upgrade.
 
 ## Active build identity
 
 | Field | Value |
 |---|---|
-| Immutable URL | https://travel-buddy-assistant-lmttqef7g-ahmedmalas-projects.vercel.app/ |
-| Deployment ID | `dpl_BLKENwnWiLBAmDDoRwBhQ5UBj1Ps` |
-| Feature Git SHA | `972c310` |
-| Dist Git SHA | `40a9212` |
-| Loaded chunk | `travel-conversation-SFityODo.js` |
+| Immutable URL | https://travel-buddy-assistant-1kemub2h8-ahmedmalas-projects.vercel.app/ |
+| Deployment ID | `dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc` |
+| Baked Git SHA | `ee924c3` |
+| Dist Git SHA | `117db29` |
+| Loaded chunk | `travel-conversation-CuR8-RFq.js` |
 | PR | [#29](https://github.com/ahmedmalas/Aleya-Travel-Assistant/pull/29) (Draft) |
-| Timestamp (UTC) | 2026-07-28T11:19:39Z |
+| Timestamp (UTC) | 2026-07-28T11:38:14Z |
 
-Before trusting any transcript, confirm the page shows matching **deploymentId / buildGitSha / loadedTravelChunk**.
+Contains: contextual reference layer (`972c310`) + chat start-of-reply scroll fix (`ee924c3`).
 
-Expected on-page identity:
+On-page must show:
 ```text
-buildGitSha: 972c310
-loadedTravelChunk: travel-conversation-SFityODo.js
+buildGitSha: ee924c3
+loadedTravelChunk: travel-conversation-CuR8-RFq.js
+deploymentId: dpl_GKbx8XW6oPAQzi3eCyZLcBujxrSc
 ```
 
-## Superseded — do not use for tip verification
+## Superseded — do not use
 
-| Immutable host | Deployment | Chunk | SHA | Why superseded |
+| Host | Deployment | Chunk | SHA | Why |
 |---|---|---|---|---|
-| `…40wg4wfhx…` | `dpl_EBo8RchGLXLZfjXNwF8dJgLQsuNN` | `travel-conversation-B6zQeu8l.js` | `18511d7` / `2f6f5bf` | Turn-evidence preview; no contextual reference layer |
-| `…q3fvjxed4…` | `dpl_F9DKVBfhyoVANg4MhcP5CmtB2szi` | `travel-conversation-C_wkFoyi.js` | `cf59dc9` / `ca5f678` | Search-launch workspace; contextual references still failed |
-| `…` tip before force-add | `dpl` from `aebba7f` | broken index without `SFityODo` assets | `aebba7f` | Incomplete dist push (gitignore); superseded by `40a9212` |
+| `…40wg4wfhx…` | `dpl_EBo8Rch…` | `B6zQeu8l` | `18511d7` | Session-identity pin; **no contextual references**. Prior agent “single recommended URL”. |
+| `…q3fvjxed4…` | `dpl_F9DKVB…` | `C_wkFoyi` | `cf59dc9` | Search-launch only |
+| `…lmttqef7g…` | `dpl_BLKENwn…` | `SFityODo` | `972c310` | Contextual OK; **pre-scroll-fix** |
 
-Branch alias `…git-cursor-5147e3…` moves on every tip push — never treat it as a permanent pin.
-
-## Session identity rule
-
-Visible progression wording proves **code path**, not which immutable host your tab loaded. Always read the on-page runtime identity panel.
+Branch alias `…git-cursor-5147e3…` moves every tip push — not a permanent pin.
