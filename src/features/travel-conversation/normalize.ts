@@ -12,7 +12,7 @@ export function normalizeInput(raw: string): string {
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/\s+([,.!?;:])/g, '$1')
-    .replace(/([,.!?;:])(\S)/g, '$1: $2'.replace(': ', ' '))
+    .replace(/([,.!?;:])(\S)/g, '$1 $2')
     .replace(/\bwanna\b/gi, 'want to')
     .replace(/\bgonna\b/gi, 'going to')
     .replace(/\bthru\b/gi, 'through')
