@@ -9,7 +9,7 @@
 |---|---|
 | Immutable URL | _filled after deploy_ |
 | Deployment ID | _filled after deploy_ |
-| Feature Git SHA | _filled after commit_ |
+| Feature Git SHA | `972c310` |
 | Dist Git SHA | _filled after dist commit_ |
 | Loaded chunk | _filled after build_ |
 | PR | [#29](https://github.com/ahmedmalas/Aleya-Travel-Assistant/pull/29) (Draft) |
