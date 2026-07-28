@@ -6,7 +6,7 @@ const SERVICE_PATTERNS: Array<{ kind: TravelServiceKind; re: RegExp }> = [
   { kind: 'accommodation', re: /\b(?:accommodation|hotels?|stay|stays)\b/i },
   { kind: 'car_hire', re: /\b(?:car hire|rental car|hire car|car rental)\b/i },
   { kind: 'transfers', re: /\btransfers?\b/i },
-  { kind: 'activities', re: /\bactivities\b/i },
+  { kind: 'activities', re: /\bactivit(?:y|ies)\b/i },
 ];
 
 function servicesIn(fragment: string): TravelServiceKind[] {
@@ -48,7 +48,6 @@ export function extractServiceCandidates(text: string): ServiceCandidate[] {
   ];
   for (const m of addMatches) {
     for (const service of servicesIn(m[1] ?? '')) {
-      // Skip if this add is inside a remove-only "no X" already handled — still allow "add car hire"
       found.push({
         kind: 'service',
         service,
@@ -61,8 +60,14 @@ export function extractServiceCandidates(text: string): ServiceCandidate[] {
     }
   }
 
-  // Whole-message service mentions with travel intent when no add clause found
-  if (!found.some((c) => c.operation === 'add') && /\b(?:need|flights?|hotel|accommodation|car hire)\b/i.test(lower)) {
+  // Whole-message service mentions when no add clause found. This supports
+  // concise clarification replies such as "hotel", "car hire", or "activities".
+  if (
+    !found.some((c) => c.operation === 'add') &&
+    /\b(?:need|flights?|hotels?|accommodation|stays?|car hire|rental car|hire car|car rental|transfers?|activit(?:y|ies))\b/i.test(
+      lower,
+    )
+  ) {
     for (const service of servicesIn(text)) {
       if (found.some((c) => c.service === service && c.operation === 'remove')) continue;
       found.push({
