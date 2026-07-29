@@ -28,6 +28,8 @@ export type ProcessConversationTurnInput = {
   state?: ConversationCoreState;
   /** Required when `state` is omitted — keeps the factory free of hidden globals. */
   conversationId?: string;
+  /** Explicit destination only — stored as injected; never read from message. */
+  destination?: string;
 };
 
 export type ProcessConversationTurnResult = {
@@ -39,10 +41,10 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 2F: append raw user + placeholder assistant entries, increment
+ * Phase 3A: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
- * active, and expose ageMs from assistantMessageAt vs createdAt. Does not
- * interpret, trim, normalise, or persist.
+ * active, expose ageMs, and record an explicitly supplied destination only.
+ * Does not interpret, trim, normalise, extract, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -52,6 +54,8 @@ export function processConversationTurn(
   const assistantTimestamp = input.assistantMessageAt.toISOString();
   const ageMs =
     input.assistantMessageAt.getTime() - new Date(base.createdAt).getTime();
+  const destination =
+    input.destination !== undefined ? input.destination : base.destination;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -74,6 +78,7 @@ export function processConversationTurn(
     createdAt: base.createdAt,
     updatedAt: assistantTimestamp,
     ageMs,
+    destination,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

@@ -49,6 +49,12 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn).toMatch(
       /assistantMessageAt\.getTime\(\) - new Date\(base\.createdAt\)\.getTime\(\)/,
     );
+    expect(types).toMatch(/destination: string \| null/);
+    expect(types).toMatch(/destination: null,/);
+    expect(processTurn).toMatch(/destination\?: string/);
+    expect(processTurn).toMatch(
+      /input\.destination !== undefined \? input\.destination : base\.destination/,
+    );
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
