@@ -48,6 +48,7 @@ function createState(
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: true,
+    hikingWalkingRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -131,6 +132,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const withRelatedFlags = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       scenicDrivesRequested: true,
       activitiesRequested: true,
       nearbyDiscoveryRequested: true,
@@ -198,6 +200,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const currentState = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -322,6 +325,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const currentState = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       activitiesRequested: true,
       kayakingRequested: true,
       origin: 'Melbourne',

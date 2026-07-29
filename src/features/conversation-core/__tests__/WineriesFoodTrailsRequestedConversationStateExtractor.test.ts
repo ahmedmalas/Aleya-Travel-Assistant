@@ -48,6 +48,7 @@ function createState(
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: true,
+    hikingWalkingRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -134,6 +135,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
     const withRelatedFlags = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       scenicDrivesRequested: true,
@@ -207,6 +209,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
     const currentState = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -338,6 +341,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
     const currentState = createState({
       attractionsRequested: true,
       snowActivitiesRequested: true,
+      hikingWalkingRequested: true,
       activitiesRequested: true,
       restaurantsRequested: true,
       origin: 'Melbourne',

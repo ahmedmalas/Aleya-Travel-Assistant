@@ -11,9 +11,28 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
+import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
+import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { AttractionsRequestedConversationStateExtractor } from '../AttractionsRequestedConversationStateExtractor';
+import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
+import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
+import { FourWheelDrivingRequestedConversationStateExtractor } from '../FourWheelDrivingRequestedConversationStateExtractor';
+import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
+import { KayakingRequestedConversationStateExtractor } from '../KayakingRequestedConversationStateExtractor';
+import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
 
@@ -22,19 +41,104 @@ const HIKING_WALKING_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/extractors/HikingWalkingRequestedConversationStateExtractor.ts',
 );
+const SNOW_ACTIVITIES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/SnowActivitiesRequestedConversationStateExtractor.ts',
+);
+const ATTRACTIONS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AttractionsRequestedConversationStateExtractor.ts',
+);
+const SCENIC_DRIVES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ScenicDrivesRequestedConversationStateExtractor.ts',
+);
+const FOUR_WHEEL_DRIVING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/FourWheelDrivingRequestedConversationStateExtractor.ts',
+);
+const KAYAKING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/KayakingRequestedConversationStateExtractor.ts',
+);
+const CAMPING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/CampingRequestedConversationStateExtractor.ts',
+);
+const BEACHES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
+);
+const NEARBY_DISCOVERY_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/NearbyDiscoveryRequestedConversationStateExtractor.ts',
+);
+const RESTAURANTS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/RestaurantsRequestedConversationStateExtractor.ts',
+);
+const ACTIVITIES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
+);
+const CAR_HIRE_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/CarHireRequestedConversationStateExtractor.ts',
+);
+const ACCOMMODATION_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AccommodationRequestedConversationStateExtractor.ts',
+);
+const FLIGHTS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/FlightsRequestedConversationStateExtractor.ts',
+);
+const INFANT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/InfantCountConversationStateExtractor.ts',
+);
+const CHILD_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ChildCountConversationStateExtractor.ts',
+);
+const ADULT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AdultCountConversationStateExtractor.ts',
+);
+const DESTINATION_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DestinationConversationStateExtractor.ts',
+);
+const ORIGIN_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/OriginConversationStateExtractor.ts',
+);
+const DEPARTURE_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
+);
+const RETURN_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ReturnDateConversationStateExtractor.ts',
+);
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6e',
+      conversationId: 'conversation-7u',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
     turnCount: 2,
     destination: 'Brisbane',
     origin: 'Melbourne',
+    departureDate: '2026-09-01',
+    returnDate: '2026-09-08',
+    adultCount: 2,
+    childCount: 1,
+    infantCount: 0,
     flightsRequested: true,
     accommodationRequested: true,
     carHireRequested: true,
@@ -48,6 +152,7 @@ function createState(
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: true,
+    hikingWalkingRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -90,114 +195,126 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 6E — HikingWalkingRequestedConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit hikingWalkingRequested true contract', () => {
     expectTypeOf<HikingWalkingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
-    expectTypeOf<
-      HikingWalkingRequestedConversationStateExtractor['extract']
-    >().parameters.toEqualTypeOf<[ConversationStateExtractionInput]>();
-    expectTypeOf<
-      HikingWalkingRequestedConversationStateExtractor['extract']
-    >().returns.toEqualTypeOf<ConversationStateExtractionResult>();
+    expectTypeOf<HikingWalkingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
+      [ConversationStateExtractionInput]
+    >();
+    expectTypeOf<HikingWalkingRequestedConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'go hiking',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'add hiking',
+        currentState: createState({ hikingWalkingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
   });
 
-  it('reports that no canonical hiking or walking request field exists', () => {
-    const initial = createInitialConversationCoreState({
-      conversationId: 'conversation-6e-field',
-      now: new Date('2026-07-29T00:00:00.000Z'),
-    });
-    for (const field of [
-      'hikingRequested',
-      'walkingRequested',
-      'hikingWalkingRequested',
-      'trekkingRequested',
-      'trailsRequested',
-      'bushwalkingRequested',
-      'natureWalksRequested',
-    ]) {
-      expect(Object.prototype.hasOwnProperty.call(initial, field)).toBe(false);
-      expect(field in initial).toBe(false);
-    }
-  });
-
-  it('cannot create state from hiking, walking, bushwalking, trekking, trail, or nature-walk wording', () => {
+  it('extracts supported explicit hiking/walking-request forms as true', () => {
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
-    const withRelatedFlags = createState({
-      attractionsRequested: true,
-      snowActivitiesRequested: true,
-      scenicDrivesRequested: true,
-      activitiesRequested: true,
-      nearbyDiscoveryRequested: true,
-      campingRequested: true,
-    });
-
-    const messages = [
+    const cases = [
+      'hiking and walking',
       'hiking',
       'walking',
-      'go hiking',
-      'go for a walk',
-      'bushwalking',
-      'trekking',
-      'walking trails',
-      'hiking trails',
-      'nature walks',
-      'guided walks',
-      'mountain walks',
-      'coastal walks',
-      'forest walks',
-      'show me hiking trails',
-      'find bushwalking near the hotel',
-      'I want to go trekking',
-      'add nature walks',
-      'yes include hiking',
-      'actually show me walking trails',
-      'do not include hiking',
-      'no walking',
-      'remove hiking',
-      'forget bushwalking',
-      'keep attractions but remove hiking',
+      'show hiking',
+      'show me hiking',
+      'show me walking',
+      'find hiking',
+      'find walking',
+      'I need hiking',
+      'I need walking',
+      'include hiking',
+      'add hiking',
+      'add walking',
+      'need hiking',
+      'book hiking',
+      'book walking',
     ];
 
-    for (const message of messages) {
+    for (const message of cases) {
       expect(
         extractor.extract({
           message,
-          currentState: createState(),
+          currentState: createState({ hikingWalkingRequested: null }),
         }),
-      ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withRelatedFlags,
-        }),
-      ).toEqual({ stateUpdate: {} });
+        message,
+      ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     }
-
-    const result = extractor.extract({
-      message: 'keep attractions but remove hiking',
-      currentState: withRelatedFlags,
-    });
-    expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('hikingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('walkingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('hikingWalkingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('attractionsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('activitiesRequested');
-    expect(withRelatedFlags.attractionsRequested).toBe(true);
   });
 
-  it('does not mutate input or retain state across calls', () => {
+  it('returns empty for trail/walk/hike/place names, walking directions/distance/walkable, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+    const extractor = new HikingWalkingRequestedConversationStateExtractor();
+    const unsupported = [
+      'Overland Track',
+      'Bondi to Coogee walk',
+      'Blue Mountains',
+      'hike',
+      'hikes',
+      'trek',
+      'trekking',
+      'bushwalking',
+      'walking directions',
+      'walking distance',
+      'walkable',
+      'go for a walk',
+      'easy hiking',
+      'guided walking',
+      'coastal walking',
+      'family-friendly hiking',
+      'hiking trails',
+      'walking tracks',
+      'hiking near the hotel',
+      'nearby walking',
+      'hiking in the Blue Mountains',
+      'do not include hiking',
+      'no walking',
+      "don't add hiking",
+      'without hiking',
+      'remove walking',
+      'forget hiking',
+      'keep walking',
+      'actually show me hiking',
+      'instead walking',
+      'not hiking but snow activities',
+      'Hello',
+      '',
+    ];
+
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ hikingWalkingRequested: false }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('never emits hikingWalkingRequested false or null from extraction', () => {
+    const extractor = new HikingWalkingRequestedConversationStateExtractor();
+    const blocked = extractor.extract({
+      message: 'no hiking',
+      currentState: createState({ hikingWalkingRequested: true }),
+    });
+    expect(blocked.stateUpdate).toEqual({});
+    expect(blocked.stateUpdate).not.toHaveProperty('hikingWalkingRequested');
+
+    const update = extractor.extract({
+      message: 'add walking',
+      currentState: createState({ hikingWalkingRequested: null }),
+    }).stateUpdate;
+    expect(update.hikingWalkingRequested).toBe(true);
+    expect(update.hikingWalkingRequested).not.toBe(false);
+    expect(update.hikingWalkingRequested).not.toBeNull();
+  });
+
+  it('does not mutate input or retain state across calls or instances', () => {
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
     const currentState = createState({
-      attractionsRequested: true,
-      snowActivitiesRequested: true,
+      hikingWalkingRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -208,7 +325,7 @@ describe('phase 6E — HikingWalkingRequestedConversationStateExtractor skeleton
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'go for a walk',
+      message: 'show me hiking',
       currentState,
     };
     const before = structuredClone(input);
@@ -219,72 +336,49 @@ describe('phase 6E — HikingWalkingRequestedConversationStateExtractor skeleton
 
     const first = extractor.extract(input);
     const second = extractor.extract(input);
-    first.stateUpdate.attractionsRequested = false;
+    first.stateUpdate.hikingWalkingRequested = false;
 
     expect(input).toEqual(before);
     expect(currentState).toEqual(before.currentState);
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+
+    const other =
+      new HikingWalkingRequestedConversationStateExtractor() as HikingWalkingRequestedConversationStateExtractor & {
+        retained?: string;
+      };
+    (
+      extractor as HikingWalkingRequestedConversationStateExtractor & {
+        retained?: string;
+      }
+    ).retained = 'first-only';
+    expect(other.retained).toBeUndefined();
+    expect(
+      other.extract({
+        message: 'walking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
   });
 
-  it('is included once in the production composite after snow activities', () => {
-    const extractors = readExtractors(
-      createConversationStateExtractor() as CompositeConversationStateExtractor,
-    );
-
-    expect(extractors).toHaveLength(28);
-    const snowIndexes = extractors
-      .map((extractor, index) =>
-        extractor instanceof SnowActivitiesRequestedConversationStateExtractor
-          ? index
-          : -1,
-      )
-      .filter((index) => index >= 0);
-    const hikingIndexes = extractors
-      .map((extractor, index) =>
-        extractor instanceof HikingWalkingRequestedConversationStateExtractor
-          ? index
-          : -1,
-      )
-      .filter((index) => index >= 0);
-    const emptyIndexes = extractors
-      .map((extractor, index) =>
-        extractor instanceof EmptyConversationStateExtractor ? index : -1,
-      )
-      .filter((index) => index >= 0);
-
-    expect(snowIndexes).toEqual([19]);
-    expect(hikingIndexes).toEqual([20]);
-    expect(emptyIndexes).toEqual([27]);
-    expect(extractors[19]).toBeInstanceOf(
-      SnowActivitiesRequestedConversationStateExtractor,
-    );
-    expect(extractors[20]).toBeInstanceOf(
-      HikingWalkingRequestedConversationStateExtractor,
-    );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
-  });
-
-  it('contains no inspection, keyword matching, regex, or provider imports', () => {
+  it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(
-      /hikingRequested\s*:|walkingRequested\s*:|hikingWalkingRequested\s*:/,
-    );
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
-    expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|bushwalk|trek(?:king)?|trail|nature.?walk|coastal.?walk|forest.?walk|mountain.?walk|guided.?walk/i,
-    );
-    expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|trail|park)/i,
-    );
+    expect(source).toMatch(/hikingWalkingRequested\s*:\s*true/);
+    expect(source).not.toMatch(/hikingWalkingRequested\s*:\s*false/);
+    expect(source).not.toMatch(/hikingWalkingRequested\s*:\s*null/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
+    expect(source).not.toMatch(/\.includes\(/);
+    expect(source).not.toMatch(/provider|travel-location/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
+    expect(source).not.toMatch(/from '\.\.\/\.\.|from '\.\.\/\.\.\/\.\./);
   });
 
   it('stays off the public index and is only constructed by the factory', () => {
@@ -325,36 +419,420 @@ describe('phase 6E — HikingWalkingRequestedConversationStateExtractor skeleton
     }
   });
 
-  it('keeps every production extractor behaviourally empty with the skeleton in the path', () => {
+  it('proves existing active extractors remain unchanged', () => {
+    expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7I',
+    );
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7K',
+    );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7L',
+    );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7M',
+    );
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
+    expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7Q',
+    );
+    expect(readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7R',
+    );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7S',
+    );
+    expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7T',
+    );
+
+    expect(
+      new SnowActivitiesRequestedConversationStateExtractor().extract({
+        message: 'add snow activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      new AttractionsRequestedConversationStateExtractor().extract({
+        message: 'add attractions',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    expect(
+      new ScenicDrivesRequestedConversationStateExtractor().extract({
+        message: 'add scenic drives',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
+    expect(
+      new FourWheelDrivingRequestedConversationStateExtractor().extract({
+        message: 'add four-wheel driving',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      new KayakingRequestedConversationStateExtractor().extract({
+        message: 'add kayaking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'add camping',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+    expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me beaches',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'book activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new CarHireRequestedConversationStateExtractor().extract({
+        message: 'book car hire',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
+    expect(
+      new AccommodationRequestedConversationStateExtractor().extract({
+        message: 'book a hotel',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      new FlightsRequestedConversationStateExtractor().extract({
+        message: 'book flights',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
+    expect(
+      new InfantCountConversationStateExtractor().extract({
+        message: '1 infant',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { infantCount: 1 } });
+    expect(
+      new AdultCountConversationStateExtractor().extract({
+        message: '2 adults',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { adultCount: 2 } });
+    expect(
+      new ChildCountConversationStateExtractor().extract({
+        message: '2 children',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { childCount: 2 } });
+    expect(
+      new DestinationConversationStateExtractor().extract({
+        message: 'go to Cairns',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(
+      new OriginConversationStateExtractor().extract({
+        message: 'from Sydney',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(
+      new DepartureDateConversationStateExtractor().extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+    expect(
+      new ReturnDateConversationStateExtractor().extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
+  });
+
+  it('applies extracted hikingWalkingRequested through the live processor with trusted explicit precedence', () => {
     const currentState = createState({
-      attractionsRequested: true,
       snowActivitiesRequested: true,
-      activitiesRequested: true,
+      attractionsRequested: true,
+      hikingWalkingRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
-    const messageOnly = processConversationTurn({
-      message: 'show me hiking trails and nature walks',
+    const extracted = processConversationTurn({
+      message: 'add hiking',
       state: currentState,
-      userEntryId: 'user-6e',
-      assistantEntryId: 'assistant-6e',
+      userEntryId: 'user-7u-a',
+      assistantEntryId: 'assistant-7u-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
-    const factoryResult = createConversationStateExtractor().extract({
-      message: 'go hiking',
-      currentState,
+    const overriddenTrue = processConversationTurn({
+      message: 'no hiking',
+      state: currentState,
+      userEntryId: 'user-7u-b',
+      assistantEntryId: 'assistant-7u-b',
+      userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
+      stateUpdate: { hikingWalkingRequested: true },
+    });
+    const overriddenFalse = processConversationTurn({
+      message: 'add walking',
+      state: currentState,
+      userEntryId: 'user-7u-c',
+      assistantEntryId: 'assistant-7u-c',
+      userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
+      stateUpdate: { hikingWalkingRequested: false },
+    });
+    const nullOverride = processConversationTurn({
+      message: 'add hiking',
+      state: currentState,
+      userEntryId: 'user-7u-d',
+      assistantEntryId: 'assistant-7u-d',
+      userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
+      stateUpdate: { hikingWalkingRequested: null },
+    });
+    const preserved = processConversationTurn({
+      message: 'walking directions',
+      state: currentState,
+      userEntryId: 'user-7u-e',
+      assistantEntryId: 'assistant-7u-e',
+      userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
+    });
+    const composed = processConversationTurn({
+      message: 'add hiking. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+        activitiesRequested: null,
+        restaurantsRequested: null,
+        nearbyDiscoveryRequested: null,
+        beachesRequested: null,
+        campingRequested: null,
+        kayakingRequested: null,
+        fourWheelDriveRequested: null,
+        scenicDrivesRequested: null,
+        attractionsRequested: null,
+        snowActivitiesRequested: null,
+        hikingWalkingRequested: null,
+      }),
+      userEntryId: 'user-7u-f',
+      assistantEntryId: 'assistant-7u-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'add walking. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+        activitiesRequested: null,
+        restaurantsRequested: null,
+        nearbyDiscoveryRequested: null,
+        beachesRequested: null,
+        campingRequested: null,
+        kayakingRequested: null,
+        fourWheelDriveRequested: null,
+        scenicDrivesRequested: null,
+        attractionsRequested: null,
+        snowActivitiesRequested: null,
+        hikingWalkingRequested: null,
+      }),
+      userEntryId: 'user-7u-g',
+      assistantEntryId: 'assistant-7u-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: {
+        origin: 'Perth',
+        destination: 'Hobart',
+        hikingWalkingRequested: false,
+      },
     });
 
-    expect(factoryResult).toEqual({ stateUpdate: {} });
-    expect(messageOnly.state.attractionsRequested).toBe(true);
-    expect(messageOnly.state.activitiesRequested).toBe(true);
-    expect(messageOnly.state.destination).toBe('Brisbane');
+    expect(extracted.state.hikingWalkingRequested).toBe(true);
+    expect(extracted.state.snowActivitiesRequested).toBe(true);
+    expect(extracted.state.attractionsRequested).toBe(true);
+    expect(extracted.state.origin).toBe('Melbourne');
+    expect(overriddenTrue.state.hikingWalkingRequested).toBe(true);
+    expect(overriddenFalse.state.hikingWalkingRequested).toBe(false);
+    expect(nullOverride.state.hikingWalkingRequested).toBeNull();
+    expect(preserved.state.hikingWalkingRequested).toBe(false);
+    expect(composed.state.hikingWalkingRequested).toBe(true);
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Cairns');
+    expect(independentOverride.state.hikingWalkingRequested).toBe(false);
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Hobart');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
-      Object.prototype.hasOwnProperty.call(messageOnly.state, 'hikingWalkingRequested'),
-    ).toBe(false);
-    expect(messageOnly.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(messageOnly).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(messageOnly.trace.messageInterpreted).toBe(false);
+      Object.keys(conversationCore).filter(
+        (name) =>
+          typeof (conversationCore as Record<string, unknown>)[name] ===
+            'function' && name !== 'createInitialConversationCoreState',
+      ),
+    ).toEqual(['processConversationTurn']);
+  });
+
+  it('keeps Destination through HikingWalkingRequested as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[18]).toBeInstanceOf(
+      AttractionsRequestedConversationStateExtractor,
+    );
+    expect(extractors[19]).toBeInstanceOf(
+      SnowActivitiesRequestedConversationStateExtractor,
+    );
+    expect(extractors[20]).toBeInstanceOf(
+      HikingWalkingRequestedConversationStateExtractor,
+    );
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({
+      origin: 'Hobart',
+      destination: 'Hobart',
+      flightsRequested: false,
+      accommodationRequested: false,
+      carHireRequested: false,
+      activitiesRequested: false,
+      restaurantsRequested: false,
+      nearbyDiscoveryRequested: false,
+      beachesRequested: false,
+      campingRequested: false,
+      kayakingRequested: false,
+      fourWheelDriveRequested: false,
+      scenicDrivesRequested: false,
+      attractionsRequested: false,
+      snowActivitiesRequested: false,
+      hikingWalkingRequested: false,
+    });
+
+    // ActivitiesRequested intentionally ignores messages that also mention snow
+    // activities, so this composed cue set omits an activities emission.
+    const hikingActiveMessage =
+      'add hiking. add snow activities. add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: hikingActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        flightsRequested: true,
+        accommodationRequested: true,
+        carHireRequested: true,
+        restaurantsRequested: true,
+        nearbyDiscoveryRequested: true,
+        beachesRequested: true,
+        campingRequested: true,
+        kayakingRequested: true,
+        fourWheelDriveRequested: true,
+        scenicDrivesRequested: true,
+        attractionsRequested: true,
+        snowActivitiesRequested: true,
+        hikingWalkingRequested: true,
+      },
+    });
+    expect(
+      extractors[10]?.extract({
+        message: 'book activities',
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+
+    for (let index = 21; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: hikingActiveMessage,
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[20]?.extract({
+        message: hikingActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractors[19]?.extract({
+        message: hikingActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractors[18]?.extract({
+        message: hikingActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+
+    const snowOnlyMessage = 'add snow activities';
+    expect(
+      extractors[19]?.extract({
+        message: snowOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractors[20]?.extract({
+        message: snowOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+
+    for (let index = 21; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: snowOnlyMessage,
+          currentState,
+        }),
+        `extractor ${index} on snow-activities message`,
+      ).toEqual({ stateUpdate: {} });
+    }
   });
 });

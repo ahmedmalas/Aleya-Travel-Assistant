@@ -25,6 +25,7 @@ export type AppliedConversationTravelState = {
   scenicDrivesRequested: boolean | null;
   attractionsRequested: boolean | null;
   snowActivitiesRequested: boolean | null;
+  hikingWalkingRequested: boolean | null;
   toursRequested: boolean | null;
   eventsRequested: boolean | null;
   nightlifeRequested: boolean | null;
@@ -125,6 +126,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.snowActivitiesRequested !== undefined
         ? stateUpdate.snowActivitiesRequested
         : currentState.snowActivitiesRequested,
+    hikingWalkingRequested:
+      stateUpdate?.hikingWalkingRequested !== undefined
+        ? stateUpdate.hikingWalkingRequested
+        : currentState.hikingWalkingRequested,
     toursRequested:
       stateUpdate?.toursRequested !== undefined
         ? stateUpdate.toursRequested

@@ -41,6 +41,7 @@ function seededState(): ConversationCoreState {
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: true,
+    hikingWalkingRequested: true,
     toursRequested: true,
     eventsRequested: true,
     nightlifeRequested: true,

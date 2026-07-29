@@ -61,6 +61,7 @@ describe('phase 5A — ConversationStateExtractionResult contract only', () => {
       scenicDrivesRequested: true,
       attractionsRequested: false,
       snowActivitiesRequested: false,
+      hikingWalkingRequested: false,
       toursRequested: true,
       eventsRequested: false,
       nightlifeRequested: true,

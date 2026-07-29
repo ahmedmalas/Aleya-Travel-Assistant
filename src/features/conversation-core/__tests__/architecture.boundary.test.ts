@@ -72,6 +72,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/scenicDrivesRequested\?: boolean \| null/);
     expect(types).toMatch(/attractionsRequested\?: boolean \| null/);
     expect(types).toMatch(/snowActivitiesRequested\?: boolean \| null/);
+    expect(types).toMatch(/hikingWalkingRequested\?: boolean \| null/);
     expect(types).toMatch(/toursRequested\?: boolean \| null/);
     expect(types).toMatch(/eventsRequested\?: boolean \| null/);
     expect(types).toMatch(/nightlifeRequested\?: boolean \| null/);
@@ -350,6 +351,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/snowActivitiesRequested: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.snowActivitiesRequested !== undefined[\s\S]*\? stateUpdate\.snowActivitiesRequested[\s\S]*: currentState\.snowActivitiesRequested/,
+    );
+    expect(types).toMatch(/hikingWalkingRequested: boolean \| null/);
+    expect(types).toMatch(/hikingWalkingRequested: null,/);
+    expect(applyUpdate).toMatch(
+      /stateUpdate\?\.hikingWalkingRequested !== undefined[\s\S]*\? stateUpdate\.hikingWalkingRequested[\s\S]*: currentState\.hikingWalkingRequested/,
     );
     expect(types).toMatch(/toursRequested: boolean \| null/);
     expect(types).toMatch(/toursRequested: null,/);
@@ -815,12 +821,20 @@ describe('conversation-core architectural boundary', () => {
       /export class HikingWalkingRequestedConversationStateExtractor/,
     );
     expect(hikingWalkingRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(hikingWalkingRequestedExtractor.includes('input.message')).toBe(false);
+    expect(hikingWalkingRequestedExtractor).toMatch(/input\.message/);
     expect(hikingWalkingRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(hikingWalkingRequestedExtractor.includes('.trim(')).toBe(false);
     expect(hikingWalkingRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(hikingWalkingRequestedExtractor.includes('includes(')).toBe(false);
+    expect(hikingWalkingRequestedExtractor).toMatch(/hikingWalkingRequested:\s*true/);
+    expect(
+      hikingWalkingRequestedExtractor.includes('hikingWalkingRequested: false'),
+    ).toBe(false);
+    expect(
+      hikingWalkingRequestedExtractor.includes('hikingWalkingRequested: null'),
+    ).toBe(false);
     const fishingRequestedExtractor = readSrc(
       'src/features/conversation-core/extractors/FishingRequestedConversationStateExtractor.ts',
     );

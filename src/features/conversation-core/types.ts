@@ -74,6 +74,8 @@ export type ConversationCoreState = {
   attractionsRequested: boolean | null;
   /** Explicitly supplied snow-activities request flag only — never detected from message text. */
   snowActivitiesRequested: boolean | null;
+  /** Explicitly supplied hiking/walking request flag only — never detected from message text. */
+  hikingWalkingRequested: boolean | null;
   /** Explicitly supplied tours request flag only — never detected from message text. */
   toursRequested: boolean | null;
   /** Explicitly supplied events request flag only — never detected from message text. */
@@ -119,6 +121,7 @@ export type ConversationStateUpdate = {
   scenicDrivesRequested?: boolean | null;
   attractionsRequested?: boolean | null;
   snowActivitiesRequested?: boolean | null;
+  hikingWalkingRequested?: boolean | null;
   toursRequested?: boolean | null;
   eventsRequested?: boolean | null;
   nightlifeRequested?: boolean | null;
@@ -201,6 +204,7 @@ export function createInitialConversationCoreState(
     scenicDrivesRequested: null,
     attractionsRequested: null,
     snowActivitiesRequested: null,
+    hikingWalkingRequested: null,
     toursRequested: null,
     eventsRequested: null,
     nightlifeRequested: null,

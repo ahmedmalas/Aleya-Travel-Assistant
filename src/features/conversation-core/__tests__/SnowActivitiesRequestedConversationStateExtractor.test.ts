@@ -147,6 +147,7 @@ function createState(
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: false,
+    hikingWalkingRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -300,6 +301,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     const extractor = new SnowActivitiesRequestedConversationStateExtractor();
     const currentState = createState({
       snowActivitiesRequested: false,
+      hikingWalkingRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -578,6 +580,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       scenicDrivesRequested: true,
       attractionsRequested: true,
       snowActivitiesRequested: false,
+      hikingWalkingRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
@@ -642,6 +645,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         scenicDrivesRequested: null,
         attractionsRequested: null,
         snowActivitiesRequested: null,
+        hikingWalkingRequested: null,
       }),
       userEntryId: 'user-7t-f',
       assistantEntryId: 'assistant-7t-f',
@@ -666,6 +670,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         scenicDrivesRequested: null,
         attractionsRequested: null,
         snowActivitiesRequested: null,
+        hikingWalkingRequested: null,
       }),
       userEntryId: 'user-7t-g',
       assistantEntryId: 'assistant-7t-g',
@@ -763,6 +768,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       scenicDrivesRequested: false,
       attractionsRequested: false,
       snowActivitiesRequested: false,
+      hikingWalkingRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention snow

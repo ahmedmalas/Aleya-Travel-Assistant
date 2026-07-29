@@ -24,6 +24,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'scenicDrivesRequested',
   'attractionsRequested',
   'snowActivitiesRequested',
+  'hikingWalkingRequested',
   'toursRequested',
   'eventsRequested',
   'nightlifeRequested',

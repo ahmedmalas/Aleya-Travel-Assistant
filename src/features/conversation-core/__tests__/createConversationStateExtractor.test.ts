@@ -1101,18 +1101,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for hiking-walking-requested-like text', () => {
+  it('factory-created extraction sets hikingWalkingRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ hikingWalkingRequested: false });
 
+    expect(
+      extractor.extract({ message: 'show me hiking', currentState }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({ message: 'show me walking', currentState }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({ message: 'no hiking', currentState }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'show me hiking trails', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'go for a walk', currentState }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({ message: 'no bushwalking', currentState }),
+      extractor.extract({ message: 'walking directions', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
