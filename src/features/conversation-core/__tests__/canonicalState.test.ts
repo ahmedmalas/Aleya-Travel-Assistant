@@ -14,6 +14,7 @@ const CANONICAL_KEYS = [
   'activitiesRequested',
   'adultCount',
   'ageMs',
+  'beachesRequested',
   'carHireRequested',
   'childCount',
   'conversationId',
@@ -98,6 +99,7 @@ describe('canonical conversation-core state', () => {
       activitiesRequested: null,
       restaurantsRequested: null,
       nearbyDiscoveryRequested: null,
+      beachesRequested: null,
       transcript: [],
     });
   });
