@@ -113,7 +113,7 @@ describe('phase 2C — turnCount progression only', () => {
     expect(result.state.turnCount).toBe(2);
   });
 
-  it('does not alter status, createdAt, updatedAt, or conversationId', () => {
+  it('does not alter status, createdAt, or conversationId', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: USER_AT,
@@ -123,7 +123,6 @@ describe('phase 2C — turnCount progression only', () => {
       const result = turn(`m-${index}`, state, index);
       expect(result.state.status).toBe('empty');
       expect(result.state.createdAt).toBe(initial.createdAt);
-      expect(result.state.updatedAt).toBe(initial.updatedAt);
       expect(result.state.conversationId).toBe(initial.conversationId);
       state = result.state;
     }

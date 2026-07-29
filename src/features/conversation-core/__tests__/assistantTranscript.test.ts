@@ -156,7 +156,7 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     expect(suppliedTranscript).toEqual(snapshot);
   });
 
-  it('keeps status empty and lifecycle timestamps unchanged', () => {
+  it('keeps status empty, conversationId, and createdAt unchanged', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: USER_AT,
@@ -169,7 +169,6 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     expect(result.state.status).toBe('empty');
     expect(result.state.conversationId).toBe(initial.conversationId);
     expect(result.state.createdAt).toBe(initial.createdAt);
-    expect(result.state.updatedAt).toBe(initial.updatedAt);
   });
 
   it('adds no travel fields on entries and calls no persistence APIs', () => {
