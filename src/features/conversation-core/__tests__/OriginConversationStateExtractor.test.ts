@@ -79,7 +79,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7B — OriginConversationStateExtractor activation', () => {
+describe('phase 8B — OriginConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit origin result contract', () => {
     expectTypeOf<OriginConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<OriginConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -102,13 +102,20 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
       { message: 'from Sydney', origin: 'Sydney' },
       { message: 'I am from Sydney', origin: 'Sydney' },
       { message: "I'm from Sydney", origin: 'Sydney' },
+      { message: 'I am coming from Canberra', origin: 'Canberra' },
+      { message: 'we are leaving from Hobart', origin: 'Hobart' },
+      { message: 'travelling from Perth', origin: 'Perth' },
+      { message: 'traveling from Perth', origin: 'Perth' },
       { message: 'travelling from Sydney', origin: 'Sydney' },
       { message: 'traveling from Sydney', origin: 'Sydney' },
       { message: 'travel from Sydney', origin: 'Sydney' },
+      { message: 'departing from Brisbane', origin: 'Brisbane' },
       { message: 'departing from Sydney', origin: 'Sydney' },
       { message: 'depart from Sydney', origin: 'Sydney' },
+      { message: 'leaving from Melbourne', origin: 'Melbourne' },
       { message: 'leaving from Sydney', origin: 'Sydney' },
       { message: 'leave from Sydney', origin: 'Sydney' },
+      { message: 'flying from Adelaide', origin: 'Adelaide' },
       { message: 'flying from Sydney', origin: 'Sydney' },
       { message: 'fly from Sydney', origin: 'Sydney' },
       { message: 'starting from Sydney', origin: 'Sydney' },
@@ -132,6 +139,24 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
     }
   });
 
+  it('extracts only the origin from clear from-X-to-Y travel requests', () => {
+    const extractor = new OriginConversationStateExtractor();
+    const cases: Array<{ message: string; origin: string }> = [
+      { message: 'I want to travel from Sydney to Brisbane', origin: 'Sydney' },
+      { message: 'fly from Melbourne to Perth', origin: 'Melbourne' },
+      { message: 'from Adelaide I want to go to Darwin', origin: 'Adelaide' },
+    ];
+
+    for (const { message, origin } of cases) {
+      const result = extractor.extract({
+        message,
+        currentState: createState({ origin: null, destination: 'Hobart' }),
+      });
+      expect(result, message).toEqual({ stateUpdate: { origin } });
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
+    }
+  });
+
   it('returns an empty update for unsupported, destination, price, and negated wording', () => {
     const extractor = new OriginConversationStateExtractor();
     const unsupported = [
@@ -143,6 +168,10 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
       'fly to Brisbane',
       'visit Brisbane',
       'take me to Brisbane',
+      'go to Sydney',
+      'travel to Melbourne',
+      'Brisbane please',
+      'I want Perth',
       'destination is Brisbane',
       'change it to Brisbane',
       'make it Brisbane instead',
@@ -156,14 +185,22 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
       'thinking about Brisbane',
       'hotel from A$200',
       'flights from A$300',
+      'flights from $200',
+      'prices from Sydney',
       'available from Monday',
       'open from 9am',
       'two hours from Brisbane',
+      'two hours from now',
       '20 kilometres from Sydney',
       'recommendations from friends',
       'message from Qantas',
+      'a message from Qantas',
       'booking confirmation from the hotel',
       'return from Brisbane on Monday',
+      'where should I travel from',
+      'far from home',
+      'from memory',
+      'from experience',
       'not from Sydney',
       "I'm not from Sydney",
       'do not depart from Sydney',
@@ -292,24 +329,24 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
     const extracted = processConversationTurn({
       message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-7b-a',
-      assistantEntryId: 'assistant-7b-a',
+      userEntryId: 'user-8b-a',
+      assistantEntryId: 'assistant-8b-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const replaced = processConversationTurn({
       message: 'flying from Cairns',
       state: currentState,
-      userEntryId: 'user-7b-b',
-      assistantEntryId: 'assistant-7b-b',
+      userEntryId: 'user-8b-b',
+      assistantEntryId: 'assistant-8b-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
     });
     const overridden = processConversationTurn({
       message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-7b-c',
-      assistantEntryId: 'assistant-7b-c',
+      userEntryId: 'user-8b-c',
+      assistantEntryId: 'assistant-8b-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { origin: 'Perth' },
@@ -317,36 +354,49 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
     const nullOverride = processConversationTurn({
       message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-7b-d',
-      assistantEntryId: 'assistant-7b-d',
+      userEntryId: 'user-8b-d',
+      assistantEntryId: 'assistant-8b-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { origin: null },
     });
     const preserved = processConversationTurn({
-      message: 'hello there',
+      message: 'prices from Sydney',
       state: currentState,
-      userEntryId: 'user-7b-e',
-      assistantEntryId: 'assistant-7b-e',
+      userEntryId: 'user-8b-e',
+      assistantEntryId: 'assistant-8b-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
       message: 'fly from Sydney to Brisbane',
       state: createState({ origin: null, destination: null }),
-      userEntryId: 'user-7b-f',
-      assistantEntryId: 'assistant-7b-f',
+      userEntryId: 'user-8b-f',
+      assistantEntryId: 'assistant-8b-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
       message: 'fly from Sydney to Brisbane',
       state: createState({ origin: null, destination: null }),
-      userEntryId: 'user-7b-g',
-      assistantEntryId: 'assistant-7b-g',
+      userEntryId: 'user-8b-g',
+      assistantEntryId: 'assistant-8b-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: { origin: 'Perth', destination: 'Cairns' },
+    });
+    const fromToOnlyOriginField = processConversationTurn({
+      message: 'from Adelaide I want to go to Darwin',
+      state: createState({
+        origin: 'Melbourne',
+        destination: 'Hobart',
+        flightsRequested: true,
+        adultCount: 2,
+      }),
+      userEntryId: 'user-8b-h',
+      assistantEntryId: 'assistant-8b-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
     });
 
     expect(extracted.state.origin).toBe('Sydney');
@@ -360,6 +410,9 @@ describe('phase 7B — OriginConversationStateExtractor activation', () => {
     expect(composed.state.destination).toBe('Brisbane');
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Cairns');
+    expect(fromToOnlyOriginField.state.origin).toBe('Adelaide');
+    expect(fromToOnlyOriginField.state.flightsRequested).toBe(true);
+    expect(fromToOnlyOriginField.state.adultCount).toBe(2);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(extracted.trace.messageInterpreted).toBe(false);
     expect(extracted.state.transcript).toHaveLength(3);

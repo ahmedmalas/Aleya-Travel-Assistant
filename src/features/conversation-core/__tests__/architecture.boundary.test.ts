@@ -491,12 +491,17 @@ describe('conversation-core architectural boundary', () => {
       'src/features/conversation-core/OriginConversationStateExtractor.ts',
     );
     expect(originExtractor).toMatch(/export class OriginConversationStateExtractor/);
+    expect(originExtractor).toContain('Phase 7B');
+    expect(originExtractor).toContain('Phase 8B');
     expect(originExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(originExtractor).toMatch(/input\.message/);
     expect(originExtractor.includes('input.currentState')).toBe(false);
     expect(originExtractor.includes('.trim(')).toBe(false);
     expect(originExtractor.includes('.toLowerCase(')).toBe(false);
     expect(originExtractor.includes('input.currentState')).toBe(false);
+    expect(originExtractor).toMatch(/origin:\s*origin/);
+    expect(originExtractor.includes('origin: null')).toBe(false);
+    expect(originExtractor.includes('origin: ""')).toBe(false);
     const departureDateExtractor = readSrc(
       'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
     );

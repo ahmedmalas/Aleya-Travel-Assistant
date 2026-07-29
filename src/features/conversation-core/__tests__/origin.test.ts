@@ -13,7 +13,7 @@ function turn(
   message: string,
   state: ConversationCoreState,
   index: number,
-  fields: { origin?: string; destination?: string } = {},
+  fields: { origin?: string | null; destination?: string | null } = {},
 ) {
   return processConversationTurn({
     message,
@@ -83,6 +83,11 @@ describe('phase 3B — explicit origin only', () => {
       'flying out of Perth',
       'Sydney',
       'go to Brisbane',
+      'prices from Sydney',
+      'far from home',
+      'from memory',
+      'from experience',
+      'where should I travel from',
     ];
 
     let state = initial;
@@ -112,6 +117,27 @@ describe('phase 3B — explicit origin only', () => {
     expect(result.state.destination).toBe('Brisbane');
   });
 
+  it('from-X-to-Y wording extracts origin X through the live processor', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('from Adelaide I want to go to Darwin', initial, 0);
+    expect(result.state.origin).toBe('Adelaide');
+  });
+
+  it('unsupported from wording preserves an existing origin', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const first = turn('Hello', initial, 0, { origin: 'Hobart' });
+    expect(first.state.origin).toBe('Hobart');
+
+    const second = turn('prices from Sydney', first.state, 1);
+    expect(second.state.origin).toBe('Hobart');
+  });
+
   it('trusted explicit stateUpdate.origin overrides an extracted origin', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -119,6 +145,15 @@ describe('phase 3B — explicit origin only', () => {
     });
     const result = turn('from Sydney', initial, 0, { origin: 'Perth' });
     expect(result.state.origin).toBe('Perth');
+  });
+
+  it('trusted explicit null origin overrides an extracted origin', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('from Sydney', initial, 0, { origin: null });
+    expect(result.state.origin).toBeNull();
   });
 
   it('destination remains preserved when origin changes', () => {
