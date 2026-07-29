@@ -235,7 +235,7 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(extractors).toHaveLength(24);
+    expect(extractors).toHaveLength(25);
     const fishingIndexes = extractors
       .map((extractor, index) =>
         extractor instanceof FishingRequestedConversationStateExtractor ? index : -1,
@@ -256,12 +256,12 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
 
     expect(fishingIndexes).toEqual([21]);
     expect(divingIndexes).toEqual([22]);
-    expect(emptyIndexes).toEqual([23]);
+    expect(emptyIndexes).toEqual([24]);
     expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
     expect(extractors[22]).toBeInstanceOf(
       DivingSnorkellingRequestedConversationStateExtractor,
     );
-    expect(extractors[23]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[24]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {

@@ -14,13 +14,13 @@ import {
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
-import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
-import { FishingRequestedConversationStateExtractor } from '../extractors/FishingRequestedConversationStateExtractor';
+import { DivingSnorkellingRequestedConversationStateExtractor } from '../extractors/DivingSnorkellingRequestedConversationStateExtractor';
+import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
-const FISHING_REQUESTED_SOURCE = resolve(
+const WINERIES_FOOD_TRAILS_REQUESTED_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/extractors/FishingRequestedConversationStateExtractor.ts',
+  'src/features/conversation-core/extractors/WineriesFoodTrailsRequestedConversationStateExtractor.ts',
 );
 
 function createState(
@@ -28,7 +28,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6f',
+      conversationId: 'conversation-6h',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -89,79 +89,87 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () => {
+describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor skeleton', () => {
   it('implements ConversationStateExtractor with empty result contract', () => {
-    expectTypeOf<FishingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
+    expectTypeOf<WineriesFoodTrailsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<
-      FishingRequestedConversationStateExtractor['extract']
+      WineriesFoodTrailsRequestedConversationStateExtractor['extract']
     >().parameters.toEqualTypeOf<[ConversationStateExtractionInput]>();
     expectTypeOf<
-      FishingRequestedConversationStateExtractor['extract']
+      WineriesFoodTrailsRequestedConversationStateExtractor['extract']
     >().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
-    const extractor = new FishingRequestedConversationStateExtractor();
+    const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const input: ConversationStateExtractionInput = {
-      message: 'go fishing',
+      message: 'show me wineries',
       currentState: createState(),
     };
     expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
   });
 
-  it('reports that no canonical fishing request field exists', () => {
+  it('reports that no canonical wineries or food-trails request field exists', () => {
     const initial = createInitialConversationCoreState({
-      conversationId: 'conversation-6f-field',
+      conversationId: 'conversation-6h-field',
       now: new Date('2026-07-29T00:00:00.000Z'),
     });
     for (const field of [
-      'fishingRequested',
-      'anglingRequested',
-      'fishingCharterRequested',
-      'deepSeaFishingRequested',
-      'freshwaterFishingRequested',
-      'sportFishingRequested',
+      'wineriesRequested',
+      'wineToursRequested',
+      'vineyardsRequested',
+      'foodTrailsRequested',
+      'wineriesFoodTrailsRequested',
+      'culinaryToursRequested',
+      'gourmetExperiencesRequested',
+      'tastingsRequested',
+      'cellarDoorsRequested',
     ]) {
       expect(Object.prototype.hasOwnProperty.call(initial, field)).toBe(false);
       expect(field in initial).toBe(false);
     }
   });
 
-  it('cannot create state from fishing, angling, charter, or related wording', () => {
-    const extractor = new FishingRequestedConversationStateExtractor();
+  it('cannot create state from winery, wine-tour, food-trail, or related wording', () => {
+    const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
-      scenicDrivesRequested: true,
+      restaurantsRequested: true,
       activitiesRequested: true,
+      scenicDrivesRequested: true,
       nearbyDiscoveryRequested: true,
-      beachesRequested: true,
-      kayakingRequested: true,
     });
 
     const messages = [
-      'fishing',
-      'go fishing',
-      'fish',
-      'angling',
-      'fishing charter',
-      'deep-sea fishing',
-      'deep sea fishing',
-      'reef fishing',
-      'sport fishing',
-      'freshwater fishing',
-      'river fishing',
-      'lake fishing',
-      'shore fishing',
-      'game fishing',
-      'show me fishing charters',
-      'find deep-sea fishing',
-      'I want to go angling',
-      'add reef fishing',
-      'yes include fishing',
-      'actually show me freshwater fishing',
-      'do not include fishing',
-      'no angling',
-      'remove fishing',
-      'forget fishing charters',
-      'keep kayaking but remove fishing',
+      'wineries',
+      'winery',
+      'vineyards',
+      'vineyard',
+      'wine tour',
+      'wine tasting',
+      'cellar door',
+      'wine region',
+      'food trail',
+      'food trails',
+      'culinary tour',
+      'gourmet tour',
+      'local food tour',
+      'restaurant trail',
+      'cheese trail',
+      'chocolate trail',
+      'brewery trail',
+      'distillery trail',
+      'farm-gate trail',
+      'food and wine experience',
+      'show me cellar doors',
+      'find wine regions',
+      'I want a culinary tour',
+      'add gourmet tours',
+      'yes include food trails',
+      'actually show me vineyards',
+      'do not include wineries',
+      'no wine tasting',
+      'remove food trails',
+      'forget brewery trails',
+      'keep restaurants but remove wineries',
     ];
 
     for (const message of messages) {
@@ -180,19 +188,20 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     }
 
     const result = extractor.extract({
-      message: 'keep kayaking but remove fishing',
+      message: 'keep restaurants but remove wineries',
       currentState: withRelatedFlags,
     });
     expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('fishingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('anglingRequested');
+    expect(result.stateUpdate).not.toHaveProperty('wineriesRequested');
+    expect(result.stateUpdate).not.toHaveProperty('foodTrailsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('wineriesFoodTrailsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('restaurantsRequested');
     expect(result.stateUpdate).not.toHaveProperty('attractionsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('kayakingRequested');
-    expect(withRelatedFlags.kayakingRequested).toBe(true);
+    expect(withRelatedFlags.restaurantsRequested).toBe(true);
   });
 
   it('does not mutate input or retain state across calls', () => {
-    const extractor = new FishingRequestedConversationStateExtractor();
+    const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const currentState = createState({
       attractionsRequested: true,
       transcript: [
@@ -205,7 +214,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'go fishing',
+      message: 'wine tasting',
       currentState,
     };
     const before = structuredClone(input);
@@ -226,22 +235,24 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     expect(second).toEqual({ stateUpdate: {} });
   });
 
-  it('is included once in the production composite after hiking/walking', () => {
+  it('is included once in the production composite after diving/snorkelling and before empty', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
     expect(extractors).toHaveLength(25);
-    const hikingIndexes = extractors
+    const divingIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof HikingWalkingRequestedConversationStateExtractor
+        extractor instanceof DivingSnorkellingRequestedConversationStateExtractor
           ? index
           : -1,
       )
       .filter((index) => index >= 0);
-    const fishingIndexes = extractors
+    const wineriesIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof FishingRequestedConversationStateExtractor ? index : -1,
+        extractor instanceof WineriesFoodTrailsRequestedConversationStateExtractor
+          ? index
+          : -1,
       )
       .filter((index) => index >= 0);
     const emptyIndexes = extractors
@@ -250,32 +261,34 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
       )
       .filter((index) => index >= 0);
 
-    expect(hikingIndexes).toEqual([20]);
-    expect(fishingIndexes).toEqual([21]);
+    expect(divingIndexes).toEqual([22]);
+    expect(wineriesIndexes).toEqual([23]);
     expect(emptyIndexes).toEqual([24]);
-    expect(extractors[20]).toBeInstanceOf(
-      HikingWalkingRequestedConversationStateExtractor,
+    expect(extractors[22]).toBeInstanceOf(
+      DivingSnorkellingRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(
+      WineriesFoodTrailsRequestedConversationStateExtractor,
+    );
     expect(extractors[24]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
-    const source = readFileSync(FISHING_REQUESTED_SOURCE, 'utf8');
+    const source = readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8');
 
     expect(source).toMatch(/_input: ConversationStateExtractionInput/);
     expect(source).not.toMatch(/input\.message|input\.currentState/);
     expect(source).not.toMatch(/\.message\b/);
     expect(source).not.toMatch(/currentState\./);
     expect(source).not.toMatch(
-      /fishingRequested\s*:|anglingRequested\s*:|fishingCharterRequested\s*:/,
+      /wineriesRequested\s*:|foodTrailsRequested\s*:|wineriesFoodTrailsRequested\s*:/,
     );
     expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
     expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|angling|charter|deep-?sea|reef|freshwater|game.?fishing|shore.?fishing/i,
+      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|vineyard|cellar|wine.?tour|wine.?tasting|culinary|gourmet|cheese.?trail|chocolate.?trail|brewery|distillery|farm-?gate/i,
     );
     expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|charter|marine)/i,
+      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|tourism|wine|culinary)/i,
     );
     expect(source).not.toMatch(/metadata|confidence|warnings/);
   });
@@ -291,27 +304,30 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     );
     const allowedConstruct = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
-      FISHING_REQUESTED_SOURCE,
+      WINERIES_FOOD_TRAILS_REQUESTED_SOURCE,
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowedConstruct.has(path),
     );
 
-    expect(index).not.toMatch(/FishingRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/WineriesFoodTrailsRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty(
-      'FishingRequestedConversationStateExtractor',
+      'WineriesFoodTrailsRequestedConversationStateExtractor',
     );
-    expect(processTurn).not.toMatch(/FishingRequestedConversationStateExtractor/);
+    expect(processTurn).not.toMatch(
+      /WineriesFoodTrailsRequestedConversationStateExtractor/,
+    );
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
       expect(
-        src.includes('new FishingRequestedConversationStateExtractor'),
+        src.includes('new WineriesFoodTrailsRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
-      expect(src.includes('FishingRequestedConversationStateExtractor'), file).toBe(
-        false,
-      );
+      expect(
+        src.includes('WineriesFoodTrailsRequestedConversationStateExtractor'),
+        file,
+      ).toBe(false);
     }
   });
 
@@ -319,30 +335,33 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const currentState = createState({
       attractionsRequested: true,
       activitiesRequested: true,
-      kayakingRequested: true,
+      restaurantsRequested: true,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
     const messageOnly = processConversationTurn({
-      message: 'show me fishing charters and deep-sea fishing',
+      message: 'show me wineries and food trails',
       state: currentState,
-      userEntryId: 'user-6f',
-      assistantEntryId: 'assistant-6f',
+      userEntryId: 'user-6h',
+      assistantEntryId: 'assistant-6h',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const factoryResult = createConversationStateExtractor().extract({
-      message: 'go fishing',
+      message: 'wine tasting',
       currentState,
     });
 
     expect(factoryResult).toEqual({ stateUpdate: {} });
     expect(messageOnly.state.attractionsRequested).toBe(true);
     expect(messageOnly.state.activitiesRequested).toBe(true);
-    expect(messageOnly.state.kayakingRequested).toBe(true);
+    expect(messageOnly.state.restaurantsRequested).toBe(true);
     expect(messageOnly.state.destination).toBe('Brisbane');
     expect(
-      Object.prototype.hasOwnProperty.call(messageOnly.state, 'fishingRequested'),
+      Object.prototype.hasOwnProperty.call(
+        messageOnly.state,
+        'wineriesFoodTrailsRequested',
+      ),
     ).toBe(false);
     expect(messageOnly.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(messageOnly).sort()).toEqual(['reply', 'state', 'trace']);
