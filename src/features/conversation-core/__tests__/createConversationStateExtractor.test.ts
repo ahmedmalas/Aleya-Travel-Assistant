@@ -999,18 +999,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for kayaking-requested-like text', () => {
+  it('factory-created extraction sets kayakingRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ kayakingRequested: true });
+    const currentState = createState({ kayakingRequested: false });
 
     expect(
       extractor.extract({ message: 'show me kayaking', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       extractor.extract({ message: 'show me kayaking', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       extractor.extract({ message: 'no kayaking', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'hire a kayak', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

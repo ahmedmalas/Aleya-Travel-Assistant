@@ -700,12 +700,20 @@ describe('conversation-core architectural boundary', () => {
       /export class KayakingRequestedConversationStateExtractor/,
     );
     expect(kayakingRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(kayakingRequestedExtractor.includes('input.message')).toBe(false);
+    expect(kayakingRequestedExtractor).toMatch(/input\.message/);
     expect(kayakingRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(kayakingRequestedExtractor.includes('.trim(')).toBe(false);
     expect(kayakingRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(kayakingRequestedExtractor.includes('includes(')).toBe(false);
+    expect(kayakingRequestedExtractor).toMatch(/kayakingRequested:\s*true/);
+    expect(kayakingRequestedExtractor.includes('kayakingRequested: false')).toBe(
+      false,
+    );
+    expect(kayakingRequestedExtractor.includes('kayakingRequested: null')).toBe(
+      false,
+    );
     const fourWheelDrivingRequestedExtractor = readSrc(
       'src/features/conversation-core/FourWheelDrivingRequestedConversationStateExtractor.ts',
     );

@@ -102,7 +102,7 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     const first = turn('Hello', initial, 0, { kayakingRequested: false });
     expect(first.state.kayakingRequested).toBe(false);
 
-    const second = turn('kayaking paddling', first.state, 1);
+    const second = turn('kayak canoe paddle', first.state, 1);
     expect(second.state.kayakingRequested).toBe(false);
   });
 
@@ -111,7 +111,7 @@ describe('phase 3P — explicit kayakingRequested only', () => {
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const phrases = ['kayak', 'kayaking', 'canoe', 'paddle', 'paddling'];
+    const phrases = ['kayak', 'canoe', 'paddle', 'paddling', 'rafting'];
 
     let state = initial;
     phrases.forEach((message, index) => {
@@ -141,7 +141,7 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     });
     expect(withFalse.state.kayakingRequested).toBe(false);
 
-    const afterMoreWords = turn('paddling canoe', withFalse.state, 3);
+    const afterMoreWords = turn('paddling canoe kayak', withFalse.state, 3);
     expect(afterMoreWords.state.kayakingRequested).toBe(false);
   });
 
