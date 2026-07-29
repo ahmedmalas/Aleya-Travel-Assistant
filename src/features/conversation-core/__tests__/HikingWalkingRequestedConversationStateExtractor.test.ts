@@ -83,7 +83,7 @@ function readExtractors(
   composite: CompositeConversationStateExtractor,
 ): readonly ConversationStateExtractor[] {
   return (
-    composite as CompositeConversationStateExtractor & {
+    composite as unknown as {
       extractors: readonly ConversationStateExtractor[];
     }
   ).extractors;
