@@ -565,6 +565,8 @@ describe('conversation-core architectural boundary', () => {
     expect(childCountExtractor).toMatch(
       /export class ChildCountConversationStateExtractor/,
     );
+    expect(childCountExtractor).toContain('Phase 7F');
+    expect(childCountExtractor).toContain('Phase 8F');
     expect(childCountExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(childCountExtractor).toMatch(/input\.message/);
     expect(childCountExtractor.includes('input.currentState')).toBe(false);
@@ -572,6 +574,10 @@ describe('conversation-core architectural boundary', () => {
     expect(childCountExtractor.includes('.toLowerCase(')).toBe(false);
     expect(childCountExtractor.includes('Number(')).toBe(false);
     expect(childCountExtractor.includes('parseInt')).toBe(false);
+    expect(childCountExtractor).toMatch(/childCount:\s*childCount/);
+    expect(childCountExtractor.includes('childCount: null')).toBe(false);
+    expect(childCountExtractor.includes('adultCount:')).toBe(false);
+    expect(childCountExtractor.includes('infantCount:')).toBe(false);
     const infantCountExtractor = readSrc(
       'src/features/conversation-core/InfantCountConversationStateExtractor.ts',
     );

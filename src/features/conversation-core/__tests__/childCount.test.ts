@@ -109,6 +109,41 @@ describe('phase 3F — explicit childCount only', () => {
     expect(result.state.childCount).toBe(2);
   });
 
+  it('phase 8F clear child cues update childCount without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const written = turn('two children', initial, 0);
+    expect(written.state.childCount).toBe(2);
+    expect(written.state.adultCount).toBeNull();
+    expect(written.state.infantCount).toBeNull();
+
+    const mixed = turn('2 adults and 2 children', initial, 1);
+    expect(mixed.state.childCount).toBe(2);
+    expect(mixed.state.adultCount).toBeNull();
+
+    const inRequest = turn(
+      'Fly from Sydney to Brisbane for two children',
+      initial,
+      2,
+    );
+    expect(inRequest.state.childCount).toBe(2);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 3, { childCount: 1, adultCount: 2 });
+    const adultOnly = turn('2 adults', seeded.state, 4);
+    expect(adultOnly.state.childCount).toBe(1);
+    expect(adultOnly.state.adultCount).toBe(2);
+    const infantOnly = turn('1 infant', seeded.state, 5);
+    expect(infantOnly.state.childCount).toBe(1);
+    const family = turn('our family', seeded.state, 6);
+    expect(family.state.childCount).toBe(1);
+    const zero = turn('0 children', seeded.state, 7);
+    expect(zero.state.childCount).toBe(1);
+  });
+
   it('trusted explicit stateUpdate.childCount overrides an extracted childCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,

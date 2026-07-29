@@ -8,8 +8,9 @@ import type {
  * Internal child-count extraction boundary.
  *
  * Phase 7F: recognises only narrow, explicit child passenger-count statements
- * in the current message. Deterministic and local — no numeric coercion helpers,
- * adult/infant extraction, or currentState inspection.
+ * in the current message. Phase 8F extends clear child-count cues only.
+ * Deterministic and local — no numeric coercion helpers, adult/infant
+ * extraction, or currentState inspection.
  */
 export class ChildCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -102,7 +103,24 @@ function isBlockedChildCountMessage(message: string): boolean {
   if (/\?/.test(message)) {
     return true;
   }
-  if (/\b(?:adult|adults|infant|infants|bab(?:y|ies))\b/i.test(message)) {
+  if (/\bhow\s+many\b/i.test(message)) {
+    return true;
+  }
+  if (
+    /-\d+\s+child(?:ren)?\b/i.test(message) ||
+    /\d+\.\d+\s+child(?:ren)?\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\bkids?\s+club\b/i.test(message) ||
+    /\bchild\s+fare\b/i.test(message) ||
+    /\bchild\s+ticket\b/i.test(message) ||
+    /\bchild\s+seat\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (/\bunder\s+\d+\b/i.test(message) || /\byears?\s+old\b/i.test(message)) {
     return true;
   }
   if (
@@ -113,7 +131,7 @@ function isBlockedChildCountMessage(message: string): boolean {
     return true;
   }
   if (
-    /\b(?:my\s+son|my\s+daughter|our\s+.*\s+kids|year-?old)\b/i.test(message)
+    /\b(?:my\s+son|my\s+daughter|year-?old)\b/i.test(message)
   ) {
     return true;
   }
@@ -138,10 +156,15 @@ function isBlockedChildCountMessage(message: string): boolean {
   return false;
 }
 
+const COUNT_TOKEN = String.raw`(\d+|one|two|three|four|five|six|seven|eight|nine|ten)`;
+
 const EXPLICIT_CHILD_COUNT_CUES: readonly RegExp[] = [
-  /\bchild\s+count\s+is\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/i,
-  /\b(?:for|travell?ing\s+with)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+child(?:ren)?\b/i,
-  /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+child(?:ren)?\b/i,
+  new RegExp(String.raw`\bchild\s+count\s+is\s+${COUNT_TOKEN}\b`, 'i'),
+  new RegExp(
+    String.raw`\b(?:we\s+have|book\s+for|for|travell?ing\s+with)\s+${COUNT_TOKEN}\s+child(?:ren)?\b`,
+    'i',
+  ),
+  new RegExp(String.raw`\b${COUNT_TOKEN}\s+child(?:ren)?\b`, 'i'),
 ];
 
 function extractExplicitChildCount(message: string): number | null {

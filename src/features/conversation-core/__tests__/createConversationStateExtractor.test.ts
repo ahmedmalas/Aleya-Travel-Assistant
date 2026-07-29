@@ -816,7 +816,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: '2 adults and 1 child', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { childCount: 1 } });
   });
 
   it('factory-created extraction updates childCount for explicit child counts and rejects vague wording', () => {
@@ -834,7 +834,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: '2 adults and 1 child', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { childCount: 1 } });
   });
 
   it('factory-created extraction updates infantCount for explicit infant counts and rejects vague wording', () => {
@@ -852,7 +852,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'two adults and one child', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { childCount: 1 } });
   });
 
   it('factory-created extraction sets flightsRequested true for explicit requests and rejects negation', () => {
