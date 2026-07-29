@@ -66,6 +66,7 @@ function createState(
     divingSnorkellingRequested: true,
     wineriesFoodTrailsRequested: true,
     eventsFestivalsRequested: true,
+    wildlifeRequested: true,
     eventsRequested: true,
     transcript: [
       {
@@ -156,6 +157,7 @@ describe('phase 6K — NationalParksRequestedConversationStateExtractor skeleton
       divingSnorkellingRequested: true,
       wineriesFoodTrailsRequested: true,
       eventsFestivalsRequested: true,
+      wildlifeRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
@@ -355,6 +357,7 @@ describe('phase 6K — NationalParksRequestedConversationStateExtractor skeleton
       divingSnorkellingRequested: true,
       wineriesFoodTrailsRequested: true,
       eventsFestivalsRequested: true,
+      wildlifeRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       campingRequested: true,

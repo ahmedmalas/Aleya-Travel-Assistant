@@ -147,6 +147,7 @@ function createState(
     divingSnorkellingRequested: false,
     wineriesFoodTrailsRequested: false,
     eventsFestivalsRequested: false,
+    wildlifeRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -310,6 +311,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       divingSnorkellingRequested: false,
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
+      wildlifeRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -576,6 +578,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       divingSnorkellingRequested: false,
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
+      wildlifeRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
@@ -645,6 +648,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         divingSnorkellingRequested: null,
         wineriesFoodTrailsRequested: null,
         eventsFestivalsRequested: null,
+        wildlifeRequested: null,
       }),
       userEntryId: 'user-7s-f',
       assistantEntryId: 'assistant-7s-f',
@@ -674,6 +678,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         divingSnorkellingRequested: null,
         wineriesFoodTrailsRequested: null,
         eventsFestivalsRequested: null,
+        wildlifeRequested: null,
       }),
       userEntryId: 'user-7s-g',
       assistantEntryId: 'assistant-7s-g',
@@ -773,6 +778,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       divingSnorkellingRequested: false,
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
+      wildlifeRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention

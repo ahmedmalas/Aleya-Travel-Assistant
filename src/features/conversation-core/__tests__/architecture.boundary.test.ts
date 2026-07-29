@@ -77,6 +77,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/divingSnorkellingRequested\?: boolean \| null/);
     expect(types).toMatch(/wineriesFoodTrailsRequested\?: boolean \| null/);
     expect(types).toMatch(/eventsFestivalsRequested\?: boolean \| null/);
+    expect(types).toMatch(/wildlifeRequested\?: boolean \| null/);
     expect(types).toMatch(/toursRequested\?: boolean \| null/);
     expect(types).toMatch(/eventsRequested\?: boolean \| null/);
     expect(types).toMatch(/nightlifeRequested\?: boolean \| null/);
@@ -380,6 +381,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/eventsFestivalsRequested: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.eventsFestivalsRequested !== undefined[\s\S]*\? stateUpdate\.eventsFestivalsRequested[\s\S]*: currentState\.eventsFestivalsRequested/,
+    );
+    expect(types).toMatch(/wildlifeRequested: boolean \| null/);
+    expect(types).toMatch(/wildlifeRequested: null,/);
+    expect(applyUpdate).toMatch(
+      /stateUpdate\?\.wildlifeRequested !== undefined[\s\S]*\? stateUpdate\.wildlifeRequested[\s\S]*: currentState\.wildlifeRequested/,
     );
     expect(types).toMatch(/toursRequested: boolean \| null/);
     expect(types).toMatch(/toursRequested: null,/);
@@ -956,12 +962,20 @@ describe('conversation-core architectural boundary', () => {
       /export class WildlifeRequestedConversationStateExtractor/,
     );
     expect(wildlifeRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(wildlifeRequestedExtractor.includes('input.message')).toBe(false);
+    expect(wildlifeRequestedExtractor).toMatch(/input\.message/);
     expect(wildlifeRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(wildlifeRequestedExtractor.includes('.trim(')).toBe(false);
     expect(wildlifeRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(wildlifeRequestedExtractor.includes('includes(')).toBe(false);
+    expect(wildlifeRequestedExtractor).toMatch(/wildlifeRequested:\s*true/);
+    expect(wildlifeRequestedExtractor.includes('wildlifeRequested: false')).toBe(
+      false,
+    );
+    expect(wildlifeRequestedExtractor.includes('wildlifeRequested: null')).toBe(
+      false,
+    );
     const nationalParksRequestedExtractor = readSrc(
       'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
     );

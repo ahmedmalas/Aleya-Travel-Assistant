@@ -6,7 +6,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 
-const CONVERSATION_ID = 'conversation-core-diving-snorkelling-requested-001';
+const CONVERSATION_ID = 'conversation-core-wildlife-requested-001';
 const CREATED_AT = new Date('2026-07-29T00:00:00.000Z');
 
 function turn(
@@ -55,13 +55,13 @@ function turn(
   });
 }
 
-describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction activation', () => {
-  it('initial divingSnorkellingRequested is null', () => {
+describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation', () => {
+  it('initial wildlifeRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    expect(state.divingSnorkellingRequested).toBeNull();
+    expect(state.wildlifeRequested).toBeNull();
   });
 
   it('explicit true is stored', () => {
@@ -69,10 +69,10 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const result = turn('I want diving', initial, 0, {
-      divingSnorkellingRequested: true,
+    const result = turn('I want wildlife', initial, 0, {
+      wildlifeRequested: true,
     });
-    expect(result.state.divingSnorkellingRequested).toBe(true);
+    expect(result.state.wildlifeRequested).toBe(true);
   });
 
   it('explicit false is stored', () => {
@@ -80,16 +80,16 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const withTrue = turn('need scuba', initial, 0, {
-      divingSnorkellingRequested: true,
+    const withTrue = turn('need kangaroos', initial, 0, {
+      wildlifeRequested: true,
     });
-    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
+    expect(withTrue.state.wildlifeRequested).toBe(true);
 
-    const withFalse = turn('no scuba', withTrue.state, 1, {
-      divingSnorkellingRequested: false,
+    const withFalse = turn('no kangaroos', withTrue.state, 1, {
+      wildlifeRequested: false,
     });
-    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
-    expect(withFalse.state.divingSnorkellingRequested).not.toBeNull();
+    expect(withFalse.state.wildlifeRequested).toBe(false);
+    expect(withFalse.state.wildlifeRequested).not.toBeNull();
   });
 
   it('omission preserves a previous true', () => {
@@ -98,12 +98,12 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: true,
+      wildlifeRequested: true,
     });
-    expect(first.state.divingSnorkellingRequested).toBe(true);
+    expect(first.state.wildlifeRequested).toBe(true);
 
-    const second = turn('scuba dive boats', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(true);
+    const second = turn('kangaroo koala zoo', first.state, 1);
+    expect(second.state.wildlifeRequested).toBe(true);
   });
 
   it('omission preserves a previous false', () => {
@@ -112,33 +112,33 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: false,
+      wildlifeRequested: false,
     });
-    expect(first.state.divingSnorkellingRequested).toBe(false);
+    expect(first.state.wildlifeRequested).toBe(false);
 
-    const second = turn('scuba diving reef diving', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(false);
+    const second = turn('wildlife parks marine wildlife', first.state, 1);
+    expect(second.state.wildlifeRequested).toBe(false);
   });
 
-  it('user message text cannot set divingSnorkellingRequested from unsupported wording', () => {
+  it('user message text cannot set wildlifeRequested from unsupported wording', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'dive',
-      'snorkel',
-      'scuba',
-      'boats',
-      'gear',
-      'scuba diving',
-      'reef diving',
+      'kangaroo',
+      'koala',
+      'dolphin',
+      'zoo',
+      'aquarium',
+      'sanctuary',
+      'wildlife parks',
     ];
 
     let state = initial;
     phrases.forEach((message, index) => {
       const result = turn(message, state, index);
-      expect(result.state.divingSnorkellingRequested).toBeNull();
+      expect(result.state.wildlifeRequested).toBeNull();
       state = result.state;
     });
   });
@@ -149,24 +149,24 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const withTrue = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: true,
+      wildlifeRequested: true,
     });
-    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
+    expect(withTrue.state.wildlifeRequested).toBe(true);
 
-    const afterWords = turn('scuba diving gear', withTrue.state, 1);
-    expect(afterWords.state.divingSnorkellingRequested).toBe(true);
+    const afterWords = turn('wildlife parks kangaroo', withTrue.state, 1);
+    expect(afterWords.state.wildlifeRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
-      divingSnorkellingRequested: false,
+      wildlifeRequested: false,
     });
-    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
+    expect(withFalse.state.wildlifeRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'scuba dive boats gear',
+      'kangaroo koala zoo aquarium',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.divingSnorkellingRequested).toBe(false);
+    expect(afterMoreWords.state.wildlifeRequested).toBe(false);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {
@@ -202,6 +202,9 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       eventsFestivalsRequested: true,
       wildlifeRequested: true,
     });
+    expect(first.state.wildlifeRequested).toBe(true);
+    expect(first.state.eventsFestivalsRequested).toBe(true);
+    expect(first.state.wineriesFoodTrailsRequested).toBe(true);
     expect(first.state.divingSnorkellingRequested).toBe(true);
     expect(first.state.fishingRequested).toBe(true);
     expect(first.state.hikingWalkingRequested).toBe(true);
@@ -211,10 +214,13 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
     expect(first.state.status).toBe('active');
     expect(first.state.turnCount).toBe(1);
 
-    const second = turn('no diving', first.state, 1, {
-      divingSnorkellingRequested: false,
+    const second = turn('no wildlife', first.state, 1, {
+      wildlifeRequested: false,
     });
-    expect(second.state.divingSnorkellingRequested).toBe(false);
+    expect(second.state.wildlifeRequested).toBe(false);
+    expect(second.state.eventsFestivalsRequested).toBe(true);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(second.state.divingSnorkellingRequested).toBe(true);
     expect(second.state.fishingRequested).toBe(true);
     expect(second.state.hikingWalkingRequested).toBe(true);
     expect(second.state.origin).toBe('Sydney');
@@ -227,7 +233,7 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Sydney to Gold Coast!!!!', initial, 0, {
-      divingSnorkellingRequested: true,
+      wildlifeRequested: true,
     });
 
     expect(first.state.transcript.map((entry) => entry.role)).toEqual([
@@ -238,8 +244,8 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('scuba dive boats', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(true);
+    const second = turn('kangaroo koala zoo', first.state, 1);
+    expect(second.state.wildlifeRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });

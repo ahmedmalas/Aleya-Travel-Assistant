@@ -48,6 +48,7 @@ const CANONICAL_KEYS = [
   'turnCount',
   'updatedAt',
   'wellnessRequested',
+  'wildlifeRequested',
   'wineriesFoodTrailsRequested',
 ] as const;
 
@@ -129,6 +130,7 @@ describe('canonical conversation-core state', () => {
       divingSnorkellingRequested: null,
       wineriesFoodTrailsRequested: null,
       eventsFestivalsRequested: null,
+      wildlifeRequested: null,
       toursRequested: null,
       eventsRequested: null,
       nightlifeRequested: null,

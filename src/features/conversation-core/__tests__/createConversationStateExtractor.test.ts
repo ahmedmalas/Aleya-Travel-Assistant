@@ -1214,4 +1214,25 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'Brisbane', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
+
+  it('factory-created extraction sets wildlifeRequested true for explicit requests and rejects negation', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState({ wildlifeRequested: false });
+
+    expect(
+      extractor.extract({ message: 'show me wildlife', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
+      extractor.extract({ message: 'wildlife', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
+      extractor.extract({ message: 'no wildlife', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'wildlife parks', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'kangaroo', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
 });
