@@ -24,6 +24,7 @@ const CANONICAL_KEYS = [
   'departureDate',
   'destination',
   'eventsRequested',
+  'familyActivitiesRequested',
   'flightsRequested',
   'fourWheelDriveRequested',
   'infantCount',
@@ -120,6 +121,7 @@ describe('canonical conversation-core state', () => {
       nightlifeRequested: null,
       shoppingRequested: null,
       wellnessRequested: null,
+      familyActivitiesRequested: null,
       transcript: [],
     });
   });

@@ -76,6 +76,8 @@ export type ProcessConversationTurnInput = {
   shoppingRequested?: boolean;
   /** Explicit wellness request flag only — stored as injected; never read from message. */
   wellnessRequested?: boolean;
+  /** Explicit family-activities request flag only — stored as injected; never read from message. */
+  familyActivitiesRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -87,7 +89,7 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3X: append raw user + placeholder assistant entries, increment
+ * Phase 3Y: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
@@ -96,8 +98,8 @@ export type ProcessConversationTurnResult = {
  * beachesRequested/campingRequested/kayakingRequested/
  * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
  * toursRequested/eventsRequested/nightlifeRequested/shoppingRequested/
- * wellnessRequested only. Does not interpret, trim, normalise, extract,
- * validate counts, calculate duration, or persist.
+ * wellnessRequested/familyActivitiesRequested only. Does not interpret,
+ * trim, normalise, extract, validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -190,6 +192,10 @@ export function processConversationTurn(
     input.wellnessRequested !== undefined
       ? input.wellnessRequested
       : base.wellnessRequested;
+  const familyActivitiesRequested =
+    input.familyActivitiesRequested !== undefined
+      ? input.familyActivitiesRequested
+      : base.familyActivitiesRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -236,6 +242,7 @@ export function processConversationTurn(
     nightlifeRequested,
     shoppingRequested,
     wellnessRequested,
+    familyActivitiesRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
