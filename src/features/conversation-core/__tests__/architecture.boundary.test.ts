@@ -93,12 +93,14 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('createConversationStateExtractor')).toBe(false);
     expect(index.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(index.includes('CompositeConversationStateExtractor')).toBe(false);
+    expect(index.includes('DestinationConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
     expect(index.includes('extractAndApplyConversationState')).toBe(false);
     expect(index.includes('transitionConversationStateFromExtraction')).toBe(false);
     expect(processTurn.includes('createConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('CompositeConversationStateExtractor')).toBe(false);
+    expect(processTurn.includes('DestinationConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('extractConversationState')).toBe(false);
     expect(processTurn.includes('extractAndApplyConversationState')).toBe(false);
     expect(processTurn.includes('transitionConversationStateFromExtraction')).toBe(
@@ -294,9 +296,18 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
+    const destinationExtractor = readSrc(
+      'src/features/conversation-core/DestinationConversationStateExtractor.ts',
+    );
+    expect(destinationExtractor).toMatch(
+      /export class DestinationConversationStateExtractor/,
+    );
+    expect(destinationExtractor).toMatch(/_input: ConversationStateExtractionInput/);
+    expect(destinationExtractor.includes('input.message')).toBe(false);
+    expect(destinationExtractor.includes('input.currentState')).toBe(false);
     expect(compositeExtractor).toMatch(
       /export class CompositeConversationStateExtractor/,
     );
