@@ -105,6 +105,7 @@ describe('conversation-core architectural boundary', () => {
       false,
     );
     expect(index.includes('CarHireRequestedConversationStateExtractor')).toBe(false);
+    expect(index.includes('ActivitiesRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
     expect(index.includes('extractAndApplyConversationState')).toBe(false);
     expect(index.includes('transitionConversationStateFromExtraction')).toBe(false);
@@ -127,6 +128,9 @@ describe('conversation-core architectural boundary', () => {
       processTurn.includes('AccommodationRequestedConversationStateExtractor'),
     ).toBe(false);
     expect(processTurn.includes('CarHireRequestedConversationStateExtractor')).toBe(
+      false,
+    );
+    expect(processTurn.includes('ActivitiesRequestedConversationStateExtractor')).toBe(
       false,
     );
     expect(processTurn.includes('extractConversationState')).toBe(false);
@@ -324,7 +328,7 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     const destinationExtractor = readSrc(
@@ -437,6 +441,19 @@ describe('conversation-core architectural boundary', () => {
     expect(carHireRequestedExtractor.includes('input.currentState')).toBe(false);
     expect(carHireRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(carHireRequestedExtractor.includes('includes(')).toBe(false);
+    const activitiesRequestedExtractor = readSrc(
+      'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
+    );
+    expect(activitiesRequestedExtractor).toMatch(
+      /export class ActivitiesRequestedConversationStateExtractor/,
+    );
+    expect(activitiesRequestedExtractor).toMatch(
+      /_input: ConversationStateExtractionInput/,
+    );
+    expect(activitiesRequestedExtractor.includes('input.message')).toBe(false);
+    expect(activitiesRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(activitiesRequestedExtractor.includes('toLowerCase')).toBe(false);
+    expect(activitiesRequestedExtractor.includes('includes(')).toBe(false);
     expect(compositeExtractor).toMatch(
       /export class CompositeConversationStateExtractor/,
     );
