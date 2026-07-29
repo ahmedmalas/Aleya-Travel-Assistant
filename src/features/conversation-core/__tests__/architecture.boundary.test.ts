@@ -581,12 +581,22 @@ describe('conversation-core architectural boundary', () => {
       /export class ActivitiesRequestedConversationStateExtractor/,
     );
     expect(activitiesRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(activitiesRequestedExtractor.includes('input.message')).toBe(false);
-    expect(activitiesRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(activitiesRequestedExtractor).toMatch(/input\.message/);
+    expect(activitiesRequestedExtractor.includes('input.currentState')).toBe(
+      false,
+    );
+    expect(activitiesRequestedExtractor.includes('.trim(')).toBe(false);
     expect(activitiesRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(activitiesRequestedExtractor.includes('includes(')).toBe(false);
+    expect(activitiesRequestedExtractor).toMatch(/activitiesRequested:\s*true/);
+    expect(
+      activitiesRequestedExtractor.includes('activitiesRequested: false'),
+    ).toBe(false);
+    expect(
+      activitiesRequestedExtractor.includes('activitiesRequested: null'),
+    ).toBe(false);
     const restaurantsRequestedExtractor = readSrc(
       'src/features/conversation-core/RestaurantsRequestedConversationStateExtractor.ts',
     );

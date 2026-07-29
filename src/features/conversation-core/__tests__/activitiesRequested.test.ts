@@ -93,7 +93,7 @@ describe('phase 3K — explicit activitiesRequested only', () => {
     });
     expect(third.state.activitiesRequested).toBe(false);
 
-    const fourth = turn('things to do experiences', third.state, 3);
+    const fourth = turn('experiences adventures', third.state, 3);
     expect(fourth.state.activitiesRequested).toBe(false);
   });
 
@@ -117,12 +117,12 @@ describe('phase 3K — explicit activitiesRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'activities',
       'tours',
       'attractions',
-      'things to do',
       'experiences',
       'adventures',
+      'sightseeing',
+      'entertainment',
     ];
 
     let state = initial;

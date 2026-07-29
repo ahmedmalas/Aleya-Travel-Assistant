@@ -909,18 +909,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for activities-requested-like text', () => {
+  it('factory-created extraction sets activitiesRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ activitiesRequested: true });
+    const currentState = createState({ activitiesRequested: false });
 
     expect(
       extractor.extract({ message: 'I need activities', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
       extractor.extract({ message: 'I need activities', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
       extractor.extract({ message: 'no activities', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'show me experiences', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
