@@ -113,6 +113,7 @@ describe('conversation-core architectural boundary', () => {
       false,
     );
     expect(index.includes('BeachesRequestedConversationStateExtractor')).toBe(false);
+    expect(index.includes('CampingRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
     expect(index.includes('extractAndApplyConversationState')).toBe(false);
     expect(index.includes('transitionConversationStateFromExtraction')).toBe(false);
@@ -147,6 +148,9 @@ describe('conversation-core architectural boundary', () => {
       processTurn.includes('NearbyDiscoveryRequestedConversationStateExtractor'),
     ).toBe(false);
     expect(processTurn.includes('BeachesRequestedConversationStateExtractor')).toBe(
+      false,
+    );
+    expect(processTurn.includes('CampingRequestedConversationStateExtractor')).toBe(
       false,
     );
     expect(processTurn.includes('extractConversationState')).toBe(false);
@@ -344,7 +348,7 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     const destinationExtractor = readSrc(
@@ -511,6 +515,19 @@ describe('conversation-core architectural boundary', () => {
     expect(beachesRequestedExtractor.includes('input.currentState')).toBe(false);
     expect(beachesRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(beachesRequestedExtractor.includes('includes(')).toBe(false);
+    const campingRequestedExtractor = readSrc(
+      'src/features/conversation-core/CampingRequestedConversationStateExtractor.ts',
+    );
+    expect(campingRequestedExtractor).toMatch(
+      /export class CampingRequestedConversationStateExtractor/,
+    );
+    expect(campingRequestedExtractor).toMatch(
+      /_input: ConversationStateExtractionInput/,
+    );
+    expect(campingRequestedExtractor.includes('input.message')).toBe(false);
+    expect(campingRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(campingRequestedExtractor.includes('toLowerCase')).toBe(false);
+    expect(campingRequestedExtractor.includes('includes(')).toBe(false);
     expect(compositeExtractor).toMatch(
       /export class CompositeConversationStateExtractor/,
     );

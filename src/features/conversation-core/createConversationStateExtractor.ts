@@ -2,6 +2,7 @@ import { AccommodationRequestedConversationStateExtractor } from './Accommodatio
 import { ActivitiesRequestedConversationStateExtractor } from './ActivitiesRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from './AdultCountConversationStateExtractor';
 import { BeachesRequestedConversationStateExtractor } from './BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from './CampingRequestedConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from './CarHireRequestedConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from './ChildCountConversationStateExtractor';
 import { CompositeConversationStateExtractor } from './CompositeConversationStateExtractor';
@@ -34,6 +35,7 @@ import type { ConversationStateExtractor } from './types';
  * RestaurantsRequestedConversationStateExtractor, then a new
  * NearbyDiscoveryRequestedConversationStateExtractor, then a new
  * BeachesRequestedConversationStateExtractor, then a new
+ * CampingRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -53,6 +55,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new RestaurantsRequestedConversationStateExtractor(),
     new NearbyDiscoveryRequestedConversationStateExtractor(),
     new BeachesRequestedConversationStateExtractor(),
+    new CampingRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }

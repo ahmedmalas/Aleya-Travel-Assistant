@@ -8,6 +8,7 @@ import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDis
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
@@ -127,7 +128,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('separate factory calls return separate composites with destination, origin, departure-date, return-date, adult-count, child-count, infant-count, flights-requested, accommodation-requested, car-hire-requested, activities-requested, restaurants-requested, nearby-discovery-requested, beaches-requested, then empty extractors', () => {
+  it('separate factory calls return separate composites with destination, origin, departure-date, return-date, adult-count, child-count, infant-count, flights-requested, accommodation-requested, car-hire-requested, activities-requested, restaurants-requested, nearby-discovery-requested, beaches-requested, camping-requested, then empty extractors', () => {
     const first = createConversationStateExtractor();
     const second = createConversationStateExtractor();
 
@@ -143,8 +144,8 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     );
 
     expect(firstExtractors).not.toBe(secondExtractors);
-    expect(firstExtractors).toHaveLength(15);
-    expect(secondExtractors).toHaveLength(15);
+    expect(firstExtractors).toHaveLength(16);
+    expect(secondExtractors).toHaveLength(16);
     expect(firstExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(firstExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(firstExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -169,7 +170,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(firstExtractors[13]).toBeInstanceOf(
       BeachesRequestedConversationStateExtractor,
     );
-    expect(firstExtractors[14]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(firstExtractors[14]).toBeInstanceOf(
+      CampingRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[15]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(secondExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(secondExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(secondExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -194,7 +198,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(secondExtractors[13]).toBeInstanceOf(
       BeachesRequestedConversationStateExtractor,
     );
-    expect(secondExtractors[14]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(secondExtractors[14]).toBeInstanceOf(
+      CampingRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[15]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(firstExtractors[0]).not.toBe(secondExtractors[0]);
     expect(firstExtractors[1]).not.toBe(secondExtractors[1]);
     expect(firstExtractors[2]).not.toBe(secondExtractors[2]);
@@ -210,6 +217,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(firstExtractors[12]).not.toBe(secondExtractors[12]);
     expect(firstExtractors[13]).not.toBe(secondExtractors[13]);
     expect(firstExtractors[14]).not.toBe(secondExtractors[14]);
+    expect(firstExtractors[15]).not.toBe(secondExtractors[15]);
   });
 
   it('extractor instances do not share state', () => {
@@ -265,7 +273,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap|registry/);
     expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
@@ -314,6 +322,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(index).not.toMatch(/RestaurantsRequestedConversationStateExtractor/);
     expect(index).not.toMatch(/NearbyDiscoveryRequestedConversationStateExtractor/);
     expect(index).not.toMatch(/BeachesRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/CampingRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('createConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('EmptyConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
@@ -346,6 +355,9 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     );
     expect(conversationCore).not.toHaveProperty(
       'BeachesRequestedConversationStateExtractor',
+    );
+    expect(conversationCore).not.toHaveProperty(
+      'CampingRequestedConversationStateExtractor',
     );
     expect(runtimeExports.filter((name) => /extract/i.test(name))).toEqual([]);
     expect(index).not.toMatch(/export function extract/);
@@ -381,6 +393,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(processTurn).not.toMatch(/RestaurantsRequestedConversationStateExtractor/);
     expect(processTurn).not.toMatch(/NearbyDiscoveryRequestedConversationStateExtractor/);
     expect(processTurn).not.toMatch(/BeachesRequestedConversationStateExtractor/);
+    expect(processTurn).not.toMatch(/CampingRequestedConversationStateExtractor/);
     expect(runtimeExports).toEqual(['processConversationTurn']);
     expect(typeof conversationCore.processConversationTurn).toBe('function');
   });
@@ -428,6 +441,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
         ROOT,
         'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
       ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/CampingRequestedConversationStateExtractor.ts',
+      ),
       resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
@@ -468,6 +485,9 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
         file,
       ).toBe(false);
       expect(src.includes('BeachesRequestedConversationStateExtractor'), file).toBe(
+        false,
+      );
+      expect(src.includes('CampingRequestedConversationStateExtractor'), file).toBe(
         false,
       );
     }
@@ -665,6 +685,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'no beaches', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('factory-created extraction remains empty and deterministic for camping-requested-like text', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState({ campingRequested: true });
+
+    expect(
+      extractor.extract({ message: 'show me camping options', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'show me camping options', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'no camping', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 });
