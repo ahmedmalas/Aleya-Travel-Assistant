@@ -157,7 +157,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7aa',
+      conversationId: 'conversation-8q',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -231,7 +231,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7AA — NationalParksRequestedConversationStateExtractor activation', () => {
+describe('phase 8Q — NationalParksRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit nationalParksRequested true contract', () => {
     expectTypeOf<NationalParksRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<NationalParksRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -242,7 +242,7 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
     const extractor = new NationalParksRequestedConversationStateExtractor();
     expect(
       extractor.extract({
-        message: 'add national parks',
+        message: 'show me national parks',
         currentState: createState({ nationalParksRequested: null }),
       }),
     ).toEqual({ stateUpdate: { nationalParksRequested: true } });
@@ -253,43 +253,33 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
     const cases = [
       'national parks',
       'national park',
-      'show national parks',
-      'show me national parks',
       'find national parks',
-      'I need national parks',
+      'find a national park',
+      'search national parks',
+      'show me national parks',
+      'recommend national parks',
+      'national park recommendations',
+      'national park options',
+      'best national parks',
+      'nearby national parks',
+      'national parks near me',
+      'parks to visit',
+      'which national parks should I visit',
       'include national parks',
       'add national parks',
+      'I want national parks',
+      'visit a national park',
       'need national parks',
       'book national parks',
+      'show me national parks near Brisbane',
+      'find the best national parks near Cairns',
+      'I want national parks and camping',
+      'include national parks on this trip',
+      'recommend family-friendly national parks',
+      'find national parks near the Gold Coast',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ nationalParksRequested: null }),
-        }),
-        message,
-      ).toEqual({ stateUpdate: { nationalParksRequested: true } });
-    }
-  });
-
-
-  
-  it('extracts clear named national parks as true without storing the name', () => {
-    const extractor = new NationalParksRequestedConversationStateExtractor();
-    const named = [
-      'Royal National Park',
-      'Blue Mountains National Park',
-      'Kakadu National Park',
-      'Kosciuszko National Park',
-      'Daintree National Park',
-      'show me Royal National Park',
-      'I need Kakadu National Park',
-      'add Daintree National Park',
-    ];
-
-    for (const message of named) {
       const result = extractor.extract({
         message,
         currentState: createState({ nationalParksRequested: null }),
@@ -297,52 +287,94 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
       expect(result, message).toEqual({
         stateUpdate: { nationalParksRequested: true },
       });
-      expect(result.stateUpdate).not.toHaveProperty('destination');
-      expect(JSON.stringify(result.stateUpdate)).not.toMatch(
-        /Royal|Blue Mountains|Kakadu|Kosciuszko|Daintree/i,
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
       );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for ordinary places, parks without national-park identity, playgrounds/gardens/reserves/state parks/conservation areas, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+  it('emits only nationalParksRequested from nearby-national-parks and parks-and-camping wording', () => {
+    const extractor = new NationalParksRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'nearby national parks',
+        currentState: createState({ nationalParksRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'national parks near me',
+        currentState: createState({ nationalParksRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'I want national parks and camping',
+        currentState: createState({ nationalParksRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+  });
+
+  it('returns empty for permits, weather, accommodation proximity, named parks, historical, negation, and ambiguous wording', () => {
     const extractor = new NationalParksRequestedConversationStateExtractor();
     const unsupported = [
+      'national park pass',
+      'national park permit',
+      'national park fees',
+      'national park rules',
+      'national park regulations',
+      'national park map',
+      'national park address',
+      'national park weather',
+      'national park conditions',
+      'national park warning',
+      'national park closure',
+      'national park fire ban',
+      'national park accommodation',
+      'hotel near a national park',
+      'we visited a national park',
+      'the national park was crowded',
+      'I like national parks',
+      'national parks?',
+      'what is a national park',
+      'Royal National Park',
+      'Kakadu National Park',
+      'Blue Mountains National Park',
+      'Daintree National Park',
       'Sydney',
       'Melbourne',
-      'Brisbane',
-      'Cairns',
       'parks',
       'park',
       'playground',
-      'playgrounds',
       'gardens',
-      'garden',
       'reserves',
-      'reserve',
       'state parks',
-      'state park',
       'conservation areas',
-      'conservation area',
       'protected areas',
       'coastal national parks',
       'Australian national parks',
       'local national parks',
       'guided national parks',
-      'national parks near the hotel',
-      'nearby national parks',
-      'national parks in Sydney',
-      'do not include national parks',
       'no national parks',
-      'no national park',
-      "don't add national parks",
+      'do not include national parks',
+      "don't include national parks",
       'without national parks',
       'remove national parks',
+      'cancel the national park plans',
+      "I don't want national parks",
+      'avoid national parks',
+      'skip national parks',
       'forget national parks',
       'keep national parks',
       'actually show me national parks',
       'instead national parks',
       'not national parks but beaches',
-      'no Royal National Park',
       'Hello',
       '',
     ];
@@ -432,6 +464,8 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7AA');
+    expect(source).toContain('Phase 8Q');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -485,27 +519,49 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
     expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8P');
     expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
     expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7Q',
@@ -602,17 +658,35 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new BeachesRequestedConversationStateExtractor().extract({
         message: 'show me beaches',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new NearbyDiscoveryRequestedConversationStateExtractor().extract({
         message: 'what is nearby',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new RestaurantsRequestedConversationStateExtractor().extract({
         message: 'find restaurants',
@@ -625,6 +699,12 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -700,18 +780,18 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add national parks',
+      message: 'show me national parks',
       state: currentState,
-      userEntryId: 'user-7aa-a',
-      assistantEntryId: 'assistant-7aa-a',
+      userEntryId: 'user-8q-a',
+      assistantEntryId: 'assistant-8q-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no national parks',
       state: currentState,
-      userEntryId: 'user-7aa-b',
-      assistantEntryId: 'assistant-7aa-b',
+      userEntryId: 'user-8q-b',
+      assistantEntryId: 'assistant-8q-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { nationalParksRequested: true },
@@ -719,8 +799,8 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
     const overriddenFalse = processConversationTurn({
       message: 'add national parks',
       state: currentState,
-      userEntryId: 'user-7aa-c',
-      assistantEntryId: 'assistant-7aa-c',
+      userEntryId: 'user-8q-c',
+      assistantEntryId: 'assistant-8q-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { nationalParksRequested: false },
@@ -728,22 +808,23 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
     const nullOverride = processConversationTurn({
       message: 'add national parks',
       state: currentState,
-      userEntryId: 'user-7aa-d',
-      assistantEntryId: 'assistant-7aa-d',
+      userEntryId: 'user-8q-d',
+      assistantEntryId: 'assistant-8q-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { nationalParksRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'playground',
+      message: 'national park weather',
       state: currentState,
-      userEntryId: 'user-7aa-e',
-      assistantEntryId: 'assistant-7aa-e',
+      userEntryId: 'user-8q-e',
+      assistantEntryId: 'assistant-8q-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add national parks. Fly from Sydney to Cairns',
+      message:
+        'show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -768,13 +849,14 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
         wildlifeRequested: null,
         nationalParksRequested: null,
       }),
-      userEntryId: 'user-7aa-f',
-      assistantEntryId: 'assistant-7aa-f',
+      userEntryId: 'user-8q-f',
+      assistantEntryId: 'assistant-8q-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'add national parks. Fly from Sydney to Cairns',
+      message:
+        'show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -799,8 +881,8 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
         wildlifeRequested: null,
         nationalParksRequested: null,
       }),
-      userEntryId: 'user-7aa-g',
-      assistantEntryId: 'assistant-7aa-g',
+      userEntryId: 'user-8q-g',
+      assistantEntryId: 'assistant-8q-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -809,8 +891,34 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
         nationalParksRequested: false,
       },
     });
+    const bestParks = processConversationTurn({
+      message: 'best national parks',
+      state: currentState,
+      userEntryId: 'user-8q-h',
+      assistantEntryId: 'assistant-8q-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const parksToVisit = processConversationTurn({
+      message: 'parks to visit',
+      state: currentState,
+      userEntryId: 'user-8q-i',
+      assistantEntryId: 'assistant-8q-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const namedPreserved = processConversationTurn({
+      message: 'Kakadu National Park',
+      state: currentState,
+      userEntryId: 'user-8q-j',
+      assistantEntryId: 'assistant-8q-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.nationalParksRequested).toBe(true);
+    expect(extracted.state.campingRequested).toBe(true);
+    expect(extracted.state.beachesRequested).toBe(true);
     expect(extracted.state.eventsFestivalsRequested).toBe(true);
     expect(extracted.state.wineriesFoodTrailsRequested).toBe(true);
     expect(extracted.state.divingSnorkellingRequested).toBe(true);
@@ -822,11 +930,17 @@ describe('phase 7AA — NationalParksRequestedConversationStateExtractor activat
     expect(nullOverride.state.nationalParksRequested).toBeNull();
     expect(preserved.state.nationalParksRequested).toBe(false);
     expect(composed.state.nationalParksRequested).toBe(true);
+    expect(composed.state.campingRequested).toBe(true);
+    expect(composed.state.beachesRequested).toBe(true);
+    expect(composed.state.nearbyDiscoveryRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.nationalParksRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(bestParks.state.nationalParksRequested).toBe(true);
+    expect(parksToVisit.state.nationalParksRequested).toBe(true);
+    expect(namedPreserved.state.nationalParksRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(

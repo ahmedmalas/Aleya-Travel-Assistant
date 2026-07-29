@@ -121,7 +121,7 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
     expect(second.state.nationalParksRequested).toBe(false);
   });
 
-  it('user message text cannot set nationalParksRequested from unsupported wording', () => {
+  it('unsupported national-park-adjacent wording cannot set nationalParksRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -134,6 +134,11 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
       'state parks',
       'conservation areas',
       'Sydney',
+      'Kakadu National Park',
+      'national park weather',
+      'national park permit',
+      'national parks?',
+      'I like national parks',
     ];
 
     let state = initial;
@@ -144,7 +149,80 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
     });
   });
 
-  it('user message text cannot clear or change an existing value via unsupported wording', () => {
+  it('explicit national-parks cue in the message sets nationalParksRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me national parks', initial, 0);
+    expect(result.state.nationalParksRequested).toBe(true);
+  });
+
+  it('phase 8Q clear national-park discovery cues set nationalParksRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('national parks', initial, 0);
+    expect(bare.state.nationalParksRequested).toBe(true);
+    expect(bare.state.campingRequested).toBeNull();
+    expect(bare.state.beachesRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+
+    const best = turn('best national parks', initial, 1);
+    expect(best.state.nationalParksRequested).toBe(true);
+
+    const visit = turn('parks to visit', initial, 2);
+    expect(visit.state.nationalParksRequested).toBe(true);
+
+    const nearbyParks = turn('nearby national parks', initial, 3);
+    expect(nearbyParks.state.nationalParksRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me national parks near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      4,
+    );
+    expect(inRequest.state.nationalParksRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 5, {
+      nationalParksRequested: false,
+    });
+    const negated = turn('no national parks', seeded.state, 6);
+    expect(negated.state.nationalParksRequested).toBe(false);
+    const named = turn('Kakadu National Park', seeded.state, 7);
+    expect(named.state.nationalParksRequested).toBe(false);
+    const weather = turn('national park weather', seeded.state, 8);
+    expect(weather.state.nationalParksRequested).toBe(false);
+    const hotel = turn('hotel near a national park', seeded.state, 9);
+    expect(hotel.state.nationalParksRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.nationalParksRequested overrides an extracted national-parks request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me national parks', initial, 0, {
+      nationalParksRequested: false,
+    });
+    expect(overriddenFalse.state.nationalParksRequested).toBe(false);
+
+    const overriddenTrue = turn('no national parks', initial, 1, {
+      nationalParksRequested: true,
+    });
+    expect(overriddenTrue.state.nationalParksRequested).toBe(true);
+
+    const nullOverride = turn('show me national parks', initial, 2, {
+      nationalParksRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.nationalParksRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing nationalParksRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
