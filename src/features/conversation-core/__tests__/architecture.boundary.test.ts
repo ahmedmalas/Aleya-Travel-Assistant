@@ -73,6 +73,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/attractionsRequested\?: boolean \| null/);
     expect(types).toMatch(/snowActivitiesRequested\?: boolean \| null/);
     expect(types).toMatch(/hikingWalkingRequested\?: boolean \| null/);
+    expect(types).toMatch(/fishingRequested\?: boolean \| null/);
     expect(types).toMatch(/toursRequested\?: boolean \| null/);
     expect(types).toMatch(/eventsRequested\?: boolean \| null/);
     expect(types).toMatch(/nightlifeRequested\?: boolean \| null/);
@@ -356,6 +357,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/hikingWalkingRequested: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.hikingWalkingRequested !== undefined[\s\S]*\? stateUpdate\.hikingWalkingRequested[\s\S]*: currentState\.hikingWalkingRequested/,
+    );
+    expect(types).toMatch(/fishingRequested: boolean \| null/);
+    expect(types).toMatch(/fishingRequested: null,/);
+    expect(applyUpdate).toMatch(
+      /stateUpdate\?\.fishingRequested !== undefined[\s\S]*\? stateUpdate\.fishingRequested[\s\S]*: currentState\.fishingRequested/,
     );
     expect(types).toMatch(/toursRequested: boolean \| null/);
     expect(types).toMatch(/toursRequested: null,/);
@@ -842,12 +848,16 @@ describe('conversation-core architectural boundary', () => {
       /export class FishingRequestedConversationStateExtractor/,
     );
     expect(fishingRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(fishingRequestedExtractor.includes('input.message')).toBe(false);
+    expect(fishingRequestedExtractor).toMatch(/input\.message/);
     expect(fishingRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(fishingRequestedExtractor.includes('.trim(')).toBe(false);
     expect(fishingRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(fishingRequestedExtractor.includes('includes(')).toBe(false);
+    expect(fishingRequestedExtractor).toMatch(/fishingRequested:\s*true/);
+    expect(fishingRequestedExtractor.includes('fishingRequested: false')).toBe(false);
+    expect(fishingRequestedExtractor.includes('fishingRequested: null')).toBe(false);
     const divingSnorkellingRequestedExtractor = readSrc(
       'src/features/conversation-core/extractors/DivingSnorkellingRequestedConversationStateExtractor.ts',
     );

@@ -1122,18 +1122,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for fishing-requested-like text', () => {
+  it('factory-created extraction sets fishingRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ fishingRequested: false });
 
+    expect(
+      extractor.extract({ message: 'show me fishing', currentState }),
+    ).toEqual({ stateUpdate: { fishingRequested: true } });
+    expect(
+      extractor.extract({ message: 'go fishing', currentState }),
+    ).toEqual({ stateUpdate: { fishingRequested: true } });
+    expect(
+      extractor.extract({ message: 'no fishing', currentState }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'show me fishing charters', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'go fishing', currentState }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({ message: 'no angling', currentState }),
+      extractor.extract({ message: 'seafood', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

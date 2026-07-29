@@ -143,6 +143,7 @@ function createState(
     attractionsRequested: false,
     snowActivitiesRequested: false,
     hikingWalkingRequested: false,
+    fishingRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -302,6 +303,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       attractionsRequested: false,
       snowActivitiesRequested: false,
       hikingWalkingRequested: false,
+      fishingRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -564,6 +566,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       attractionsRequested: false,
       snowActivitiesRequested: false,
       hikingWalkingRequested: false,
+      fishingRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
@@ -629,6 +632,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         attractionsRequested: null,
         snowActivitiesRequested: null,
         hikingWalkingRequested: null,
+        fishingRequested: null,
       }),
       userEntryId: 'user-7s-f',
       assistantEntryId: 'assistant-7s-f',
@@ -654,6 +658,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         attractionsRequested: null,
         snowActivitiesRequested: null,
         hikingWalkingRequested: null,
+        fishingRequested: null,
       }),
       userEntryId: 'user-7s-g',
       assistantEntryId: 'assistant-7s-g',
@@ -749,6 +754,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       attractionsRequested: false,
       snowActivitiesRequested: false,
       hikingWalkingRequested: false,
+      fishingRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention
