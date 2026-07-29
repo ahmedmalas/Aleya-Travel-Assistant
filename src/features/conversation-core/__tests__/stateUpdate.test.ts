@@ -210,7 +210,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(preserved.state.carHireRequested).toBe(false);
   });
 
-  it('user message text never sets fields through the update boundary', () => {
+  it('user message text only activates currently live extractors through the update boundary', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -220,7 +220,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
       initial,
       0,
     );
-    expect(result.state.flightsRequested).toBeNull();
+    expect(result.state.flightsRequested).toBe(true);
     expect(result.state.accommodationRequested).toBeNull();
     expect(result.state.carHireRequested).toBeNull();
     expect(result.state.beachesRequested).toBeNull();
