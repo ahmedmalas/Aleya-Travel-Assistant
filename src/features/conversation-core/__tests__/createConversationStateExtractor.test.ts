@@ -995,13 +995,13 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'add camping', currentState }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
-      extractor.extract({ message: 'add camping', currentState }),
+      extractor.extract({ message: 'find a campsite', currentState }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
       extractor.extract({ message: 'no camping', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'find a campsite', currentState }),
+      extractor.extract({ message: 'camping gear', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
