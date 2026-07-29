@@ -14,13 +14,13 @@ import {
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
-import { FishingRequestedConversationStateExtractor } from '../extractors/FishingRequestedConversationStateExtractor';
-import { DivingSnorkellingRequestedConversationStateExtractor } from '../extractors/DivingSnorkellingRequestedConversationStateExtractor';
+import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
+import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
-const DIVING_SNORKELLING_REQUESTED_SOURCE = resolve(
+const EVENTS_FESTIVALS_REQUESTED_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/extractors/DivingSnorkellingRequestedConversationStateExtractor.ts',
+  'src/features/conversation-core/extractors/EventsFestivalsRequestedConversationStateExtractor.ts',
 );
 
 function createState(
@@ -28,7 +28,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6g',
+      conversationId: 'conversation-6i',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -47,6 +47,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: true,
+    eventsRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -89,89 +90,106 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skeleton', () => {
+describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skeleton', () => {
   it('implements ConversationStateExtractor with empty result contract', () => {
-    expectTypeOf<DivingSnorkellingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
+    expectTypeOf<EventsFestivalsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<
-      DivingSnorkellingRequestedConversationStateExtractor['extract']
+      EventsFestivalsRequestedConversationStateExtractor['extract']
     >().parameters.toEqualTypeOf<[ConversationStateExtractionInput]>();
     expectTypeOf<
-      DivingSnorkellingRequestedConversationStateExtractor['extract']
+      EventsFestivalsRequestedConversationStateExtractor['extract']
     >().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
-    const extractor = new DivingSnorkellingRequestedConversationStateExtractor();
+    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const input: ConversationStateExtractionInput = {
-      message: 'go diving',
+      message: 'show me local events',
       currentState: createState(),
     };
     expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
   });
 
-  it('reports that no canonical diving or snorkelling request field exists', () => {
+  it('does not introduce new events/festivals canonical fields beyond the existing explicit eventsRequested', () => {
     const initial = createInitialConversationCoreState({
-      conversationId: 'conversation-6g-field',
+      conversationId: 'conversation-6i-field',
       now: new Date('2026-07-29T00:00:00.000Z'),
     });
+    expect(Object.prototype.hasOwnProperty.call(initial, 'eventsRequested')).toBe(
+      true,
+    );
     for (const field of [
-      'divingRequested',
-      'snorkellingRequested',
-      'divingSnorkellingRequested',
-      'scubaDivingRequested',
-      'freedivingRequested',
-      'reefDivingRequested',
-      'underwaterActivitiesRequested',
+      'festivalsRequested',
+      'eventsFestivalsRequested',
+      'concertsRequested',
+      'marketsRequested',
+      'exhibitionsRequested',
+      'sportingEventsRequested',
+      'culturalEventsRequested',
+      'localEventsRequested',
     ]) {
       expect(Object.prototype.hasOwnProperty.call(initial, field)).toBe(false);
       expect(field in initial).toBe(false);
     }
   });
 
-  it('cannot create state from diving, scuba, snorkelling, or related wording', () => {
-    const extractor = new DivingSnorkellingRequestedConversationStateExtractor();
+  it('cannot create state from event, festival, concert, market, or related wording', () => {
+    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
-      beachesRequested: true,
+      restaurantsRequested: true,
       activitiesRequested: true,
+      eventsRequested: true,
       nearbyDiscoveryRequested: true,
-      kayakingRequested: true,
+    });
+    const withoutEvents = createState({
+      attractionsRequested: true,
+      eventsRequested: false,
     });
 
     const messages = [
-      'diving',
-      'go diving',
-      'scuba diving',
-      'snorkelling',
-      'go snorkelling',
-      'snorkeling',
-      'reef diving',
-      'reef snorkelling',
-      'freediving',
-      'free diving',
-      'wreck diving',
-      'cave diving',
-      'shore diving',
-      'boat diving',
-      'night diving',
-      'underwater tour',
-      'underwater experience',
-      'show me scuba diving',
-      'find snorkelling spots',
-      'I want to go freediving',
-      'add reef diving',
-      'yes include snorkeling',
-      'actually show me night diving',
-      'do not include diving',
-      'no snorkelling',
-      'remove scuba diving',
-      'forget underwater tours',
-      'keep beaches but remove diving',
+      'events',
+      'local events',
+      'festivals',
+      'music festivals',
+      'food festivals',
+      'cultural festivals',
+      'concerts',
+      'live music',
+      'shows',
+      'theatre',
+      'markets',
+      'night markets',
+      'farmers markets',
+      'fairs',
+      'carnivals',
+      'parades',
+      'exhibitions',
+      'art exhibitions',
+      'trade shows',
+      'sporting events',
+      'sports matches',
+      'races',
+      'community events',
+      'seasonal events',
+      "what's on",
+      'things happening nearby',
+      'show me festivals',
+      'find concerts nearby',
+      'I want night markets',
+      'add art exhibitions',
+      'yes include local events',
+      'actually show me sporting events',
+      'do not include festivals',
+      'no concerts',
+      'remove events',
+      'forget markets',
+      'keep attractions but remove festivals',
     ];
 
     for (const message of messages) {
       expect(
         extractor.extract({
           message,
-          currentState: createState(),
+          currentState: createState({ eventsRequested: null }),
         }),
       ).toEqual({ stateUpdate: {} });
       expect(
@@ -180,25 +198,31 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
           currentState: withRelatedFlags,
         }),
       ).toEqual({ stateUpdate: {} });
+      expect(
+        extractor.extract({
+          message,
+          currentState: withoutEvents,
+        }),
+      ).toEqual({ stateUpdate: {} });
     }
 
     const result = extractor.extract({
-      message: 'keep beaches but remove diving',
+      message: 'keep attractions but remove festivals',
       currentState: withRelatedFlags,
     });
     expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('divingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('snorkellingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('divingSnorkellingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('beachesRequested');
-    expect(result.stateUpdate).not.toHaveProperty('kayakingRequested');
-    expect(withRelatedFlags.beachesRequested).toBe(true);
+    expect(result.stateUpdate).not.toHaveProperty('eventsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('festivalsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('eventsFestivalsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('attractionsRequested');
+    expect(withRelatedFlags.eventsRequested).toBe(true);
+    expect(withoutEvents.eventsRequested).toBe(false);
   });
 
   it('does not mutate input or retain state across calls', () => {
-    const extractor = new DivingSnorkellingRequestedConversationStateExtractor();
+    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const currentState = createState({
-      attractionsRequested: true,
+      eventsRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -209,7 +233,7 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'go snorkelling',
+      message: 'music festivals',
       currentState,
     };
     const before = structuredClone(input);
@@ -220,7 +244,7 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
 
     const first = extractor.extract(input);
     const second = extractor.extract(input);
-    first.stateUpdate.attractionsRequested = false;
+    first.stateUpdate.eventsRequested = false;
 
     expect(input).toEqual(before);
     expect(currentState).toEqual(before.currentState);
@@ -230,20 +254,22 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
     expect(second).toEqual({ stateUpdate: {} });
   });
 
-  it('is included once in the production composite after fishing and before empty', () => {
+  it('is included once in the production composite after wineries/food-trails and before empty', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
     expect(extractors).toHaveLength(26);
-    const fishingIndexes = extractors
+    const wineriesIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof FishingRequestedConversationStateExtractor ? index : -1,
+        extractor instanceof WineriesFoodTrailsRequestedConversationStateExtractor
+          ? index
+          : -1,
       )
       .filter((index) => index >= 0);
-    const divingIndexes = extractors
+    const eventsIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof DivingSnorkellingRequestedConversationStateExtractor
+        extractor instanceof EventsFestivalsRequestedConversationStateExtractor
           ? index
           : -1,
       )
@@ -254,32 +280,34 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
       )
       .filter((index) => index >= 0);
 
-    expect(fishingIndexes).toEqual([21]);
-    expect(divingIndexes).toEqual([22]);
+    expect(wineriesIndexes).toEqual([23]);
+    expect(eventsIndexes).toEqual([24]);
     expect(emptyIndexes).toEqual([25]);
-    expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[22]).toBeInstanceOf(
-      DivingSnorkellingRequestedConversationStateExtractor,
+    expect(extractors[23]).toBeInstanceOf(
+      WineriesFoodTrailsRequestedConversationStateExtractor,
+    );
+    expect(extractors[24]).toBeInstanceOf(
+      EventsFestivalsRequestedConversationStateExtractor,
     );
     expect(extractors[25]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
-    const source = readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8');
+    const source = readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8');
 
     expect(source).toMatch(/_input: ConversationStateExtractionInput/);
     expect(source).not.toMatch(/input\.message|input\.currentState/);
     expect(source).not.toMatch(/\.message\b/);
     expect(source).not.toMatch(/currentState\./);
     expect(source).not.toMatch(
-      /divingRequested\s*:|snorkellingRequested\s*:|divingSnorkellingRequested\s*:/,
+      /eventsRequested\s*:|festivalsRequested\s*:|eventsFestivalsRequested\s*:/,
     );
     expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
     expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|scuba|snorkeling|freediving|free diving|wreck|cave diving|underwater|shore diving|boat diving|night diving|reef diving/i,
+      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|concert|theatre|carnival|parade|exhibition|market|fair|sporting|what's on|whats on|trade.?show|farmers.?market/i,
     );
     expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|marine|dive)/i,
+      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|ticket|event)/i,
     );
     expect(source).not.toMatch(/metadata|confidence|warnings/);
   });
@@ -295,28 +323,28 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
     );
     const allowedConstruct = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
-      DIVING_SNORKELLING_REQUESTED_SOURCE,
+      EVENTS_FESTIVALS_REQUESTED_SOURCE,
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowedConstruct.has(path),
     );
 
-    expect(index).not.toMatch(/DivingSnorkellingRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/EventsFestivalsRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty(
-      'DivingSnorkellingRequestedConversationStateExtractor',
+      'EventsFestivalsRequestedConversationStateExtractor',
     );
     expect(processTurn).not.toMatch(
-      /DivingSnorkellingRequestedConversationStateExtractor/,
+      /EventsFestivalsRequestedConversationStateExtractor/,
     );
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
       expect(
-        src.includes('new DivingSnorkellingRequestedConversationStateExtractor'),
+        src.includes('new EventsFestivalsRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
       expect(
-        src.includes('DivingSnorkellingRequestedConversationStateExtractor'),
+        src.includes('EventsFestivalsRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
     }
@@ -326,30 +354,33 @@ describe('phase 6G — DivingSnorkellingRequestedConversationStateExtractor skel
     const currentState = createState({
       attractionsRequested: true,
       activitiesRequested: true,
-      beachesRequested: true,
+      eventsRequested: true,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
     const messageOnly = processConversationTurn({
-      message: 'show me scuba diving and snorkelling reefs',
+      message: 'show me festivals and night markets',
       state: currentState,
-      userEntryId: 'user-6g',
-      assistantEntryId: 'assistant-6g',
+      userEntryId: 'user-6i',
+      assistantEntryId: 'assistant-6i',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const factoryResult = createConversationStateExtractor().extract({
-      message: 'go diving',
+      message: "what's on",
       currentState,
     });
 
     expect(factoryResult).toEqual({ stateUpdate: {} });
     expect(messageOnly.state.attractionsRequested).toBe(true);
     expect(messageOnly.state.activitiesRequested).toBe(true);
-    expect(messageOnly.state.beachesRequested).toBe(true);
+    expect(messageOnly.state.eventsRequested).toBe(true);
     expect(messageOnly.state.destination).toBe('Brisbane');
     expect(
-      Object.prototype.hasOwnProperty.call(messageOnly.state, 'divingSnorkellingRequested'),
+      Object.prototype.hasOwnProperty.call(
+        messageOnly.state,
+        'eventsFestivalsRequested',
+      ),
     ).toBe(false);
     expect(messageOnly.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(messageOnly).sort()).toEqual(['reply', 'state', 'trace']);

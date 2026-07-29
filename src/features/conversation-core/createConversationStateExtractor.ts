@@ -24,6 +24,7 @@ import { HikingWalkingRequestedConversationStateExtractor } from './extractors/H
 import { FishingRequestedConversationStateExtractor } from './extractors/FishingRequestedConversationStateExtractor';
 import { DivingSnorkellingRequestedConversationStateExtractor } from './extractors/DivingSnorkellingRequestedConversationStateExtractor';
 import { WineriesFoodTrailsRequestedConversationStateExtractor } from './extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
+import { EventsFestivalsRequestedConversationStateExtractor } from './extractors/EventsFestivalsRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -54,6 +55,7 @@ import type { ConversationStateExtractor } from './types';
  * FishingRequestedConversationStateExtractor, then a new
  * DivingSnorkellingRequestedConversationStateExtractor, then a new
  * WineriesFoodTrailsRequestedConversationStateExtractor, then a new
+ * EventsFestivalsRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -83,6 +85,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new FishingRequestedConversationStateExtractor(),
     new DivingSnorkellingRequestedConversationStateExtractor(),
     new WineriesFoodTrailsRequestedConversationStateExtractor(),
+    new EventsFestivalsRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
