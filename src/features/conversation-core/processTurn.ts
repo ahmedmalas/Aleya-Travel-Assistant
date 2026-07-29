@@ -60,6 +60,8 @@ export type ProcessConversationTurnInput = {
   campingRequested?: boolean;
   /** Explicit kayaking request flag only — stored as injected; never read from message. */
   kayakingRequested?: boolean;
+  /** Explicit 4WD request flag only — stored as injected; never read from message. */
+  fourWheelDriveRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -71,15 +73,15 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3P: append raw user + placeholder assistant entries, increment
+ * Phase 3Q: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
- * beachesRequested/campingRequested/kayakingRequested only. Does not
- * interpret, trim, normalise, extract, validate counts, calculate duration,
- * or persist.
+ * beachesRequested/campingRequested/kayakingRequested/
+ * fourWheelDriveRequested only. Does not interpret, trim, normalise,
+ * extract, validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -140,6 +142,10 @@ export function processConversationTurn(
     input.kayakingRequested !== undefined
       ? input.kayakingRequested
       : base.kayakingRequested;
+  const fourWheelDriveRequested =
+    input.fourWheelDriveRequested !== undefined
+      ? input.fourWheelDriveRequested
+      : base.fourWheelDriveRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -178,6 +184,7 @@ export function processConversationTurn(
     beachesRequested,
     campingRequested,
     kayakingRequested,
+    fourWheelDriveRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

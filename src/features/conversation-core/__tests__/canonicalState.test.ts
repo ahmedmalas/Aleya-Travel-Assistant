@@ -23,6 +23,7 @@ const CANONICAL_KEYS = [
   'departureDate',
   'destination',
   'flightsRequested',
+  'fourWheelDriveRequested',
   'infantCount',
   'kayakingRequested',
   'nearbyDiscoveryRequested',
@@ -104,6 +105,7 @@ describe('canonical conversation-core state', () => {
       beachesRequested: null,
       campingRequested: null,
       kayakingRequested: null,
+      fourWheelDriveRequested: null,
       transcript: [],
     });
   });
