@@ -23,6 +23,7 @@ const CANONICAL_KEYS = [
   'flightsRequested',
   'infantCount',
   'origin',
+  'restaurantsRequested',
   'returnDate',
   'status',
   'transcript',
@@ -94,6 +95,7 @@ describe('canonical conversation-core state', () => {
       accommodationRequested: null,
       carHireRequested: null,
       activitiesRequested: null,
+      restaurantsRequested: null,
       transcript: [],
     });
   });
