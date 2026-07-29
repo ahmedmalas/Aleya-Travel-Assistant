@@ -80,10 +80,13 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/accessibleTravelRequested\?: boolean \| null/);
     expect(processTurn).toMatch(/stateUpdate\?: ConversationStateUpdate/);
     expect(processTurn).toMatch(
-      /hasConversationStateUpdateChanged\(\s*base,\s*input\.stateUpdate,\s*\)/,
+      /transitionConversationStateFromExtraction\(\{\s*message: input\.message,\s*currentState: base,\s*\}\)/,
     );
     expect(processTurn).toMatch(
-      /applyConversationStateUpdate\(base, input\.stateUpdate\)/,
+      /hasConversationStateUpdateChanged\(\s*extractionTransition\.nextState,\s*input\.stateUpdate,\s*\)/,
+    );
+    expect(processTurn).toMatch(
+      /applyConversationStateUpdate\(\s*extractionTransition\.nextState,\s*input\.stateUpdate,\s*\)/,
     );
     expect(index.includes('applyConversationStateUpdate')).toBe(false);
     expect(index.includes('hasConversationStateUpdateChanged')).toBe(false);
@@ -97,7 +100,7 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn.includes('extractConversationState')).toBe(false);
     expect(processTurn.includes('extractAndApplyConversationState')).toBe(false);
     expect(processTurn.includes('transitionConversationStateFromExtraction')).toBe(
-      false,
+      true,
     );
     const applyUpdate = readSrc(
       'src/features/conversation-core/applyConversationStateUpdate.ts',

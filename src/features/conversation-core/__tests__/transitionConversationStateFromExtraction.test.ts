@@ -443,7 +443,7 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     expect(index).not.toMatch(/export function transition/);
   });
 
-  it('keeps processConversationTurn unchanged as the only public runtime processor', () => {
+  it('keeps processConversationTurn as the only public runtime processor', () => {
     const processTurn = readFileSync(
       resolve(ROOT, 'src/features/conversation-core/processTurn.ts'),
       'utf8',
@@ -454,15 +454,18 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
           'function' && name !== 'createInitialConversationCoreState',
     );
 
-    expect(processTurn).not.toMatch(/transitionConversationStateFromExtraction/);
+    expect(processTurn).toMatch(/transitionConversationStateFromExtraction/);
     expect(processTurn).not.toMatch(/extractConversationState/);
     expect(processTurn).not.toMatch(/extractAndApplyConversationState/);
     expect(runtimeExports).toEqual(['processConversationTurn']);
     expect(typeof conversationCore.processConversationTurn).toBe('function');
   });
 
-  it('is not imported by processor or application files', () => {
-    const allowed = new Set([TRANSITION_SOURCE]);
+  it('is imported only by the turn processor outside its own module', () => {
+    const allowed = new Set([
+      TRANSITION_SOURCE,
+      resolve(ROOT, 'src/features/conversation-core/processTurn.ts'),
+    ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),
     );

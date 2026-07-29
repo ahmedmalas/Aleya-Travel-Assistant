@@ -1,5 +1,6 @@
 import { applyConversationStateUpdate } from './applyConversationStateUpdate';
 import { hasConversationStateUpdateChanged } from './hasConversationStateUpdateChanged';
+import { transitionConversationStateFromExtraction } from './transitionConversationStateFromExtraction';
 import {
   createInitialConversationCoreState,
   type ConversationCoreState,
@@ -48,28 +49,35 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 4C: append raw user + placeholder assistant entries, increment
- * turnCount by one, set updatedAt from assistantMessageAt, set status to
- * active, expose ageMs, detect whether an explicit travel update would
- * change travel fields, and delegate application to
- * applyConversationStateUpdate. Change detection is internal only and does
- * not alter processor output. Does not interpret, trim, normalise, extract,
- * validate counts, calculate duration, or persist.
+ * Phase 5I: run the internal extraction transition first, then apply any
+ * explicit injected ConversationStateUpdate (explicit input wins). Append
+ * raw user + placeholder assistant entries, increment turnCount by one, set
+ * updatedAt from assistantMessageAt, set status to active, and expose ageMs.
+ * Extraction metadata is internal only and does not alter the public result.
+ * Does not interpret, trim, normalise, validate counts, calculate duration,
+ * or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
 ): ProcessConversationTurnResult {
   const base = resolveBaseState(input);
+  const extractionTransition = transitionConversationStateFromExtraction({
+    message: input.message,
+    currentState: base,
+  });
   const nextTurnCount = base.turnCount + 1;
   const assistantTimestamp = input.assistantMessageAt.toISOString();
   const ageMs =
     input.assistantMessageAt.getTime() - new Date(base.createdAt).getTime();
   const travelStateWouldChange = hasConversationStateUpdateChanged(
-    base,
+    extractionTransition.nextState,
     input.stateUpdate,
   );
   void travelStateWouldChange;
-  const travel = applyConversationStateUpdate(base, input.stateUpdate);
+  const travel = applyConversationStateUpdate(
+    extractionTransition.nextState,
+    input.stateUpdate,
+  );
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
