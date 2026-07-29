@@ -6,7 +6,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 
-const CONVERSATION_ID = 'conversation-core-fishing-requested-001';
+const CONVERSATION_ID = 'conversation-core-diving-snorkelling-requested-001';
 const CREATED_AT = new Date('2026-07-29T00:00:00.000Z');
 
 function turn(
@@ -52,13 +52,13 @@ function turn(
   });
 }
 
-describe('phase 3V/7V — explicit fishingRequested with extraction activation', () => {
-  it('initial fishingRequested is null', () => {
+describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction activation', () => {
+  it('initial divingSnorkellingRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    expect(state.fishingRequested).toBeNull();
+    expect(state.divingSnorkellingRequested).toBeNull();
   });
 
   it('explicit true is stored', () => {
@@ -66,10 +66,10 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const result = turn('I want fishing', initial, 0, {
-      fishingRequested: true,
+    const result = turn('I want diving', initial, 0, {
+      divingSnorkellingRequested: true,
     });
-    expect(result.state.fishingRequested).toBe(true);
+    expect(result.state.divingSnorkellingRequested).toBe(true);
   });
 
   it('explicit false is stored', () => {
@@ -77,16 +77,16 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const withTrue = turn('need charters', initial, 0, {
-      fishingRequested: true,
+    const withTrue = turn('need scuba', initial, 0, {
+      divingSnorkellingRequested: true,
     });
-    expect(withTrue.state.fishingRequested).toBe(true);
+    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
 
-    const withFalse = turn('no charters', withTrue.state, 1, {
-      fishingRequested: false,
+    const withFalse = turn('no scuba', withTrue.state, 1, {
+      divingSnorkellingRequested: false,
     });
-    expect(withFalse.state.fishingRequested).toBe(false);
-    expect(withFalse.state.fishingRequested).not.toBeNull();
+    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
+    expect(withFalse.state.divingSnorkellingRequested).not.toBeNull();
   });
 
   it('omission preserves a previous true', () => {
@@ -95,12 +95,12 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      fishingRequested: true,
+      divingSnorkellingRequested: true,
     });
-    expect(first.state.fishingRequested).toBe(true);
+    expect(first.state.divingSnorkellingRequested).toBe(true);
 
-    const second = turn('seafood fish charters', first.state, 1);
-    expect(second.state.fishingRequested).toBe(true);
+    const second = turn('scuba dive boats', first.state, 1);
+    expect(second.state.divingSnorkellingRequested).toBe(true);
   });
 
   it('omission preserves a previous false', () => {
@@ -109,33 +109,33 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      fishingRequested: false,
+      divingSnorkellingRequested: false,
     });
-    expect(first.state.fishingRequested).toBe(false);
+    expect(first.state.divingSnorkellingRequested).toBe(false);
 
-    const second = turn('fishing charters deep-sea fishing', first.state, 1);
-    expect(second.state.fishingRequested).toBe(false);
+    const second = turn('scuba diving reef diving', first.state, 1);
+    expect(second.state.divingSnorkellingRequested).toBe(false);
   });
 
-  it('user message text cannot set fishingRequested from unsupported wording', () => {
+  it('user message text cannot set divingSnorkellingRequested from unsupported wording', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'fish',
-      'seafood',
-      'charters',
+      'dive',
+      'snorkel',
+      'scuba',
       'boats',
-      'tackle',
-      'fishing charters',
-      'deep-sea fishing',
+      'gear',
+      'scuba diving',
+      'reef diving',
     ];
 
     let state = initial;
     phrases.forEach((message, index) => {
       const result = turn(message, state, index);
-      expect(result.state.fishingRequested).toBeNull();
+      expect(result.state.divingSnorkellingRequested).toBeNull();
       state = result.state;
     });
   });
@@ -146,24 +146,24 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const withTrue = turn('Hello', initial, 0, {
-      fishingRequested: true,
+      divingSnorkellingRequested: true,
     });
-    expect(withTrue.state.fishingRequested).toBe(true);
+    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
 
-    const afterWords = turn('fishing charters seafood', withTrue.state, 1);
-    expect(afterWords.state.fishingRequested).toBe(true);
+    const afterWords = turn('scuba diving gear', withTrue.state, 1);
+    expect(afterWords.state.divingSnorkellingRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
-      fishingRequested: false,
+      divingSnorkellingRequested: false,
     });
-    expect(withFalse.state.fishingRequested).toBe(false);
+    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'seafood fish charters tackle',
+      'scuba dive boats gear',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.fishingRequested).toBe(false);
+    expect(afterMoreWords.state.divingSnorkellingRequested).toBe(false);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {
@@ -196,6 +196,7 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       fishingRequested: true,
       divingSnorkellingRequested: true,
     });
+    expect(first.state.divingSnorkellingRequested).toBe(true);
     expect(first.state.fishingRequested).toBe(true);
     expect(first.state.hikingWalkingRequested).toBe(true);
     expect(first.state.snowActivitiesRequested).toBe(true);
@@ -204,10 +205,11 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
     expect(first.state.status).toBe('active');
     expect(first.state.turnCount).toBe(1);
 
-    const second = turn('no fishing', first.state, 1, {
-      fishingRequested: false,
+    const second = turn('no diving', first.state, 1, {
+      divingSnorkellingRequested: false,
     });
-    expect(second.state.fishingRequested).toBe(false);
+    expect(second.state.divingSnorkellingRequested).toBe(false);
+    expect(second.state.fishingRequested).toBe(true);
     expect(second.state.hikingWalkingRequested).toBe(true);
     expect(second.state.origin).toBe('Sydney');
     expect(second.state.turnCount).toBe(2);
@@ -219,7 +221,7 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Sydney to Gold Coast!!!!', initial, 0, {
-      fishingRequested: true,
+      divingSnorkellingRequested: true,
     });
 
     expect(first.state.transcript.map((entry) => entry.role)).toEqual([
@@ -230,8 +232,8 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('seafood fish charters', first.state, 1);
-    expect(second.state.fishingRequested).toBe(true);
+    const second = turn('scuba dive boats', first.state, 1);
+    expect(second.state.divingSnorkellingRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });

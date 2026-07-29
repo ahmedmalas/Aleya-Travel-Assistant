@@ -50,6 +50,7 @@ function createState(
     snowActivitiesRequested: true,
     hikingWalkingRequested: true,
     fishingRequested: true,
+    divingSnorkellingRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -138,6 +139,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
       snowActivitiesRequested: true,
       hikingWalkingRequested: true,
       fishingRequested: true,
+      divingSnorkellingRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       scenicDrivesRequested: true,
@@ -213,6 +215,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
       snowActivitiesRequested: true,
       hikingWalkingRequested: true,
       fishingRequested: true,
+      divingSnorkellingRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -346,6 +349,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
       snowActivitiesRequested: true,
       hikingWalkingRequested: true,
       fishingRequested: true,
+      divingSnorkellingRequested: true,
       activitiesRequested: true,
       restaurantsRequested: true,
       origin: 'Melbourne',

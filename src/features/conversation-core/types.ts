@@ -78,6 +78,8 @@ export type ConversationCoreState = {
   hikingWalkingRequested: boolean | null;
   /** Explicitly supplied fishing request flag only — never detected from message text. */
   fishingRequested: boolean | null;
+  /** Explicitly supplied diving/snorkelling request flag only — never detected from message text. */
+  divingSnorkellingRequested: boolean | null;
   /** Explicitly supplied tours request flag only — never detected from message text. */
   toursRequested: boolean | null;
   /** Explicitly supplied events request flag only — never detected from message text. */
@@ -125,6 +127,7 @@ export type ConversationStateUpdate = {
   snowActivitiesRequested?: boolean | null;
   hikingWalkingRequested?: boolean | null;
   fishingRequested?: boolean | null;
+  divingSnorkellingRequested?: boolean | null;
   toursRequested?: boolean | null;
   eventsRequested?: boolean | null;
   nightlifeRequested?: boolean | null;
@@ -209,6 +212,7 @@ export function createInitialConversationCoreState(
     snowActivitiesRequested: null,
     hikingWalkingRequested: null,
     fishingRequested: null,
+    divingSnorkellingRequested: null,
     toursRequested: null,
     eventsRequested: null,
     nightlifeRequested: null,

@@ -1143,18 +1143,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for diving-snorkelling-requested-like text', () => {
+  it('factory-created extraction sets divingSnorkellingRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ divingSnorkellingRequested: false });
 
+    expect(
+      extractor.extract({ message: 'show me diving', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractor.extract({ message: 'go snorkelling', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractor.extract({ message: 'no diving', currentState }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'show me scuba diving', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'go snorkelling', currentState }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({ message: 'no snorkeling', currentState }),
+      extractor.extract({ message: 'dive', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

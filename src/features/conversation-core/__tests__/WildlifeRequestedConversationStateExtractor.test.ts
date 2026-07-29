@@ -64,6 +64,7 @@ function createState(
     snowActivitiesRequested: true,
     hikingWalkingRequested: true,
     fishingRequested: true,
+    divingSnorkellingRequested: true,
     eventsRequested: true,
     transcript: [
       {
@@ -151,6 +152,7 @@ describe('phase 6J — WildlifeRequestedConversationStateExtractor skeleton', ()
       snowActivitiesRequested: true,
       hikingWalkingRequested: true,
       fishingRequested: true,
+      divingSnorkellingRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
@@ -359,6 +361,7 @@ describe('phase 6J — WildlifeRequestedConversationStateExtractor skeleton', ()
       snowActivitiesRequested: true,
       hikingWalkingRequested: true,
       fishingRequested: true,
+      divingSnorkellingRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       origin: 'Melbourne',
