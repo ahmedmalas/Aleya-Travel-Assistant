@@ -761,6 +761,8 @@ describe('conversation-core architectural boundary', () => {
     expect(beachesRequestedExtractor).toMatch(
       /export class BeachesRequestedConversationStateExtractor/,
     );
+    expect(beachesRequestedExtractor).toContain('Phase 7N');
+    expect(beachesRequestedExtractor).toContain('Phase 8N');
     expect(beachesRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );
