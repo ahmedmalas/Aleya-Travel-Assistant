@@ -80,11 +80,18 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/accessibleTravelRequested\?: boolean \| null/);
     expect(processTurn).toMatch(/stateUpdate\?: ConversationStateUpdate/);
     expect(processTurn).toMatch(
+      /hasConversationStateUpdateChanged\(\s*base,\s*input\.stateUpdate,\s*\)/,
+    );
+    expect(processTurn).toMatch(
       /applyConversationStateUpdate\(base, input\.stateUpdate\)/,
     );
     expect(index.includes('applyConversationStateUpdate')).toBe(false);
+    expect(index.includes('hasConversationStateUpdateChanged')).toBe(false);
     const applyUpdate = readSrc(
       'src/features/conversation-core/applyConversationStateUpdate.ts',
+    );
+    const changeDetection = readSrc(
+      'src/features/conversation-core/hasConversationStateUpdateChanged.ts',
     );
     expect(applyUpdate).toMatch(/export function applyConversationStateUpdate/);
     expect(applyUpdate).toMatch(
@@ -96,6 +103,18 @@ describe('conversation-core architectural boundary', () => {
     expect(applyUpdate.includes('updatedAt')).toBe(false);
     expect(applyUpdate.includes('status')).toBe(false);
     expect(applyUpdate.includes('ageMs')).toBe(false);
+    expect(changeDetection).toMatch(
+      /export function hasConversationStateUpdateChanged/,
+    );
+    expect(changeDetection).toMatch(
+      /stateUpdate\?: ConversationStateUpdate/,
+    );
+    expect(changeDetection.includes('message')).toBe(false);
+    expect(changeDetection.includes('transcript')).toBe(false);
+    expect(changeDetection.includes('turnCount')).toBe(false);
+    expect(changeDetection.includes('updatedAt')).toBe(false);
+    expect(changeDetection.includes('status')).toBe(false);
+    expect(changeDetection.includes('ageMs')).toBe(false);
     expect(types).toMatch(/origin: string \| null/);
     expect(types).toMatch(/origin: null,/);
     expect(applyUpdate).toMatch(

@@ -1,4 +1,5 @@
 import { applyConversationStateUpdate } from './applyConversationStateUpdate';
+import { hasConversationStateUpdateChanged } from './hasConversationStateUpdateChanged';
 import {
   createInitialConversationCoreState,
   type ConversationCoreState,
@@ -47,11 +48,13 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 4B: append raw user + placeholder assistant entries, increment
+ * Phase 4C: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
- * active, expose ageMs, and delegate explicit travel-field updates to
- * applyConversationStateUpdate. Does not interpret, trim, normalise,
- * extract, validate counts, calculate duration, or persist.
+ * active, expose ageMs, detect whether an explicit travel update would
+ * change travel fields, and delegate application to
+ * applyConversationStateUpdate. Change detection is internal only and does
+ * not alter processor output. Does not interpret, trim, normalise, extract,
+ * validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -61,6 +64,11 @@ export function processConversationTurn(
   const assistantTimestamp = input.assistantMessageAt.toISOString();
   const ageMs =
     input.assistantMessageAt.getTime() - new Date(base.createdAt).getTime();
+  const travelStateWouldChange = hasConversationStateUpdateChanged(
+    base,
+    input.stateUpdate,
+  );
+  void travelStateWouldChange;
   const travel = applyConversationStateUpdate(base, input.stateUpdate);
 
   const userEntry: ConversationTranscriptEntry = {
