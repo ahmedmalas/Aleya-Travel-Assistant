@@ -66,6 +66,8 @@ export type ProcessConversationTurnInput = {
   scenicDrivesRequested?: boolean;
   /** Explicit attractions request flag only — stored as injected; never read from message. */
   attractionsRequested?: boolean;
+  /** Explicit tours request flag only — stored as injected; never read from message. */
+  toursRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -77,16 +79,16 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3S: append raw user + placeholder assistant entries, increment
+ * Phase 3T: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
  * beachesRequested/campingRequested/kayakingRequested/
- * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested
- * only. Does not interpret, trim, normalise, extract, validate counts,
- * calculate duration, or persist.
+ * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
+ * toursRequested only. Does not interpret, trim, normalise, extract,
+ * validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -159,6 +161,10 @@ export function processConversationTurn(
     input.attractionsRequested !== undefined
       ? input.attractionsRequested
       : base.attractionsRequested;
+  const toursRequested =
+    input.toursRequested !== undefined
+      ? input.toursRequested
+      : base.toursRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -200,6 +206,7 @@ export function processConversationTurn(
     fourWheelDriveRequested,
     scenicDrivesRequested,
     attractionsRequested,
+    toursRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

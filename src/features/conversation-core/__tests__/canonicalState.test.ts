@@ -33,6 +33,7 @@ const CANONICAL_KEYS = [
   'returnDate',
   'scenicDrivesRequested',
   'status',
+  'toursRequested',
   'transcript',
   'turnCount',
   'updatedAt',
@@ -110,6 +111,7 @@ describe('canonical conversation-core state', () => {
       fourWheelDriveRequested: null,
       scenicDrivesRequested: null,
       attractionsRequested: null,
+      toursRequested: null,
       transcript: [],
     });
   });
