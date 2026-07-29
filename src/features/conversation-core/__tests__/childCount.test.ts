@@ -56,7 +56,7 @@ describe('phase 3F — explicit childCount only', () => {
     expect(odd.state.childCount).toBe(-2.25);
   });
 
-  it('omitting childCount preserves the existing value', () => {
+  it('omitting childCount preserves the existing value when the message is unsupported', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -64,7 +64,7 @@ describe('phase 3F — explicit childCount only', () => {
     const first = turn('Hello', initial, 0, { childCount: 1 });
     expect(first.state.childCount).toBe(1);
 
-    const second = turn('2 children travelling', first.state, 1);
+    const second = turn('child travellers', first.state, 1);
     expect(second.state.childCount).toBe(1);
   });
 
@@ -80,16 +80,16 @@ describe('phase 3F — explicit childCount only', () => {
     expect(second.state.childCount).toBe(3);
   });
 
-  it('child-traveller wording in the user message alone never changes childCount', () => {
+  it('unsupported child-traveller wording in the user message alone never changes childCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      '1 child',
-      'two children',
       'kids: 3',
       'child travellers',
+      'our two kids',
+      'a 12-year-old',
     ];
 
     let state = initial;
@@ -98,6 +98,29 @@ describe('phase 3F — explicit childCount only', () => {
       expect(result.state.childCount).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit child-count cue in the message updates childCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('2 children', initial, 0);
+    expect(result.state.childCount).toBe(2);
+  });
+
+  it('trusted explicit stateUpdate.childCount overrides an extracted childCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overridden = turn('2 children', initial, 0, { childCount: 5 });
+    expect(overridden.state.childCount).toBe(5);
+
+    const nullOverride = turn('2 children', initial, 1, {
+      childCount: null as unknown as number,
+    });
+    expect(nullOverride.state.childCount).toBeNull();
   });
 
   it('adultCount and earlier travel fields remain preserved when childCount changes', () => {

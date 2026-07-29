@@ -819,18 +819,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for child-count-like text', () => {
+  it('factory-created extraction updates childCount for explicit child counts and rejects vague wording', () => {
     const extractor = createConversationStateExtractor();
     const currentState = createState({ childCount: 1 });
 
     expect(
       extractor.extract({ message: '2 children', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { childCount: 2 } });
     expect(
       extractor.extract({ message: '2 children', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { childCount: 2 } });
     expect(
       extractor.extract({ message: 'a 12-year-old', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: '2 adults and 1 child', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

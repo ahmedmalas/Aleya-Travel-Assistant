@@ -485,9 +485,11 @@ describe('conversation-core architectural boundary', () => {
     expect(childCountExtractor).toMatch(
       /export class ChildCountConversationStateExtractor/,
     );
-    expect(childCountExtractor).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(childCountExtractor.includes('input.message')).toBe(false);
+    expect(childCountExtractor).toMatch(/input: ConversationStateExtractionInput/);
+    expect(childCountExtractor).toMatch(/input\.message/);
     expect(childCountExtractor.includes('input.currentState')).toBe(false);
+    expect(childCountExtractor.includes('.trim(')).toBe(false);
+    expect(childCountExtractor.includes('.toLowerCase(')).toBe(false);
     expect(childCountExtractor.includes('Number(')).toBe(false);
     expect(childCountExtractor.includes('parseInt')).toBe(false);
     const infantCountExtractor = readSrc(
