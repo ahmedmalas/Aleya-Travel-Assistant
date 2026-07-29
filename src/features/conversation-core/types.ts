@@ -48,6 +48,8 @@ export type ConversationCoreState = {
   childCount: number | null;
   /** Explicitly supplied infant count only — never extracted from message text. */
   infantCount: number | null;
+  /** Explicitly supplied flights request flag only — never detected from message text. */
+  flightsRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -79,6 +81,7 @@ export function createInitialConversationCoreState(
     adultCount: null,
     childCount: null,
     infantCount: null,
+    flightsRequested: null,
     transcript: [],
   };
 }
