@@ -7,17 +7,103 @@ import type {
 /**
  * Internal flights-requested extraction boundary.
  *
- * Behaviourally empty in this phase — ignores all input and always returns a
- * new empty explicit state update. Not wired as a public runtime API.
+ * Phase 7H: recognises only narrow, explicit flights-service requests in the
+ * current message. Deterministic and local — emits only true, never false or
+ * null, and ignores prior conversation state.
  */
 export class FlightsRequestedConversationStateExtractor
   implements ConversationStateExtractor
 {
   extract(
-    _input: ConversationStateExtractionInput,
+    input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
+    if (!hasExplicitFlightsRequest(input.message)) {
+      return {
+        stateUpdate: {},
+      };
+    }
     return {
-      stateUpdate: {},
+      stateUpdate: {
+        flightsRequested: true,
+      },
     };
   }
+}
+
+/** Trim edges without String.prototype.trim (architecture boundary). */
+function edgeTrim(value: string): string {
+  return value.replace(/^\s+|\s+$/g, '');
+}
+
+function isBlockedFlightsRequestMessage(message: string): boolean {
+  if (/\?/.test(message)) {
+    return true;
+  }
+  if (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) {
+    return true;
+  }
+  if (/\bremove\b/i.test(message)) {
+    return true;
+  }
+  if (/\binstead\b/i.test(message) || /\bactually\b/i.test(message)) {
+    return true;
+  }
+  if (
+    /\b(?:do\s+not|don't)\b/i.test(message) ||
+    /\bno\s+flights?\b/i.test(message) ||
+    /\bnot\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:airfare|airline|airlines|plane|planes)\b/i.test(message) &&
+    !/\bflights?\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:qantas|virgin|jetstar|rex|singapore\s+airlines|emirates|qatar)\b/i.test(
+      message,
+    ) &&
+    !/\b(?:book|need|include|add)\s+flights\b/i.test(message) &&
+    !/\bflights\s+please\b/i.test(message) &&
+    !/^flights$/i.test(edgeTrim(message))
+  ) {
+    return true;
+  }
+  if (
+    /\bflight\s+[A-Z]{1,3}\d{1,4}\b/i.test(message) ||
+    /\b[A-Z]{2}\d{2,4}\b/.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:want\s+to\s+fly|i\s+want\s+to\s+fly|find\s+airfare)\b/i.test(message)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+const EXPLICIT_FLIGHTS_REQUEST_CUES: readonly RegExp[] = [
+  /\b(?:book|need|include|add)\s+flights\b/i,
+  /\bi\s+need\s+flights\b/i,
+  /\bflights\s+please\b/i,
+  /\bflights\b/i,
+];
+
+function hasExplicitFlightsRequest(message: string): boolean {
+  const text = edgeTrim(message);
+  if (text.length === 0) {
+    return false;
+  }
+  if (isBlockedFlightsRequestMessage(text)) {
+    return false;
+  }
+  for (const cue of EXPLICIT_FLIGHTS_REQUEST_CUES) {
+    if (cue.test(text)) {
+      return true;
+    }
+  }
+  return false;
 }

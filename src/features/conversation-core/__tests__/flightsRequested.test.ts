@@ -104,7 +104,7 @@ describe('phase 3H — explicit flightsRequested only', () => {
     expect(second.state.flightsRequested).toBe(true);
   });
 
-  it('message text alone never changes flightsRequested', () => {
+  it('unsupported flight wording in the user message alone never changes flightsRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -124,6 +124,31 @@ describe('phase 3H — explicit flightsRequested only', () => {
       expect(result.state.flightsRequested).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit flights-request cue in the message sets flightsRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('I need flights', initial, 0);
+    expect(result.state.flightsRequested).toBe(true);
+  });
+
+  it('trusted explicit stateUpdate.flightsRequested overrides an extracted flights request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('book flights', initial, 0, {
+      flightsRequested: false,
+    });
+    expect(overriddenFalse.state.flightsRequested).toBe(false);
+
+    const nullOverride = turn('book flights', initial, 1, {
+      flightsRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.flightsRequested).toBeNull();
   });
 
   it('all earlier fields remain preserved when flightsRequested changes', () => {

@@ -855,18 +855,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for flights-requested-like text', () => {
+  it('factory-created extraction sets flightsRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ flightsRequested: true });
+    const currentState = createState({ flightsRequested: false });
 
     expect(
       extractor.extract({ message: 'I need flights', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
     expect(
       extractor.extract({ message: 'I need flights', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
     expect(
       extractor.extract({ message: 'no flights', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'fly with Qantas', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

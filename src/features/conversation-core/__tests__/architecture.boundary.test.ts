@@ -512,12 +512,20 @@ describe('conversation-core architectural boundary', () => {
       /export class FlightsRequestedConversationStateExtractor/,
     );
     expect(flightsRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(flightsRequestedExtractor.includes('input.message')).toBe(false);
+    expect(flightsRequestedExtractor).toMatch(/input\.message/);
     expect(flightsRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(flightsRequestedExtractor.includes('.trim(')).toBe(false);
     expect(flightsRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(flightsRequestedExtractor.includes('includes(')).toBe(false);
+    expect(flightsRequestedExtractor).toMatch(/flightsRequested:\s*true/);
+    expect(flightsRequestedExtractor.includes('flightsRequested: false')).toBe(
+      false,
+    );
+    expect(flightsRequestedExtractor.includes('flightsRequested: null')).toBe(
+      false,
+    );
     const accommodationRequestedExtractor = readSrc(
       'src/features/conversation-core/AccommodationRequestedConversationStateExtractor.ts',
     );
