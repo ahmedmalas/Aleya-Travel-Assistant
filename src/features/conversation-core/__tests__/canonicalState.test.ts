@@ -10,6 +10,7 @@ const LATER = new Date('2026-07-28T12:00:01.000Z');
 const CONVERSATION_ID = 'conversation-core-test-001';
 
 const CANONICAL_KEYS = [
+  'accommodationRequested',
   'adultCount',
   'ageMs',
   'childCount',
@@ -88,6 +89,7 @@ describe('canonical conversation-core state', () => {
       childCount: null,
       infantCount: null,
       flightsRequested: null,
+      accommodationRequested: null,
       transcript: [],
     });
   });

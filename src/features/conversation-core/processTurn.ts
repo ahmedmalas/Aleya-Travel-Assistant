@@ -44,6 +44,8 @@ export type ProcessConversationTurnInput = {
   infantCount?: number;
   /** Explicit flights request flag only — stored as injected; never read from message. */
   flightsRequested?: boolean;
+  /** Explicit accommodation request flag only — stored as injected; never read from message. */
+  accommodationRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -55,12 +57,12 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3H: append raw user + placeholder assistant entries, increment
+ * Phase 3I: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
- * flightsRequested only. Does not interpret, trim, normalise, extract,
- * validate counts, calculate duration, or persist.
+ * flightsRequested/accommodationRequested only. Does not interpret, trim,
+ * normalise, extract, validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -89,6 +91,10 @@ export function processConversationTurn(
     input.flightsRequested !== undefined
       ? input.flightsRequested
       : base.flightsRequested;
+  const accommodationRequested =
+    input.accommodationRequested !== undefined
+      ? input.accommodationRequested
+      : base.accommodationRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -119,6 +125,7 @@ export function processConversationTurn(
     childCount,
     infantCount,
     flightsRequested,
+    accommodationRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
