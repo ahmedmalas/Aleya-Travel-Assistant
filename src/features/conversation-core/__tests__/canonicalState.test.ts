@@ -34,6 +34,7 @@ const CANONICAL_KEYS = [
   'restaurantsRequested',
   'returnDate',
   'scenicDrivesRequested',
+  'shoppingRequested',
   'status',
   'toursRequested',
   'transcript',
@@ -116,6 +117,7 @@ describe('canonical conversation-core state', () => {
       toursRequested: null,
       eventsRequested: null,
       nightlifeRequested: null,
+      shoppingRequested: null,
       transcript: [],
     });
   });

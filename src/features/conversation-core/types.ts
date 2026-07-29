@@ -78,6 +78,8 @@ export type ConversationCoreState = {
   eventsRequested: boolean | null;
   /** Explicitly supplied nightlife request flag only — never detected from message text. */
   nightlifeRequested: boolean | null;
+  /** Explicitly supplied shopping request flag only — never detected from message text. */
+  shoppingRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -124,6 +126,7 @@ export function createInitialConversationCoreState(
     toursRequested: null,
     eventsRequested: null,
     nightlifeRequested: null,
+    shoppingRequested: null,
     transcript: [],
   };
 }
