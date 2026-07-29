@@ -1,0 +1,243 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import * as conversationCore from '../index';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import {
+  createInitialConversationCoreState,
+  type ConversationCoreState,
+  type ConversationStateExtractionInput,
+  type ConversationStateExtractor,
+} from '../types';
+
+const ROOT = process.cwd();
+
+function createState(
+  overrides: Partial<ConversationCoreState> = {},
+): ConversationCoreState {
+  return {
+    ...createInitialConversationCoreState({
+      conversationId: 'conversation-5e',
+      now: new Date('2026-07-29T00:00:00.000Z'),
+    }),
+    ...overrides,
+  };
+}
+
+function listSourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir);
+  const files: string[] = [];
+  for (const entry of entries) {
+    const full = join(dir, entry);
+    const stats = statSync(full);
+    if (stats.isDirectory()) {
+      if (entry === 'node_modules' || entry === 'dist' || entry === '__tests__') {
+        continue;
+      }
+      files.push(...listSourceFiles(full));
+      continue;
+    }
+    if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+describe('phase 5E — createConversationStateExtractor factory only', () => {
+  it('accepts no arguments', () => {
+    expectTypeOf(createConversationStateExtractor).parameters.toEqualTypeOf<[]>([]);
+    expectTypeOf(createConversationStateExtractor).returns.toEqualTypeOf<ConversationStateExtractor>();
+  });
+
+  it('returns a value implementing ConversationStateExtractor', () => {
+    const extractor = createConversationStateExtractor();
+    expectTypeOf(extractor).toMatchTypeOf<ConversationStateExtractor>();
+    expect(typeof extractor.extract).toBe('function');
+  });
+
+  it('returns an EmptyConversationStateExtractor', () => {
+    const extractor = createConversationStateExtractor();
+    expect(extractor).toBeInstanceOf(EmptyConversationStateExtractor);
+  });
+
+  it('returned extractor accepts ConversationStateExtractionInput and returns empty update', () => {
+    const extractor = createConversationStateExtractor();
+    const input: ConversationStateExtractionInput = {
+      message: 'Plan a trip to Tasmania',
+      currentState: createState(),
+    };
+
+    expectTypeOf(extractor.extract).parameters.toEqualTypeOf<
+      [ConversationStateExtractionInput]
+    >();
+    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+  });
+
+  it('different message text still produces the same empty result', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState();
+
+    expect(
+      extractor.extract({ message: 'Sydney to Melbourne', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Cancel everything', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('different canonical state still produces the same empty result', () => {
+    const extractor = createConversationStateExtractor();
+
+    expect(
+      extractor.extract({ message: 'hello', currentState: createState() }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'hello',
+        currentState: createState({
+          destination: 'Hobart',
+          origin: 'Melbourne',
+          adultCount: 3,
+          flightsRequested: true,
+        }),
+      }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('separate factory calls return separate extractor instances', () => {
+    const first = createConversationStateExtractor();
+    const second = createConversationStateExtractor();
+
+    expect(first).not.toBe(second);
+    expect(first).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(second).toBeInstanceOf(EmptyConversationStateExtractor);
+  });
+
+  it('extractor instances do not share state', () => {
+    const first = createConversationStateExtractor() as EmptyConversationStateExtractor & {
+      retained?: string;
+    };
+    const second = createConversationStateExtractor() as EmptyConversationStateExtractor & {
+      retained?: string;
+    };
+
+    first.retained = 'first-only';
+    expect(second.retained).toBeUndefined();
+
+    const firstResult = first.extract({
+      message: 'Go to Brisbane',
+      currentState: createState({ destination: 'Sydney' }),
+    });
+    firstResult.stateUpdate.destination = 'mutated';
+
+    const secondResult = second.extract({
+      message: 'Go to Cairns',
+      currentState: createState({ destination: 'Melbourne' }),
+    });
+
+    expect(secondResult).toEqual({ stateUpdate: {} });
+    expect(secondResult.stateUpdate).not.toHaveProperty('destination');
+  });
+
+  it('results and stateUpdate objects from separate extractors are separate', () => {
+    const first = createConversationStateExtractor();
+    const second = createConversationStateExtractor();
+    const input: ConversationStateExtractionInput = {
+      message: 'anything',
+      currentState: createState(),
+    };
+
+    const firstResult = first.extract(input);
+    const secondResult = second.extract(input);
+
+    expect(firstResult).not.toBe(secondResult);
+    expect(firstResult.stateUpdate).not.toBe(secondResult.stateUpdate);
+    expect(firstResult).toEqual({ stateUpdate: {} });
+    expect(secondResult).toEqual({ stateUpdate: {} });
+  });
+
+  it('retains no input or extraction result', () => {
+    const factorySource = readFileSync(
+      resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
+      'utf8',
+    );
+
+    expect(factorySource).toMatch(
+      /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
+    );
+    expect(factorySource).toMatch(/return new EmptyConversationStateExtractor\(\);/);
+    expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap/);
+    expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
+
+    const extractor = createConversationStateExtractor();
+    const result = extractor.extract({
+      message: 'remember this',
+      currentState: createState({ destination: 'Perth' }),
+    });
+    result.stateUpdate.origin = 'should not leak';
+
+    expect(
+      createConversationStateExtractor().extract({
+        message: 'fresh call',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('keeps factory and extractor implementation off the public index', () => {
+    const index = readFileSync(
+      resolve(ROOT, 'src/features/conversation-core/index.ts'),
+      'utf8',
+    );
+    const runtimeExports = Object.keys(conversationCore).filter(
+      (name) =>
+        typeof (conversationCore as Record<string, unknown>)[name] ===
+        'function',
+    );
+
+    expect(index).not.toMatch(/createConversationStateExtractor/);
+    expect(index).not.toMatch(/EmptyConversationStateExtractor/);
+    expect(conversationCore).not.toHaveProperty('createConversationStateExtractor');
+    expect(conversationCore).not.toHaveProperty('EmptyConversationStateExtractor');
+    expect(runtimeExports.filter((name) => /extract/i.test(name))).toEqual([]);
+    expect(index).not.toMatch(/export function extract/);
+    expect(conversationCore).not.toHaveProperty('defaultExtractor');
+    expect(conversationCore).not.toHaveProperty('conversationStateExtractor');
+  });
+
+  it('keeps processConversationTurn unchanged as the only public runtime processor', () => {
+    const processTurn = readFileSync(
+      resolve(ROOT, 'src/features/conversation-core/processTurn.ts'),
+      'utf8',
+    );
+    const runtimeExports = Object.keys(conversationCore).filter(
+      (name) =>
+        typeof (conversationCore as Record<string, unknown>)[name] ===
+          'function' && name !== 'createInitialConversationCoreState',
+    );
+
+    expect(processTurn).not.toMatch(/createConversationStateExtractor/);
+    expect(processTurn).not.toMatch(/EmptyConversationStateExtractor/);
+    expect(runtimeExports).toEqual(['processConversationTurn']);
+    expect(typeof conversationCore.processConversationTurn).toBe('function');
+  });
+
+  it('is not imported by application or processor files', () => {
+    const allowed = new Set([
+      resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
+      resolve(ROOT, 'src/features/conversation-core/emptyConversationStateExtractor.ts'),
+    ]);
+    const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
+      (path) => !allowed.has(path),
+    );
+
+    for (const file of srcFiles) {
+      const src = readFileSync(file, 'utf8');
+      expect(src.includes('createConversationStateExtractor'), file).toBe(false);
+      expect(src.includes('EmptyConversationStateExtractor'), file).toBe(false);
+      expect(src.includes('emptyConversationStateExtractor'), file).toBe(false);
+    }
+  });
+});

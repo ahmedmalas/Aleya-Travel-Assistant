@@ -87,6 +87,10 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(index.includes('applyConversationStateUpdate')).toBe(false);
     expect(index.includes('hasConversationStateUpdateChanged')).toBe(false);
+    expect(index.includes('createConversationStateExtractor')).toBe(false);
+    expect(index.includes('EmptyConversationStateExtractor')).toBe(false);
+    expect(processTurn.includes('createConversationStateExtractor')).toBe(false);
+    expect(processTurn.includes('EmptyConversationStateExtractor')).toBe(false);
     const applyUpdate = readSrc(
       'src/features/conversation-core/applyConversationStateUpdate.ts',
     );
@@ -261,6 +265,19 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(
       /export interface ConversationStateExtractor \{\s*extract\(\s*input: ConversationStateExtractionInput,\s*\): ConversationStateExtractionResult;\s*\}/,
     );
+    const extractorFactory = readSrc(
+      'src/features/conversation-core/createConversationStateExtractor.ts',
+    );
+    const emptyExtractor = readSrc(
+      'src/features/conversation-core/emptyConversationStateExtractor.ts',
+    );
+    expect(extractorFactory).toMatch(
+      /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
+    );
+    expect(extractorFactory).toMatch(
+      /return new EmptyConversationStateExtractor\(\);/,
+    );
+    expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
