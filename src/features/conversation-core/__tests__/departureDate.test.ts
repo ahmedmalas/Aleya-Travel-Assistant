@@ -80,7 +80,7 @@ describe('phase 3C — explicit departureDate only', () => {
     expect(second.state.departureDate).toBe('2026-09-01');
   });
 
-  it('date wording in the user message alone never changes departureDate', () => {
+  it('unsupported date wording in the user message alone never changes departureDate', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -98,6 +98,31 @@ describe('phase 3C — explicit departureDate only', () => {
       expect(result.state.departureDate).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit departure-date cue in the message updates departureDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('Depart on 28 August 2026', initial, 0);
+    expect(result.state.departureDate).toBe('2026-08-28');
+  });
+
+  it('trusted explicit stateUpdate.departureDate overrides an extracted departureDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overridden = turn('Depart on 28 August 2026', initial, 0, {
+      departureDate: '2026-11-01',
+    });
+    expect(overridden.state.departureDate).toBe('2026-11-01');
+
+    const nullOverride = turn('Depart on 28 August 2026', initial, 1, {
+      departureDate: null as unknown as string,
+    });
+    expect(nullOverride.state.departureDate).toBeNull();
   });
 
   it('origin and destination remain preserved when departureDate changes', () => {

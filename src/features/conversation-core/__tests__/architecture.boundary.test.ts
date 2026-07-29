@@ -444,11 +444,14 @@ describe('conversation-core architectural boundary', () => {
     expect(departureDateExtractor).toMatch(
       /export class DepartureDateConversationStateExtractor/,
     );
-    expect(departureDateExtractor).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(departureDateExtractor.includes('input.message')).toBe(false);
+    expect(departureDateExtractor).toMatch(/input: ConversationStateExtractionInput/);
+    expect(departureDateExtractor).toMatch(/input\.message/);
     expect(departureDateExtractor.includes('input.currentState')).toBe(false);
+    expect(departureDateExtractor.includes('.trim(')).toBe(false);
+    expect(departureDateExtractor.includes('.toLowerCase(')).toBe(false);
     expect(departureDateExtractor.includes('new Date')).toBe(false);
     expect(departureDateExtractor.includes('Date.now')).toBe(false);
+    expect(departureDateExtractor.includes('Date.parse')).toBe(false);
     const returnDateExtractor = readSrc(
       'src/features/conversation-core/ReturnDateConversationStateExtractor.ts',
     );

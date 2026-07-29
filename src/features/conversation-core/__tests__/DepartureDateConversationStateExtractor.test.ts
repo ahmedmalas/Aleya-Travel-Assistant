@@ -11,7 +11,12 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 
 const ROOT = process.cwd();
 const DEPARTURE_DATE_SOURCE = resolve(
@@ -24,7 +29,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-5m',
+      conversationId: 'conversation-7c',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -65,8 +70,18 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+describe('phase 7C — DepartureDateConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit departureDate result contract', () => {
     expectTypeOf<DepartureDateConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<DepartureDateConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
       [ConversationStateExtractionInput]
@@ -74,90 +89,102 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
     expectTypeOf<DepartureDateConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new DepartureDateConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'Leave on 2026-10-15',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'Leave on 2026-10-15',
+        currentState: createState({ departureDate: null }),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
   });
 
-  it('cannot create, replace, or clear departure date from date-like message text', () => {
+  it('extracts supported explicit departure-date forms into canonical ISO', () => {
     const extractor = new DepartureDateConversationStateExtractor();
-    const withDeparture = createState({
-      departureDate: '2026-09-01',
-      returnDate: '2026-09-08',
-    });
+    const cases: Array<[string, string]> = [
+      ['Depart on 28 August 2026', '2026-08-28'],
+      ['departing 28 August 2026', '2026-08-28'],
+      ['leave on 28 August 2026', '2026-08-28'],
+      ['leaving 28 August 2026', '2026-08-28'],
+      ['fly on 28 August 2026', '2026-08-28'],
+      ['travel on 28 August 2026', '2026-08-28'],
+      ['departure date is 28 August 2026', '2026-08-28'],
+      ['Leave on 2026-10-15', '2026-10-15'],
+      ['Departing 15 October 2026', '2026-10-15'],
+    ];
 
-    expect(
-      extractor.extract({
-        message: 'Departing 15 October 2026',
-        currentState: createState({ departureDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Leave next Friday',
-        currentState: createState({ departureDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Flying tomorrow / next week',
-        currentState: createState({ departureDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Actually leave on 2026-11-01 instead of 2026-09-01',
-        currentState: withDeparture,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Forget the departure date / not 2026-09-01',
-        currentState: withDeparture,
-      }),
-    ).toEqual({ stateUpdate: {} });
+    for (const [message, departureDate] of cases) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ departureDate: null }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: { departureDate } });
+    }
+  });
 
+  it('replaces an existing departureDate when a new explicit date is stated', () => {
+    const extractor = new DepartureDateConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState({ departureDate: '2026-08-15' }),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+  });
+
+  it('returns empty for return-date, vague, relative, price, time, negation, and keep wording', () => {
+    const extractor = new DepartureDateConversationStateExtractor();
+    const unsupported = [
+      'Return on 5 September 2026',
+      'Come back on 5 September 2026',
+      'Departing soon',
+      'Leave next week',
+      'Fly tomorrow',
+      'Travel on Friday',
+      'Depart on Monday',
+      'Flights from $450',
+      'Leave at 10am',
+      'Travel for 5 days',
+      'Do not depart on 28 August 2026',
+      'Keep my departure date',
+      'Forget the departure date',
+      'Depart on 28 August 2026 instead',
+      'Actually depart on 28 August 2026',
+      'Actually leave on 2026-11-01 instead of 2026-09-01',
+      'Forget the departure date / not 2026-09-01',
+      'Leave on Monday',
+      'Departing tomorrow',
+      'Flying next Friday',
+      'Hello',
+      '',
+    ];
+
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ departureDate: '2026-09-01' }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('never emits departureDate null from extraction', () => {
+    const extractor = new DepartureDateConversationStateExtractor();
     const result = extractor.extract({
-      message: 'keep 2026-09-01',
-      currentState: withDeparture,
+      message: 'Forget the departure date',
+      currentState: createState({ departureDate: '2026-09-01' }),
     });
     expect(result.stateUpdate).toEqual({});
     expect(result.stateUpdate).not.toHaveProperty('departureDate');
-    expect(result.stateUpdate).not.toHaveProperty('returnDate');
-    expect(withDeparture.departureDate).toBe('2026-09-01');
-    expect(withDeparture.returnDate).toBe('2026-09-08');
-  });
 
-  it('returns the same empty result for different messages and states', () => {
-    const extractor = new DepartureDateConversationStateExtractor();
-
-    expect(
-      extractor.extract({
-        message: 'Leave on Monday',
-        currentState: createState({ departureDate: '2026-08-01' }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Cancel everything',
-        currentState: createState({
-          destination: 'Darwin',
-          origin: 'Adelaide',
-          departureDate: '2026-12-01',
-          returnDate: '2026-12-10',
-          adultCount: 4,
-          flightsRequested: true,
-        }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Take me to Cairns from Sydney',
-        currentState: createState({ departureDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
+    const update = extractor.extract({
+      message: 'Depart on 28 August 2026',
+      currentState: createState({ departureDate: null }),
+    }).stateUpdate;
+    expect(update.departureDate).toBe('2026-08-28');
+    expect(update.departureDate).not.toBeNull();
   });
 
   it('does not mutate input or retain state across calls or instances', () => {
@@ -174,7 +201,7 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'Leave next Friday',
+      message: 'Leave on 2026-10-15',
       currentState,
     };
     const before = structuredClone(input);
@@ -192,7 +219,7 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
 
     const other =
       new DepartureDateConversationStateExtractor() as DepartureDateConversationStateExtractor & {
@@ -203,24 +230,28 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
     ).retained = 'first-only';
     expect(other.retained).toBeUndefined();
     expect(
-      other.extract({ message: 'fresh', currentState: createState() }),
-    ).toEqual({ stateUpdate: {} });
+      other.extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
   });
 
-  it('contains no inspection, date, regex, lexicon, or provider imports', () => {
+  it('contains no trim/toLowerCase, Date API, currentState inspection, or provider imports', () => {
     const source = readFileSync(DEPARTURE_DATE_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(/departureDate\s*:/);
+    expect(source).toMatch(/departureDate\s*:/);
     expect(source).not.toMatch(/returnDate\s*:/);
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
     expect(source).not.toMatch(/new Date\b|Date\.now|Date\.parse/);
-    expect(source).not.toMatch(/lexicon|weekday|monthNames|relativeDate|timezone/i);
+    expect(source).not.toMatch(/monthNames|relativeDate|timezone/i);
     expect(source).not.toMatch(/date-fns|dayjs|luxon|moment|Temporal/);
-    expect(source).not.toMatch(/provider|search|discovery|travel-location|calendar/i);
+    expect(source).not.toMatch(/provider|travel-location|calendar/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
     expect(source).not.toMatch(/from '\.\.\/|from '\.\.\/\.\.\//);
   });
@@ -259,71 +290,101 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
     }
   });
 
-  it('keeps processor departure-date behaviour unchanged with the skeleton in the path', () => {
+  it('applies extracted departureDate through the live processor with trusted explicit precedence', () => {
     const currentState = createState({
       departureDate: '2026-09-01',
       returnDate: '2026-09-08',
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
-    const injected = processConversationTurn({
-      message: 'Leave on Friday instead',
+    const extracted = processConversationTurn({
+      message: 'Depart on 28 August 2026',
       state: currentState,
-      userEntryId: 'user-5m',
-      assistantEntryId: 'assistant-5m',
+      userEntryId: 'user-7c-a',
+      assistantEntryId: 'assistant-7c-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
-      stateUpdate: { departureDate: '2026-10-15' },
     });
-    const cleared = processConversationTurn({
-      message: 'Forget the departure date',
+    const replaced = processConversationTurn({
+      message: 'Leave on 2026-10-15',
       state: currentState,
-      userEntryId: 'user-5m-b',
-      assistantEntryId: 'assistant-5m-b',
+      userEntryId: 'user-7c-b',
+      assistantEntryId: 'assistant-7c-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
-      stateUpdate: { departureDate: null },
     });
-    const messageOnly = processConversationTurn({
-      message: 'Departing tomorrow',
+    const overridden = processConversationTurn({
+      message: 'Depart on 28 August 2026',
       state: currentState,
-      userEntryId: 'user-5m-c',
-      assistantEntryId: 'assistant-5m-c',
+      userEntryId: 'user-7c-c',
+      assistantEntryId: 'assistant-7c-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
+      stateUpdate: { departureDate: '2026-11-01' },
     });
-    const returnInjected = processConversationTurn({
-      message: 'Come back later',
+    const nullOverride = processConversationTurn({
+      message: 'Depart on 28 August 2026',
       state: currentState,
-      userEntryId: 'user-5m-d',
-      assistantEntryId: 'assistant-5m-d',
+      userEntryId: 'user-7c-d',
+      assistantEntryId: 'assistant-7c-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
-      stateUpdate: { returnDate: '2026-09-20' },
+      stateUpdate: { departureDate: null },
     });
-    const placesInjected = processConversationTurn({
-      message: 'Sydney to Perth',
+    const preserved = processConversationTurn({
+      message: 'Departing tomorrow',
       state: currentState,
-      userEntryId: 'user-5m-e',
-      assistantEntryId: 'assistant-5m-e',
+      userEntryId: 'user-7c-e',
+      assistantEntryId: 'assistant-7c-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
-      stateUpdate: { origin: 'Sydney', destination: 'Perth' },
+    });
+    const composed = processConversationTurn({
+      message: 'Depart on 28 August 2026. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        departureDate: null,
+      }),
+      userEntryId: 'user-7c-f',
+      assistantEntryId: 'assistant-7c-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'Depart on 28 August 2026. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        departureDate: null,
+      }),
+      userEntryId: 'user-7c-g',
+      assistantEntryId: 'assistant-7c-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: {
+        origin: 'Perth',
+        destination: 'Hobart',
+        departureDate: '2026-12-01',
+      },
     });
 
-    expect(injected.state.departureDate).toBe('2026-10-15');
-    expect(injected.state.returnDate).toBe('2026-09-08');
-    expect(injected.state.origin).toBe('Melbourne');
-    expect(cleared.state.departureDate).toBeNull();
-    expect(messageOnly.state.departureDate).toBe('2026-09-01');
-    expect(returnInjected.state.returnDate).toBe('2026-09-20');
-    expect(returnInjected.state.departureDate).toBe('2026-09-01');
-    expect(placesInjected.state.origin).toBe('Sydney');
-    expect(placesInjected.state.destination).toBe('Perth');
-    expect(placesInjected.state.departureDate).toBe('2026-09-01');
-    expect(injected.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(injected).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(Object.keys(injected.trace).sort()).toEqual([
+    expect(extracted.state.departureDate).toBe('2026-08-28');
+    expect(extracted.state.returnDate).toBe('2026-09-08');
+    expect(extracted.state.origin).toBe('Melbourne');
+    expect(replaced.state.departureDate).toBe('2026-10-15');
+    expect(overridden.state.departureDate).toBe('2026-11-01');
+    expect(nullOverride.state.departureDate).toBeNull();
+    expect(preserved.state.departureDate).toBe('2026-09-01');
+    expect(composed.state.departureDate).toBe('2026-08-28');
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Cairns');
+    expect(independentOverride.state.departureDate).toBe('2026-12-01');
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Hobart');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
+    expect(Object.keys(extracted.trace).sort()).toEqual([
       'assistantMessageRecorded',
       'entryPoint',
       'messageInterpreted',
@@ -340,5 +401,73 @@ describe('phase 5M — DepartureDateConversationStateExtractor skeleton', () => 
             'function' && name !== 'createInitialConversationCoreState',
       ),
     ).toEqual(['processConversationTurn']);
+  });
+
+  it('keeps Destination, Origin, and DepartureDate as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
+    expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
+    expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({
+      origin: 'Hobart',
+      destination: 'Hobart',
+      departureDate: '2026-01-01',
+    });
+    const threeActiveMessage = 'Depart on 28 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: threeActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+      },
+    });
+
+    for (let index = 3; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: threeActiveMessage,
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[0]?.extract({
+        message: threeActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(
+      extractors[1]?.extract({
+        message: threeActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(
+      extractors[2]?.extract({
+        message: threeActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+
+    expect(
+      createConversationStateExtractor().extract({
+        message: 'fly from Sydney to Brisbane',
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: { destination: 'Brisbane', origin: 'Sydney' },
+    });
   });
 });

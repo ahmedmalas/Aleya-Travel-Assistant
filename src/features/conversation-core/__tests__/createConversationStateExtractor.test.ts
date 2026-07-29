@@ -765,18 +765,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     });
   });
 
-  it('factory-created extraction remains empty and deterministic for date-like text', () => {
+  it('factory-created extraction updates departureDate for explicit leave-on dates and rejects relative wording', () => {
     const extractor = createConversationStateExtractor();
     const currentState = createState({ departureDate: '2026-09-01' });
 
     expect(
       extractor.extract({ message: 'Leave on 2026-10-15', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
     expect(
       extractor.extract({ message: 'Leave on 2026-10-15', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
     expect(
       extractor.extract({ message: 'Flying next Friday', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Return on 2026-10-22', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
