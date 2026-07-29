@@ -629,14 +629,28 @@ describe('conversation-core architectural boundary', () => {
       /export class NearbyDiscoveryRequestedConversationStateExtractor/,
     );
     expect(nearbyDiscoveryRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(nearbyDiscoveryRequestedExtractor.includes('input.message')).toBe(false);
+    expect(nearbyDiscoveryRequestedExtractor).toMatch(/input\.message/);
     expect(nearbyDiscoveryRequestedExtractor.includes('input.currentState')).toBe(
       false,
     );
+    expect(nearbyDiscoveryRequestedExtractor.includes('.trim(')).toBe(false);
     expect(nearbyDiscoveryRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(nearbyDiscoveryRequestedExtractor.includes('includes(')).toBe(false);
+    expect(nearbyDiscoveryRequestedExtractor).toMatch(
+      /nearbyDiscoveryRequested:\s*true/,
+    );
+    expect(
+      nearbyDiscoveryRequestedExtractor.includes(
+        'nearbyDiscoveryRequested: false',
+      ),
+    ).toBe(false);
+    expect(
+      nearbyDiscoveryRequestedExtractor.includes(
+        'nearbyDiscoveryRequested: null',
+      ),
+    ).toBe(false);
     const beachesRequestedExtractor = readSrc(
       'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
     );

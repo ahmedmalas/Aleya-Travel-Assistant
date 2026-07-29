@@ -123,11 +123,11 @@ describe('phase 3M — explicit nearbyDiscoveryRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'near me',
-      'nearby',
       'around here',
       'what is close',
-      'things nearby',
+      'hotel near the beach',
+      'Surfers Paradise',
+      'nearest station',
     ];
 
     let state = initial;

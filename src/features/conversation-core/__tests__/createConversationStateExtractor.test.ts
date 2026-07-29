@@ -945,18 +945,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for nearby-discovery-requested-like text', () => {
+  it('factory-created extraction sets nearbyDiscoveryRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ nearbyDiscoveryRequested: true });
+    const currentState = createState({ nearbyDiscoveryRequested: false });
 
     expect(
-      extractor.extract({ message: 'show me what is nearby', currentState }),
-    ).toEqual({ stateUpdate: {} });
+      extractor.extract({ message: 'what is nearby', currentState }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
-      extractor.extract({ message: 'show me what is nearby', currentState }),
-    ).toEqual({ stateUpdate: {} });
+      extractor.extract({ message: 'what is nearby', currentState }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
       extractor.extract({ message: 'no nearby discovery', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'nearest station', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
