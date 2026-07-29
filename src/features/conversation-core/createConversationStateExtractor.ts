@@ -21,6 +21,7 @@ import { ReturnDateConversationStateExtractor } from './ReturnDateConversationSt
 import { ScenicDrivesRequestedConversationStateExtractor } from './ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from './SnowActivitiesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from './extractors/HikingWalkingRequestedConversationStateExtractor';
+import { FishingRequestedConversationStateExtractor } from './extractors/FishingRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -48,6 +49,7 @@ import type { ConversationStateExtractor } from './types';
  * AttractionsRequestedConversationStateExtractor, then a new
  * SnowActivitiesRequestedConversationStateExtractor, then a new
  * HikingWalkingRequestedConversationStateExtractor, then a new
+ * FishingRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -74,6 +76,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new AttractionsRequestedConversationStateExtractor(),
     new SnowActivitiesRequestedConversationStateExtractor(),
     new HikingWalkingRequestedConversationStateExtractor(),
+    new FishingRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
