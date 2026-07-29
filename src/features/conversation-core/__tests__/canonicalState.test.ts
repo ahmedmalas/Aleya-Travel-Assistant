@@ -29,6 +29,7 @@ const CANONICAL_KEYS = [
   'infantCount',
   'kayakingRequested',
   'nearbyDiscoveryRequested',
+  'nightlifeRequested',
   'origin',
   'restaurantsRequested',
   'returnDate',
@@ -114,6 +115,7 @@ describe('canonical conversation-core state', () => {
       attractionsRequested: null,
       toursRequested: null,
       eventsRequested: null,
+      nightlifeRequested: null,
       transcript: [],
     });
   });

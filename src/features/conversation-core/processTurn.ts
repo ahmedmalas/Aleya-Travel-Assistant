@@ -70,6 +70,8 @@ export type ProcessConversationTurnInput = {
   toursRequested?: boolean;
   /** Explicit events request flag only — stored as injected; never read from message. */
   eventsRequested?: boolean;
+  /** Explicit nightlife request flag only — stored as injected; never read from message. */
+  nightlifeRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -81,7 +83,7 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3U: append raw user + placeholder assistant entries, increment
+ * Phase 3V: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
@@ -89,8 +91,9 @@ export type ProcessConversationTurnResult = {
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
  * beachesRequested/campingRequested/kayakingRequested/
  * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
- * toursRequested/eventsRequested only. Does not interpret, trim,
- * normalise, extract, validate counts, calculate duration, or persist.
+ * toursRequested/eventsRequested/nightlifeRequested only. Does not
+ * interpret, trim, normalise, extract, validate counts, calculate
+ * duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -171,6 +174,10 @@ export function processConversationTurn(
     input.eventsRequested !== undefined
       ? input.eventsRequested
       : base.eventsRequested;
+  const nightlifeRequested =
+    input.nightlifeRequested !== undefined
+      ? input.nightlifeRequested
+      : base.nightlifeRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -214,6 +221,7 @@ export function processConversationTurn(
     attractionsRequested,
     toursRequested,
     eventsRequested,
+    nightlifeRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
