@@ -17,6 +17,7 @@ const CANONICAL_KEYS = [
   'createdAt',
   'departureDate',
   'destination',
+  'infantCount',
   'origin',
   'returnDate',
   'status',
@@ -84,6 +85,7 @@ describe('canonical conversation-core state', () => {
       returnDate: null,
       adultCount: null,
       childCount: null,
+      infantCount: null,
       transcript: [],
     });
   });

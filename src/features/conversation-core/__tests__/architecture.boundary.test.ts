@@ -85,6 +85,12 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn).toMatch(
       /input\.childCount !== undefined \? input\.childCount : base\.childCount/,
     );
+    expect(types).toMatch(/infantCount: number \| null/);
+    expect(types).toMatch(/infantCount: null,/);
+    expect(processTurn).toMatch(/infantCount\?: number/);
+    expect(processTurn).toMatch(
+      /input\.infantCount !== undefined \? input\.infantCount : base\.infantCount/,
+    );
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
