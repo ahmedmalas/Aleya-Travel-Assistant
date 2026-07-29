@@ -110,6 +110,38 @@ describe('phase 3D — explicit returnDate only', () => {
     expect(result.state.returnDate).toBe('2026-08-31');
   });
 
+  it('phase 8D clear return cues and combined wording update returnDate only', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const until = turn('until 31 August 2026', initial, 0);
+    expect(until.state.returnDate).toBe('2026-08-31');
+    expect(until.state.departureDate).toBeNull();
+
+    const backOn = turn('back on 31 August 2026', initial, 1);
+    expect(backOn.state.returnDate).toBe('2026-08-31');
+
+    const combined = turn(
+      'departing 28 August 2026 and returning 31 August 2026',
+      initial,
+      2,
+    );
+    expect(combined.state.returnDate).toBe('2026-08-31');
+    expect(combined.state.departureDate).toBeNull();
+
+    const seeded = turn('Hello', initial, 3, {
+      returnDate: '2026-09-08',
+      departureDate: '2026-09-01',
+    });
+    const departureOnly = turn('departing 28 August 2026', seeded.state, 4);
+    expect(departureOnly.state.returnDate).toBe('2026-09-08');
+    expect(departureOnly.state.departureDate).toBe('2026-08-28');
+
+    const ambiguous = turn('sometime in August', seeded.state, 5);
+    expect(ambiguous.state.returnDate).toBe('2026-09-08');
+  });
+
   it('trusted explicit stateUpdate.returnDate overrides an extracted returnDate', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,

@@ -527,6 +527,8 @@ describe('conversation-core architectural boundary', () => {
     expect(returnDateExtractor).toMatch(
       /export class ReturnDateConversationStateExtractor/,
     );
+    expect(returnDateExtractor).toContain('Phase 7D');
+    expect(returnDateExtractor).toContain('Phase 8D');
     expect(returnDateExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(returnDateExtractor).toMatch(/input\.message/);
     expect(returnDateExtractor.includes('input.currentState')).toBe(false);
@@ -535,6 +537,9 @@ describe('conversation-core architectural boundary', () => {
     expect(returnDateExtractor.includes('new Date')).toBe(false);
     expect(returnDateExtractor.includes('Date.now')).toBe(false);
     expect(returnDateExtractor.includes('Date.parse')).toBe(false);
+    expect(returnDateExtractor).toMatch(/returnDate:\s*returnDate/);
+    expect(returnDateExtractor.includes('returnDate: null')).toBe(false);
+    expect(returnDateExtractor.includes('departureDate:')).toBe(false);
     const adultCountExtractor = readSrc(
       'src/features/conversation-core/AdultCountConversationStateExtractor.ts',
     );

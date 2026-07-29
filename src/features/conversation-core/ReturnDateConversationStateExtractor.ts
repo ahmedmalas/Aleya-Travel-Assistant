@@ -8,8 +8,9 @@ import type {
  * Internal return-date extraction boundary.
  *
  * Phase 7D: recognises only narrow, explicit return-date statements in the
- * current message. Deterministic and local — no Date API, geographic
- * services, departure-date extraction, or currentState inspection.
+ * current message. Phase 8D extends clear return-date cues only.
+ * Deterministic and local — no Date API, geographic services, departure-date
+ * extraction, or currentState inspection.
  */
 export class ReturnDateConversationStateExtractor
   implements ConversationStateExtractor
@@ -61,10 +62,10 @@ function isBlockedReturnDateMessage(message: string): boolean {
     return true;
   }
   if (
-    /\bdepart(?:ure|ing)?\b/i.test(message) ||
-    /\bleav(?:e|ing)\b/i.test(message) ||
-    /\bfly(?:ing)?\s+on\b/i.test(message) ||
-    /\btravel(?:l?ing)?\s+on\b/i.test(message)
+    /\breturn\s+flights?\b/i.test(message) ||
+    /\breturn\s+ticket\b/i.test(message) ||
+    /\breturn\s+policy\b/i.test(message) ||
+    /\bhotel\s+until\b/i.test(message)
   ) {
     return true;
   }
@@ -75,7 +76,12 @@ function isBlockedReturnDateMessage(message: string): boolean {
     ) ||
     /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
       message,
-    )
+    ) ||
+    /\bsometime\b/i.test(message) ||
+    /\blate\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
+      message,
+    ) ||
+    /\bthe\s+\d{1,2}(?:st|nd|rd|th)\b/i.test(message)
   ) {
     return true;
   }
@@ -112,6 +118,8 @@ const EXPLICIT_RETURN_DATE_CUES: readonly RegExp[] = [
   /\breturn(?:ing)?\s+(?:on\s+)?(.+)$/i,
   /\bcome\s+back\s+(?:on\s+)?(.+)$/i,
   /\bcoming\s+back\s+(?:on\s+)?(.+)$/i,
+  /\bback\s+on\s+(.+)$/i,
+  /\buntil\s+(.+)$/i,
 ];
 
 const DAY_MONTH_YEAR =
