@@ -68,6 +68,8 @@ export type ConversationCoreState = {
   kayakingRequested: boolean | null;
   /** Explicitly supplied 4WD request flag only — never detected from message text. */
   fourWheelDriveRequested: boolean | null;
+  /** Explicitly supplied scenic-drives request flag only — never detected from message text. */
+  scenicDrivesRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -109,6 +111,7 @@ export function createInitialConversationCoreState(
     campingRequested: null,
     kayakingRequested: null,
     fourWheelDriveRequested: null,
+    scenicDrivesRequested: null,
     transcript: [],
   };
 }
