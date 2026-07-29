@@ -17,6 +17,7 @@ import { createConversationStateExtractor } from '../createConversationStateExtr
 import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
 import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
@@ -345,7 +346,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -357,10 +358,10 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     }
   });
 
-  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-empty sequence stays empty without altering merge behaviour', () => {
+  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-empty sequence stays empty without altering merge behaviour', () => {
     const input: ConversationStateExtractionInput = {
       message:
-        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire and activities',
+        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities and restaurants',
       currentState: createState(),
     };
     const received: ConversationStateExtractionInput[] = [];
@@ -376,6 +377,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       new AccommodationRequestedConversationStateExtractor();
     const carHireRequested = new CarHireRequestedConversationStateExtractor();
     const activitiesRequested = new ActivitiesRequestedConversationStateExtractor();
+    const restaurantsRequested = new RestaurantsRequestedConversationStateExtractor();
     const empty = new EmptyConversationStateExtractor();
     const destinationExtract = vi
       .spyOn(destination, 'extract')
@@ -443,6 +445,12 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
         received.push(receivedInput);
         return { stateUpdate: {} };
       });
+    const restaurantsRequestedExtract = vi
+      .spyOn(restaurantsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
     const emptyExtract = vi
       .spyOn(empty, 'extract')
       .mockImplementation((receivedInput) => {
@@ -462,6 +470,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       accommodationRequested,
       carHireRequested,
       activitiesRequested,
+      restaurantsRequested,
       empty,
     ]);
     const first = production.extract(input);
@@ -482,8 +491,9 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(accommodationRequestedExtract).toHaveBeenCalledTimes(2);
     expect(carHireRequestedExtract).toHaveBeenCalledTimes(2);
     expect(activitiesRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(restaurantsRequestedExtract).toHaveBeenCalledTimes(2);
     expect(emptyExtract).toHaveBeenCalledTimes(2);
-    expect(received).toHaveLength(24);
+    expect(received).toHaveLength(26);
     expect(received.every((value) => value === input)).toBe(true);
 
     const mergeStillWorks = new CompositeConversationStateExtractor([
@@ -498,6 +508,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       stubExtractor({ accommodationRequested: true }),
       stubExtractor({ carHireRequested: true }),
       stubExtractor({ activitiesRequested: true }),
+      stubExtractor({ restaurantsRequested: true }),
       stubExtractor({}),
     ]).extract(input);
     expect(mergeStillWorks.stateUpdate).toEqual({
@@ -512,6 +523,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       accommodationRequested: true,
       carHireRequested: true,
       activitiesRequested: true,
+      restaurantsRequested: true,
     });
   });
 

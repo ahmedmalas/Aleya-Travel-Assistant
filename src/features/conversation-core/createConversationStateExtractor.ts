@@ -10,6 +10,7 @@ import { EmptyConversationStateExtractor } from './emptyConversationStateExtract
 import { FlightsRequestedConversationStateExtractor } from './FlightsRequestedConversationStateExtractor';
 import { InfantCountConversationStateExtractor } from './InfantCountConversationStateExtractor';
 import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from './RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
@@ -28,6 +29,7 @@ import type { ConversationStateExtractor } from './types';
  * AccommodationRequestedConversationStateExtractor, then a new
  * CarHireRequestedConversationStateExtractor, then a new
  * ActivitiesRequestedConversationStateExtractor, then a new
+ * RestaurantsRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -44,6 +46,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new AccommodationRequestedConversationStateExtractor(),
     new CarHireRequestedConversationStateExtractor(),
     new ActivitiesRequestedConversationStateExtractor(),
+    new RestaurantsRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
