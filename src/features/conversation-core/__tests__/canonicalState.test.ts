@@ -12,6 +12,7 @@ const CONVERSATION_ID = 'conversation-core-test-001';
 const CANONICAL_KEYS = [
   'adultCount',
   'ageMs',
+  'childCount',
   'conversationId',
   'createdAt',
   'departureDate',
@@ -82,6 +83,7 @@ describe('canonical conversation-core state', () => {
       departureDate: null,
       returnDate: null,
       adultCount: null,
+      childCount: null,
       transcript: [],
     });
   });

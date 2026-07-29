@@ -44,6 +44,8 @@ export type ConversationCoreState = {
   returnDate: string | null;
   /** Explicitly supplied adult count only — never extracted from message text. */
   adultCount: number | null;
+  /** Explicitly supplied child count only — never extracted from message text. */
+  childCount: number | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -73,6 +75,7 @@ export function createInitialConversationCoreState(
     departureDate: null,
     returnDate: null,
     adultCount: null,
+    childCount: null,
     transcript: [],
   };
 }
