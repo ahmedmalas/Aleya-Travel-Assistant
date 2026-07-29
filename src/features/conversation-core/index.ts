@@ -7,6 +7,7 @@
  * - ConversationStateUpdate (sole explicit travel-field update boundary)
  * - ConversationStateExtractionResult (sole future extractor output contract)
  * - ConversationStateExtractionInput (sole future extractor input contract)
+ * - ConversationStateExtractor (sole future extractor interface contract)
  *
  * Phase 2B records raw user + placeholder assistant transcript entries only.
  * Persistence namespace is reserved and must not be enabled yet.
@@ -19,6 +20,7 @@ export {
   type ConversationCoreStatus,
   type ConversationStateExtractionInput,
   type ConversationStateExtractionResult,
+  type ConversationStateExtractor,
   type ConversationStateUpdate,
   type ConversationTranscriptEntry,
   type CreateInitialConversationCoreStateInput,

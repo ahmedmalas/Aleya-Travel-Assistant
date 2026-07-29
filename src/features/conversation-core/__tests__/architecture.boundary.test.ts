@@ -248,6 +248,7 @@ describe('conversation-core architectural boundary', () => {
     expect(index).toMatch(/ConversationStateUpdate/);
     expect(index).toMatch(/ConversationStateExtractionResult/);
     expect(index).toMatch(/ConversationStateExtractionInput/);
+    expect(index).toMatch(/ConversationStateExtractor/);
     expect(types).toMatch(/export type ConversationStateExtractionResult/);
     expect(types).toMatch(
       /export type ConversationStateExtractionResult = \{\s*stateUpdate: ConversationStateUpdate;\s*\}/,
@@ -255,6 +256,10 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/export type ConversationStateExtractionInput/);
     expect(types).toMatch(
       /export type ConversationStateExtractionInput = \{\s*message: string;\s*currentState: ConversationCoreState;\s*\}/,
+    );
+    expect(types).toMatch(/export interface ConversationStateExtractor/);
+    expect(types).toMatch(
+      /export interface ConversationStateExtractor \{\s*extract\(\s*input: ConversationStateExtractionInput,\s*\): ConversationStateExtractionResult;\s*\}/,
     );
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);

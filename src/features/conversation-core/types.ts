@@ -146,6 +146,17 @@ export type ConversationStateExtractionInput = {
   currentState: ConversationCoreState;
 };
 
+/**
+ * Public interface every future travel-state extractor must implement.
+ *
+ * Contract only — no implementation, instantiation, or runtime wiring.
+ */
+export interface ConversationStateExtractor {
+  extract(
+    input: ConversationStateExtractionInput,
+  ): ConversationStateExtractionResult;
+}
+
 export type CreateInitialConversationCoreStateInput = {
   conversationId: string;
   now: Date;
