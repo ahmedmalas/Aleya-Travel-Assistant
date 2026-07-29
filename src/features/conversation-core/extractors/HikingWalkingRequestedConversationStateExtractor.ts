@@ -8,8 +8,9 @@ import type {
  * Internal hiking/walking-requested extraction boundary.
  *
  * Phase 7U: recognises only narrow, explicit hiking/walking requests in the
- * current message. Deterministic and local — emits only true, never false or
- * null, and ignores prior conversation state.
+ * current message. Phase 8R extends clear hiking-discovery request cues only.
+ * Deterministic and local — emits only true, never false or null, and ignores
+ * prior conversation state.
  */
 export class HikingWalkingRequestedConversationStateExtractor
   implements ConversationStateExtractor
@@ -35,14 +36,64 @@ function edgeTrim(value: string): string {
   return value.replace(/^\s+|\s+$/g, '');
 }
 
+const HIKING_SERVICE_PHRASE = String.raw`(?:hiking(?:\s+and\s+walking)?|hiking\s+trails?|hiking\s+routes?|walking\s+trails?|hikes?|walking)`;
+
+function hasActionHikingServiceCue(message: string): boolean {
+  return (
+    new RegExp(
+      String.raw`\b(?:book|find|search|need|want|include|add|show\s+me|recommend|compare|go)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+)?(?:best\s+|family(?:[\s-]?friendly)?\s+)?${HIKING_SERVICE_PHRASE}\b`,
+      'i',
+    ).test(message) ||
+    new RegExp(
+      String.raw`\bi\s+(?:need|want)\s+(?:a\s+|the\s+|some\s+)?${HIKING_SERVICE_PHRASE}\b`,
+      'i',
+    ).test(message) ||
+    /\bhiking\s+(?:recommendations|options)\b/i.test(message) ||
+    /\bbest\s+(?:hikes|hiking\s+trails?)\b/i.test(message) ||
+    /\bnearby\s+hiking\b/i.test(message) ||
+    /\bhiking\s+near\s+me\b/i.test(message) ||
+    /\bhikes\s+near\s+me\b/i.test(message) ||
+    /\btrails\s+near\s+me\b/i.test(message) ||
+    /\bplaces\s+to\s+hike\b/i.test(message) ||
+    /\bwhere\s+can\s+i\s+hike\b/i.test(message)
+  );
+}
+
+function hasClearHikingServiceCue(message: string): boolean {
+  return (
+    hasActionHikingServiceCue(message) ||
+    new RegExp(String.raw`\b${HIKING_SERVICE_PHRASE}\b`, 'i').test(message) ||
+    new RegExp(String.raw`^${HIKING_SERVICE_PHRASE}$`, 'i').test(
+      edgeTrim(message),
+    )
+  );
+}
+
+function hasNamedTrailAlone(message: string): boolean {
+  return (
+    /\bbondi\s+to\s+coogee\s+walk\b/i.test(message) ||
+    /\boverland\s+track\b/i.test(message) ||
+    /\blarapinta\s+trail\b/i.test(message) ||
+    /\bthree\s+capes\s+track\b/i.test(message)
+  );
+}
+
 function isBlockedHikingWalkingRequestMessage(message: string): boolean {
   if (/\?/.test(message)) {
+    return true;
+  }
+  if (/\bwhat\s+(?:is|are)\b/i.test(message)) {
     return true;
   }
   if (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) {
     return true;
   }
-  if (/\bremove\b/i.test(message)) {
+  if (
+    /\bremove\b/i.test(message) ||
+    /\bcancel\b/i.test(message) ||
+    /\bavoid\b/i.test(message) ||
+    /\bskip\b/i.test(message)
+  ) {
     return true;
   }
   if (/\binstead\b/i.test(message) || /\bactually\b/i.test(message)) {
@@ -50,18 +101,33 @@ function isBlockedHikingWalkingRequestMessage(message: string): boolean {
   }
   if (
     /\b(?:do\s+not|don't)\b/i.test(message) ||
-    /\bno\s+(?:hiking|walking|hiking\s+and\s+walking)\b/i.test(message) ||
-    /\bnot\b/i.test(message) ||
-    /\bwithout\b/i.test(message)
+    new RegExp(
+      String.raw`\bno\s+(?:a\s+|the\s+|some\s+)?(?:${HIKING_SERVICE_PHRASE}|hiking\s+trails?|hiking\s+recommendations)\b`,
+      'i',
+    ).test(message) ||
+    new RegExp(
+      String.raw`\bwithout\s+(?:a\s+|the\s+|some\s+)?(?:${HIKING_SERVICE_PHRASE}|hiking\s+trails?|hiking\s+recommendations)\b`,
+      'i',
+    ).test(message) ||
+    /\bnot\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (hasNamedTrailAlone(message)) {
+    return true;
+  }
+  if (
+    /\bhiking\s+(?:boots|shoes|gear|equipment|backpack|poles|clothes|store|shop|permit|rules|map|weather|conditions|warning|closure)\b/i.test(
+      message,
+    ) ||
+    /\btrail\s+(?:closure|conditions|difficulty)\b/i.test(message)
   ) {
     return true;
   }
   if (
-    /\b(?:walkable|walking\s+directions?|walking\s+distance|bushwalking|trekking|trek|hike|hikes|trails?|track|tracks)\b/i.test(
-      message,
-    ) &&
-    !/\bhiking\b/i.test(message) &&
-    !/\bwalking\b/i.test(message)
+    /\bwe\s+went\s+hiking\b/i.test(message) ||
+    /\bwe\s+hiked\b/i.test(message) ||
+    /\bi\s+like\s+hiking\b/i.test(message)
   ) {
     return true;
   }
@@ -73,11 +139,21 @@ function isBlockedHikingWalkingRequestMessage(message: string): boolean {
   if (
     /\b(?:easy|guided|beginner[\s-]?friendly|family(?:[\s-]?friendly)?|coastal|mountain|forest|day|multi[\s-]?day|scenic|remote)\s+(?:hiking|walking)\b/i.test(
       message,
-    ) ||
-    /\b(?:hiking|walking)\s+(?:trails?|tracks?|routes?|paths?|tours?|options|near|nearby|in|around|by|for|to|along|through)\b/i.test(
-      message,
-    ) ||
-    /\bnearby\s+(?:hiking|walking)\b/i.test(message)
+    ) &&
+    !hasActionHikingServiceCue(message)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:bushwalking|trekking|trek)\b/i.test(message) &&
+    !hasClearHikingServiceCue(message)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:trails?|tracks?)\b/i.test(message) &&
+    !hasClearHikingServiceCue(message) &&
+    !/\btrails\s+near\s+me\b/i.test(message)
   ) {
     return true;
   }
@@ -85,11 +161,23 @@ function isBlockedHikingWalkingRequestMessage(message: string): boolean {
 }
 
 const EXPLICIT_HIKING_WALKING_REQUEST_CUES: readonly RegExp[] = [
-  /\b(?:book|need|include|add|show|find)\s+(?:me\s+)?(?:some\s+|a\s+)?(?:hiking\s+and\s+walking|hiking|walking)\b/i,
-  /\bi\s+need\s+(?:hiking\s+and\s+walking|hiking|walking)\b/i,
-  /\bhiking\s+and\s+walking\b/i,
-  /\bhiking\b/i,
-  /\bwalking\b/i,
+  new RegExp(
+    String.raw`\b(?:book|find|search|need|want|include|add|show\s+me|recommend|compare|go)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+)?(?:best\s+|family(?:[\s-]?friendly)?\s+)?${HIKING_SERVICE_PHRASE}\b`,
+    'i',
+  ),
+  new RegExp(
+    String.raw`\bi\s+(?:need|want)\s+(?:a\s+|the\s+|some\s+)?${HIKING_SERVICE_PHRASE}\b`,
+    'i',
+  ),
+  /\bhiking\s+(?:recommendations|options)\b/i,
+  /\bbest\s+(?:hikes|hiking\s+trails?)\b/i,
+  /\bnearby\s+hiking\b/i,
+  /\bhiking\s+near\s+me\b/i,
+  /\bhikes\s+near\s+me\b/i,
+  /\btrails\s+near\s+me\b/i,
+  /\bplaces\s+to\s+hike\b/i,
+  /\bwhere\s+can\s+i\s+hike\b/i,
+  new RegExp(String.raw`\b${HIKING_SERVICE_PHRASE}\b`, 'i'),
 ];
 
 function hasExplicitHikingWalkingRequest(message: string): boolean {

@@ -111,23 +111,27 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     });
     expect(first.state.hikingWalkingRequested).toBe(false);
 
-    const second = turn('hiking trails bushwalking', first.state, 1);
+    const second = turn('trekking bushwalking walkable', first.state, 1);
     expect(second.state.hikingWalkingRequested).toBe(false);
   });
 
-  it('user message text cannot set hikingWalkingRequested from unsupported wording', () => {
+  it('unsupported hiking-adjacent wording cannot set hikingWalkingRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'hike',
       'trekking',
       'bushwalking',
       'walking directions',
       'walking distance',
       'walkable',
       'go for a walk',
+      'hiking gear',
+      'hiking weather',
+      'Overland Track',
+      'hiking?',
+      'I like hiking',
     ];
 
     let state = initial;
@@ -138,7 +142,80 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     });
   });
 
-  it('user message text cannot clear or change an existing value via unsupported wording', () => {
+  it('explicit hiking cue in the message sets hikingWalkingRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me hiking', initial, 0);
+    expect(result.state.hikingWalkingRequested).toBe(true);
+  });
+
+  it('phase 8R clear hiking-discovery cues set hikingWalkingRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('hiking', initial, 0);
+    expect(bare.state.hikingWalkingRequested).toBe(true);
+    expect(bare.state.campingRequested).toBeNull();
+    expect(bare.state.nationalParksRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+
+    const hikes = turn('best hikes', initial, 1);
+    expect(hikes.state.hikingWalkingRequested).toBe(true);
+
+    const trails = turn('show me hiking trails', initial, 2);
+    expect(trails.state.hikingWalkingRequested).toBe(true);
+
+    const places = turn('places to hike', initial, 3);
+    expect(places.state.hikingWalkingRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me hiking trails near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      4,
+    );
+    expect(inRequest.state.hikingWalkingRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 5, {
+      hikingWalkingRequested: false,
+    });
+    const negated = turn('no hiking', seeded.state, 6);
+    expect(negated.state.hikingWalkingRequested).toBe(false);
+    const gear = turn('hiking gear', seeded.state, 7);
+    expect(gear.state.hikingWalkingRequested).toBe(false);
+    const named = turn('Overland Track', seeded.state, 8);
+    expect(named.state.hikingWalkingRequested).toBe(false);
+    const weather = turn('hiking weather', seeded.state, 9);
+    expect(weather.state.hikingWalkingRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.hikingWalkingRequested overrides an extracted hiking request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me hiking', initial, 0, {
+      hikingWalkingRequested: false,
+    });
+    expect(overriddenFalse.state.hikingWalkingRequested).toBe(false);
+
+    const overriddenTrue = turn('no hiking', initial, 1, {
+      hikingWalkingRequested: true,
+    });
+    expect(overriddenTrue.state.hikingWalkingRequested).toBe(true);
+
+    const nullOverride = turn('show me hiking', initial, 2, {
+      hikingWalkingRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.hikingWalkingRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing hikingWalkingRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -148,7 +225,7 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     });
     expect(withTrue.state.hikingWalkingRequested).toBe(true);
 
-    const afterWords = turn('hiking walking trails', withTrue.state, 1);
+    const afterWords = turn('walking directions walkable', withTrue.state, 1);
     expect(afterWords.state.hikingWalkingRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {

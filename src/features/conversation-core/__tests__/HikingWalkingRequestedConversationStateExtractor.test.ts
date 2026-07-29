@@ -35,11 +35,16 @@ import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationS
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const HIKING_WALKING_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/extractors/HikingWalkingRequestedConversationStateExtractor.ts',
+);
+const NATIONAL_PARKS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
 );
 const SNOW_ACTIVITIES_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -127,7 +132,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7u',
+      conversationId: 'conversation-8r',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -201,7 +206,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activation', () => {
+describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit hikingWalkingRequested true contract', () => {
     expectTypeOf<HikingWalkingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<HikingWalkingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -212,52 +217,137 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
     expect(
       extractor.extract({
-        message: 'add hiking',
+        message: 'show me hiking',
         currentState: createState({ hikingWalkingRequested: null }),
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
   });
 
-  it('extracts supported explicit hiking/walking-request forms as true', () => {
+  it('extracts supported explicit hiking-request forms as true', () => {
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
     const cases = [
-      'hiking and walking',
       'hiking',
-      'walking',
-      'show hiking',
-      'show me hiking',
-      'show me walking',
+      'hike',
+      'hikes',
+      'walking trails',
+      'hiking trails',
+      'hiking routes',
       'find hiking',
-      'find walking',
-      'I need hiking',
-      'I need walking',
+      'find hikes',
+      'find hiking trails',
+      'search hiking',
+      'show me hiking',
+      'show me hiking trails',
+      'recommend hiking',
+      'recommend hikes',
+      'hiking recommendations',
+      'hiking options',
+      'best hikes',
+      'best hiking trails',
+      'nearby hiking',
+      'hiking near me',
+      'hikes near me',
+      'trails near me',
+      'places to hike',
+      'where can I hike',
       'include hiking',
       'add hiking',
-      'add walking',
-      'need hiking',
-      'book hiking',
-      'book walking',
+      'I want hiking',
+      'go hiking',
+      'walking',
+      'show me walking',
+      'hiking and walking',
+      'show me hiking trails near Brisbane',
+      'find the best hikes near Cairns',
+      'I want hiking and camping',
+      'include hiking on this trip',
+      'recommend family-friendly hiking trails',
+      'find places to hike near the national park',
+      'hiking in national parks',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ hikingWalkingRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+        currentState: createState({ hikingWalkingRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { hikingWalkingRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nationalParksRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for trail/walk/hike/place names, walking directions/distance/walkable, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+  it('emits only hikingWalkingRequested from nearby-hiking and hiking-and-camping wording', () => {
+    const extractor = new HikingWalkingRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'nearby hiking',
+        currentState: createState({ hikingWalkingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'hikes near me',
+        currentState: createState({ hikingWalkingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'I want hiking and camping',
+        currentState: createState({ hikingWalkingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'hiking in national parks',
+        currentState: createState({ hikingWalkingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+  });
+
+  it('returns empty for equipment, trail metadata, named trails, historical, negation, and ambiguous wording', () => {
     const extractor = new HikingWalkingRequestedConversationStateExtractor();
     const unsupported = [
+      'hiking boots',
+      'hiking shoes',
+      'hiking gear',
+      'hiking equipment',
+      'hiking backpack',
+      'hiking poles',
+      'hiking clothes',
+      'hiking store',
+      'hiking shop',
+      'hiking permit',
+      'hiking rules',
+      'hiking map',
+      'hiking weather',
+      'hiking conditions',
+      'hiking warning',
+      'hiking closure',
+      'trail closure',
+      'trail conditions',
+      'trail difficulty',
+      'we went hiking',
+      'we hiked there',
+      'I like hiking',
+      'hiking?',
+      'what is hiking',
+      'Bondi to Coogee Walk',
       'Overland Track',
-      'Bondi to Coogee walk',
-      'Blue Mountains',
-      'hike',
-      'hikes',
+      'Larapinta Trail',
+      'Three Capes Track',
       'trek',
       'trekking',
       'bushwalking',
@@ -269,16 +359,16 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
       'guided walking',
       'coastal walking',
       'family-friendly hiking',
-      'hiking trails',
-      'walking tracks',
-      'hiking near the hotel',
-      'nearby walking',
-      'hiking in the Blue Mountains',
+      'no hiking',
       'do not include hiking',
-      'no walking',
-      "don't add hiking",
+      "don't include hiking",
       'without hiking',
-      'remove walking',
+      'remove hiking',
+      'cancel the hiking plans',
+      "I don't want hiking",
+      'avoid hiking',
+      'skip hiking',
+      'no hiking trails',
       'forget hiking',
       'keep walking',
       'actually show me hiking',
@@ -378,6 +468,8 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7U');
+    expect(source).toContain('Phase 8R');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -434,27 +526,55 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
     expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8P');
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7AA',
+    );
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Q',
+    );
     expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
     expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7Q',
@@ -469,6 +589,54 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
       'Phase 7T',
     );
 
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'add camping',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+    expect(
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'book activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new SnowActivitiesRequestedConversationStateExtractor().extract({
         message: 'add snow activities',
@@ -500,35 +668,17 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
-      new CampingRequestedConversationStateExtractor().extract({
-        message: 'add camping',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { campingRequested: true } });
-    expect(
       new BeachesRequestedConversationStateExtractor().extract({
         message: 'show me beaches',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
-      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
-        message: 'what is nearby',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
-    expect(
       new RestaurantsRequestedConversationStateExtractor().extract({
         message: 'find restaurants',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { restaurantsRequested: true } });
-    expect(
-      new ActivitiesRequestedConversationStateExtractor().extract({
-        message: 'book activities',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -606,27 +756,27 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add hiking',
+      message: 'show me hiking',
       state: currentState,
-      userEntryId: 'user-7u-a',
-      assistantEntryId: 'assistant-7u-a',
+      userEntryId: 'user-8r-a',
+      assistantEntryId: 'assistant-8r-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no hiking',
       state: currentState,
-      userEntryId: 'user-7u-b',
-      assistantEntryId: 'assistant-7u-b',
+      userEntryId: 'user-8r-b',
+      assistantEntryId: 'assistant-8r-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { hikingWalkingRequested: true },
     });
     const overriddenFalse = processConversationTurn({
-      message: 'add walking',
+      message: 'add hiking',
       state: currentState,
-      userEntryId: 'user-7u-c',
-      assistantEntryId: 'assistant-7u-c',
+      userEntryId: 'user-8r-c',
+      assistantEntryId: 'assistant-8r-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { hikingWalkingRequested: false },
@@ -634,22 +784,23 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
     const nullOverride = processConversationTurn({
       message: 'add hiking',
       state: currentState,
-      userEntryId: 'user-7u-d',
-      assistantEntryId: 'assistant-7u-d',
+      userEntryId: 'user-8r-d',
+      assistantEntryId: 'assistant-8r-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { hikingWalkingRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'walking directions',
+      message: 'hiking weather',
       state: currentState,
-      userEntryId: 'user-7u-e',
-      assistantEntryId: 'assistant-7u-e',
+      userEntryId: 'user-8r-e',
+      assistantEntryId: 'assistant-8r-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add hiking. Fly from Sydney to Cairns',
+      message:
+        'show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -674,13 +825,14 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
         wildlifeRequested: null,
         nationalParksRequested: null,
       }),
-      userEntryId: 'user-7u-f',
-      assistantEntryId: 'assistant-7u-f',
+      userEntryId: 'user-8r-f',
+      assistantEntryId: 'assistant-8r-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'add walking. Fly from Sydney to Cairns',
+      message:
+        'show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -705,8 +857,8 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
         wildlifeRequested: null,
         nationalParksRequested: null,
       }),
-      userEntryId: 'user-7u-g',
-      assistantEntryId: 'assistant-7u-g',
+      userEntryId: 'user-8r-g',
+      assistantEntryId: 'assistant-8r-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -714,6 +866,30 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
         destination: 'Hobart',
         hikingWalkingRequested: false,
       },
+    });
+    const bestHikes = processConversationTurn({
+      message: 'best hikes',
+      state: currentState,
+      userEntryId: 'user-8r-h',
+      assistantEntryId: 'assistant-8r-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const placesToHike = processConversationTurn({
+      message: 'places to hike',
+      state: currentState,
+      userEntryId: 'user-8r-i',
+      assistantEntryId: 'assistant-8r-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const namedPreserved = processConversationTurn({
+      message: 'Overland Track',
+      state: currentState,
+      userEntryId: 'user-8r-j',
+      assistantEntryId: 'assistant-8r-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
     });
 
     expect(extracted.state.hikingWalkingRequested).toBe(true);
@@ -725,11 +901,18 @@ describe('phase 7U — HikingWalkingRequestedConversationStateExtractor activati
     expect(nullOverride.state.hikingWalkingRequested).toBeNull();
     expect(preserved.state.hikingWalkingRequested).toBe(false);
     expect(composed.state.hikingWalkingRequested).toBe(true);
+    expect(composed.state.nationalParksRequested).toBe(true);
+    expect(composed.state.campingRequested).toBe(true);
+    expect(composed.state.beachesRequested).toBe(true);
+    expect(composed.state.nearbyDiscoveryRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.hikingWalkingRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(bestHikes.state.hikingWalkingRequested).toBe(true);
+    expect(placesToHike.state.hikingWalkingRequested).toBe(true);
+    expect(namedPreserved.state.hikingWalkingRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(

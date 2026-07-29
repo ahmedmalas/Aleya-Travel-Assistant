@@ -1128,13 +1128,19 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'show me walking', currentState }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
+      extractor.extract({ message: 'show me hiking trails', currentState }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
       extractor.extract({ message: 'no hiking', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'show me hiking trails', currentState }),
+      extractor.extract({ message: 'hiking gear', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'walking directions', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Overland Track', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

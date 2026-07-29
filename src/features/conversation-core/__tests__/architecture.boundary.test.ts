@@ -916,6 +916,8 @@ describe('conversation-core architectural boundary', () => {
     expect(hikingWalkingRequestedExtractor).toMatch(
       /export class HikingWalkingRequestedConversationStateExtractor/,
     );
+    expect(hikingWalkingRequestedExtractor).toContain('Phase 7U');
+    expect(hikingWalkingRequestedExtractor).toContain('Phase 8R');
     expect(hikingWalkingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );
