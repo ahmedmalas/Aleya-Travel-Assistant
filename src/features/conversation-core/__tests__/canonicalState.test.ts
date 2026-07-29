@@ -14,6 +14,7 @@ const CANONICAL_KEYS = [
   'conversationId',
   'createdAt',
   'destination',
+  'origin',
   'status',
   'transcript',
   'turnCount',
@@ -21,7 +22,6 @@ const CANONICAL_KEYS = [
 ] as const;
 
 const FORBIDDEN_STATE_FIELDS = [
-  'origin',
   'dates',
   'travellers',
   'services',
@@ -75,6 +75,7 @@ describe('canonical conversation-core state', () => {
       updatedAt: '2026-07-28T12:00:00.000Z',
       ageMs: 0,
       destination: null,
+      origin: null,
       transcript: [],
     });
   });

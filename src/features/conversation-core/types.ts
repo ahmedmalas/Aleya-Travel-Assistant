@@ -36,6 +36,8 @@ export type ConversationCoreState = {
   ageMs: number;
   /** Explicitly supplied destination only — never extracted from message text. */
   destination: string | null;
+  /** Explicitly supplied origin only — never extracted from message text. */
+  origin: string | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -61,6 +63,7 @@ export function createInitialConversationCoreState(
     updatedAt: instant,
     ageMs: 0,
     destination: null,
+    origin: null,
     transcript: [],
   };
 }
