@@ -11,6 +11,7 @@ const CONVERSATION_ID = 'conversation-core-test-001';
 
 const CANONICAL_KEYS = [
   'accommodationRequested',
+  'activitiesRequested',
   'adultCount',
   'ageMs',
   'carHireRequested',
@@ -92,6 +93,7 @@ describe('canonical conversation-core state', () => {
       flightsRequested: null,
       accommodationRequested: null,
       carHireRequested: null,
+      activitiesRequested: null,
       transcript: [],
     });
   });
