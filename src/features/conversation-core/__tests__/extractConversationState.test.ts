@@ -293,7 +293,10 @@ describe('phase 5F — extractConversationState execution only', () => {
   });
 
   it('is not imported by processor or application files', () => {
-    const allowed = new Set([EXECUTION_SOURCE]);
+    const allowed = new Set([
+      EXECUTION_SOURCE,
+      resolve(ROOT, 'src/features/conversation-core/extractAndApplyConversationState.ts'),
+    ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),
     );

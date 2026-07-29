@@ -90,9 +90,11 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('createConversationStateExtractor')).toBe(false);
     expect(index.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
+    expect(index.includes('extractAndApplyConversationState')).toBe(false);
     expect(processTurn.includes('createConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('extractConversationState')).toBe(false);
+    expect(processTurn.includes('extractAndApplyConversationState')).toBe(false);
     const applyUpdate = readSrc(
       'src/features/conversation-core/applyConversationStateUpdate.ts',
     );
@@ -292,6 +294,17 @@ describe('conversation-core architectural boundary', () => {
       false,
     );
     expect(extractionExecution.includes('stateUpdate: {}')).toBe(false);
+    const extractAndApply = readSrc(
+      'src/features/conversation-core/extractAndApplyConversationState.ts',
+    );
+    expect(extractAndApply).toMatch(
+      /export function extractAndApplyConversationState\(\s*input: ExtractAndApplyConversationStateInput,\s*\): ConversationCoreState/,
+    );
+    expect(extractAndApply).toMatch(/extractConversationState\(/);
+    expect(extractAndApply).toMatch(/applyConversationStateUpdate\(/);
+    expect(extractAndApply.includes('createConversationStateExtractor')).toBe(false);
+    expect(extractAndApply.includes('EmptyConversationStateExtractor')).toBe(false);
+    expect(extractAndApply.includes('hasConversationStateUpdateChanged')).toBe(false);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
