@@ -17,6 +17,7 @@ import { NearbyDiscoveryRequestedConversationStateExtractor } from './NearbyDisc
 import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from './RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
+import { ScenicDrivesRequestedConversationStateExtractor } from './ScenicDrivesRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -40,6 +41,7 @@ import type { ConversationStateExtractor } from './types';
  * CampingRequestedConversationStateExtractor, then a new
  * KayakingRequestedConversationStateExtractor, then a new
  * FourWheelDrivingRequestedConversationStateExtractor, then a new
+ * ScenicDrivesRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -62,6 +64,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new CampingRequestedConversationStateExtractor(),
     new KayakingRequestedConversationStateExtractor(),
     new FourWheelDrivingRequestedConversationStateExtractor(),
+    new ScenicDrivesRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }

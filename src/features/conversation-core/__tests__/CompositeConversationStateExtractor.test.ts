@@ -32,6 +32,7 @@ import { InfantCountConversationStateExtractor } from '../InfantCountConversatio
 import { KayakingRequestedConversationStateExtractor } from '../KayakingRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const COMPOSITE_SOURCE = resolve(
@@ -351,7 +352,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -363,10 +364,10 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     }
   });
 
-  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-nearby-beaches-camping-kayaking-4wd-empty sequence stays empty without altering merge behaviour', () => {
+  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-nearby-beaches-camping-kayaking-4wd-scenic-empty sequence stays empty without altering merge behaviour', () => {
     const input: ConversationStateExtractionInput = {
       message:
-        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities, restaurants, nearby discovery, beaches, camping, kayaking and 4WD',
+        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities, restaurants, nearby discovery, beaches, camping, kayaking, 4WD and scenic drives',
       currentState: createState(),
     };
     const received: ConversationStateExtractionInput[] = [];
@@ -390,6 +391,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     const kayakingRequested = new KayakingRequestedConversationStateExtractor();
     const fourWheelDrivingRequested =
       new FourWheelDrivingRequestedConversationStateExtractor();
+    const scenicDrivesRequested = new ScenicDrivesRequestedConversationStateExtractor();
     const empty = new EmptyConversationStateExtractor();
     const destinationExtract = vi
       .spyOn(destination, 'extract')
@@ -493,6 +495,12 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
         received.push(receivedInput);
         return { stateUpdate: {} };
       });
+    const scenicDrivesRequestedExtract = vi
+      .spyOn(scenicDrivesRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
     const emptyExtract = vi
       .spyOn(empty, 'extract')
       .mockImplementation((receivedInput) => {
@@ -518,6 +526,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       campingRequested,
       kayakingRequested,
       fourWheelDrivingRequested,
+      scenicDrivesRequested,
       empty,
     ]);
     const first = production.extract(input);
@@ -544,8 +553,9 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(campingRequestedExtract).toHaveBeenCalledTimes(2);
     expect(kayakingRequestedExtract).toHaveBeenCalledTimes(2);
     expect(fourWheelDrivingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(scenicDrivesRequestedExtract).toHaveBeenCalledTimes(2);
     expect(emptyExtract).toHaveBeenCalledTimes(2);
-    expect(received).toHaveLength(36);
+    expect(received).toHaveLength(38);
     expect(received.every((value) => value === input)).toBe(true);
 
     const mergeStillWorks = new CompositeConversationStateExtractor([
@@ -566,6 +576,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       stubExtractor({ campingRequested: true }),
       stubExtractor({ kayakingRequested: true }),
       stubExtractor({ fourWheelDriveRequested: true }),
+      stubExtractor({ scenicDrivesRequested: true }),
       stubExtractor({}),
     ]).extract(input);
     expect(mergeStillWorks.stateUpdate).toEqual({
@@ -586,6 +597,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       campingRequested: true,
       kayakingRequested: true,
       fourWheelDriveRequested: true,
+      scenicDrivesRequested: true,
     });
   });
 
