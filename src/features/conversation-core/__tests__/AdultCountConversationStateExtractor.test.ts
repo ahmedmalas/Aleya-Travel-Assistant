@@ -47,7 +47,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7e',
+      conversationId: 'conversation-8e',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -101,7 +101,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
+describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit adultCount result contract', () => {
     expectTypeOf<AdultCountConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<AdultCountConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -124,22 +124,32 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
       ['2 adults', 2],
       ['two adults', 2],
       ['for 2 adults', 2],
+      ['there are 3 adults', 3],
+      ['we are 4 adults', 4],
+      ['1 adult', 1],
+      ['one adult', 1],
+      ['2 grown adults', 2],
+      ['two adult travellers', 2],
       ['travelling with 2 adults', 2],
       ['traveling with 2 adults', 2],
       ['adult count is 2', 2],
-      ['one adult', 1],
       ['for three adults', 3],
       ['adult count is ten', 10],
+      ['2 adults flying from Sydney to Brisbane', 2],
+      ['book flights for 3 adults', 3],
+      ['we need accommodation for two adults', 2],
     ];
 
     for (const [message, adultCount] of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ adultCount: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { adultCount } });
+        currentState: createState({ adultCount: null }),
+      });
+      expect(result, message).toEqual({ stateUpdate: { adultCount } });
+      expect(result.stateUpdate, message).not.toHaveProperty('childCount');
+      expect(result.stateUpdate, message).not.toHaveProperty('infantCount');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
@@ -153,11 +163,29 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
     ).toEqual({ stateUpdate: { adultCount: 4 } });
   });
 
-  it('returns empty for child/infant, total, vague, negation, and keep wording', () => {
+  it('returns empty for child/infant, people, relationships, zero, negative, decimal, and vague wording', () => {
     const extractor = new AdultCountConversationStateExtractor();
     const unsupported = [
-      'two children',
+      'me and my wife',
+      'my partner and I',
+      'our family',
+      'a couple',
+      'two people',
+      '3 travellers',
+      '2 passengers',
+      'adult only hotel',
+      'adults only',
+      'adult ticket',
+      'adult price',
+      'under 18',
+      '18 years old',
+      '2 children',
       '1 infant',
+      '0 adults',
+      '-2 adults',
+      '2.5 adults',
+      'how many adults',
+      'adults?',
       'two adults and one infant',
       '2 adults and 1 child',
       'four travellers',
@@ -175,6 +203,14 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
       '2 adults instead',
       'Actually 2 adults',
       'adults: 5',
+      'me',
+      'I',
+      'we',
+      'us',
+      'couple',
+      'family',
+      'parents',
+      'friends',
       'Hello',
       '',
     ];
@@ -311,12 +347,13 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
   });
 
   it('proves Destination, Origin, DepartureDate, and ReturnDate remain unchanged', () => {
-    expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain(
-      'Phase 7A',
-    );
+    expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
 
     expect(
       new DestinationConversationStateExtractor().extract({
@@ -351,28 +388,29 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
       infantCount: 0,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      flightsRequested: true,
     });
     const extracted = processConversationTurn({
       message: '2 adults',
       state: currentState,
-      userEntryId: 'user-7e-a',
-      assistantEntryId: 'assistant-7e-a',
+      userEntryId: 'user-8e-a',
+      assistantEntryId: 'assistant-8e-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const replaced = processConversationTurn({
       message: 'for three adults',
       state: currentState,
-      userEntryId: 'user-7e-b',
-      assistantEntryId: 'assistant-7e-b',
+      userEntryId: 'user-8e-b',
+      assistantEntryId: 'assistant-8e-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
     });
     const overridden = processConversationTurn({
       message: '2 adults',
       state: currentState,
-      userEntryId: 'user-7e-c',
-      assistantEntryId: 'assistant-7e-c',
+      userEntryId: 'user-8e-c',
+      assistantEntryId: 'assistant-8e-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { adultCount: 5 },
@@ -380,8 +418,8 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
     const nullOverride = processConversationTurn({
       message: '2 adults',
       state: currentState,
-      userEntryId: 'user-7e-d',
-      assistantEntryId: 'assistant-7e-d',
+      userEntryId: 'user-8e-d',
+      assistantEntryId: 'assistant-8e-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { adultCount: null },
@@ -389,8 +427,8 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
     const preserved = processConversationTurn({
       message: 'two adults and one infant',
       state: currentState,
-      userEntryId: 'user-7e-e',
-      assistantEntryId: 'assistant-7e-e',
+      userEntryId: 'user-8e-e',
+      assistantEntryId: 'assistant-8e-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
@@ -401,8 +439,8 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
         destination: null,
         adultCount: null,
       }),
-      userEntryId: 'user-7e-f',
-      assistantEntryId: 'assistant-7e-f',
+      userEntryId: 'user-8e-f',
+      assistantEntryId: 'assistant-8e-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
@@ -413,8 +451,8 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
         destination: null,
         adultCount: null,
       }),
-      userEntryId: 'user-7e-g',
-      assistantEntryId: 'assistant-7e-g',
+      userEntryId: 'user-8e-g',
+      assistantEntryId: 'assistant-8e-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -423,10 +461,29 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
         adultCount: 4,
       },
     });
+    const relationshipPreserved = processConversationTurn({
+      message: 'me and my wife',
+      state: currentState,
+      userEntryId: 'user-8e-h',
+      assistantEntryId: 'assistant-8e-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const writtenInRequest = processConversationTurn({
+      message: 'we need accommodation for two adults',
+      state: currentState,
+      userEntryId: 'user-8e-i',
+      assistantEntryId: 'assistant-8e-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
 
     expect(extracted.state.adultCount).toBe(2);
     expect(extracted.state.childCount).toBe(1);
+    expect(extracted.state.infantCount).toBe(0);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.flightsRequested).toBe(true);
     expect(replaced.state.adultCount).toBe(3);
     expect(overridden.state.adultCount).toBe(5);
     expect(nullOverride.state.adultCount).toBeNull();
@@ -437,6 +494,8 @@ describe('phase 7E — AdultCountConversationStateExtractor activation', () => {
     expect(independentOverride.state.adultCount).toBe(4);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(relationshipPreserved.state.adultCount).toBe(2);
+    expect(writtenInRequest.state.adultCount).toBe(2);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(

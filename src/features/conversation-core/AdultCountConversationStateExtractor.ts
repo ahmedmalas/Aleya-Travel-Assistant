@@ -8,8 +8,9 @@ import type {
  * Internal adult-count extraction boundary.
  *
  * Phase 7E: recognises only narrow, explicit adult passenger-count statements
- * in the current message. Deterministic and local — no numeric coercion helpers,
- * child/infant extraction, or currentState inspection.
+ * in the current message. Phase 8E extends clear adult-count cues only.
+ * Deterministic and local — no numeric coercion helpers, child/infant
+ * extraction, or currentState inspection.
  */
 export class AdultCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -102,19 +103,33 @@ function isBlockedAdultCountMessage(message: string): boolean {
   if (/\?/.test(message)) {
     return true;
   }
+  if (/\bhow\s+many\b/i.test(message)) {
+    return true;
+  }
   if (
     /\b(?:child|children|kids?|infant|infants|bab(?:y|ies))\b/i.test(message)
   ) {
     return true;
   }
   if (
-    /\b(?:travellers?|passengers?|people|persons?|party|grown-?ups?)\b/i.test(
-      message,
-    )
+    /-\d+\s+adults?\b/i.test(message) ||
+    /\d+\.\d+\s+adults?\b/i.test(message)
   ) {
     return true;
   }
   if (
+    /\badults?\s+only\b/i.test(message) ||
+    /\badult\s+only\b/i.test(message) ||
+    /\badult\s+ticket\b/i.test(message) ||
+    /\badult\s+price\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (/\bunder\s+\d+\b/i.test(message) || /\byears?\s+old\b/i.test(message)) {
+    return true;
+  }
+  if (
+    /\b(?:couple|family|parents?|friends?|partner)\b/i.test(message) ||
     /\b(?:just\s+me|my\s+wife|my\s+husband|wife\s+and\s+i|me\s+and\s+my)\b/i.test(
       message,
     )
@@ -142,10 +157,16 @@ function isBlockedAdultCountMessage(message: string): boolean {
   return false;
 }
 
+const COUNT_TOKEN = String.raw`(\d+|one|two|three|four|five|six|seven|eight|nine|ten)`;
+
 const EXPLICIT_ADULT_COUNT_CUES: readonly RegExp[] = [
-  /\badult\s+count\s+is\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/i,
-  /\b(?:for|travell?ing\s+with)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+adults?\b/i,
-  /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+adults?\b/i,
+  new RegExp(String.raw`\badult\s+count\s+is\s+${COUNT_TOKEN}\b`, 'i'),
+  new RegExp(
+    String.raw`\b(?:there\s+are|we\s+are|for|travell?ing\s+with)\s+${COUNT_TOKEN}\s+(?:grown\s+)?adults?\b`,
+    'i',
+  ),
+  new RegExp(String.raw`\b${COUNT_TOKEN}\s+grown\s+adults?\b`, 'i'),
+  new RegExp(String.raw`\b${COUNT_TOKEN}\s+adults?\b`, 'i'),
 ];
 
 function extractExplicitAdultCount(message: string): number | null {

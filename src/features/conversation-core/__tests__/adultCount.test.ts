@@ -108,6 +108,42 @@ describe('phase 3E — explicit adultCount only', () => {
     expect(result.state.adultCount).toBe(2);
   });
 
+  it('phase 8E clear adult cues update adultCount without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const written = turn('two adults', initial, 0);
+    expect(written.state.adultCount).toBe(2);
+    expect(written.state.childCount).toBeNull();
+    expect(written.state.infantCount).toBeNull();
+
+    const inRequest = turn(
+      '2 adults flying from Sydney to Brisbane',
+      initial,
+      1,
+    );
+    expect(inRequest.state.adultCount).toBe(2);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const grown = turn('2 grown adults', initial, 2);
+    expect(grown.state.adultCount).toBe(2);
+
+    const travellers = turn('two adult travellers', initial, 3);
+    expect(travellers.state.adultCount).toBe(2);
+
+    const seeded = turn('Hello', initial, 4, { adultCount: 3 });
+    const childOnly = turn('2 children', seeded.state, 5);
+    expect(childOnly.state.adultCount).toBe(3);
+    const people = turn('two people', seeded.state, 6);
+    expect(people.state.adultCount).toBe(3);
+    const relationship = turn('me and my wife', seeded.state, 7);
+    expect(relationship.state.adultCount).toBe(3);
+    const zero = turn('0 adults', seeded.state, 8);
+    expect(zero.state.adultCount).toBe(3);
+  });
+
   it('trusted explicit stateUpdate.adultCount overrides an extracted adultCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
