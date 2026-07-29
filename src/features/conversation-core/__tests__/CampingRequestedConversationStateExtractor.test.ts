@@ -97,7 +97,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7o',
+      conversationId: 'conversation-8p',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -159,7 +159,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7O — CampingRequestedConversationStateExtractor activation', () => {
+describe('phase 8P — CampingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit campingRequested true contract', () => {
     expectTypeOf<CampingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<CampingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -170,7 +170,7 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
     const extractor = new CampingRequestedConversationStateExtractor();
     expect(
       extractor.extract({
-        message: 'add camping',
+        message: 'show me camping',
         currentState: createState({ campingRequested: null }),
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
@@ -180,32 +180,106 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
     const extractor = new CampingRequestedConversationStateExtractor();
     const cases = [
       'camping',
-      'show camping',
-      'show me camping',
+      'camp',
+      'campsites',
+      'camp sites',
+      'campgrounds',
+      'camp grounds',
       'find camping',
-      'I need camping',
+      'find campsites',
+      'search camping',
+      'show me camping',
+      'show me campsites',
+      'recommend camping',
+      'recommend campsites',
+      'camping recommendations',
+      'camping options',
+      'best campsites',
+      'nearby camping',
+      'camping near me',
+      'campgrounds near me',
       'include camping',
       'add camping',
-      'need camping',
+      'I want camping',
       'book camping',
+      'need camping',
+      'show me camping near Brisbane',
+      'find campsites near Byron Bay',
+      'I want camping and beaches',
+      'include camping on this trip',
+      'find family camping',
+      'recommend camping near the national park',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ campingRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { campingRequested: true } });
+        currentState: createState({ campingRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { campingRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nationalParksRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for campsite/caravan/glamping wording, typed camping, negation, remove/forget, and keep wording', () => {
+  it('emits only campingRequested from nearby-camping and camping-and-beaches wording', () => {
+    const extractor = new CampingRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'nearby camping',
+        currentState: createState({ campingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'camping near me',
+        currentState: createState({ campingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'I want camping and beaches',
+        currentState: createState({ campingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+  });
+
+  it('returns empty for equipment, rules, weather, historical, negation, and ambiguous wording', () => {
     const extractor = new CampingRequestedConversationStateExtractor();
     const unsupported = [
-      'find a campsite',
-      'find a campground',
+      'camping store',
+      'camping shop',
+      'camping equipment',
+      'camping gear',
+      'camping stove',
+      'camping chair',
+      'camping tent',
+      'camping supplies',
+      'camping permit',
+      'camping rules',
+      'camping regulations',
+      'camping weather',
+      'camping conditions',
+      'camping ban',
+      'camping fire restrictions',
+      'camping warning',
+      'camping closure',
+      'we went camping',
+      'we camped there',
+      'I like camping',
+      'camping?',
+      'what is camping',
       'I want a caravan park',
       'show me places for a tent',
       'where can I use a swag',
@@ -214,16 +288,22 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
       'I need a powered site',
       'find an unpowered site',
       'somewhere we can have a campfire',
-      'show me camping options',
       'show me camping cabins',
       'find bush camping',
       'show me free camping',
       'family-friendly camping',
       'dog-friendly campsites',
       'remote camping away from crowds',
-      'do not include camping',
       'no camping',
+      'do not include camping',
+      "don't include camping",
+      'without camping',
       'remove camping',
+      'cancel camping',
+      'cancel the camping plans',
+      "I don't want camping",
+      'avoid camping',
+      'skip camping',
       'forget camping',
       'keep the camping',
       'keep beaches but remove camping',
@@ -316,6 +396,8 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7O');
+    expect(source).toContain('Phase 8P');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -370,26 +452,47 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
 
     expect(
       new BeachesRequestedConversationStateExtractor().extract({
@@ -398,23 +501,41 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me camping',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new NearbyDiscoveryRequestedConversationStateExtractor().extract({
         message: 'what is nearby',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
-      new RestaurantsRequestedConversationStateExtractor().extract({
-        message: 'find restaurants',
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'show me camping',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    ).toEqual({ stateUpdate: {} });
     expect(
       new ActivitiesRequestedConversationStateExtractor().extract({
         message: 'book activities',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me camping',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -489,20 +610,21 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
       campingRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
-      message: 'add camping',
+      message: 'show me camping',
       state: currentState,
-      userEntryId: 'user-7o-a',
-      assistantEntryId: 'assistant-7o-a',
+      userEntryId: 'user-8p-a',
+      assistantEntryId: 'assistant-8p-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no camping',
       state: currentState,
-      userEntryId: 'user-7o-b',
-      assistantEntryId: 'assistant-7o-b',
+      userEntryId: 'user-8p-b',
+      assistantEntryId: 'assistant-8p-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { campingRequested: true },
@@ -510,8 +632,8 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
     const overriddenFalse = processConversationTurn({
       message: 'add camping',
       state: currentState,
-      userEntryId: 'user-7o-c',
-      assistantEntryId: 'assistant-7o-c',
+      userEntryId: 'user-8p-c',
+      assistantEntryId: 'assistant-8p-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { campingRequested: false },
@@ -519,22 +641,23 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
     const nullOverride = processConversationTurn({
       message: 'add camping',
       state: currentState,
-      userEntryId: 'user-7o-d',
-      assistantEntryId: 'assistant-7o-d',
+      userEntryId: 'user-8p-d',
+      assistantEntryId: 'assistant-8p-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { campingRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'find a campsite',
+      message: 'camping weather',
       state: currentState,
-      userEntryId: 'user-7o-e',
-      assistantEntryId: 'assistant-7o-e',
+      userEntryId: 'user-8p-e',
+      assistantEntryId: 'assistant-8p-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add camping. Fly from Sydney to Cairns',
+      message:
+        'show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -547,13 +670,14 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
         beachesRequested: null,
         campingRequested: null,
       }),
-      userEntryId: 'user-7o-f',
-      assistantEntryId: 'assistant-7o-f',
+      userEntryId: 'user-8p-f',
+      assistantEntryId: 'assistant-8p-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'add camping. Fly from Sydney to Cairns',
+      message:
+        'show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -566,8 +690,8 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
         beachesRequested: null,
         campingRequested: null,
       }),
-      userEntryId: 'user-7o-g',
-      assistantEntryId: 'assistant-7o-g',
+      userEntryId: 'user-8p-g',
+      assistantEntryId: 'assistant-8p-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -576,21 +700,54 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
         campingRequested: false,
       },
     });
+    const bestCampsites = processConversationTurn({
+      message: 'best campsites',
+      state: currentState,
+      userEntryId: 'user-8p-h',
+      assistantEntryId: 'assistant-8p-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const campingOptions = processConversationTurn({
+      message: 'camping options',
+      state: currentState,
+      userEntryId: 'user-8p-i',
+      assistantEntryId: 'assistant-8p-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const equipmentPreserved = processConversationTurn({
+      message: 'camping gear',
+      state: currentState,
+      userEntryId: 'user-8p-j',
+      assistantEntryId: 'assistant-8p-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.campingRequested).toBe(true);
     expect(extracted.state.beachesRequested).toBe(true);
+    expect(extracted.state.nearbyDiscoveryRequested).toBe(true);
+    expect(extracted.state.activitiesRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
     expect(overriddenTrue.state.campingRequested).toBe(true);
     expect(overriddenFalse.state.campingRequested).toBe(false);
     expect(nullOverride.state.campingRequested).toBeNull();
     expect(preserved.state.campingRequested).toBe(false);
     expect(composed.state.campingRequested).toBe(true);
+    expect(composed.state.beachesRequested).toBe(true);
+    expect(composed.state.nearbyDiscoveryRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.campingRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(bestCampsites.state.campingRequested).toBe(true);
+    expect(campingOptions.state.campingRequested).toBe(true);
+    expect(equipmentPreserved.state.campingRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
@@ -646,7 +803,7 @@ describe('phase 7O — CampingRequestedConversationStateExtractor activation', (
     });
 
     const campingActiveMessage =
-      'add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+      'show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
     expect(
       createConversationStateExtractor().extract({
         message: campingActiveMessage,

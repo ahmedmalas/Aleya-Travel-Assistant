@@ -784,6 +784,8 @@ describe('conversation-core architectural boundary', () => {
     expect(campingRequestedExtractor).toMatch(
       /export class CampingRequestedConversationStateExtractor/,
     );
+    expect(campingRequestedExtractor).toContain('Phase 7O');
+    expect(campingRequestedExtractor).toContain('Phase 8P');
     expect(campingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

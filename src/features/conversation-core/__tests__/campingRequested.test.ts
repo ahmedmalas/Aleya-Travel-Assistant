@@ -89,7 +89,7 @@ describe('phase 3O — explicit campingRequested only', () => {
     const first = turn('Hello', initial, 0, { campingRequested: true });
     expect(first.state.campingRequested).toBe(true);
 
-    const second = turn('camp caravan tent', first.state, 1);
+    const second = turn('caravan tent glamping', first.state, 1);
     expect(second.state.campingRequested).toBe(true);
   });
 
@@ -101,16 +101,25 @@ describe('phase 3O — explicit campingRequested only', () => {
     const first = turn('Hello', initial, 0, { campingRequested: false });
     expect(first.state.campingRequested).toBe(false);
 
-    const second = turn('camp caravan tent', first.state, 1);
+    const second = turn('caravan tent glamping', first.state, 1);
     expect(second.state.campingRequested).toBe(false);
   });
 
-  it('user message text cannot set campingRequested', () => {
+  it('unsupported camping-adjacent wording cannot set campingRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const phrases = ['camp', 'caravan', 'tent', 'campsite', 'glamping'];
+    const phrases = [
+      'caravan',
+      'tent',
+      'glamping',
+      'camping gear',
+      'camping weather',
+      'camping permit',
+      'camping?',
+      'I like camping',
+    ];
 
     let state = initial;
     phrases.forEach((message, index) => {
@@ -120,7 +129,79 @@ describe('phase 3O — explicit campingRequested only', () => {
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('explicit camping cue in the message sets campingRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me camping', initial, 0);
+    expect(result.state.campingRequested).toBe(true);
+  });
+
+  it('phase 8P clear camping-discovery cues set campingRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('camping', initial, 0);
+    expect(bare.state.campingRequested).toBe(true);
+    expect(bare.state.beachesRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+
+    const campsites = turn('find campsites', initial, 1);
+    expect(campsites.state.campingRequested).toBe(true);
+
+    const options = turn('camping options', initial, 2);
+    expect(options.state.campingRequested).toBe(true);
+
+    const nearbyCamping = turn('nearby camping', initial, 3);
+    expect(nearbyCamping.state.campingRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me camping near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      4,
+    );
+    expect(inRequest.state.campingRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 5, {
+      campingRequested: false,
+    });
+    const negated = turn('no camping', seeded.state, 6);
+    expect(negated.state.campingRequested).toBe(false);
+    const equipment = turn('camping gear', seeded.state, 7);
+    expect(equipment.state.campingRequested).toBe(false);
+    const weather = turn('camping weather', seeded.state, 8);
+    expect(weather.state.campingRequested).toBe(false);
+    const historical = turn('we went camping', seeded.state, 9);
+    expect(historical.state.campingRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.campingRequested overrides an extracted camping request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me camping', initial, 0, {
+      campingRequested: false,
+    });
+    expect(overriddenFalse.state.campingRequested).toBe(false);
+
+    const overriddenTrue = turn('no camping', initial, 1, {
+      campingRequested: true,
+    });
+    expect(overriddenTrue.state.campingRequested).toBe(true);
+
+    const nullOverride = turn('show me camping', initial, 2, {
+      campingRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.campingRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing campingRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -128,15 +209,15 @@ describe('phase 3O — explicit campingRequested only', () => {
     const withTrue = turn('Hello', initial, 0, { campingRequested: true });
     expect(withTrue.state.campingRequested).toBe(true);
 
-    const afterCampWords = turn('camp camping caravan tent', withTrue.state, 1);
-    expect(afterCampWords.state.campingRequested).toBe(true);
+    const afterCaravan = turn('I want a caravan park', withTrue.state, 1);
+    expect(afterCaravan.state.campingRequested).toBe(true);
 
-    const withFalse = turn('change', afterCampWords.state, 2, {
+    const withFalse = turn('change', afterCaravan.state, 2, {
       campingRequested: false,
     });
     expect(withFalse.state.campingRequested).toBe(false);
 
-    const afterMoreWords = turn('campsite caravan tent', withFalse.state, 3);
+    const afterMoreWords = turn('camping gear', withFalse.state, 3);
     expect(afterMoreWords.state.campingRequested).toBe(false);
   });
 
@@ -226,7 +307,7 @@ describe('phase 3O — explicit campingRequested only', () => {
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('camp camping caravan', first.state, 1);
+    const second = turn('caravan tent glamping', first.state, 1);
     expect(second.state.campingRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.state.transcript[0]).toEqual(first.state.transcript[0]);
