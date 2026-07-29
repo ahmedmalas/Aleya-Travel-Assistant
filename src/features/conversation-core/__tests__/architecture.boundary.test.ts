@@ -43,6 +43,13 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/turnCount: 0/);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
+    expect(types).toMatch(/role: 'assistant'/);
+    expect(processTurn).toMatch(/userEntryId/);
+    expect(processTurn).toMatch(/assistantEntryId/);
+    expect(processTurn).toMatch(/userMessageAt/);
+    expect(processTurn).toMatch(/assistantMessageAt/);
+    expect(processTurn.includes('crypto.randomUUID')).toBe(false);
+    expect(processTurn.includes('new Date()')).toBe(false);
   });
 
   it('has no old engine, persistence, travel-feature, or message-interpretation code', () => {

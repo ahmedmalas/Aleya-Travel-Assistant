@@ -4,7 +4,7 @@ import {
   type ConversationTranscriptEntry,
 } from './types';
 
-/** Temporary boundary reply — no capture of assistant text, inference, or search. */
+/** Temporary boundary reply — no capture of assistant intelligence, inference, or search. */
 export const ENGINE_NOT_ASSEMBLED_REPLY =
   'The new Aleya conversation engine has not been assembled yet. Trip planning turns are temporarily unavailable.';
 
@@ -16,14 +16,15 @@ export type ProcessConversationTurnTrace = {
   messageInterpreted: false;
   persistenceUsed: false;
   userMessageRecorded: true;
+  assistantMessageRecorded: true;
 };
 
 export type ProcessConversationTurnInput = {
   message: string;
-  /** Required — used as the transcript entry timestamp (ISO from this instant). */
-  now: Date;
-  /** Required — transcript entry id (injected for determinism). */
-  entryId: string;
+  userEntryId: string;
+  assistantEntryId: string;
+  userMessageAt: Date;
+  assistantMessageAt: Date;
   state?: ConversationCoreState;
   /** Required when `state` is omitted — keeps the factory free of hidden globals. */
   conversationId?: string;
@@ -43,24 +44,33 @@ const RECORDING_TRACE: ProcessConversationTurnTrace = {
   messageInterpreted: false,
   persistenceUsed: false,
   userMessageRecorded: true,
+  assistantMessageRecorded: true,
 };
 
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 2A: append the raw user message to transcript exactly as received.
- * Does not interpret, trim, normalise, record assistant replies, increment
- * turns, or persist.
+ * Phase 2B: append raw user message then the existing placeholder assistant
+ * reply. Does not interpret, trim, normalise, increment turns, update lifecycle
+ * timestamps, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
 ): ProcessConversationTurnResult {
   const base = resolveBaseState(input);
-  const entry: ConversationTranscriptEntry = {
-    id: input.entryId,
+
+  const userEntry: ConversationTranscriptEntry = {
+    id: input.userEntryId,
     role: 'user',
     message: input.message,
-    timestamp: input.now.toISOString(),
+    timestamp: input.userMessageAt.toISOString(),
+  };
+
+  const assistantEntry: ConversationTranscriptEntry = {
+    id: input.assistantEntryId,
+    role: 'assistant',
+    message: ENGINE_NOT_ASSEMBLED_REPLY,
+    timestamp: input.assistantMessageAt.toISOString(),
   };
 
   const state: ConversationCoreState = {
@@ -69,7 +79,7 @@ export function processConversationTurn(
     turnCount: 0,
     createdAt: base.createdAt,
     updatedAt: base.updatedAt,
-    transcript: [...base.transcript, entry],
+    transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
   return {
@@ -90,6 +100,6 @@ function resolveBaseState(input: ProcessConversationTurnInput): ConversationCore
 
   return createInitialConversationCoreState({
     conversationId: input.conversationId,
-    now: input.now,
+    now: input.userMessageAt,
   });
 }

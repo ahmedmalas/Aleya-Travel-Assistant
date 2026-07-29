@@ -5,7 +5,7 @@
  * - createInitialConversationCoreState (sole state factory)
  * - processConversationTurn (sole turn entry)
  *
- * Phase 2A records raw user transcript entries only.
+ * Phase 2B records raw user + placeholder assistant transcript entries only.
  * Persistence namespace is reserved and must not be enabled yet.
  */
 
