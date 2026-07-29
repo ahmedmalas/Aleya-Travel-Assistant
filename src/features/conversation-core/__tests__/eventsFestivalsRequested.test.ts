@@ -6,7 +6,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 
-const CONVERSATION_ID = 'conversation-core-fishing-requested-001';
+const CONVERSATION_ID = 'conversation-core-events-festivals-requested-001';
 const CREATED_AT = new Date('2026-07-29T00:00:00.000Z');
 
 function turn(
@@ -54,13 +54,13 @@ function turn(
   });
 }
 
-describe('phase 3V/7V — explicit fishingRequested with extraction activation', () => {
-  it('initial fishingRequested is null', () => {
+describe('phase 3Y/7Y — explicit eventsFestivalsRequested with extraction activation', () => {
+  it('initial eventsFestivalsRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    expect(state.fishingRequested).toBeNull();
+    expect(state.eventsFestivalsRequested).toBeNull();
   });
 
   it('explicit true is stored', () => {
@@ -68,10 +68,10 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const result = turn('I want fishing', initial, 0, {
-      fishingRequested: true,
+    const result = turn('I want events', initial, 0, {
+      eventsFestivalsRequested: true,
     });
-    expect(result.state.fishingRequested).toBe(true);
+    expect(result.state.eventsFestivalsRequested).toBe(true);
   });
 
   it('explicit false is stored', () => {
@@ -79,16 +79,16 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const withTrue = turn('need charters', initial, 0, {
-      fishingRequested: true,
+    const withTrue = turn('need concerts', initial, 0, {
+      eventsFestivalsRequested: true,
     });
-    expect(withTrue.state.fishingRequested).toBe(true);
+    expect(withTrue.state.eventsFestivalsRequested).toBe(true);
 
-    const withFalse = turn('no charters', withTrue.state, 1, {
-      fishingRequested: false,
+    const withFalse = turn('no concerts', withTrue.state, 1, {
+      eventsFestivalsRequested: false,
     });
-    expect(withFalse.state.fishingRequested).toBe(false);
-    expect(withFalse.state.fishingRequested).not.toBeNull();
+    expect(withFalse.state.eventsFestivalsRequested).toBe(false);
+    expect(withFalse.state.eventsFestivalsRequested).not.toBeNull();
   });
 
   it('omission preserves a previous true', () => {
@@ -97,12 +97,12 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      fishingRequested: true,
+      eventsFestivalsRequested: true,
     });
-    expect(first.state.fishingRequested).toBe(true);
+    expect(first.state.eventsFestivalsRequested).toBe(true);
 
-    const second = turn('seafood fish charters', first.state, 1);
-    expect(second.state.fishingRequested).toBe(true);
+    const second = turn('concerts shows markets', first.state, 1);
+    expect(second.state.eventsFestivalsRequested).toBe(true);
   });
 
   it('omission preserves a previous false', () => {
@@ -111,33 +111,36 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      fishingRequested: false,
+      eventsFestivalsRequested: false,
     });
-    expect(first.state.fishingRequested).toBe(false);
+    expect(first.state.eventsFestivalsRequested).toBe(false);
 
-    const second = turn('fishing charters deep-sea fishing', first.state, 1);
-    expect(second.state.fishingRequested).toBe(false);
+    const second = turn('music festivals sporting events', first.state, 1);
+    expect(second.state.eventsFestivalsRequested).toBe(false);
   });
 
-  it('user message text cannot set fishingRequested from unsupported wording', () => {
+  it('user message text cannot set eventsFestivalsRequested from unsupported wording', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'fish',
-      'seafood',
-      'charters',
-      'boats',
-      'tackle',
-      'fishing charters',
-      'deep-sea fishing',
+      'concerts',
+      'shows',
+      'markets',
+      'exhibitions',
+      'sporting events',
+      'nightlife',
+      'what is on',
+      'Sydney',
+      'Melbourne',
+      'Brisbane',
     ];
 
     let state = initial;
     phrases.forEach((message, index) => {
       const result = turn(message, state, index);
-      expect(result.state.fishingRequested).toBeNull();
+      expect(result.state.eventsFestivalsRequested).toBeNull();
       state = result.state;
     });
   });
@@ -148,24 +151,24 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const withTrue = turn('Hello', initial, 0, {
-      fishingRequested: true,
+      eventsFestivalsRequested: true,
     });
-    expect(withTrue.state.fishingRequested).toBe(true);
+    expect(withTrue.state.eventsFestivalsRequested).toBe(true);
 
-    const afterWords = turn('fishing charters seafood', withTrue.state, 1);
-    expect(afterWords.state.fishingRequested).toBe(true);
+    const afterWords = turn('music festivals concerts', withTrue.state, 1);
+    expect(afterWords.state.eventsFestivalsRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
-      fishingRequested: false,
+      eventsFestivalsRequested: false,
     });
-    expect(withFalse.state.fishingRequested).toBe(false);
+    expect(withFalse.state.eventsFestivalsRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'seafood fish charters tackle',
+      'concerts shows markets nightlife',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.fishingRequested).toBe(false);
+    expect(afterMoreWords.state.eventsFestivalsRequested).toBe(false);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {
@@ -200,6 +203,9 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       wineriesFoodTrailsRequested: true,
       eventsFestivalsRequested: true,
     });
+    expect(first.state.eventsFestivalsRequested).toBe(true);
+    expect(first.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(first.state.divingSnorkellingRequested).toBe(true);
     expect(first.state.fishingRequested).toBe(true);
     expect(first.state.hikingWalkingRequested).toBe(true);
     expect(first.state.snowActivitiesRequested).toBe(true);
@@ -208,10 +214,13 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
     expect(first.state.status).toBe('active');
     expect(first.state.turnCount).toBe(1);
 
-    const second = turn('no fishing', first.state, 1, {
-      fishingRequested: false,
+    const second = turn('no events', first.state, 1, {
+      eventsFestivalsRequested: false,
     });
-    expect(second.state.fishingRequested).toBe(false);
+    expect(second.state.eventsFestivalsRequested).toBe(false);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(second.state.divingSnorkellingRequested).toBe(true);
+    expect(second.state.fishingRequested).toBe(true);
     expect(second.state.hikingWalkingRequested).toBe(true);
     expect(second.state.origin).toBe('Sydney');
     expect(second.state.turnCount).toBe(2);
@@ -223,7 +232,7 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       now: CREATED_AT,
     });
     const first = turn('Sydney to Gold Coast!!!!', initial, 0, {
-      fishingRequested: true,
+      eventsFestivalsRequested: true,
     });
 
     expect(first.state.transcript.map((entry) => entry.role)).toEqual([
@@ -234,8 +243,8 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('seafood fish charters', first.state, 1);
-    expect(second.state.fishingRequested).toBe(true);
+    const second = turn('concerts shows markets', first.state, 1);
+    expect(second.state.eventsFestivalsRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });

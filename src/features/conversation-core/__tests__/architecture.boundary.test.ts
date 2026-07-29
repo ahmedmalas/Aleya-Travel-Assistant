@@ -76,6 +76,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/fishingRequested\?: boolean \| null/);
     expect(types).toMatch(/divingSnorkellingRequested\?: boolean \| null/);
     expect(types).toMatch(/wineriesFoodTrailsRequested\?: boolean \| null/);
+    expect(types).toMatch(/eventsFestivalsRequested\?: boolean \| null/);
     expect(types).toMatch(/toursRequested\?: boolean \| null/);
     expect(types).toMatch(/eventsRequested\?: boolean \| null/);
     expect(types).toMatch(/nightlifeRequested\?: boolean \| null/);
@@ -374,6 +375,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/wineriesFoodTrailsRequested: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.wineriesFoodTrailsRequested !== undefined[\s\S]*\? stateUpdate\.wineriesFoodTrailsRequested[\s\S]*: currentState\.wineriesFoodTrailsRequested/,
+    );
+    expect(types).toMatch(/eventsFestivalsRequested: boolean \| null/);
+    expect(types).toMatch(/eventsFestivalsRequested: null,/);
+    expect(applyUpdate).toMatch(
+      /stateUpdate\?\.eventsFestivalsRequested !== undefined[\s\S]*\? stateUpdate\.eventsFestivalsRequested[\s\S]*: currentState\.eventsFestivalsRequested/,
     );
     expect(types).toMatch(/toursRequested: boolean \| null/);
     expect(types).toMatch(/toursRequested: null,/);
@@ -927,12 +933,22 @@ describe('conversation-core architectural boundary', () => {
       /export class EventsFestivalsRequestedConversationStateExtractor/,
     );
     expect(eventsFestivalsRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(eventsFestivalsRequestedExtractor.includes('input.message')).toBe(false);
+    expect(eventsFestivalsRequestedExtractor).toMatch(/input\.message/);
     expect(eventsFestivalsRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(eventsFestivalsRequestedExtractor.includes('.trim(')).toBe(false);
     expect(eventsFestivalsRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(eventsFestivalsRequestedExtractor.includes('includes(')).toBe(false);
+    expect(eventsFestivalsRequestedExtractor).toMatch(
+      /eventsFestivalsRequested:\s*true/,
+    );
+    expect(
+      eventsFestivalsRequestedExtractor.includes('eventsFestivalsRequested: false'),
+    ).toBe(false);
+    expect(
+      eventsFestivalsRequestedExtractor.includes('eventsFestivalsRequested: null'),
+    ).toBe(false);
     const wildlifeRequestedExtractor = readSrc(
       'src/features/conversation-core/extractors/WildlifeRequestedConversationStateExtractor.ts',
     );

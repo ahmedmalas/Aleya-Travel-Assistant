@@ -1185,18 +1185,33 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for events-festivals-requested-like text', () => {
+  it('factory-created extraction sets eventsFestivalsRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ eventsFestivalsRequested: false });
 
     expect(
       extractor.extract({ message: 'show me festivals', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'events', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'Sydney Festival', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'Vivid Sydney', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'no festivals', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'local events', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'no concerts', currentState }),
+      extractor.extract({ message: 'concerts', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Brisbane', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 });
