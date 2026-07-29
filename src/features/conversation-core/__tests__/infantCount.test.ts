@@ -57,7 +57,7 @@ describe('phase 3G — explicit infantCount only', () => {
     expect(odd.state.infantCount).toBe(-1.5);
   });
 
-  it('omitting infantCount preserves the existing value', () => {
+  it('omitting infantCount preserves the existing value when the message is unsupported', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -65,7 +65,7 @@ describe('phase 3G — explicit infantCount only', () => {
     const first = turn('Hello', initial, 0, { infantCount: 1 });
     expect(first.state.infantCount).toBe(1);
 
-    const second = turn('2 infants travelling', first.state, 1);
+    const second = turn('infant travellers', first.state, 1);
     expect(second.state.infantCount).toBe(1);
   });
 
@@ -81,16 +81,16 @@ describe('phase 3G — explicit infantCount only', () => {
     expect(second.state.infantCount).toBe(2);
   });
 
-  it('message text alone never changes infantCount', () => {
+  it('unsupported infant wording in the user message alone never changes infantCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      '1 infant',
-      'two infants',
       'babies: 3',
       'infant travellers',
+      'travelling with a baby',
+      'a six-month-old baby',
     ];
 
     let state = initial;
@@ -99,6 +99,29 @@ describe('phase 3G — explicit infantCount only', () => {
       expect(result.state.infantCount).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit infant-count cue in the message updates infantCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('1 infant', initial, 0);
+    expect(result.state.infantCount).toBe(1);
+  });
+
+  it('trusted explicit stateUpdate.infantCount overrides an extracted infantCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overridden = turn('1 infant', initial, 0, { infantCount: 3 });
+    expect(overridden.state.infantCount).toBe(3);
+
+    const nullOverride = turn('1 infant', initial, 1, {
+      infantCount: null as unknown as number,
+    });
+    expect(nullOverride.state.infantCount).toBeNull();
   });
 
   it('adultCount, childCount and earlier fields remain preserved when infantCount changes', () => {

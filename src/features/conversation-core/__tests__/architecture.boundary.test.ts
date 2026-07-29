@@ -498,9 +498,11 @@ describe('conversation-core architectural boundary', () => {
     expect(infantCountExtractor).toMatch(
       /export class InfantCountConversationStateExtractor/,
     );
-    expect(infantCountExtractor).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(infantCountExtractor.includes('input.message')).toBe(false);
+    expect(infantCountExtractor).toMatch(/input: ConversationStateExtractionInput/);
+    expect(infantCountExtractor).toMatch(/input\.message/);
     expect(infantCountExtractor.includes('input.currentState')).toBe(false);
+    expect(infantCountExtractor.includes('.trim(')).toBe(false);
+    expect(infantCountExtractor.includes('.toLowerCase(')).toBe(false);
     expect(infantCountExtractor.includes('Number(')).toBe(false);
     expect(infantCountExtractor.includes('parseInt')).toBe(false);
     const flightsRequestedExtractor = readSrc(
