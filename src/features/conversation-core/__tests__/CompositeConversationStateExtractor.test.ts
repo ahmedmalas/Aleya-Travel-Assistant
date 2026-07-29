@@ -15,6 +15,7 @@ import {
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
@@ -339,7 +340,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -351,9 +352,10 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     }
   });
 
-  it('production destination-origin-departure-return-adult-count-empty sequence stays empty without altering merge behaviour', () => {
+  it('production destination-origin-departure-return-adult-child-count-empty sequence stays empty without altering merge behaviour', () => {
     const input: ConversationStateExtractionInput = {
-      message: 'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults',
+      message:
+        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child',
       currentState: createState(),
     };
     const received: ConversationStateExtractionInput[] = [];
@@ -362,6 +364,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     const departureDate = new DepartureDateConversationStateExtractor();
     const returnDate = new ReturnDateConversationStateExtractor();
     const adultCount = new AdultCountConversationStateExtractor();
+    const childCount = new ChildCountConversationStateExtractor();
     const empty = new EmptyConversationStateExtractor();
     const destinationExtract = vi
       .spyOn(destination, 'extract')
@@ -393,6 +396,12 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
         received.push(receivedInput);
         return { stateUpdate: {} };
       });
+    const childCountExtract = vi
+      .spyOn(childCount, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
     const emptyExtract = vi
       .spyOn(empty, 'extract')
       .mockImplementation((receivedInput) => {
@@ -406,6 +415,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       departureDate,
       returnDate,
       adultCount,
+      childCount,
       empty,
     ]);
     const first = production.extract(input);
@@ -420,8 +430,9 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(departureDateExtract).toHaveBeenCalledTimes(2);
     expect(returnDateExtract).toHaveBeenCalledTimes(2);
     expect(adultCountExtract).toHaveBeenCalledTimes(2);
+    expect(childCountExtract).toHaveBeenCalledTimes(2);
     expect(emptyExtract).toHaveBeenCalledTimes(2);
-    expect(received).toHaveLength(12);
+    expect(received).toHaveLength(14);
     expect(received.every((value) => value === input)).toBe(true);
 
     const mergeStillWorks = new CompositeConversationStateExtractor([
@@ -430,6 +441,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       stubExtractor({ departureDate: '2026-10-15' }),
       stubExtractor({ returnDate: '2026-10-22' }),
       stubExtractor({ adultCount: 3 }),
+      stubExtractor({ childCount: 2 }),
       stubExtractor({}),
     ]).extract(input);
     expect(mergeStillWorks.stateUpdate).toEqual({
@@ -438,6 +450,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       departureDate: '2026-10-15',
       returnDate: '2026-10-22',
       adultCount: 3,
+      childCount: 2,
     });
   });
 
