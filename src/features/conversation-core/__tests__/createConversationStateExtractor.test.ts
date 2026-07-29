@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as conversationCore from '../index';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import {
@@ -25,6 +26,16 @@ function createState(
   };
 }
 
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
 function listSourceFiles(dir: string): string[] {
   const entries = readdirSync(dir);
   const files: string[] = [];
@@ -45,21 +56,17 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 5E — createConversationStateExtractor factory only', () => {
+describe('phase 5E/5J — createConversationStateExtractor factory', () => {
   it('accepts no arguments', () => {
     expectTypeOf(createConversationStateExtractor).parameters.toEqualTypeOf<[]>([]);
     expectTypeOf(createConversationStateExtractor).returns.toEqualTypeOf<ConversationStateExtractor>();
   });
 
-  it('returns a value implementing ConversationStateExtractor', () => {
+  it('returns a CompositeConversationStateExtractor implementing the contract', () => {
     const extractor = createConversationStateExtractor();
     expectTypeOf(extractor).toMatchTypeOf<ConversationStateExtractor>();
+    expect(extractor).toBeInstanceOf(CompositeConversationStateExtractor);
     expect(typeof extractor.extract).toBe('function');
-  });
-
-  it('returns an EmptyConversationStateExtractor', () => {
-    const extractor = createConversationStateExtractor();
-    expect(extractor).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('returned extractor accepts ConversationStateExtractionInput and returns empty update', () => {
@@ -106,20 +113,34 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('separate factory calls return separate extractor instances', () => {
+  it('separate factory calls return separate composites, sequences, and empty extractors', () => {
     const first = createConversationStateExtractor();
     const second = createConversationStateExtractor();
 
     expect(first).not.toBe(second);
-    expect(first).toBeInstanceOf(EmptyConversationStateExtractor);
-    expect(second).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(first).toBeInstanceOf(CompositeConversationStateExtractor);
+    expect(second).toBeInstanceOf(CompositeConversationStateExtractor);
+
+    const firstExtractors = readExtractors(
+      first as CompositeConversationStateExtractor,
+    );
+    const secondExtractors = readExtractors(
+      second as CompositeConversationStateExtractor,
+    );
+
+    expect(firstExtractors).not.toBe(secondExtractors);
+    expect(firstExtractors).toHaveLength(1);
+    expect(secondExtractors).toHaveLength(1);
+    expect(firstExtractors[0]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(secondExtractors[0]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(firstExtractors[0]).not.toBe(secondExtractors[0]);
   });
 
   it('extractor instances do not share state', () => {
-    const first = createConversationStateExtractor() as EmptyConversationStateExtractor & {
+    const first = createConversationStateExtractor() as CompositeConversationStateExtractor & {
       retained?: string;
     };
-    const second = createConversationStateExtractor() as EmptyConversationStateExtractor & {
+    const second = createConversationStateExtractor() as CompositeConversationStateExtractor & {
       retained?: string;
     };
 
@@ -158,7 +179,7 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     expect(secondResult).toEqual({ stateUpdate: {} });
   });
 
-  it('retains no input or extraction result', () => {
+  it('retains no input or extraction result and uses fixed composite construction', () => {
     const factorySource = readFileSync(
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
       'utf8',
@@ -167,9 +188,12 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     expect(factorySource).toMatch(
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
-    expect(factorySource).toMatch(/return new EmptyConversationStateExtractor\(\);/);
-    expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap/);
+    expect(factorySource).toMatch(
+      /return new CompositeConversationStateExtractor\(\[\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+    );
+    expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap|registry/);
     expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
+    expect(factorySource).not.toMatch(/=\s*createConversationStateExtractor\(/);
 
     const extractor = createConversationStateExtractor();
     const result = extractor.extract({
@@ -199,15 +223,17 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
 
     expect(index).not.toMatch(/createConversationStateExtractor/);
     expect(index).not.toMatch(/EmptyConversationStateExtractor/);
+    expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('createConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('EmptyConversationStateExtractor');
+    expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(runtimeExports.filter((name) => /extract/i.test(name))).toEqual([]);
     expect(index).not.toMatch(/export function extract/);
     expect(conversationCore).not.toHaveProperty('defaultExtractor');
     expect(conversationCore).not.toHaveProperty('conversationStateExtractor');
   });
 
-  it('keeps processConversationTurn unchanged as the only public runtime processor', () => {
+  it('keeps processConversationTurn as the only public runtime processor', () => {
     const processTurn = readFileSync(
       resolve(ROOT, 'src/features/conversation-core/processTurn.ts'),
       'utf8',
@@ -220,6 +246,7 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
 
     expect(processTurn).not.toMatch(/createConversationStateExtractor/);
     expect(processTurn).not.toMatch(/EmptyConversationStateExtractor/);
+    expect(processTurn).not.toMatch(/CompositeConversationStateExtractor/);
     expect(runtimeExports).toEqual(['processConversationTurn']);
     expect(typeof conversationCore.processConversationTurn).toBe('function');
   });
@@ -228,6 +255,7 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     const allowed = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
       resolve(ROOT, 'src/features/conversation-core/emptyConversationStateExtractor.ts'),
+      resolve(ROOT, 'src/features/conversation-core/CompositeConversationStateExtractor.ts'),
       resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
@@ -239,7 +267,7 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
       expect(src.includes('createConversationStateExtractor'), file).toBe(false);
       expect(src.includes('EmptyConversationStateExtractor'), file).toBe(false);
       expect(src.includes('emptyConversationStateExtractor'), file).toBe(false);
+      expect(src.includes('CompositeConversationStateExtractor'), file).toBe(false);
     }
   });
 });
-
