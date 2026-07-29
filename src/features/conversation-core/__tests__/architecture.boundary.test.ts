@@ -423,9 +423,11 @@ describe('conversation-core architectural boundary', () => {
     expect(destinationExtractor).toMatch(
       /export class DestinationConversationStateExtractor/,
     );
-    expect(destinationExtractor).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(destinationExtractor.includes('input.message')).toBe(false);
+    expect(destinationExtractor).toMatch(/input: ConversationStateExtractionInput/);
+    expect(destinationExtractor).toMatch(/input\.message/);
     expect(destinationExtractor.includes('input.currentState')).toBe(false);
+    expect(destinationExtractor.includes('.trim(')).toBe(false);
+    expect(destinationExtractor.includes('.toLowerCase(')).toBe(false);
     const originExtractor = readSrc(
       'src/features/conversation-core/OriginConversationStateExtractor.ts',
     );

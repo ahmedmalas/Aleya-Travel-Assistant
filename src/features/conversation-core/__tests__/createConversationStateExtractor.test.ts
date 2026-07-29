@@ -331,6 +331,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       message: 'Go to Brisbane',
       currentState: createState({ destination: 'Sydney' }),
     });
+    expect(firstResult).toEqual({ stateUpdate: { destination: 'Brisbane' } });
     firstResult.stateUpdate.destination = 'mutated';
 
     const secondResult = second.extract({
@@ -338,8 +339,8 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       currentState: createState({ destination: 'Melbourne' }),
     });
 
-    expect(secondResult).toEqual({ stateUpdate: {} });
-    expect(secondResult.stateUpdate).not.toHaveProperty('destination');
+    expect(secondResult).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(secondResult.stateUpdate).not.toBe(firstResult.stateUpdate);
   });
 
   it('results and stateUpdate objects from separate extractors are separate', () => {

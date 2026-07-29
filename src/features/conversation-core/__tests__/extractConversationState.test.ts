@@ -182,6 +182,7 @@ describe('phase 5F — extractConversationState execution only', () => {
       message: 'Go to Brisbane',
       currentState: createState({ destination: 'Sydney' }),
     });
+    expect(first).toEqual({ stateUpdate: { destination: 'Brisbane' } });
     first.stateUpdate.destination = 'mutated outside extractor';
 
     const second = extractConversationState({
@@ -189,8 +190,15 @@ describe('phase 5F — extractConversationState execution only', () => {
       currentState: createState({ destination: 'Melbourne' }),
     });
 
-    expect(second).toEqual({ stateUpdate: {} });
-    expect(second.stateUpdate).not.toHaveProperty('destination');
+    expect(second).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(second.stateUpdate).not.toBe(first.stateUpdate);
+
+    const unsupported = extractConversationState({
+      message: 'Brisbane',
+      currentState: createState({ destination: 'Perth' }),
+    });
+    expect(unsupported).toEqual({ stateUpdate: {} });
+    expect(unsupported.stateUpdate).not.toHaveProperty('destination');
   });
 
   it('delegates through createConversationStateExtractor without duplicating empty logic', () => {

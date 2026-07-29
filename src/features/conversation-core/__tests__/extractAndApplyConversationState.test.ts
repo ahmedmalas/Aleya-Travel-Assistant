@@ -129,14 +129,14 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     expect(result).not.toHaveProperty('stateUpdate');
   });
 
-  it('preserves destination, origin, and dates', () => {
+  it('applies explicit destination cues while preserving origin and dates', () => {
     const currentState = createState();
     const result = extractAndApplyConversationState({
-      message: 'Change destination to Cairns from Brisbane next week',
+      message: 'Change destination to Cairns for three adults',
       currentState,
     });
 
-    expect(result.destination).toBe('Gold Coast');
+    expect(result.destination).toBe('Cairns');
     expect(result.origin).toBe('Sydney');
     expect(result.departureDate).toBe('2026-08-15');
     expect(result.returnDate).toBe('2026-08-22');
@@ -199,7 +199,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     expect(result.transcript).toBe(currentState.transcript);
   });
 
-  it('message text cannot create, clear, or replace state values', () => {
+  it('explicit destination cues update state while unsupported messages do not', () => {
     const currentState = createState({ destination: 'Hobart', origin: 'Melbourne' });
     const created = extractAndApplyConversationState({
       message: 'I want to visit Darwin',
@@ -214,10 +214,10 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       currentState,
     });
 
-    expect(created.destination).toBeNull();
+    expect(created.destination).toBe('Darwin');
     expect(cleared.destination).toBe('Hobart');
     expect(cleared.origin).toBe('Melbourne');
-    expect(replaced.destination).toBe('Hobart');
+    expect(replaced.destination).toBe('Cairns');
   });
 
   it('does not mutate the input wrapper, canonical state, or transcript', () => {
@@ -329,6 +329,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       message: 'Go to Perth',
       currentState: firstState,
     });
+    expect(first.destination).toBe('Perth');
     first.destination = 'mutated';
 
     const secondA = extractAndApplyConversationState({

@@ -46,7 +46,7 @@ describe('phase 3A — explicit destination only', () => {
     expect(result.state.destination).toBe('  Gold Coast!!!!  ');
   });
 
-  it('omitting destination preserves the existing value', () => {
+  it('omitting destination preserves the existing value when the message is unsupported', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -54,7 +54,7 @@ describe('phase 3A — explicit destination only', () => {
     const first = turn('Hello', initial, 0, 'Melbourne');
     expect(first.state.destination).toBe('Melbourne');
 
-    const second = turn('go to Sydney instead', first.state, 1);
+    const second = turn('hello again', first.state, 1);
     expect(second.state.destination).toBe('Melbourne');
   });
 
@@ -70,17 +70,17 @@ describe('phase 3A — explicit destination only', () => {
     expect(second.state.destination).toBe('Gold Coast');
   });
 
-  it('user message text alone never changes destination', () => {
+  it('unsupported user message text alone never changes destination', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
       'to Melbourne',
-      'go to Sydney',
-      'visit Gold Coast',
       'change to Brisbane',
       'instead of Perth',
+      'Brisbane',
+      'Sydney please',
     ];
 
     let state = initial;
@@ -89,6 +89,24 @@ describe('phase 3A — explicit destination only', () => {
       expect(result.state.destination).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit destination cue in the message updates destination', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('go to Sydney', initial, 0);
+    expect(result.state.destination).toBe('Sydney');
+  });
+
+  it('trusted explicit stateUpdate overrides an extracted destination', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('go to Brisbane', initial, 0, 'Perth');
+    expect(result.state.destination).toBe('Perth');
   });
 
   it('preserves transcript, status, turn count, timestamps and placeholder reply', () => {

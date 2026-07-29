@@ -725,7 +725,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(createConversationStateExtractor().extract({
       message: 'Go to Cairns',
       currentState,
-    })).toEqual({ stateUpdate: {} });
+    })).toEqual({ stateUpdate: { destination: 'Cairns' } });
     expect(result.state.destination).toBe('Sydney');
     expect(result.state.flightsRequested).toBe(false);
     expect(result.state.origin).toBe('Melbourne');

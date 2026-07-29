@@ -180,14 +180,17 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     ]);
   });
 
-  it('preserves destination, origin, dates, and traveller counts', () => {
+  it('applies explicit destination cues while preserving origin, dates, and traveller counts', () => {
     const currentState = createState();
-    const { nextState } = transitionConversationStateFromExtraction({
-      message: 'Change destination to Cairns for three adults',
-      currentState,
-    });
+    const { nextState, hasStateChanged, extractionResult } =
+      transitionConversationStateFromExtraction({
+        message: 'Change destination to Cairns for three adults',
+        currentState,
+      });
 
-    expect(nextState.destination).toBe('Gold Coast');
+    expect(extractionResult).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(hasStateChanged).toBe(true);
+    expect(nextState.destination).toBe('Cairns');
     expect(nextState.origin).toBe('Sydney');
     expect(nextState.departureDate).toBe('2026-08-15');
     expect(nextState.returnDate).toBe('2026-08-22');
@@ -241,7 +244,7 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     expect(nextState.transcript).toBe(currentState.transcript);
   });
 
-  it('message text cannot create, clear, or replace state values', () => {
+  it('explicit destination cues update state while unsupported messages do not', () => {
     const currentState = createState({ destination: 'Hobart', origin: 'Melbourne' });
     const created = transitionConversationStateFromExtraction({
       message: 'I want to visit Darwin',
@@ -256,11 +259,14 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
       currentState,
     });
 
-    expect(created.nextState.destination).toBeNull();
-    expect(created.hasStateChanged).toBe(false);
+    expect(created.nextState.destination).toBe('Darwin');
+    expect(created.hasStateChanged).toBe(true);
+    expect(created.extractionResult).toEqual({
+      stateUpdate: { destination: 'Darwin' },
+    });
     expect(cleared.nextState.destination).toBe('Hobart');
     expect(cleared.nextState.origin).toBe('Melbourne');
-    expect(replaced.nextState.destination).toBe('Hobart');
+    expect(replaced.nextState.destination).toBe('Cairns');
   });
 
   it('does not mutate the input wrapper, canonical state, or transcript', () => {
@@ -389,6 +395,8 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
       message: 'Go to Perth',
       currentState: firstState,
     });
+    expect(first.nextState.destination).toBe('Perth');
+    expect(first.hasStateChanged).toBe(true);
     first.nextState.destination = 'mutated';
     first.extractionResult.stateUpdate.destination = 'mutated-update';
 

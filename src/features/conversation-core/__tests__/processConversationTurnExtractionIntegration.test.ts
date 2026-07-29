@@ -315,7 +315,7 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
     expect(clearedAttempt.state.destination).toBe('Brisbane');
 
     const replacedAttempt = runTurn('Actually go to Cairns', currentState);
-    expect(replacedAttempt.state.destination).toBe('Brisbane');
+    expect(replacedAttempt.state.destination).toBe('Cairns');
 
     const first = runTurn('one', seededState({ destination: 'Hobart' }));
     first.state.destination = 'mutated';
