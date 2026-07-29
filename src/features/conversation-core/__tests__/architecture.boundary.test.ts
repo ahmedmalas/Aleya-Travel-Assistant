@@ -730,6 +730,8 @@ describe('conversation-core architectural boundary', () => {
     expect(nearbyDiscoveryRequestedExtractor).toMatch(
       /export class NearbyDiscoveryRequestedConversationStateExtractor/,
     );
+    expect(nearbyDiscoveryRequestedExtractor).toContain('Phase 7M');
+    expect(nearbyDiscoveryRequestedExtractor).toContain('Phase 8M');
     expect(nearbyDiscoveryRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

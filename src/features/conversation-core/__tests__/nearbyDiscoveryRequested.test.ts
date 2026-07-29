@@ -123,6 +123,9 @@ describe('phase 3M — explicit nearbyDiscoveryRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
+      'nearby',
+      'close',
+      'around',
       'around here',
       'what is close',
       'hotel near the beach',
@@ -136,6 +139,72 @@ describe('phase 3M — explicit nearbyDiscoveryRequested only', () => {
       expect(result.state.nearbyDiscoveryRequested).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit nearby-discovery cue in the message sets nearbyDiscoveryRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('what is nearby', initial, 0);
+    expect(result.state.nearbyDiscoveryRequested).toBe(true);
+  });
+
+  it('phase 8M clear nearby-discovery cues set nearbyDiscoveryRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const aroundMe = turn('what is around me', initial, 0);
+    expect(aroundMe.state.nearbyDiscoveryRequested).toBe(true);
+    expect(aroundMe.state.activitiesRequested).toBeNull();
+    expect(aroundMe.state.restaurantsRequested).toBeNull();
+
+    const placesNearMe = turn('places near me', initial, 1);
+    expect(placesNearMe.state.nearbyDiscoveryRequested).toBe(true);
+
+    const closeBy = turn('places close by', initial, 2);
+    expect(closeBy.state.nearbyDiscoveryRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me what is nearby in Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.nearbyDiscoveryRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, {
+      nearbyDiscoveryRequested: false,
+    });
+    const negated = turn('no nearby discovery', seeded.state, 5);
+    expect(negated.state.nearbyDiscoveryRequested).toBe(false);
+    const bare = turn('nearby', seeded.state, 6);
+    expect(bare.state.nearbyDiscoveryRequested).toBe(false);
+    const constraint = turn('hotel near the beach', seeded.state, 7);
+    expect(constraint.state.nearbyDiscoveryRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.nearbyDiscoveryRequested overrides an extracted nearby-discovery request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('what is nearby', initial, 0, {
+      nearbyDiscoveryRequested: false,
+    });
+    expect(overriddenFalse.state.nearbyDiscoveryRequested).toBe(false);
+
+    const overriddenTrue = turn('no nearby discovery', initial, 1, {
+      nearbyDiscoveryRequested: true,
+    });
+    expect(overriddenTrue.state.nearbyDiscoveryRequested).toBe(true);
+
+    const nullOverride = turn('what is nearby', initial, 2, {
+      nearbyDiscoveryRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.nearbyDiscoveryRequested).toBeNull();
   });
 
   it('all existing request flags and earlier fields remain preserved', () => {

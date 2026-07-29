@@ -14,6 +14,7 @@ import {
 import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
 import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
@@ -40,6 +41,10 @@ const RESTAURANTS_REQUESTED_SOURCE = resolve(
 const ACTIVITIES_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
+);
+const BEACHES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
 );
 const CAR_HIRE_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -87,7 +92,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7m',
+      conversationId: 'conversation-8m',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -147,7 +152,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activation', () => {
+describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit nearbyDiscoveryRequested true contract', () => {
     expectTypeOf<NearbyDiscoveryRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<NearbyDiscoveryRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -167,19 +172,59 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
   it('extracts supported explicit nearby-discovery-request forms as true', () => {
     const extractor = new NearbyDiscoveryRequestedConversationStateExtractor();
     const cases = [
-      'nearby',
-      'near me',
-      'nearby attractions',
-      "what's nearby",
       'what is nearby',
+      "what's nearby",
+      'show me nearby places',
+      'find nearby places',
+      'places near me',
+      'things near me',
+      'what is around me',
+      "what's around here",
+      'show me what is around',
+      'nearby attractions',
+      'nearby activities',
+      'nearby restaurants',
+      'nearby beaches',
+      'nearby places to visit',
+      'places close by',
+      'what is close to me',
+      'near me',
       'things nearby',
       'show nearby',
       'find nearby',
       'show me nearby',
       'find me nearby',
+      'show me what is nearby in Brisbane',
+      'find places near my hotel',
+      'what is around Surfers Paradise',
+      'show me nearby restaurants and activities',
+      'I want places close to where I am staying',
     ];
 
     for (const message of cases) {
+      const result = extractor.extract({
+        message,
+        currentState: createState({ nearbyDiscoveryRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { nearbyDiscoveryRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
+    }
+  });
+
+  it('emits only nearbyDiscoveryRequested from nearby restaurants, beaches and activities wording', () => {
+    const extractor = new NearbyDiscoveryRequestedConversationStateExtractor();
+    for (const message of [
+      'nearby restaurants',
+      'nearby beaches',
+      'nearby activities',
+    ]) {
       expect(
         extractor.extract({
           message,
@@ -190,24 +235,38 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
     }
   });
 
-  it('returns empty for place names, distance/comparison near, negation, remove/forget, and keep wording', () => {
+  it('returns empty for bare proximity, location constraints, time uses, named places, negation, and ambiguous wording', () => {
     const extractor = new NearbyDiscoveryRequestedConversationStateExtractor();
     const unsupported = [
+      'nearby',
+      'close',
+      'around',
+      'near the airport',
+      'hotel near the beach',
+      'restaurant near the hotel',
+      'stay close to the city',
+      'how far is Brisbane',
+      'close the booking',
+      'around 3 pm',
+      'near completion',
+      'nearby?',
+      'what does nearby mean',
       'Surfers Paradise',
       'Brisbane',
-      'hotel near the beach',
       'what is near the hotel',
-      'show me places near Surfers Paradise',
       'find things within 5 kilometres',
       'the nearer option',
       'nearest station',
       'open the map',
-      'what is around me',
       'anything close by',
       'I want to explore the area',
-      'do not search nearby',
+      'do not show nearby places',
       'no nearby discovery',
+      'without nearby suggestions',
       'remove nearby places',
+      'cancel nearby recommendations',
+      "I don't need anything nearby",
+      'do not search nearby',
       'forget nearby discovery',
       'keep nearby discovery',
       'keep restaurants but remove nearby discovery',
@@ -291,7 +350,7 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
     expect(other.retained).toBeUndefined();
     expect(
       other.extract({
-        message: 'nearby',
+        message: 'what is nearby',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
@@ -300,6 +359,8 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7M');
+    expect(source).toContain('Phase 8M');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -358,22 +419,40 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
 
     expect(
       new RestaurantsRequestedConversationStateExtractor().extract({
@@ -382,11 +461,29 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
       }),
     ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new ActivitiesRequestedConversationStateExtractor().extract({
         message: 'book activities',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me beaches',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -459,20 +556,21 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
       nearbyDiscoveryRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
       message: 'what is nearby',
       state: currentState,
-      userEntryId: 'user-7m-a',
-      assistantEntryId: 'assistant-7m-a',
+      userEntryId: 'user-8m-a',
+      assistantEntryId: 'assistant-8m-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no nearby discovery',
       state: currentState,
-      userEntryId: 'user-7m-b',
-      assistantEntryId: 'assistant-7m-b',
+      userEntryId: 'user-8m-b',
+      assistantEntryId: 'assistant-8m-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { nearbyDiscoveryRequested: true },
@@ -480,8 +578,8 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
     const overriddenFalse = processConversationTurn({
       message: 'find nearby',
       state: currentState,
-      userEntryId: 'user-7m-c',
-      assistantEntryId: 'assistant-7m-c',
+      userEntryId: 'user-8m-c',
+      assistantEntryId: 'assistant-8m-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { nearbyDiscoveryRequested: false },
@@ -489,8 +587,8 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
     const nullOverride = processConversationTurn({
       message: 'find nearby',
       state: currentState,
-      userEntryId: 'user-7m-d',
-      assistantEntryId: 'assistant-7m-d',
+      userEntryId: 'user-8m-d',
+      assistantEntryId: 'assistant-8m-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { nearbyDiscoveryRequested: null },
@@ -498,13 +596,14 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
     const preserved = processConversationTurn({
       message: 'hotel near the beach',
       state: currentState,
-      userEntryId: 'user-7m-e',
-      assistantEntryId: 'assistant-7m-e',
+      userEntryId: 'user-8m-e',
+      assistantEntryId: 'assistant-8m-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'find nearby. Fly from Sydney to Cairns',
+      message:
+        'find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -515,13 +614,14 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
         restaurantsRequested: null,
         nearbyDiscoveryRequested: null,
       }),
-      userEntryId: 'user-7m-f',
-      assistantEntryId: 'assistant-7m-f',
+      userEntryId: 'user-8m-f',
+      assistantEntryId: 'assistant-8m-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'find nearby. Fly from Sydney to Cairns',
+      message:
+        'find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -532,8 +632,8 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
         restaurantsRequested: null,
         nearbyDiscoveryRequested: null,
       }),
-      userEntryId: 'user-7m-g',
-      assistantEntryId: 'assistant-7m-g',
+      userEntryId: 'user-8m-g',
+      assistantEntryId: 'assistant-8m-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -542,21 +642,53 @@ describe('phase 7M — NearbyDiscoveryRequestedConversationStateExtractor activa
         nearbyDiscoveryRequested: false,
       },
     });
+    const aroundMe = processConversationTurn({
+      message: 'what is around me',
+      state: currentState,
+      userEntryId: 'user-8m-h',
+      assistantEntryId: 'assistant-8m-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const nearbyRestaurants = processConversationTurn({
+      message: 'nearby restaurants',
+      state: currentState,
+      userEntryId: 'user-8m-i',
+      assistantEntryId: 'assistant-8m-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const bareNearbyPreserved = processConversationTurn({
+      message: 'nearby',
+      state: currentState,
+      userEntryId: 'user-8m-j',
+      assistantEntryId: 'assistant-8m-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.nearbyDiscoveryRequested).toBe(true);
     expect(extracted.state.restaurantsRequested).toBe(true);
+    expect(extracted.state.activitiesRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
     expect(overriddenTrue.state.nearbyDiscoveryRequested).toBe(true);
     expect(overriddenFalse.state.nearbyDiscoveryRequested).toBe(false);
     expect(nullOverride.state.nearbyDiscoveryRequested).toBeNull();
     expect(preserved.state.nearbyDiscoveryRequested).toBe(false);
     expect(composed.state.nearbyDiscoveryRequested).toBe(true);
+    expect(composed.state.restaurantsRequested).toBe(true);
+    expect(composed.state.activitiesRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.nearbyDiscoveryRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(aroundMe.state.nearbyDiscoveryRequested).toBe(true);
+    expect(nearbyRestaurants.state.nearbyDiscoveryRequested).toBe(true);
+    expect(bareNearbyPreserved.state.nearbyDiscoveryRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
