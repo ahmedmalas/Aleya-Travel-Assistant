@@ -658,12 +658,20 @@ describe('conversation-core architectural boundary', () => {
       /export class BeachesRequestedConversationStateExtractor/,
     );
     expect(beachesRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(beachesRequestedExtractor.includes('input.message')).toBe(false);
+    expect(beachesRequestedExtractor).toMatch(/input\.message/);
     expect(beachesRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(beachesRequestedExtractor.includes('.trim(')).toBe(false);
     expect(beachesRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(beachesRequestedExtractor.includes('includes(')).toBe(false);
+    expect(beachesRequestedExtractor).toMatch(/beachesRequested:\s*true/);
+    expect(beachesRequestedExtractor.includes('beachesRequested: false')).toBe(
+      false,
+    );
+    expect(beachesRequestedExtractor.includes('beachesRequested: null')).toBe(
+      false,
+    );
     const campingRequestedExtractor = readSrc(
       'src/features/conversation-core/CampingRequestedConversationStateExtractor.ts',
     );

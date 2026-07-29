@@ -100,7 +100,7 @@ describe('phase 3N — explicit beachesRequested only', () => {
     const first = turn('Hello', initial, 0, { beachesRequested: false });
     expect(first.state.beachesRequested).toBe(false);
 
-    const second = turn('beach beaches', first.state, 1);
+    const second = turn('coast ocean swimming', first.state, 1);
     expect(second.state.beachesRequested).toBe(false);
   });
 
@@ -109,7 +109,7 @@ describe('phase 3N — explicit beachesRequested only', () => {
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const phrases = ['beach', 'beaches', 'coast', 'ocean', 'swimming'];
+    const phrases = ['coast', 'ocean', 'swimming', 'seaside', 'lagoon'];
 
     let state = initial;
     phrases.forEach((message, index) => {
@@ -135,7 +135,7 @@ describe('phase 3N — explicit beachesRequested only', () => {
     });
     expect(withFalse.state.beachesRequested).toBe(false);
 
-    const afterMoreWords = turn('swimming at the beach', withFalse.state, 3);
+    const afterMoreWords = turn('swimming by the coast', withFalse.state, 3);
     expect(afterMoreWords.state.beachesRequested).toBe(false);
   });
 
