@@ -14,7 +14,9 @@ import {
 } from '../index';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 
 const ROOT = process.cwd();
 const COMPOSITE_SOURCE = resolve(
@@ -334,7 +336,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -344,6 +346,63 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       );
       expect(src.includes('CompositeConversationStateExtractor'), file).toBe(false);
     }
+  });
+
+  it('production destination-origin-empty sequence stays empty without altering merge behaviour', () => {
+    const input: ConversationStateExtractionInput = {
+      message: 'Flying from Melbourne to Cairns',
+      currentState: createState(),
+    };
+    const received: ConversationStateExtractionInput[] = [];
+    const destination = new DestinationConversationStateExtractor();
+    const origin = new OriginConversationStateExtractor();
+    const empty = new EmptyConversationStateExtractor();
+    const destinationExtract = vi
+      .spyOn(destination, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const originExtract = vi
+      .spyOn(origin, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const emptyExtract = vi
+      .spyOn(empty, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+
+    const production = new CompositeConversationStateExtractor([
+      destination,
+      origin,
+      empty,
+    ]);
+    const first = production.extract(input);
+    const second = production.extract(input);
+
+    expect(first).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: {} });
+    expect(first).not.toBe(second);
+    expect(first.stateUpdate).not.toBe(second.stateUpdate);
+    expect(destinationExtract).toHaveBeenCalledTimes(2);
+    expect(originExtract).toHaveBeenCalledTimes(2);
+    expect(emptyExtract).toHaveBeenCalledTimes(2);
+    expect(received).toHaveLength(6);
+    expect(received.every((value) => value === input)).toBe(true);
+
+    const mergeStillWorks = new CompositeConversationStateExtractor([
+      stubExtractor({ destination: 'Brisbane', origin: 'Melbourne' }),
+      stubExtractor({ origin: 'Sydney' }),
+      stubExtractor({}),
+    ]).extract(input);
+    expect(mergeStillWorks.stateUpdate).toEqual({
+      destination: 'Brisbane',
+      origin: 'Sydney',
+    });
   });
 
   it('keeps live processor behaviour unchanged under the composite factory', () => {
