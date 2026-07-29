@@ -10,6 +10,7 @@ const LATER = new Date('2026-07-28T12:00:01.000Z');
 const CONVERSATION_ID = 'conversation-core-test-001';
 
 const CANONICAL_KEYS = [
+  'accessibleTravelRequested',
   'accommodationRequested',
   'activitiesRequested',
   'adultCount',
@@ -122,6 +123,7 @@ describe('canonical conversation-core state', () => {
       shoppingRequested: null,
       wellnessRequested: null,
       familyActivitiesRequested: null,
+      accessibleTravelRequested: null,
       transcript: [],
     });
   });

@@ -78,6 +78,8 @@ export type ProcessConversationTurnInput = {
   wellnessRequested?: boolean;
   /** Explicit family-activities request flag only — stored as injected; never read from message. */
   familyActivitiesRequested?: boolean;
+  /** Explicit accessible-travel request flag only — stored as injected; never read from message. */
+  accessibleTravelRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -89,7 +91,7 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3Y: append raw user + placeholder assistant entries, increment
+ * Phase 3Z: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
@@ -98,8 +100,9 @@ export type ProcessConversationTurnResult = {
  * beachesRequested/campingRequested/kayakingRequested/
  * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
  * toursRequested/eventsRequested/nightlifeRequested/shoppingRequested/
- * wellnessRequested/familyActivitiesRequested only. Does not interpret,
- * trim, normalise, extract, validate counts, calculate duration, or persist.
+ * wellnessRequested/familyActivitiesRequested/accessibleTravelRequested
+ * only. Does not interpret, trim, normalise, extract, validate counts,
+ * calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -196,6 +199,10 @@ export function processConversationTurn(
     input.familyActivitiesRequested !== undefined
       ? input.familyActivitiesRequested
       : base.familyActivitiesRequested;
+  const accessibleTravelRequested =
+    input.accessibleTravelRequested !== undefined
+      ? input.accessibleTravelRequested
+      : base.accessibleTravelRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -243,6 +250,7 @@ export function processConversationTurn(
     shoppingRequested,
     wellnessRequested,
     familyActivitiesRequested,
+    accessibleTravelRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
