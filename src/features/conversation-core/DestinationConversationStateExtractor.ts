@@ -7,10 +7,10 @@ import type {
 /**
  * Internal destination-field extraction boundary.
  *
- * Phase 7A: recognises only narrow, explicit destination statements and
- * destination-replacement instructions in the current message. Deterministic
- * and local — no external lookup, geographic validation, origin/route parsing,
- * or currentState inspection.
+ * Phase 7A / 7A.1: recognises only narrow, explicit destination statements,
+ * destination-replacement instructions, and explicit origin+destination route
+ * forms in the current message. Deterministic and local — no external lookup,
+ * geographic validation, origin extraction, or currentState inspection.
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -35,6 +35,25 @@ export class DestinationConversationStateExtractor
 /** Trim edges without String.prototype.trim (architecture boundary). */
 function edgeTrim(value: string): string {
   return value.replace(/^\s+|\s+$/g, '');
+}
+
+/**
+ * True when the message already contains an explicit destination cue that can
+ * safely coexist with an origin “from …” clause.
+ */
+function hasExplicitDestinationCueAlongsideOrigin(message: string): boolean {
+  return (
+    /\b(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?)\s+to\b/i.test(
+      message,
+    ) ||
+    /\b(?:fly(?:ing)?|travel(?:l?ing)?)\s+from\s+.+?\s+to\b/i.test(message) ||
+    /\btake\s+me\s+to\b/i.test(message) ||
+    /\bvisit(?:ing)?\b/i.test(message) ||
+    /\bdestination\s+is\b/i.test(message) ||
+    /\bchange\s+(?:it|(?:my\s+)?destination)\s+to\b/i.test(message) ||
+    /\b(?:actually\s+)?make\s+it\b/i.test(message) ||
+    /\bswitch\s+it\s+to\b/i.test(message)
+  );
 }
 
 /**
@@ -82,7 +101,12 @@ function isBlockedDestinationMessage(message: string): boolean {
   if (/\bleaving\b/i.test(message) || /\bdeparting\b/i.test(message)) {
     return true;
   }
-  if (/\bfrom\b/i.test(message)) {
+  // Origin-only “from …” remains blocked; allow when a destination cue is also
+  // present (Phase 7A.1 route forms).
+  if (
+    /\bfrom\b/i.test(message) &&
+    !hasExplicitDestinationCueAlongsideOrigin(message)
+  ) {
     return true;
   }
   if (/\bkeep\b/i.test(message)) {
@@ -112,6 +136,8 @@ const EXPLICIT_DESTINATION_CUES: readonly RegExp[] = [
   /\bactually\s+make\s+it\s+(.+)$/i,
   /\bswitch\s+it\s+to\s+(.+)$/i,
   /\bdestination\s+is\s+(.+)$/i,
+  // Phase 7A.1: fly/travel from <origin> to <destination>
+  /\b(?:fly(?:ing)?|travel(?:l?ing)?)\s+from\s+.+?\s+to\s+(.+)$/i,
   /\b(?:(?:i\s+want\s+to|we(?:'re|\s+are))\s+)?(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?)\s+to\s+(.+)$/i,
   /\btake\s+me\s+to\s+(.+)$/i,
   /\bvisit(?:ing)?\s+(.+)$/i,

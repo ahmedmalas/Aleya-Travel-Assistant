@@ -205,6 +205,63 @@ describe('phase 7A — DestinationConversationStateExtractor activation', () => 
     ).toEqual({ stateUpdate: { destination: 'Kuala Lumpur' } });
   });
 
+  it('extracts destination from explicit origin+destination route forms', () => {
+    const extractor = new DestinationConversationStateExtractor();
+    const cases: Array<{ message: string; destination: string }> = [
+      { message: 'from Sydney, go to Brisbane', destination: 'Brisbane' },
+      {
+        message: 'travelling from Melbourne and flying to Gold Coast',
+        destination: 'Gold Coast',
+      },
+      { message: 'fly from Sydney to Brisbane', destination: 'Brisbane' },
+      { message: 'travel from Sydney to Brisbane', destination: 'Brisbane' },
+      {
+        message: 'fly from Melbourne to Gold Coast',
+        destination: 'Gold Coast',
+      },
+    ];
+
+    for (const { message, destination } of cases) {
+      const result = extractor.extract({
+        message,
+        currentState: createState({ destination: null }),
+      });
+      expect(result, message).toEqual({ stateUpdate: { destination } });
+      expect(result.stateUpdate).not.toHaveProperty('origin');
+      expect(result.stateUpdate.destination).not.toBe('Sydney');
+      expect(result.stateUpdate.destination).not.toBe('Melbourne');
+    }
+  });
+
+  it('does not capture the origin portion as destination for route wording', () => {
+    const extractor = new DestinationConversationStateExtractor();
+
+    expect(
+      extractor.extract({
+        message: 'fly from Sydney to Brisbane',
+        currentState: createState({ destination: null }),
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Brisbane' } });
+    expect(
+      extractor.extract({
+        message: 'from Sydney, go to Brisbane',
+        currentState: createState({ destination: null }),
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Brisbane' } });
+    expect(
+      extractor.extract({
+        message: 'from Brisbane',
+        currentState: createState({ destination: 'Hobart' }),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'from Sydney to Brisbane',
+        currentState: createState({ destination: 'Hobart' }),
+      }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
   it('returns an empty update for unsupported, ambiguous, origin, and negated wording', () => {
     const extractor = new DestinationConversationStateExtractor();
     const unsupported = [
@@ -238,7 +295,6 @@ describe('phase 7A — DestinationConversationStateExtractor activation', () => 
       'Brisbane',
       'Sydney please',
       'from Sydney to Brisbane',
-      'fly from Melbourne to Gold Coast',
       'Forget Hobart',
       'I need a holiday',
       'surprise me',
