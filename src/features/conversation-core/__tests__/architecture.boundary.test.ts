@@ -603,6 +603,8 @@ describe('conversation-core architectural boundary', () => {
     expect(flightsRequestedExtractor).toMatch(
       /export class FlightsRequestedConversationStateExtractor/,
     );
+    expect(flightsRequestedExtractor).toContain('Phase 7H');
+    expect(flightsRequestedExtractor).toContain('Phase 8H');
     expect(flightsRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

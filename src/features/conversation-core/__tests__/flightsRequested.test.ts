@@ -110,12 +110,13 @@ describe('phase 3H — explicit flightsRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'flight',
       'fly',
       'airline',
       'plane',
       'Qantas',
       'Virgin',
+      'flight delayed',
+      'flying from Sydney',
     ];
 
     let state = initial;
@@ -135,6 +136,38 @@ describe('phase 3H — explicit flightsRequested only', () => {
     expect(result.state.flightsRequested).toBe(true);
   });
 
+  it('phase 8H clear flight cues set flightsRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const singular = turn('flight', initial, 0);
+    expect(singular.state.flightsRequested).toBe(true);
+
+    const airfare = turn('airfare', initial, 1);
+    expect(airfare.state.flightsRequested).toBe(true);
+
+    const planeTickets = turn('plane tickets', initial, 2);
+    expect(planeTickets.state.flightsRequested).toBe(true);
+
+    const inRequest = turn(
+      'I need flights. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.flightsRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, { flightsRequested: false });
+    const negated = turn('no flights', seeded.state, 5);
+    expect(negated.state.flightsRequested).toBe(false);
+    const status = turn('flight status', seeded.state, 6);
+    expect(status.state.flightsRequested).toBe(false);
+    const provider = turn('Qantas', seeded.state, 7);
+    expect(provider.state.flightsRequested).toBe(false);
+  });
+
   it('trusted explicit stateUpdate.flightsRequested overrides an extracted flights request', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -145,7 +178,12 @@ describe('phase 3H — explicit flightsRequested only', () => {
     });
     expect(overriddenFalse.state.flightsRequested).toBe(false);
 
-    const nullOverride = turn('book flights', initial, 1, {
+    const overriddenTrue = turn('no flights', initial, 1, {
+      flightsRequested: true,
+    });
+    expect(overriddenTrue.state.flightsRequested).toBe(true);
+
+    const nullOverride = turn('book flights', initial, 2, {
       flightsRequested: null as unknown as boolean,
     });
     expect(nullOverride.state.flightsRequested).toBeNull();

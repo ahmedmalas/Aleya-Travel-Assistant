@@ -62,7 +62,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7h',
+      conversationId: 'conversation-8h',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -118,7 +118,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7H — FlightsRequestedConversationStateExtractor activation', () => {
+describe('phase 8H — FlightsRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit flightsRequested true contract', () => {
     expectTypeOf<FlightsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<FlightsRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -139,45 +139,105 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
     const extractor = new FlightsRequestedConversationStateExtractor();
     const cases = [
       'flights',
+      'flight',
       'book flights',
+      'find flights',
+      'search flights',
       'I need flights',
+      'I want flights',
       'include flights',
       'add flights',
+      'show me flights',
+      'compare flights',
+      'flight options',
+      'airfare',
+      'plane tickets',
+      'book a flight',
+      'find me a flight',
       'flights please',
       'need flights',
+      'I need flights from Sydney to Brisbane',
+      'book flights and accommodation',
+      'find flights for 2 adults',
+      'I want a flight on 28 August 2026',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ flightsRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { flightsRequested: true } });
+        currentState: createState({ flightsRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { flightsRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'accommodationRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
+      expect(result.stateUpdate, message).not.toHaveProperty('adultCount');
     }
   });
 
-  it('returns empty for airline/flight-number, negation, remove/forget, keep, and vague wording', () => {
+  it('emits only flightsRequested from combined flights-and-accommodation wording', () => {
+    const extractor = new FlightsRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'book flights and accommodation',
+        currentState: createState({ flightsRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
+  });
+
+  it('returns empty for status, provider, flying, negation, and vague wording', () => {
     const extractor = new FlightsRequestedConversationStateExtractor();
     const unsupported = [
+      'flight delayed',
+      'my flight was cancelled',
+      'flight number QF1',
+      'flight status',
+      'flight time',
+      'flight duration',
+      'flight attendant',
+      'flight school',
+      'flight simulator',
+      'airport',
+      'airline',
       'Qantas',
+      'Emirates',
+      'departure',
+      'arrival',
+      'flying from Sydney',
+      'I am flying tomorrow',
+      'do not book flights',
+      'no flights',
+      'without flights',
+      'remove flights',
+      'cancel flights',
+      'flights?',
+      'what are flights',
+      'travel',
+      'trip',
+      'holiday',
+      'go to Brisbane',
+      'from Sydney to Melbourne',
+      'departing 28 August 2026',
       'Virgin',
       'flight QF400',
       'QF123',
       'fly with Qantas',
       'I want to fly',
-      'find airfare',
       'airline plane Virgin',
       'departing from Sydney Airport',
-      'do not book flights',
-      'no flights',
       'remove the flights',
       'forget flights',
       'keep flights',
       'keep the hotel but remove flights',
       'actually add flights',
       'yes add flights instead',
+      'cancel the flights',
+      "I don't need flights",
+      'do not include flights',
       'Hello',
       '',
     ];
@@ -319,11 +379,17 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
 
     expect(
       new DestinationConversationStateExtractor().extract({
@@ -375,20 +441,21 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
       accommodationRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
       message: 'I need flights',
       state: currentState,
-      userEntryId: 'user-7h-a',
-      assistantEntryId: 'assistant-7h-a',
+      userEntryId: 'user-8h-a',
+      assistantEntryId: 'assistant-8h-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no flights',
       state: currentState,
-      userEntryId: 'user-7h-b',
-      assistantEntryId: 'assistant-7h-b',
+      userEntryId: 'user-8h-b',
+      assistantEntryId: 'assistant-8h-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { flightsRequested: true },
@@ -396,8 +463,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
     const overriddenFalse = processConversationTurn({
       message: 'book flights',
       state: currentState,
-      userEntryId: 'user-7h-c',
-      assistantEntryId: 'assistant-7h-c',
+      userEntryId: 'user-8h-c',
+      assistantEntryId: 'assistant-8h-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { flightsRequested: false },
@@ -405,8 +472,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
     const nullOverride = processConversationTurn({
       message: 'book flights',
       state: currentState,
-      userEntryId: 'user-7h-d',
-      assistantEntryId: 'assistant-7h-d',
+      userEntryId: 'user-8h-d',
+      assistantEntryId: 'assistant-8h-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { flightsRequested: null },
@@ -414,8 +481,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
     const preserved = processConversationTurn({
       message: 'I want to fly',
       state: currentState,
-      userEntryId: 'user-7h-e',
-      assistantEntryId: 'assistant-7h-e',
+      userEntryId: 'user-8h-e',
+      assistantEntryId: 'assistant-8h-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
@@ -426,8 +493,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
         destination: null,
         flightsRequested: null,
       }),
-      userEntryId: 'user-7h-f',
-      assistantEntryId: 'assistant-7h-f',
+      userEntryId: 'user-8h-f',
+      assistantEntryId: 'assistant-8h-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
@@ -438,8 +505,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
         destination: null,
         flightsRequested: null,
       }),
-      userEntryId: 'user-7h-g',
-      assistantEntryId: 'assistant-7h-g',
+      userEntryId: 'user-8h-g',
+      assistantEntryId: 'assistant-8h-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -448,9 +515,28 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
         flightsRequested: false,
       },
     });
+    const airfare = processConversationTurn({
+      message: 'airfare',
+      state: currentState,
+      userEntryId: 'user-8h-h',
+      assistantEntryId: 'assistant-8h-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const statusPreserved = processConversationTurn({
+      message: 'flight delayed',
+      state: currentState,
+      userEntryId: 'user-8h-i',
+      assistantEntryId: 'assistant-8h-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
 
     expect(extracted.state.flightsRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
+    expect(extracted.state.accommodationRequested).toBe(false);
     expect(overriddenTrue.state.flightsRequested).toBe(true);
     expect(overriddenFalse.state.flightsRequested).toBe(false);
     expect(nullOverride.state.flightsRequested).toBeNull();
@@ -461,6 +547,8 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
     expect(independentOverride.state.flightsRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(airfare.state.flightsRequested).toBe(true);
+    expect(statusPreserved.state.flightsRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
@@ -555,5 +643,12 @@ describe('phase 7H — FlightsRequestedConversationStateExtractor activation', (
         `extractor ${index} on infant message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    expect(
+      extractors[7]?.extract({
+        message: 'book flights and accommodation',
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
   });
 });
