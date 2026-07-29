@@ -14,21 +14,34 @@ import {
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
-import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
-import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
+import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
-const EVENTS_FESTIVALS_REQUESTED_SOURCE = resolve(
+const NATIONAL_PARKS_REQUESTED_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/extractors/EventsFestivalsRequestedConversationStateExtractor.ts',
+  'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
 );
+const TYPES_SOURCE = resolve(ROOT, 'src/features/conversation-core/types.ts');
+
+const NATIONAL_PARKS_RELATED_FIELDS = [
+  'nationalParksRequested',
+  'nationalParkRequested',
+  'parksRequested',
+  'natureParksRequested',
+  'protectedAreasRequested',
+  'reservesRequested',
+  'conservationAreasRequested',
+  'stateParksRequested',
+  'wildernessRequested',
+] as const;
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6i',
+      conversationId: 'conversation-6k',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -90,106 +103,82 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skeleton', () => {
+describe('phase 6K — NationalParksRequestedConversationStateExtractor skeleton', () => {
   it('implements ConversationStateExtractor with empty result contract', () => {
-    expectTypeOf<EventsFestivalsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
+    expectTypeOf<NationalParksRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<
-      EventsFestivalsRequestedConversationStateExtractor['extract']
+      NationalParksRequestedConversationStateExtractor['extract']
     >().parameters.toEqualTypeOf<[ConversationStateExtractionInput]>();
     expectTypeOf<
-      EventsFestivalsRequestedConversationStateExtractor['extract']
+      NationalParksRequestedConversationStateExtractor['extract']
     >().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+    const extractor = new NationalParksRequestedConversationStateExtractor();
     const input: ConversationStateExtractionInput = {
-      message: 'show me local events',
+      message: 'show me national parks',
       currentState: createState(),
     };
     expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
   });
 
-  it('does not introduce new events/festivals canonical fields beyond the existing explicit eventsRequested', () => {
+  it('proves no national-parks-related canonical field exists and none was added', () => {
+    const typesSource = readFileSync(TYPES_SOURCE, 'utf8');
     const initial = createInitialConversationCoreState({
-      conversationId: 'conversation-6i-field',
+      conversationId: 'conversation-6k-field',
       now: new Date('2026-07-29T00:00:00.000Z'),
     });
-    expect(Object.prototype.hasOwnProperty.call(initial, 'eventsRequested')).toBe(
-      true,
-    );
-    for (const field of [
-      'festivalsRequested',
-      'eventsFestivalsRequested',
-      'concertsRequested',
-      'marketsRequested',
-      'exhibitionsRequested',
-      'sportingEventsRequested',
-      'culturalEventsRequested',
-      'localEventsRequested',
-    ]) {
+
+    for (const field of NATIONAL_PARKS_RELATED_FIELDS) {
       expect(Object.prototype.hasOwnProperty.call(initial, field)).toBe(false);
       expect(field in initial).toBe(false);
+      expect(typesSource.includes(field)).toBe(false);
+      expect(typesSource).not.toMatch(new RegExp(`${field}\\s*[?:]`));
     }
+
+    expect(typesSource).not.toMatch(/\bnationalParks?Requested\b/i);
+    expect(typesSource).not.toMatch(/\bparksRequested\b/);
+    expect(typesSource).not.toMatch(/\bwildernessRequested\b/);
   });
 
-  it('cannot create state from event, festival, concert, market, or related wording', () => {
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+  it('cannot create state from national park, protected-area, or reserve wording', () => {
+    const extractor = new NationalParksRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       nearbyDiscoveryRequested: true,
-    });
-    const withoutEvents = createState({
-      attractionsRequested: true,
-      eventsRequested: false,
+      campingRequested: true,
     });
 
     const messages = [
-      'events',
-      'local events',
-      'festivals',
-      'music festivals',
-      'food festivals',
-      'cultural festivals',
-      'concerts',
-      'live music',
-      'shows',
-      'theatre',
-      'markets',
-      'night markets',
-      'farmers markets',
-      'fairs',
-      'carnivals',
-      'parades',
-      'exhibitions',
-      'art exhibitions',
-      'trade shows',
-      'sporting events',
-      'sports matches',
-      'races',
-      'community events',
-      'seasonal events',
-      "what's on",
-      'things happening nearby',
-      'show me festivals',
-      'find concerts nearby',
-      'I want night markets',
-      'add art exhibitions',
-      'yes include local events',
-      'actually show me sporting events',
-      'do not include festivals',
-      'no concerts',
-      'remove events',
-      'forget markets',
-      'keep attractions but remove festivals',
+      'national parks',
+      'national park',
+      'a national park',
+      'visit national parks',
+      'show me national parks',
+      'protected areas',
+      'nature reserves',
+      'state parks',
+      'wilderness areas',
+      'conservation areas',
+      'find a national park nearby',
+      'I want protected areas',
+      'add nature reserves',
+      'yes include state parks',
+      'actually show me wilderness',
+      'do not include national parks',
+      'no national park',
+      'remove protected areas',
+      'forget nature reserves',
+      'keep camping but remove national parks',
     ];
 
     for (const message of messages) {
       expect(
         extractor.extract({
           message,
-          currentState: createState({ eventsRequested: null }),
+          currentState: createState(),
         }),
       ).toEqual({ stateUpdate: {} });
       expect(
@@ -198,29 +187,24 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
           currentState: withRelatedFlags,
         }),
       ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withoutEvents,
-        }),
-      ).toEqual({ stateUpdate: {} });
     }
 
     const result = extractor.extract({
-      message: 'keep attractions but remove festivals',
+      message: 'keep camping but remove national parks',
       currentState: withRelatedFlags,
     });
     expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('eventsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('festivalsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('eventsFestivalsRequested');
+    for (const field of NATIONAL_PARKS_RELATED_FIELDS) {
+      expect(result.stateUpdate).not.toHaveProperty(field);
+    }
+    expect(result.stateUpdate).not.toHaveProperty('campingRequested');
     expect(result.stateUpdate).not.toHaveProperty('attractionsRequested');
-    expect(withRelatedFlags.eventsRequested).toBe(true);
-    expect(withoutEvents.eventsRequested).toBe(false);
+    expect(withRelatedFlags.campingRequested).toBe(true);
+    expect(withRelatedFlags.attractionsRequested).toBe(true);
   });
 
   it('does not mutate input or retain state across calls', () => {
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+    const extractor = new NationalParksRequestedConversationStateExtractor();
     const currentState = createState({
       eventsRequested: true,
       transcript: [
@@ -233,7 +217,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'music festivals',
+      message: 'national parks',
       currentState,
     };
     const before = structuredClone(input);
@@ -254,22 +238,22 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     expect(second).toEqual({ stateUpdate: {} });
   });
 
-  it('is included once in the production composite after wineries/food-trails and before empty', () => {
+  it('is included once in the production composite after wildlife and before empty', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
     expect(extractors).toHaveLength(28);
-    const wineriesIndexes = extractors
+    const wildlifeIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof WineriesFoodTrailsRequestedConversationStateExtractor
+        extractor instanceof WildlifeRequestedConversationStateExtractor
           ? index
           : -1,
       )
       .filter((index) => index >= 0);
-    const eventsIndexes = extractors
+    const nationalParksIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof EventsFestivalsRequestedConversationStateExtractor
+        extractor instanceof NationalParksRequestedConversationStateExtractor
           ? index
           : -1,
       )
@@ -280,34 +264,34 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       )
       .filter((index) => index >= 0);
 
-    expect(wineriesIndexes).toEqual([23]);
-    expect(eventsIndexes).toEqual([24]);
+    expect(wildlifeIndexes).toEqual([25]);
+    expect(nationalParksIndexes).toEqual([26]);
     expect(emptyIndexes).toEqual([27]);
-    expect(extractors[23]).toBeInstanceOf(
-      WineriesFoodTrailsRequestedConversationStateExtractor,
+    expect(extractors[25]).toBeInstanceOf(
+      WildlifeRequestedConversationStateExtractor,
     );
-    expect(extractors[24]).toBeInstanceOf(
-      EventsFestivalsRequestedConversationStateExtractor,
+    expect(extractors[26]).toBeInstanceOf(
+      NationalParksRequestedConversationStateExtractor,
     );
     expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
-    const source = readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8');
+    const source = readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8');
 
     expect(source).toMatch(/_input: ConversationStateExtractionInput/);
     expect(source).not.toMatch(/input\.message|input\.currentState/);
     expect(source).not.toMatch(/\.message\b/);
     expect(source).not.toMatch(/currentState\./);
     expect(source).not.toMatch(
-      /eventsRequested\s*:|festivalsRequested\s*:|eventsFestivalsRequested\s*:/,
+      /nationalParksRequested\s*:|nationalParkRequested\s*:|parksRequested\s*:/,
     );
     expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
     expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|concert|theatre|carnival|parade|exhibition|market|fair|sporting|what's on|whats on|trade.?show|farmers.?market/i,
+      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|national park|protected area|nature reserve|state park|wilderness|conservation area/i,
     );
     expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|ticket|event)/i,
+      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|ticket|park|reserve)/i,
     );
     expect(source).not.toMatch(/metadata|confidence|warnings/);
   });
@@ -323,28 +307,28 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     );
     const allowedConstruct = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
-      EVENTS_FESTIVALS_REQUESTED_SOURCE,
+      NATIONAL_PARKS_REQUESTED_SOURCE,
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowedConstruct.has(path),
     );
 
-    expect(index).not.toMatch(/EventsFestivalsRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/NationalParksRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty(
-      'EventsFestivalsRequestedConversationStateExtractor',
+      'NationalParksRequestedConversationStateExtractor',
     );
     expect(processTurn).not.toMatch(
-      /EventsFestivalsRequestedConversationStateExtractor/,
+      /NationalParksRequestedConversationStateExtractor/,
     );
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
       expect(
-        src.includes('new EventsFestivalsRequestedConversationStateExtractor'),
+        src.includes('new NationalParksRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
       expect(
-        src.includes('EventsFestivalsRequestedConversationStateExtractor'),
+        src.includes('NationalParksRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
     }
@@ -355,19 +339,20 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       attractionsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
+      campingRequested: true,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
     const messageOnly = processConversationTurn({
-      message: 'show me festivals and night markets',
+      message: 'show me national parks and nature reserves',
       state: currentState,
-      userEntryId: 'user-6i',
-      assistantEntryId: 'assistant-6i',
+      userEntryId: 'user-6k',
+      assistantEntryId: 'assistant-6k',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const factoryResult = createConversationStateExtractor().extract({
-      message: "what's on",
+      message: 'protected areas near wilderness',
       currentState,
     });
 
@@ -375,13 +360,13 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     expect(messageOnly.state.attractionsRequested).toBe(true);
     expect(messageOnly.state.activitiesRequested).toBe(true);
     expect(messageOnly.state.eventsRequested).toBe(true);
+    expect(messageOnly.state.campingRequested).toBe(true);
     expect(messageOnly.state.destination).toBe('Brisbane');
-    expect(
-      Object.prototype.hasOwnProperty.call(
-        messageOnly.state,
-        'eventsFestivalsRequested',
-      ),
-    ).toBe(false);
+    for (const field of NATIONAL_PARKS_RELATED_FIELDS) {
+      expect(Object.prototype.hasOwnProperty.call(messageOnly.state, field)).toBe(
+        false,
+      );
+    }
     expect(messageOnly.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(messageOnly).sort()).toEqual(['reply', 'state', 'trace']);
     expect(messageOnly.trace.messageInterpreted).toBe(false);

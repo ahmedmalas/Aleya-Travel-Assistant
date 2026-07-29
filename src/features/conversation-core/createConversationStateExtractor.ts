@@ -26,6 +26,7 @@ import { DivingSnorkellingRequestedConversationStateExtractor } from './extracto
 import { WineriesFoodTrailsRequestedConversationStateExtractor } from './extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
 import { EventsFestivalsRequestedConversationStateExtractor } from './extractors/EventsFestivalsRequestedConversationStateExtractor';
 import { WildlifeRequestedConversationStateExtractor } from './extractors/WildlifeRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from './extractors/NationalParksRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -58,6 +59,7 @@ import type { ConversationStateExtractor } from './types';
  * WineriesFoodTrailsRequestedConversationStateExtractor, then a new
  * EventsFestivalsRequestedConversationStateExtractor, then a new
  * WildlifeRequestedConversationStateExtractor, then a new
+ * NationalParksRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -89,6 +91,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new WineriesFoodTrailsRequestedConversationStateExtractor(),
     new EventsFestivalsRequestedConversationStateExtractor(),
     new WildlifeRequestedConversationStateExtractor(),
+    new NationalParksRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
