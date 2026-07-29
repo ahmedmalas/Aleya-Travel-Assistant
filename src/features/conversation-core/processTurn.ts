@@ -32,6 +32,8 @@ export type ProcessConversationTurnInput = {
   destination?: string;
   /** Explicit origin only — stored as injected; never read from message. */
   origin?: string;
+  /** Explicit departure date only — stored as injected; never read from message. */
+  departureDate?: string;
 };
 
 export type ProcessConversationTurnResult = {
@@ -43,10 +45,10 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3B: append raw user + placeholder assistant entries, increment
+ * Phase 3C: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
- * active, expose ageMs, and record explicitly supplied destination/origin
- * only. Does not interpret, trim, normalise, extract, or persist.
+ * active, expose ageMs, and record explicitly supplied destination/origin/
+ * departureDate only. Does not interpret, trim, normalise, extract, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -59,6 +61,10 @@ export function processConversationTurn(
   const destination =
     input.destination !== undefined ? input.destination : base.destination;
   const origin = input.origin !== undefined ? input.origin : base.origin;
+  const departureDate =
+    input.departureDate !== undefined
+      ? input.departureDate
+      : base.departureDate;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -83,6 +89,7 @@ export function processConversationTurn(
     ageMs,
     destination,
     origin,
+    departureDate,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

@@ -38,6 +38,8 @@ export type ConversationCoreState = {
   destination: string | null;
   /** Explicitly supplied origin only — never extracted from message text. */
   origin: string | null;
+  /** Explicitly supplied departure date only — never extracted from message text. */
+  departureDate: string | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -64,6 +66,7 @@ export function createInitialConversationCoreState(
     ageMs: 0,
     destination: null,
     origin: null,
+    departureDate: null,
     transcript: [],
   };
 }

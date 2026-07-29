@@ -13,6 +13,7 @@ const CANONICAL_KEYS = [
   'ageMs',
   'conversationId',
   'createdAt',
+  'departureDate',
   'destination',
   'origin',
   'status',
@@ -76,6 +77,7 @@ describe('canonical conversation-core state', () => {
       ageMs: 0,
       destination: null,
       origin: null,
+      departureDate: null,
       transcript: [],
     });
   });
