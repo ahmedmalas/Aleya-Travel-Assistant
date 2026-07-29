@@ -19,31 +19,61 @@ function listFiles(dir: string): string[] {
 }
 
 describe('conversation-core architectural boundary', () => {
-  it('visible chat imports only conversation-core for turn processing', () => {
+  it('visible chat → public index → processConversationTurn → canonical empty state', () => {
     const panel = readSrc('src/components/trip-platform/AiPlanningPanel.tsx');
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
+    const types = readSrc('src/features/conversation-core/types.ts');
 
     expect(panel).toMatch(
       /from ['"]\.\.\/\.\.\/features\/conversation-core['"]/,
     );
     expect(panel).toMatch(/processConversationTurn/);
-    expect(panel.includes('features/travel-' + 'conversation')).toBe(false);
-    expect(panel.includes('send' + 'TravelMessage')).toBe(false);
-    expect(panel.includes('run' + 'ConversationTurn')).toBe(false);
-    expect(panel.includes('aleya-travel:conversation:' + 'v')).toBe(false);
+    expect(panel).toMatch(/createInitialConversationCoreState/);
+    expect(panel.includes('processTurn')).toBe(false);
+    expect(panel.includes("from '../../features/conversation-core/types'")).toBe(
+      false,
+    );
+
+    expect(index).toMatch(/createInitialConversationCoreState/);
+    expect(index).toMatch(/processConversationTurn/);
+    expect(processTurn).toMatch(/export function processConversationTurn/);
+    expect(types).toMatch(/export function createInitialConversationCoreState/);
+    expect(types).toMatch(/status: 'empty'/);
+    expect(types).toMatch(/turnCount: 0/);
   });
 
-  it('conversation-core has a single public turn entry and no persistence', () => {
-    const index = readSrc('src/features/conversation-core/index.ts');
-    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
-    const types = readSrc('src/features/conversation-core/types.ts');
+  it('has no old engine, persistence, or travel-feature imports in conversation-core', () => {
+    const coreFiles = listFiles(resolve(ROOT, 'src/features/conversation-core')).filter(
+      (path) => !path.includes(`${join('conversation-core', '__tests__')}`),
+    );
 
-    expect(index).toMatch(/processConversationTurn/);
-    expect(index.includes('send' + 'TravelMessage')).toBe(false);
-    expect(index.includes('run' + 'ConversationTurn')).toBe(false);
-    expect(processTurn).toMatch(/export function processConversationTurn/);
-    expect(processTurn).not.toMatch(/localStorage|sessionStorage|indexedDB/i);
-    expect(types).toMatch(/aleya-travel:conversation-core:first-principles/);
-    expect(types.includes('conversation:' + 'v')).toBe(false);
+    for (const file of coreFiles) {
+      const src = readFileSync(file, 'utf8');
+      expect(src.includes('features/travel-' + 'conversation'), file).toBe(false);
+      expect(src.includes('send' + 'TravelMessage'), file).toBe(false);
+      expect(src.includes('run' + 'ConversationTurn'), file).toBe(false);
+      expect(src.includes('localStorage'), file).toBe(false);
+      expect(src.includes('sessionStorage'), file).toBe(false);
+      expect(src.includes('indexedDB'), file).toBe(false);
+      expect(src.includes('travel-location-intelligence'), file).toBe(false);
+      expect(src.includes('destination-discovery'), file).toBe(false);
+      expect(src.includes('schemaVersion'), file).toBe(false);
+    }
+  });
+
+  it('exposes exactly one public initial-state factory', () => {
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const types = readSrc('src/features/conversation-core/types.ts');
+    const factoryDefs = types.match(/export function create\w+/g) ?? [];
+
+    expect(factoryDefs).toEqual(['export function createInitialConversationCoreState']);
+    expect(index).toMatch(
+      /export \{\n[\s\S]*createInitialConversationCoreState[\s\S]*\} from '\.\/types'/,
+    );
+    expect((types.match(/export function create\w+/g) ?? []).length).toBe(1);
+    expect(types.includes('crypto.randomUUID')).toBe(false);
+    expect(types.includes('new Date()')).toBe(false);
   });
 
   it('rejected conversation package is absent under src/features', () => {
@@ -51,6 +81,5 @@ describe('conversation-core architectural boundary', () => {
     const names = readdirSync(features);
     expect(names).toContain('conversation-core');
     expect(names.includes('travel-' + 'conversation')).toBe(false);
-    expect(listFiles(resolve(features, 'conversation-core')).length).toBeGreaterThan(0);
   });
 });

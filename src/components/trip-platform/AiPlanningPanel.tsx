@@ -56,7 +56,10 @@ export function AiPlanningPanel() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [coreState, setCoreState] = useState<ConversationCoreState>(() =>
-    createInitialConversationCoreState(),
+    createInitialConversationCoreState({
+      conversationId: createId(),
+      now: new Date(),
+    }),
   );
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -168,8 +171,9 @@ export function AiPlanningPanel() {
           aria-label="Conversation core boundary"
         >
           <p>Boundary: conversation-core</p>
-          <p>Namespace: {coreState.namespace}</p>
-          <p>Session: {coreState.sessionId}</p>
+          <p>Status: {coreState.status}</p>
+          <p>Turn count: {coreState.turnCount}</p>
+          <p>Conversation: {coreState.conversationId}</p>
           <p>Persistence: disabled</p>
         </aside>
       </header>
@@ -307,7 +311,12 @@ export function AiPlanningPanel() {
           type="button"
           className="mt-2 text-xs text-slate-500 hover:text-sky-200"
           onClick={() => {
-            setCoreState(createInitialConversationCoreState());
+            setCoreState(
+              createInitialConversationCoreState({
+                conversationId: createId(),
+                now: new Date(),
+              }),
+            );
             setMessages([
               {
                 id: createId(),

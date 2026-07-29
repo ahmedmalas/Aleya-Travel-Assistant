@@ -1,15 +1,19 @@
 /**
  * conversation-core — first-principles empty boundary.
  *
- * Exactly one public turn entry point: processConversationTurn.
+ * Public surface:
+ * - createInitialConversationCoreState (sole state factory)
+ * - processConversationTurn (sole turn entry)
+ *
  * Persistence namespace is reserved and must not be enabled yet.
  */
 
 export {
   CONVERSATION_CORE_STORAGE_NAMESPACE,
   createInitialConversationCoreState,
-  type ConversationCoreNamespace,
   type ConversationCoreState,
+  type ConversationCoreStatus,
+  type CreateInitialConversationCoreStateInput,
 } from './types';
 
 export {
@@ -17,4 +21,5 @@ export {
   processConversationTurn,
   type ProcessConversationTurnInput,
   type ProcessConversationTurnResult,
+  type ProcessConversationTurnTrace,
 } from './processTurn';

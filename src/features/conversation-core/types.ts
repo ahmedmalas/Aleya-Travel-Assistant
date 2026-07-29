@@ -1,35 +1,43 @@
 /**
- * First-principles conversation-core state.
+ * Canonical first-principles conversation-core state.
  *
- * This is intentionally empty of travel intelligence. It is not a continuation
- * of any prior conversation lineage and must never load, migrate, or recover
- * prior state.
+ * Travel intelligence, transcript, persistence, and schema lineage are
+ * intentionally absent. Later phases extend this contract deliberately.
  */
 
 /** Reserved for a later persistence piece — not used in this phase. */
 export const CONVERSATION_CORE_STORAGE_NAMESPACE =
   'aleya-travel:conversation-core:first-principles' as const;
 
-export type ConversationCoreNamespace =
-  typeof CONVERSATION_CORE_STORAGE_NAMESPACE;
+export type ConversationCoreStatus = 'empty';
 
 export type ConversationCoreState = {
-  namespace: ConversationCoreNamespace;
-  sessionId: string;
+  conversationId: string;
+  status: ConversationCoreStatus;
+  turnCount: 0;
   createdAt: string;
+  updatedAt: string;
 };
 
-export function createInitialConversationCoreState(
-  now: Date = new Date(),
-): ConversationCoreState {
-  const sessionId =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `conversation-core-${now.getTime()}`;
+export type CreateInitialConversationCoreStateInput = {
+  conversationId: string;
+  now: Date;
+};
 
+/**
+ * Sole public initial-state factory.
+ *
+ * Deterministic for identical inputs. Does not read time or ID from globals.
+ */
+export function createInitialConversationCoreState(
+  input: CreateInitialConversationCoreStateInput,
+): ConversationCoreState {
+  const instant = input.now.toISOString();
   return {
-    namespace: CONVERSATION_CORE_STORAGE_NAMESPACE,
-    sessionId,
-    createdAt: now.toISOString(),
+    conversationId: input.conversationId,
+    status: 'empty',
+    turnCount: 0,
+    createdAt: instant,
+    updatedAt: instant,
   };
 }

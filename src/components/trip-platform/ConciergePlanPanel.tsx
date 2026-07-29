@@ -89,7 +89,11 @@ export function ConciergePlanPanel() {
     const userMessage: ConciergeMessage = { id: crypto.randomUUID(), role: 'user', text: trimmed };
     setQuestion('');
     setFeedback(null);
-    const result = processConversationTurn({ message: trimmed });
+    const result = processConversationTurn({
+      message: trimmed,
+      conversationId: crypto.randomUUID(),
+      now: new Date(),
+    });
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
