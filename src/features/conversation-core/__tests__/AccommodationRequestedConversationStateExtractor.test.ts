@@ -67,7 +67,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7i',
+      conversationId: 'conversation-8i',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -123,7 +123,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7I — AccommodationRequestedConversationStateExtractor activation', () => {
+describe('phase 8I — AccommodationRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit accommodationRequested true contract', () => {
     expectTypeOf<AccommodationRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<AccommodationRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -144,46 +144,103 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
     const extractor = new AccommodationRequestedConversationStateExtractor();
     const cases = [
       'accommodation',
-      'book accommodation',
-      'I need accommodation',
-      'include accommodation',
-      'add accommodation',
       'hotel',
       'hotels',
+      'book accommodation',
+      'find accommodation',
+      'search accommodation',
+      'I need accommodation',
+      'I want accommodation',
+      'include accommodation',
+      'add accommodation',
+      'show me accommodation',
+      'compare accommodation',
       'book a hotel',
+      'find me a hotel',
+      'hotel options',
+      'a place to stay',
+      'somewhere to stay',
+      'lodging',
       'I need a hotel',
       'need hotel',
       'book me a hotel',
+      'I need accommodation in Brisbane',
+      'book flights and accommodation',
+      'find a hotel for 2 adults',
+      'I want somewhere to stay in Surfers Paradise',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ accommodationRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { accommodationRequested: true } });
+        currentState: createState({ accommodationRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { accommodationRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty('flightsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
+      expect(result.stateUpdate, message).not.toHaveProperty('adultCount');
     }
   });
 
-  it('returns empty for hotel-name/location, negation, remove/forget, keep, and vague stay wording', () => {
+  it('emits only accommodationRequested from combined flights-and-accommodation wording', () => {
+    const extractor = new AccommodationRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'book flights and accommodation',
+        currentState: createState({ accommodationRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+  });
+
+  it('returns empty for metadata, named hotels, stay-location, negation, and vague wording', () => {
     const extractor = new AccommodationRequestedConversationStateExtractor();
     const unsupported = [
+      'hotel address',
+      'hotel phone number',
+      'hotel check-in time',
+      'hotel checkout time',
+      'hotel cancellation policy',
+      'hotel review',
+      'hotel rating',
+      'hotel restaurant',
+      'hotel transfer',
+      'hotel booked',
+      'my hotel is cancelled',
+      'staying in Surfers Paradise',
+      'stay in Brisbane',
+      'three-night stay',
+      'lodging a complaint',
+      'accommodation?',
+      'what is accommodation',
+      'stay in Docklands',
+      'we will stay near the airport',
+      'travel',
+      'trip',
+      'holiday',
+      'go to Brisbane',
+      'from Sydney to Melbourne',
+      'departing 28 August 2026',
       'Hilton',
       'Marriott Surfers Paradise',
-      'find somewhere to stay',
       'I want a resort',
       'a motel is fine',
       'find a hostel',
       'I need an apartment',
       'look for an Airbnb',
       'book one room',
-      'staying in Surfers Paradise',
       'check in Friday and out Monday',
       'do not book accommodation',
       'no hotel',
+      'no accommodation',
+      'no hotels',
+      'without accommodation',
       'remove the accommodation',
+      'cancel the hotel',
+      "I don't need a hotel",
+      'do not include accommodation',
       'forget the hotel',
       'keep the hotel',
       'keep flights but remove the hotel',
@@ -333,12 +390,19 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
 
     expect(
       new FlightsRequestedConversationStateExtractor().extract({
@@ -396,20 +460,21 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
       accommodationRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
       message: 'I need accommodation',
       state: currentState,
-      userEntryId: 'user-7i-a',
-      assistantEntryId: 'assistant-7i-a',
+      userEntryId: 'user-8i-a',
+      assistantEntryId: 'assistant-8i-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no hotel',
       state: currentState,
-      userEntryId: 'user-7i-b',
-      assistantEntryId: 'assistant-7i-b',
+      userEntryId: 'user-8i-b',
+      assistantEntryId: 'assistant-8i-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { accommodationRequested: true },
@@ -417,8 +482,8 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
     const overriddenFalse = processConversationTurn({
       message: 'book a hotel',
       state: currentState,
-      userEntryId: 'user-7i-c',
-      assistantEntryId: 'assistant-7i-c',
+      userEntryId: 'user-8i-c',
+      assistantEntryId: 'assistant-8i-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { accommodationRequested: false },
@@ -426,43 +491,43 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
     const nullOverride = processConversationTurn({
       message: 'book a hotel',
       state: currentState,
-      userEntryId: 'user-7i-d',
-      assistantEntryId: 'assistant-7i-d',
+      userEntryId: 'user-8i-d',
+      assistantEntryId: 'assistant-8i-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { accommodationRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'find somewhere to stay',
+      message: 'staying in Surfers Paradise',
       state: currentState,
-      userEntryId: 'user-7i-e',
-      assistantEntryId: 'assistant-7i-e',
+      userEntryId: 'user-8i-e',
+      assistantEntryId: 'assistant-8i-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'book a hotel. Fly from Sydney to Cairns',
+      message: 'book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
         accommodationRequested: null,
         flightsRequested: null,
       }),
-      userEntryId: 'user-7i-f',
-      assistantEntryId: 'assistant-7i-f',
+      userEntryId: 'user-8i-f',
+      assistantEntryId: 'assistant-8i-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'book a hotel. Fly from Sydney to Cairns',
+      message: 'book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
         accommodationRequested: null,
         flightsRequested: null,
       }),
-      userEntryId: 'user-7i-g',
-      assistantEntryId: 'assistant-7i-g',
+      userEntryId: 'user-8i-g',
+      assistantEntryId: 'assistant-8i-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -471,20 +536,41 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
         accommodationRequested: false,
       },
     });
+    const lodging = processConversationTurn({
+      message: 'lodging',
+      state: currentState,
+      userEntryId: 'user-8i-h',
+      assistantEntryId: 'assistant-8i-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const metadataPreserved = processConversationTurn({
+      message: 'hotel review',
+      state: currentState,
+      userEntryId: 'user-8i-i',
+      assistantEntryId: 'assistant-8i-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
 
     expect(extracted.state.accommodationRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
     expect(overriddenTrue.state.accommodationRequested).toBe(true);
     expect(overriddenFalse.state.accommodationRequested).toBe(false);
     expect(nullOverride.state.accommodationRequested).toBeNull();
     expect(preserved.state.accommodationRequested).toBe(false);
     expect(composed.state.accommodationRequested).toBe(true);
+    expect(composed.state.flightsRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.accommodationRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(lodging.state.accommodationRequested).toBe(true);
+    expect(metadataPreserved.state.accommodationRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
@@ -584,5 +670,12 @@ describe('phase 7I — AccommodationRequestedConversationStateExtractor activati
         `extractor ${index} on flights message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    expect(
+      extractors[8]?.extract({
+        message: 'book flights and accommodation',
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
   });
 });

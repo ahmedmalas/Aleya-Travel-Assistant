@@ -888,6 +888,9 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'find somewhere to stay', currentState }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      extractor.extract({ message: 'staying in Surfers Paradise', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

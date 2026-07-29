@@ -85,7 +85,7 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     });
     expect(first.state.accommodationRequested).toBe(true);
 
-    const second = turn('find somewhere to stay', first.state, 1);
+    const second = turn('staying in Surfers Paradise', first.state, 1);
     expect(second.state.accommodationRequested).toBe(true);
 
     const third = turn('Hello', second.state, 2, {
@@ -123,8 +123,9 @@ describe('phase 3I — explicit accommodationRequested only', () => {
       'room',
       'resort',
       'apartment',
-      'find somewhere to stay',
+      'staying in Surfers Paradise',
       'Hilton',
+      'hotel review',
     ];
 
     let state = initial;
@@ -144,6 +145,41 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     expect(result.state.accommodationRequested).toBe(true);
   });
 
+  it('phase 8I clear accommodation cues set accommodationRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const lodging = turn('lodging', initial, 0);
+    expect(lodging.state.accommodationRequested).toBe(true);
+    expect(lodging.state.flightsRequested).toBeNull();
+
+    const placeToStay = turn('a place to stay', initial, 1);
+    expect(placeToStay.state.accommodationRequested).toBe(true);
+
+    const somewhere = turn('somewhere to stay', initial, 2);
+    expect(somewhere.state.accommodationRequested).toBe(true);
+
+    const inRequest = turn(
+      'I need accommodation. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.accommodationRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, {
+      accommodationRequested: false,
+    });
+    const negated = turn('no accommodation', seeded.state, 5);
+    expect(negated.state.accommodationRequested).toBe(false);
+    const stayLocation = turn('stay in Brisbane', seeded.state, 6);
+    expect(stayLocation.state.accommodationRequested).toBe(false);
+    const named = turn('Hilton', seeded.state, 7);
+    expect(named.state.accommodationRequested).toBe(false);
+  });
+
   it('trusted explicit stateUpdate.accommodationRequested overrides an extracted accommodation request', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -154,7 +190,12 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     });
     expect(overriddenFalse.state.accommodationRequested).toBe(false);
 
-    const nullOverride = turn('book a hotel', initial, 1, {
+    const overriddenTrue = turn('no hotel', initial, 1, {
+      accommodationRequested: true,
+    });
+    expect(overriddenTrue.state.accommodationRequested).toBe(true);
+
+    const nullOverride = turn('book a hotel', initial, 2, {
       accommodationRequested: null as unknown as boolean,
     });
     expect(nullOverride.state.accommodationRequested).toBeNull();
