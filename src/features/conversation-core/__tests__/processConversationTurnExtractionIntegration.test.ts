@@ -266,7 +266,7 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
 
     expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(result.state.destination).toBe('  Gold Coast!!!!  ');
-    expect(result.state.origin).toBe('Melbourne');
+    expect(result.state.origin).toBe('Sydney');
     expect(result.state.departureDate).toBe('2026-09-01');
     expect(result.state.returnDate).toBe('2026-09-08');
     expect(result.state.adultCount).toBe(0);

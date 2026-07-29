@@ -11,6 +11,10 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -24,13 +28,15 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-5l',
+      conversationId: 'conversation-7b',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
     turnCount: 2,
     destination: 'Brisbane',
     origin: 'Melbourne',
+    adultCount: 2,
+    flightsRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -63,8 +69,18 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 5L — OriginConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+describe('phase 7B — OriginConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit origin result contract', () => {
     expectTypeOf<OriginConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<OriginConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
       [ConversationStateExtractionInput]
@@ -72,74 +88,127 @@ describe('phase 5L — OriginConversationStateExtractor skeleton', () => {
     expectTypeOf<OriginConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new OriginConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'I am flying from Melbourne',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
-  });
-
-  it('cannot create, replace, or clear origin from message-like text', () => {
-    const extractor = new OriginConversationStateExtractor();
-    const withOrigin = createState({ origin: 'Hobart' });
-
     expect(
       extractor.extract({
-        message: 'Leaving from Cairns',
+        message: 'from Sydney',
         currentState: createState({ origin: null }),
       }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Actually from Sydney instead of Hobart',
-        currentState: withOrigin,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Forget Hobart / not from Hobart',
-        currentState: withOrigin,
-      }),
-    ).toEqual({ stateUpdate: {} });
-
-    const result = extractor.extract({
-      message: 'keep Hobart',
-      currentState: withOrigin,
-    });
-    expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('origin');
-    expect(withOrigin.origin).toBe('Hobart');
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
   });
 
-  it('returns the same empty result for different messages and states', () => {
+  it('extracts supported explicit origin forms', () => {
     const extractor = new OriginConversationStateExtractor();
+    const cases: Array<{ message: string; origin: string }> = [
+      { message: 'from Sydney', origin: 'Sydney' },
+      { message: 'I am from Sydney', origin: 'Sydney' },
+      { message: "I'm from Sydney", origin: 'Sydney' },
+      { message: 'travelling from Sydney', origin: 'Sydney' },
+      { message: 'traveling from Sydney', origin: 'Sydney' },
+      { message: 'travel from Sydney', origin: 'Sydney' },
+      { message: 'departing from Sydney', origin: 'Sydney' },
+      { message: 'depart from Sydney', origin: 'Sydney' },
+      { message: 'leaving from Sydney', origin: 'Sydney' },
+      { message: 'leave from Sydney', origin: 'Sydney' },
+      { message: 'flying from Sydney', origin: 'Sydney' },
+      { message: 'fly from Sydney', origin: 'Sydney' },
+      { message: 'starting from Sydney', origin: 'Sydney' },
+      { message: 'start from Sydney', origin: 'Sydney' },
+      { message: 'origin is Sydney', origin: 'Sydney' },
+      { message: 'my origin is Sydney', origin: 'Sydney' },
+      { message: '  from Melbourne Airport.  ', origin: 'Melbourne Airport' },
+      { message: 'from Gold Coast', origin: 'Gold Coast' },
+      { message: 'from New York', origin: 'New York' },
+      { message: 'from Kuala Lumpur', origin: 'Kuala Lumpur' },
+    ];
 
-    expect(
-      extractor.extract({
-        message: 'Sydney to Brisbane',
-        currentState: createState({ origin: 'Perth' }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Cancel everything',
-        currentState: createState({
-          destination: 'Darwin',
-          origin: 'Adelaide',
-          adultCount: 4,
-          flightsRequested: true,
+    for (const { message, origin } of cases) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ origin: null }),
         }),
+        message,
+      ).toEqual({ stateUpdate: { origin } });
+    }
+  });
+
+  it('returns an empty update for unsupported, destination, price, and negated wording', () => {
+    const extractor = new OriginConversationStateExtractor();
+    const unsupported = [
+      'Sydney',
+      'Melbourne',
+      'go to Brisbane',
+      'going to Brisbane',
+      'travel to Brisbane',
+      'fly to Brisbane',
+      'visit Brisbane',
+      'take me to Brisbane',
+      'destination is Brisbane',
+      'change it to Brisbane',
+      'make it Brisbane instead',
+      'hotel in Brisbane',
+      'activities in Brisbane',
+      'car hire in Brisbane',
+      'somewhere near Brisbane',
+      'Brisbane sounds nice',
+      'maybe Brisbane',
+      'perhaps Brisbane',
+      'thinking about Brisbane',
+      'hotel from A$200',
+      'flights from A$300',
+      'available from Monday',
+      'open from 9am',
+      'two hours from Brisbane',
+      '20 kilometres from Sydney',
+      'recommendations from friends',
+      'message from Qantas',
+      'booking confirmation from the hotel',
+      'return from Brisbane on Monday',
+      'not from Sydney',
+      "I'm not from Sydney",
+      'do not depart from Sydney',
+      "don't depart from Sydney",
+      'not leaving from Sydney',
+      'keep Melbourne as the origin',
+      'keep the origin as Melbourne',
+      'do not change the origin to Sydney',
+      "don't make the origin Sydney",
+      'not Sydney, keep Melbourne',
+      'Forget Melbourne',
+    ];
+
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ origin: 'Hobart' }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('does not inspect, copy, preserve, or clear origin from currentState', () => {
+    const extractor = new OriginConversationStateExtractor();
+    const withOrigin = createState({ origin: 'Hobart', destination: 'Brisbane' });
+
+    expect(
+      extractor.extract({
+        message: 'hello',
+        currentState: withOrigin,
       }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({
-        message: 'Take me to Cairns',
-        currentState: createState({ origin: null }),
+        message: 'keep Hobart',
+        currentState: withOrigin,
       }),
     ).toEqual({ stateUpdate: {} });
+    expect(withOrigin.origin).toBe('Hobart');
+    expect(withOrigin.destination).toBe('Brisbane');
   });
 
-  it('does not mutate input or retain state across calls or instances', () => {
+  it('does not mutate input, state, or transcript and retains no origin across calls', () => {
     const extractor = new OriginConversationStateExtractor();
     const currentState = createState({
       origin: 'Melbourne',
@@ -171,30 +240,21 @@ describe('phase 5L — OriginConversationStateExtractor skeleton', () => {
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
-
-    const other = new OriginConversationStateExtractor() as OriginConversationStateExtractor & {
-      retained?: string;
-    };
-    (extractor as OriginConversationStateExtractor & { retained?: string }).retained =
-      'first-only';
-    expect(other.retained).toBeUndefined();
-    expect(
-      other.extract({ message: 'fresh', currentState: createState() }),
-    ).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { origin: 'Cairns' } });
   });
 
-  it('contains no inspection, regex, lexicon, or provider imports', () => {
+  it('contains no trim/toLowerCase, currentState inspection, or provider imports', () => {
     const source = readFileSync(ORIGIN_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(/origin\s*:/);
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
-    expect(source).not.toMatch(/lexicon|alias|airport|country|cityNames/i);
-    expect(source).not.toMatch(/provider|search|discovery|travel-location/i);
+    expect(source).toMatch(/origin\s*:/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
+    expect(source).not.toMatch(/lexicon|alias|country|cityNames/i);
+    expect(source).not.toMatch(/provider|travel-location|destination-discovery/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
     expect(source).not.toMatch(/from '\.\.\/|from '\.\.\/\.\.\//);
   });
@@ -227,68 +287,124 @@ describe('phase 5L — OriginConversationStateExtractor skeleton', () => {
     }
   });
 
-  it('keeps processor origin behaviour unchanged with the skeleton in the path', () => {
+  it('applies extracted origin through the live processor with trusted explicit precedence', () => {
     const currentState = createState({ origin: 'Melbourne', destination: 'Brisbane' });
-    const injected = processConversationTurn({
-      message: 'I am flying from Cairns',
+    const extracted = processConversationTurn({
+      message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-5l',
-      assistantEntryId: 'assistant-5l',
+      userEntryId: 'user-7b-a',
+      assistantEntryId: 'assistant-7b-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
-      stateUpdate: { origin: 'Sydney' },
     });
-    const cleared = processConversationTurn({
-      message: 'Forget Melbourne',
+    const replaced = processConversationTurn({
+      message: 'flying from Cairns',
       state: currentState,
-      userEntryId: 'user-5l-b',
-      assistantEntryId: 'assistant-5l-b',
+      userEntryId: 'user-7b-b',
+      assistantEntryId: 'assistant-7b-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
-      stateUpdate: { origin: null },
     });
-    const messageOnly = processConversationTurn({
-      message: 'Leaving from Darwin',
+    const overridden = processConversationTurn({
+      message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-5l-c',
-      assistantEntryId: 'assistant-5l-c',
+      userEntryId: 'user-7b-c',
+      assistantEntryId: 'assistant-7b-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
+      stateUpdate: { origin: 'Perth' },
     });
-    const destinationInjected = processConversationTurn({
-      message: 'Take me to Perth',
+    const nullOverride = processConversationTurn({
+      message: 'from Sydney',
       state: currentState,
-      userEntryId: 'user-5l-d',
-      assistantEntryId: 'assistant-5l-d',
+      userEntryId: 'user-7b-d',
+      assistantEntryId: 'assistant-7b-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
-      stateUpdate: { destination: 'Perth' },
+      stateUpdate: { origin: null },
+    });
+    const preserved = processConversationTurn({
+      message: 'hello there',
+      state: currentState,
+      userEntryId: 'user-7b-e',
+      assistantEntryId: 'assistant-7b-e',
+      userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
+    });
+    const composed = processConversationTurn({
+      message: 'fly from Sydney to Brisbane',
+      state: createState({ origin: null, destination: null }),
+      userEntryId: 'user-7b-f',
+      assistantEntryId: 'assistant-7b-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'fly from Sydney to Brisbane',
+      state: createState({ origin: null, destination: null }),
+      userEntryId: 'user-7b-g',
+      assistantEntryId: 'assistant-7b-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: { origin: 'Perth', destination: 'Cairns' },
     });
 
-    expect(injected.state.origin).toBe('Sydney');
-    expect(injected.state.destination).toBe('Brisbane');
-    expect(cleared.state.origin).toBeNull();
-    expect(messageOnly.state.origin).toBe('Melbourne');
-    expect(destinationInjected.state.destination).toBe('Perth');
-    expect(destinationInjected.state.origin).toBe('Melbourne');
-    expect(injected.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(injected).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(Object.keys(injected.trace).sort()).toEqual([
-      'assistantMessageRecorded',
-      'entryPoint',
-      'messageInterpreted',
-      'persistenceUsed',
-      'stateChanged',
-      'stateStatus',
-      'turnCount',
-      'userMessageRecorded',
-    ]);
+    expect(extracted.state.origin).toBe('Sydney');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(replaced.state.origin).toBe('Cairns');
+    expect(replaced.state.destination).toBe('Brisbane');
+    expect(overridden.state.origin).toBe('Perth');
+    expect(nullOverride.state.origin).toBeNull();
+    expect(preserved.state.origin).toBe('Melbourne');
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Brisbane');
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Cairns');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(extracted.trace.messageInterpreted).toBe(false);
+    expect(extracted.state.transcript).toHaveLength(3);
+  });
+
+  it('keeps Destination and Origin as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
+    expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({ origin: 'Hobart', destination: 'Hobart' });
     expect(
-      Object.keys(conversationCore).filter(
-        (name) =>
-          typeof (conversationCore as Record<string, unknown>)[name] ===
-            'function' && name !== 'createInitialConversationCoreState',
-      ),
-    ).toEqual(['processConversationTurn']);
+      createConversationStateExtractor().extract({
+        message: 'fly from Sydney to Brisbane',
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: { destination: 'Brisbane', origin: 'Sydney' },
+    });
+
+    for (let index = 2; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: 'fly from Sydney to Brisbane',
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[0]?.extract({
+        message: 'fly from Sydney to Brisbane',
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Brisbane' } });
+    expect(
+      extractors[1]?.extract({
+        message: 'fly from Sydney to Brisbane',
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
   });
 });

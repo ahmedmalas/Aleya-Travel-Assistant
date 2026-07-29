@@ -101,15 +101,17 @@ describe('phase 5F — extractConversationState execution only', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('cannot create an update from user message text', () => {
+  it('extracts origin from explicit from-route wording without inventing other fields', () => {
     const result = extractConversationState({
       message:
         'From Sydney to Cairns on 28 August for two adults; book flights, hotel and activities',
       currentState: createState(),
     });
 
-    expect(result).toEqual({ stateUpdate: {} });
-    expect(Object.keys(result.stateUpdate)).toEqual([]);
+    expect(result).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(result.stateUpdate).not.toHaveProperty('destination');
+    expect(result.stateUpdate).not.toHaveProperty('adultCount');
+    expect(result.stateUpdate).not.toHaveProperty('flightsRequested');
   });
 
   it('does not copy existing canonical travel values into the result', () => {

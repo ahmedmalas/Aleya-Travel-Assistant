@@ -745,19 +745,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     }
   });
 
-  it('factory-created extraction remains empty and deterministic for origin-like text', () => {
+  it('factory-created extraction extracts explicit origin cues deterministically', () => {
     const extractor = createConversationStateExtractor();
     const currentState = createState({ origin: 'Melbourne' });
 
     expect(
       extractor.extract({ message: 'I am flying from Sydney', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
     expect(
       extractor.extract({ message: 'I am flying from Sydney', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
     expect(
       extractor.extract({ message: 'Leaving from Cairns', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { origin: 'Cairns' } });
+    expect(
+      extractor.extract({ message: 'fly from Sydney to Brisbane', currentState }),
+    ).toEqual({
+      stateUpdate: { destination: 'Brisbane', origin: 'Sydney' },
+    });
   });
 
   it('factory-created extraction remains empty and deterministic for date-like text', () => {

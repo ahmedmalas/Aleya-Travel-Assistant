@@ -72,16 +72,17 @@ describe('phase 3B — explicit origin only', () => {
     expect(second.state.origin).toBe('Melbourne');
   });
 
-  it('user message text alone never changes origin', () => {
+  it('unsupported user message text alone never changes origin', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'from Sydney',
       'leaving Melbourne',
       'departing Brisbane',
       'flying out of Perth',
+      'Sydney',
+      'go to Brisbane',
     ];
 
     let state = initial;
@@ -90,6 +91,34 @@ describe('phase 3B — explicit origin only', () => {
       expect(result.state.origin).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit origin cue in the message updates origin', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('from Sydney', initial, 0);
+    expect(result.state.origin).toBe('Sydney');
+  });
+
+  it('fly from Sydney to Brisbane composes origin and destination', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('fly from Sydney to Brisbane', initial, 0);
+    expect(result.state.origin).toBe('Sydney');
+    expect(result.state.destination).toBe('Brisbane');
+  });
+
+  it('trusted explicit stateUpdate.origin overrides an extracted origin', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('from Sydney', initial, 0, { origin: 'Perth' });
+    expect(result.state.origin).toBe('Perth');
   });
 
   it('destination remains preserved when origin changes', () => {

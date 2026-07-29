@@ -7,17 +7,136 @@ import type {
 /**
  * Internal origin-field extraction boundary.
  *
- * Behaviourally empty in this phase — ignores all input and always returns a
- * new empty explicit state update. Not wired as a public runtime API.
+ * Phase 7B: recognises only narrow, explicit origin statements in the current
+ * message. Deterministic and local — no external lookup, geographic
+ * validation, destination extraction, or currentState inspection.
  */
 export class OriginConversationStateExtractor
   implements ConversationStateExtractor
 {
   extract(
-    _input: ConversationStateExtractionInput,
+    input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
+    const origin = extractExplicitOrigin(input.message);
+    if (origin === null) {
+      return {
+        stateUpdate: {},
+      };
+    }
     return {
-      stateUpdate: {},
+      stateUpdate: {
+        origin: origin,
+      },
     };
   }
+}
+
+/** Trim edges without String.prototype.trim (architecture boundary). */
+function edgeTrim(value: string): string {
+  return value.replace(/^\s+|\s+$/g, '');
+}
+
+/**
+ * Non-travel or unsafe “from” uses, negation, and preservation that must not
+ * yield an origin update in this phase.
+ */
+function isBlockedOriginMessage(message: string): boolean {
+  if (/\?/.test(message)) {
+    return true;
+  }
+  if (
+    /\b(?:hotel|flights?|available|open)\s+from\b/i.test(message) ||
+    /\bfrom\s+A\$/i.test(message) ||
+    /\bfrom\s+\d/i.test(message) ||
+    /\b(?:hours?|kilometres?|kilometers?|km|miles?)\s+from\b/i.test(message) ||
+    /\b(?:recommendations?|message|confirmation)\s+from\b/i.test(message) ||
+    /\bbooking\s+confirmation\s+from\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (/\breturn\s+from\b/i.test(message)) {
+    return true;
+  }
+  if (/\bkeep\b/i.test(message)) {
+    return true;
+  }
+  if (/\bforget\b/i.test(message)) {
+    return true;
+  }
+  if (
+    /\b(?:do\s+not|don't)\s+(?:depart\s+from|leave\s+from|change|make\s+(?:the\s+)?origin)\b/i.test(
+      message,
+    )
+  ) {
+    return true;
+  }
+  if (/\bnot\s+(?:from|leaving\s+from|departing\s+from)\b/i.test(message)) {
+    return true;
+  }
+  if (/\bi(?:\s+am|'m)\s+not\s+from\b/i.test(message)) {
+    return true;
+  }
+  if (/\bnot\b/i.test(message)) {
+    return true;
+  }
+  return false;
+}
+
+const EXPLICIT_ORIGIN_CUES: readonly RegExp[] = [
+  /\bmy\s+origin\s+is\s+(.+)$/i,
+  /\borigin\s+is\s+(.+)$/i,
+  /\bi(?:\s+am|'m)\s+from\s+(.+)$/i,
+  /\b(?:fly(?:ing)?|travel(?:l?ing)?|depart(?:ing)?|leav(?:e|ing)|start(?:ing)?)\s+from\s+(.+)$/i,
+  /\bfrom\s+(.+)$/i,
+];
+
+function normaliseCapturedOrigin(raw: string): string | null {
+  let value = edgeTrim(raw);
+  // Stop before a destination clause on the same turn.
+  value = value.replace(
+    /,?\s+(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?|visit(?:ing)?|take\s+me)\s+to\b.*$/i,
+    '',
+  );
+  value = value.replace(
+    /\s+and\s+(?:fly(?:ing)?|go(?:ing)?|travel(?:l?ing)?|head(?:ing)?)\b.*$/i,
+    '',
+  );
+  value = value.replace(/\s+to\b.*$/i, '');
+  value = value.replace(/\s+instead(?:\s+of\b.*)?$/i, '');
+  value = value.replace(/\s+for\b.*$/i, '');
+  value = value.replace(/\s+with\b.*$/i, '');
+  value = value.replace(/[.!?,;:]+$/g, '');
+  value = edgeTrim(value);
+  if (value.length === 0) {
+    return null;
+  }
+  if (/^(?:somewhere|anywhere|here|there|it)\b/i.test(value)) {
+    return null;
+  }
+  if (/\b(?:or|and)\b/i.test(value)) {
+    return null;
+  }
+  return value;
+}
+
+function extractExplicitOrigin(message: string): string | null {
+  const text = edgeTrim(message);
+  if (text.length === 0) {
+    return null;
+  }
+  if (isBlockedOriginMessage(text)) {
+    return null;
+  }
+  for (const cue of EXPLICIT_ORIGIN_CUES) {
+    const match = text.match(cue);
+    const captured = match?.[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+    const origin = normaliseCapturedOrigin(captured);
+    if (origin !== null) {
+      return origin;
+    }
+  }
+  return null;
 }
