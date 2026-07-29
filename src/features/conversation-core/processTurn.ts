@@ -56,6 +56,8 @@ export type ProcessConversationTurnInput = {
   nearbyDiscoveryRequested?: boolean;
   /** Explicit beaches request flag only — stored as injected; never read from message. */
   beachesRequested?: boolean;
+  /** Explicit camping request flag only — stored as injected; never read from message. */
+  campingRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -67,14 +69,14 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3N: append raw user + placeholder assistant entries, increment
+ * Phase 3O: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
- * beachesRequested only. Does not interpret, trim, normalise, extract,
- * validate counts, calculate duration, or persist.
+ * beachesRequested/campingRequested only. Does not interpret, trim,
+ * normalise, extract, validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -127,6 +129,10 @@ export function processConversationTurn(
     input.beachesRequested !== undefined
       ? input.beachesRequested
       : base.beachesRequested;
+  const campingRequested =
+    input.campingRequested !== undefined
+      ? input.campingRequested
+      : base.campingRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -163,6 +169,7 @@ export function processConversationTurn(
     restaurantsRequested,
     nearbyDiscoveryRequested,
     beachesRequested,
+    campingRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

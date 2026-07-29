@@ -62,6 +62,8 @@ export type ConversationCoreState = {
   nearbyDiscoveryRequested: boolean | null;
   /** Explicitly supplied beaches request flag only — never detected from message text. */
   beachesRequested: boolean | null;
+  /** Explicitly supplied camping request flag only — never detected from message text. */
+  campingRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -100,6 +102,7 @@ export function createInitialConversationCoreState(
     restaurantsRequested: null,
     nearbyDiscoveryRequested: null,
     beachesRequested: null,
+    campingRequested: null,
     transcript: [],
   };
 }
