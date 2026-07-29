@@ -6,7 +6,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 
-const CONVERSATION_ID = 'conversation-core-wineries-food-trails-requested-001';
+const CONVERSATION_ID = 'conversation-core-national-parks-requested-001';
 const CREATED_AT = new Date('2026-07-29T00:00:00.000Z');
 
 function turn(
@@ -56,13 +56,13 @@ function turn(
   });
 }
 
-describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction activation', () => {
-  it('initial wineriesFoodTrailsRequested is null', () => {
+describe('phase 3AA/7AA — explicit nationalParksRequested with extraction activation', () => {
+  it('initial nationalParksRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    expect(state.wineriesFoodTrailsRequested).toBeNull();
+    expect(state.nationalParksRequested).toBeNull();
   });
 
   it('explicit true is stored', () => {
@@ -70,10 +70,10 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const result = turn('I want wineries', initial, 0, {
-      wineriesFoodTrailsRequested: true,
+    const result = turn('I want national parks', initial, 0, {
+      nationalParksRequested: true,
     });
-    expect(result.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(result.state.nationalParksRequested).toBe(true);
   });
 
   it('explicit false is stored', () => {
@@ -81,16 +81,16 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const withTrue = turn('need vineyards', initial, 0, {
-      wineriesFoodTrailsRequested: true,
+    const withTrue = turn('need playgrounds', initial, 0, {
+      nationalParksRequested: true,
     });
-    expect(withTrue.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(withTrue.state.nationalParksRequested).toBe(true);
 
-    const withFalse = turn('no vineyards', withTrue.state, 1, {
-      wineriesFoodTrailsRequested: false,
+    const withFalse = turn('no playgrounds', withTrue.state, 1, {
+      nationalParksRequested: false,
     });
-    expect(withFalse.state.wineriesFoodTrailsRequested).toBe(false);
-    expect(withFalse.state.wineriesFoodTrailsRequested).not.toBeNull();
+    expect(withFalse.state.nationalParksRequested).toBe(false);
+    expect(withFalse.state.nationalParksRequested).not.toBeNull();
   });
 
   it('omission preserves a previous true', () => {
@@ -99,12 +99,12 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      wineriesFoodTrailsRequested: true,
+      nationalParksRequested: true,
     });
-    expect(first.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(first.state.nationalParksRequested).toBe(true);
 
-    const second = turn('wine food restaurants', first.state, 1);
-    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
+    const second = turn('parks gardens playgrounds', first.state, 1);
+    expect(second.state.nationalParksRequested).toBe(true);
   });
 
   it('omission preserves a previous false', () => {
@@ -113,33 +113,33 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      wineriesFoodTrailsRequested: false,
+      nationalParksRequested: false,
     });
-    expect(first.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(first.state.nationalParksRequested).toBe(false);
 
-    const second = turn('wine tours food tours', first.state, 1);
-    expect(second.state.wineriesFoodTrailsRequested).toBe(false);
+    const second = turn('state parks conservation areas', first.state, 1);
+    expect(second.state.nationalParksRequested).toBe(false);
   });
 
-  it('user message text cannot set wineriesFoodTrailsRequested from unsupported wording', () => {
+  it('user message text cannot set nationalParksRequested from unsupported wording', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'wine',
-      'food',
-      'restaurants',
-      'vineyards',
-      'cellar doors',
-      'wine tours',
-      'food tours',
+      'parks',
+      'playground',
+      'gardens',
+      'reserves',
+      'state parks',
+      'conservation areas',
+      'Sydney',
     ];
 
     let state = initial;
     phrases.forEach((message, index) => {
       const result = turn(message, state, index);
-      expect(result.state.wineriesFoodTrailsRequested).toBeNull();
+      expect(result.state.nationalParksRequested).toBeNull();
       state = result.state;
     });
   });
@@ -150,24 +150,24 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       now: CREATED_AT,
     });
     const withTrue = turn('Hello', initial, 0, {
-      wineriesFoodTrailsRequested: true,
+      nationalParksRequested: true,
     });
-    expect(withTrue.state.wineriesFoodTrailsRequested).toBe(true);
+    expect(withTrue.state.nationalParksRequested).toBe(true);
 
-    const afterWords = turn('wine tours vineyards', withTrue.state, 1);
-    expect(afterWords.state.wineriesFoodTrailsRequested).toBe(true);
+    const afterWords = turn('state parks gardens playgrounds', withTrue.state, 1);
+    expect(afterWords.state.nationalParksRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
-      wineriesFoodTrailsRequested: false,
+      nationalParksRequested: false,
     });
-    expect(withFalse.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(withFalse.state.nationalParksRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'wine food restaurants markets',
+      'parks reserves conservation areas Sydney',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(afterMoreWords.state.nationalParksRequested).toBe(false);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {
@@ -204,6 +204,9 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       wildlifeRequested: true,
       nationalParksRequested: true,
     });
+    expect(first.state.nationalParksRequested).toBe(true);
+    expect(first.state.wildlifeRequested).toBe(true);
+    expect(first.state.eventsFestivalsRequested).toBe(true);
     expect(first.state.wineriesFoodTrailsRequested).toBe(true);
     expect(first.state.divingSnorkellingRequested).toBe(true);
     expect(first.state.fishingRequested).toBe(true);
@@ -214,10 +217,13 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
     expect(first.state.status).toBe('active');
     expect(first.state.turnCount).toBe(1);
 
-    const second = turn('no wineries', first.state, 1, {
-      wineriesFoodTrailsRequested: false,
+    const second = turn('no national parks', first.state, 1, {
+      nationalParksRequested: false,
     });
-    expect(second.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(second.state.nationalParksRequested).toBe(false);
+    expect(second.state.wildlifeRequested).toBe(true);
+    expect(second.state.eventsFestivalsRequested).toBe(true);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
     expect(second.state.divingSnorkellingRequested).toBe(true);
     expect(second.state.fishingRequested).toBe(true);
     expect(second.state.hikingWalkingRequested).toBe(true);
@@ -231,7 +237,7 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       now: CREATED_AT,
     });
     const first = turn('Sydney to Gold Coast!!!!', initial, 0, {
-      wineriesFoodTrailsRequested: true,
+      nationalParksRequested: true,
     });
 
     expect(first.state.transcript.map((entry) => entry.role)).toEqual([
@@ -242,8 +248,8 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('wine food restaurants', first.state, 1);
-    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
+    const second = turn('parks gardens playgrounds', first.state, 1);
+    expect(second.state.nationalParksRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });

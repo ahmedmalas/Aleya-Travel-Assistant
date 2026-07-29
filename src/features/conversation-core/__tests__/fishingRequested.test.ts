@@ -40,6 +40,7 @@ function turn(
     wineriesFoodTrailsRequested?: boolean;
     eventsFestivalsRequested?: boolean;
     wildlifeRequested?: boolean;
+    nationalParksRequested?: boolean;
   } = {},
 ) {
   return processConversationTurn({
@@ -201,6 +202,7 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       wineriesFoodTrailsRequested: true,
       eventsFestivalsRequested: true,
       wildlifeRequested: true,
+      nationalParksRequested: true,
     });
     expect(first.state.fishingRequested).toBe(true);
     expect(first.state.hikingWalkingRequested).toBe(true);

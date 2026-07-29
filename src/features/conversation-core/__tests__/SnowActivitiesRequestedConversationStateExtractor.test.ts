@@ -153,6 +153,7 @@ function createState(
     wineriesFoodTrailsRequested: false,
     eventsFestivalsRequested: false,
     wildlifeRequested: false,
+    nationalParksRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -312,6 +313,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
       wildlifeRequested: false,
+      nationalParksRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -596,6 +598,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
       wildlifeRequested: false,
+      nationalParksRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
@@ -666,6 +669,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         wineriesFoodTrailsRequested: null,
         eventsFestivalsRequested: null,
         wildlifeRequested: null,
+        nationalParksRequested: null,
       }),
       userEntryId: 'user-7t-f',
       assistantEntryId: 'assistant-7t-f',
@@ -696,6 +700,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         wineriesFoodTrailsRequested: null,
         eventsFestivalsRequested: null,
         wildlifeRequested: null,
+        nationalParksRequested: null,
       }),
       userEntryId: 'user-7t-g',
       assistantEntryId: 'assistant-7t-g',
@@ -799,6 +804,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
       wildlifeRequested: false,
+      nationalParksRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention snow

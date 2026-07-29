@@ -67,6 +67,7 @@ describe('phase 5A — ConversationStateExtractionResult contract only', () => {
       wineriesFoodTrailsRequested: false,
       eventsFestivalsRequested: false,
       wildlifeRequested: false,
+      nationalParksRequested: false,
       toursRequested: true,
       eventsRequested: false,
       nightlifeRequested: true,

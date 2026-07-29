@@ -1235,4 +1235,31 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'kangaroo', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
+
+  it('factory-created extraction sets nationalParksRequested true for explicit requests, named parks, and rejects unsupported wording', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState({ nationalParksRequested: false });
+
+    expect(
+      extractor.extract({ message: 'show me national parks', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'national parks', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'Kakadu National Park', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'no national parks', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'state parks', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'parks', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Sydney', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
 });

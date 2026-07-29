@@ -30,6 +30,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'wineriesFoodTrailsRequested',
   'eventsFestivalsRequested',
   'wildlifeRequested',
+  'nationalParksRequested',
   'toursRequested',
   'eventsRequested',
   'nightlifeRequested',

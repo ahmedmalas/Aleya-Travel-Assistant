@@ -40,6 +40,7 @@ function turn(
     wineriesFoodTrailsRequested?: boolean;
     eventsFestivalsRequested?: boolean;
     wildlifeRequested?: boolean;
+    nationalParksRequested?: boolean;
   } = {},
 ) {
   return processConversationTurn({
@@ -201,7 +202,9 @@ describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation'
       wineriesFoodTrailsRequested: true,
       eventsFestivalsRequested: true,
       wildlifeRequested: true,
+      nationalParksRequested: true,
     });
+    expect(first.state.nationalParksRequested).toBe(true);
     expect(first.state.wildlifeRequested).toBe(true);
     expect(first.state.eventsFestivalsRequested).toBe(true);
     expect(first.state.wineriesFoodTrailsRequested).toBe(true);
@@ -218,6 +221,7 @@ describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation'
       wildlifeRequested: false,
     });
     expect(second.state.wildlifeRequested).toBe(false);
+    expect(second.state.nationalParksRequested).toBe(true);
     expect(second.state.eventsFestivalsRequested).toBe(true);
     expect(second.state.wineriesFoodTrailsRequested).toBe(true);
     expect(second.state.divingSnorkellingRequested).toBe(true);
