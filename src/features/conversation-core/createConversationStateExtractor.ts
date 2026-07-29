@@ -1,3 +1,4 @@
+import { AccommodationRequestedConversationStateExtractor } from './AccommodationRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from './AdultCountConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from './ChildCountConversationStateExtractor';
 import { CompositeConversationStateExtractor } from './CompositeConversationStateExtractor';
@@ -22,6 +23,7 @@ import type { ConversationStateExtractor } from './types';
  * ChildCountConversationStateExtractor, then a new
  * InfantCountConversationStateExtractor, then a new
  * FlightsRequestedConversationStateExtractor, then a new
+ * AccommodationRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -35,6 +37,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new ChildCountConversationStateExtractor(),
     new InfantCountConversationStateExtractor(),
     new FlightsRequestedConversationStateExtractor(),
+    new AccommodationRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
