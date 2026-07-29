@@ -64,6 +64,8 @@ export type ProcessConversationTurnInput = {
   fourWheelDriveRequested?: boolean;
   /** Explicit scenic-drives request flag only — stored as injected; never read from message. */
   scenicDrivesRequested?: boolean;
+  /** Explicit attractions request flag only — stored as injected; never read from message. */
+  attractionsRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -75,15 +77,16 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3R: append raw user + placeholder assistant entries, increment
+ * Phase 3S: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
  * beachesRequested/campingRequested/kayakingRequested/
- * fourWheelDriveRequested/scenicDrivesRequested only. Does not interpret,
- * trim, normalise, extract, validate counts, calculate duration, or persist.
+ * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested
+ * only. Does not interpret, trim, normalise, extract, validate counts,
+ * calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -152,6 +155,10 @@ export function processConversationTurn(
     input.scenicDrivesRequested !== undefined
       ? input.scenicDrivesRequested
       : base.scenicDrivesRequested;
+  const attractionsRequested =
+    input.attractionsRequested !== undefined
+      ? input.attractionsRequested
+      : base.attractionsRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -192,6 +199,7 @@ export function processConversationTurn(
     kayakingRequested,
     fourWheelDriveRequested,
     scenicDrivesRequested,
+    attractionsRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

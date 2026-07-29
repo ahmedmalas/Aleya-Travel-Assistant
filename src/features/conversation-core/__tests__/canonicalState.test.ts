@@ -14,6 +14,7 @@ const CANONICAL_KEYS = [
   'activitiesRequested',
   'adultCount',
   'ageMs',
+  'attractionsRequested',
   'beachesRequested',
   'campingRequested',
   'carHireRequested',
@@ -108,6 +109,7 @@ describe('canonical conversation-core state', () => {
       kayakingRequested: null,
       fourWheelDriveRequested: null,
       scenicDrivesRequested: null,
+      attractionsRequested: null,
       transcript: [],
     });
   });

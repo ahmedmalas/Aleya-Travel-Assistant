@@ -70,6 +70,8 @@ export type ConversationCoreState = {
   fourWheelDriveRequested: boolean | null;
   /** Explicitly supplied scenic-drives request flag only — never detected from message text. */
   scenicDrivesRequested: boolean | null;
+  /** Explicitly supplied attractions request flag only — never detected from message text. */
+  attractionsRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -112,6 +114,7 @@ export function createInitialConversationCoreState(
     kayakingRequested: null,
     fourWheelDriveRequested: null,
     scenicDrivesRequested: null,
+    attractionsRequested: null,
     transcript: [],
   };
 }
