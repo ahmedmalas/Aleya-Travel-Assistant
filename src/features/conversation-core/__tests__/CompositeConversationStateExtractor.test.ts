@@ -37,6 +37,7 @@ import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrives
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
 import { FishingRequestedConversationStateExtractor } from '../extractors/FishingRequestedConversationStateExtractor';
+import { DivingSnorkellingRequestedConversationStateExtractor } from '../extractors/DivingSnorkellingRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const COMPOSITE_SOURCE = resolve(
@@ -356,7 +357,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -368,10 +369,10 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     }
   });
 
-  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-nearby-beaches-camping-kayaking-4wd-scenic-attractions-snow-hiking-fishing-empty sequence stays empty without altering merge behaviour', () => {
+  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-nearby-beaches-camping-kayaking-4wd-scenic-attractions-snow-hiking-fishing-diving-empty sequence stays empty without altering merge behaviour', () => {
     const input: ConversationStateExtractionInput = {
       message:
-        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities, restaurants, nearby discovery, beaches, camping, kayaking, 4WD, scenic drives, attractions, snow activities, hiking and fishing',
+        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities, restaurants, nearby discovery, beaches, camping, kayaking, 4WD, scenic drives, attractions, snow activities, hiking, fishing and diving',
       currentState: createState(),
     };
     const received: ConversationStateExtractionInput[] = [];
@@ -402,6 +403,8 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     const hikingWalkingRequested =
       new HikingWalkingRequestedConversationStateExtractor();
     const fishingRequested = new FishingRequestedConversationStateExtractor();
+    const divingSnorkellingRequested =
+      new DivingSnorkellingRequestedConversationStateExtractor();
     const empty = new EmptyConversationStateExtractor();
     const destinationExtract = vi
       .spyOn(destination, 'extract')
@@ -535,6 +538,12 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
         received.push(receivedInput);
         return { stateUpdate: {} };
       });
+    const divingSnorkellingRequestedExtract = vi
+      .spyOn(divingSnorkellingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
     const emptyExtract = vi
       .spyOn(empty, 'extract')
       .mockImplementation((receivedInput) => {
@@ -565,6 +574,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       snowActivitiesRequested,
       hikingWalkingRequested,
       fishingRequested,
+      divingSnorkellingRequested,
       empty,
     ]);
     const first = production.extract(input);
@@ -596,8 +606,9 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(snowActivitiesRequestedExtract).toHaveBeenCalledTimes(2);
     expect(hikingWalkingRequestedExtract).toHaveBeenCalledTimes(2);
     expect(fishingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(divingSnorkellingRequestedExtract).toHaveBeenCalledTimes(2);
     expect(emptyExtract).toHaveBeenCalledTimes(2);
-    expect(received).toHaveLength(46);
+    expect(received).toHaveLength(48);
     expect(received.every((value) => value === input)).toBe(true);
 
     const mergeStillWorks = new CompositeConversationStateExtractor([
@@ -620,6 +631,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       stubExtractor({ fourWheelDriveRequested: true }),
       stubExtractor({ scenicDrivesRequested: true }),
       stubExtractor({ attractionsRequested: true }),
+      stubExtractor({}),
       stubExtractor({}),
       stubExtractor({}),
       stubExtractor({}),

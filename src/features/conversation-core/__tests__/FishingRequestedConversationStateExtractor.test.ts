@@ -226,12 +226,12 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     expect(second).toEqual({ stateUpdate: {} });
   });
 
-  it('is included once in the production composite after hiking/walking and before empty', () => {
+  it('is included once in the production composite after hiking/walking', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(extractors).toHaveLength(23);
+    expect(extractors).toHaveLength(24);
     const hikingIndexes = extractors
       .map((extractor, index) =>
         extractor instanceof HikingWalkingRequestedConversationStateExtractor
@@ -252,12 +252,12 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
 
     expect(hikingIndexes).toEqual([20]);
     expect(fishingIndexes).toEqual([21]);
-    expect(emptyIndexes).toEqual([22]);
+    expect(emptyIndexes).toEqual([23]);
     expect(extractors[20]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
     expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[22]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
