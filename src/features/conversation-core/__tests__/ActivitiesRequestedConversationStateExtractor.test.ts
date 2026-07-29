@@ -77,7 +77,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7k',
+      conversationId: 'conversation-8k',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -135,7 +135,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation', () => {
+describe('phase 8K — ActivitiesRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit activitiesRequested true contract', () => {
     expectTypeOf<ActivitiesRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<ActivitiesRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -156,33 +156,93 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
     const extractor = new ActivitiesRequestedConversationStateExtractor();
     const cases = [
       'activities',
+      'activity',
+      'things to do',
+      'what to do',
       'book activities',
+      'find activities',
+      'search activities',
       'I need activities',
+      'I want activities',
       'include activities',
       'add activities',
-      'things to do',
+      'show me activities',
+      'compare activities',
+      'activity options',
+      'tour',
+      'tours',
+      'book a tour',
+      'find tours',
+      'attractions',
+      'find attractions',
+      'experiences',
+      'local experiences',
       'need activities',
+      'I need activities in Brisbane',
+      'book flights, accommodation and activities',
+      'find things to do for the family',
+      'show me tours and attractions',
+      'I want local experiences near Surfers Paradise',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ activitiesRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { activitiesRequested: true } });
+        currentState: createState({ activitiesRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { activitiesRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty('flightsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'accommodationRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('carHireRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for specific activity types, attraction names, vague sightseeing, negation, remove/forget, and keep wording', () => {
+  it('emits only activitiesRequested from combined flights, accommodation and activities wording', () => {
+    const extractor = new ActivitiesRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'book flights, accommodation and activities',
+        currentState: createState({ activitiesRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+  });
+
+  it('returns empty for physical/account activity, tour metadata, specialised cues, negation, and vague wording', () => {
     const extractor = new ActivitiesRequestedConversationStateExtractor();
     const unsupported = [
-      'book a tour',
-      'find an excursion',
-      'I want attractions',
+      'physical activity',
+      'daily activity',
+      'account activity',
+      'recent activity',
+      'business activity',
+      'activity log',
+      'tour operator',
+      'tour bus',
+      'tour guide',
+      'tourism',
+      'attraction address',
+      'attraction opening hours',
+      'attraction ticket already booked',
+      'we visited the attraction',
+      'the tour was cancelled',
+      'tourist attractions',
+      'wine tours',
+      'show me wine tours',
+      'things are busy',
+      'what should I do next',
+      'what do you need',
+      'activities?',
+      'what are activities',
       'Sydney Opera House',
-      'show me experiences',
+      'find an excursion',
       'we want an adventure',
       'add sightseeing',
       'find entertainment',
@@ -190,9 +250,23 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
       'show recreation options',
       'find family activities',
       'what outdoor activities are nearby',
-      'find things to do',
-      'do not add activities',
+      'restaurants',
+      'nearby places',
+      'beaches',
+      'camping',
+      'national parks',
+      'hiking',
+      'kayaking',
+      '4WD',
+      'scenic drives',
       'no activities',
+      'do not include activities',
+      'without activities',
+      'remove activities',
+      'cancel the activities',
+      "I don't need activities",
+      'no tours',
+      'do not add activities',
       'remove the activities',
       'forget activities',
       'keep the activities',
@@ -286,6 +360,8 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7K');
+    expect(source).toContain('Phase 8K');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -343,16 +419,27 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
 
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
@@ -424,20 +511,21 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
       activitiesRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
       message: 'I need activities',
       state: currentState,
-      userEntryId: 'user-7k-a',
-      assistantEntryId: 'assistant-7k-a',
+      userEntryId: 'user-8k-a',
+      assistantEntryId: 'assistant-8k-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no activities',
       state: currentState,
-      userEntryId: 'user-7k-b',
-      assistantEntryId: 'assistant-7k-b',
+      userEntryId: 'user-8k-b',
+      assistantEntryId: 'assistant-8k-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { activitiesRequested: true },
@@ -445,8 +533,8 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
     const overriddenFalse = processConversationTurn({
       message: 'book activities',
       state: currentState,
-      userEntryId: 'user-7k-c',
-      assistantEntryId: 'assistant-7k-c',
+      userEntryId: 'user-8k-c',
+      assistantEntryId: 'assistant-8k-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { activitiesRequested: false },
@@ -454,22 +542,23 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
     const nullOverride = processConversationTurn({
       message: 'book activities',
       state: currentState,
-      userEntryId: 'user-7k-d',
-      assistantEntryId: 'assistant-7k-d',
+      userEntryId: 'user-8k-d',
+      assistantEntryId: 'assistant-8k-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { activitiesRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'show me experiences',
+      message: 'physical activity',
       state: currentState,
-      userEntryId: 'user-7k-e',
-      assistantEntryId: 'assistant-7k-e',
+      userEntryId: 'user-8k-e',
+      assistantEntryId: 'assistant-8k-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'book activities. Fly from Sydney to Cairns',
+      message:
+        'book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -478,13 +567,14 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
         carHireRequested: null,
         activitiesRequested: null,
       }),
-      userEntryId: 'user-7k-f',
-      assistantEntryId: 'assistant-7k-f',
+      userEntryId: 'user-8k-f',
+      assistantEntryId: 'assistant-8k-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'book activities. Fly from Sydney to Cairns',
+      message:
+        'book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -493,8 +583,8 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
         carHireRequested: null,
         activitiesRequested: null,
       }),
-      userEntryId: 'user-7k-g',
-      assistantEntryId: 'assistant-7k-g',
+      userEntryId: 'user-8k-g',
+      assistantEntryId: 'assistant-8k-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -503,21 +593,54 @@ describe('phase 7K — ActivitiesRequestedConversationStateExtractor activation'
         activitiesRequested: false,
       },
     });
+    const thingsToDo = processConversationTurn({
+      message: 'things to do',
+      state: currentState,
+      userEntryId: 'user-8k-h',
+      assistantEntryId: 'assistant-8k-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const tours = processConversationTurn({
+      message: 'show me tours and attractions',
+      state: currentState,
+      userEntryId: 'user-8k-i',
+      assistantEntryId: 'assistant-8k-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const specialisedPreserved = processConversationTurn({
+      message: 'beaches',
+      state: currentState,
+      userEntryId: 'user-8k-j',
+      assistantEntryId: 'assistant-8k-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.activitiesRequested).toBe(true);
     expect(extracted.state.carHireRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
+    expect(extracted.state.accommodationRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
     expect(overriddenTrue.state.activitiesRequested).toBe(true);
     expect(overriddenFalse.state.activitiesRequested).toBe(false);
     expect(nullOverride.state.activitiesRequested).toBeNull();
     expect(preserved.state.activitiesRequested).toBe(false);
     expect(composed.state.activitiesRequested).toBe(true);
+    expect(composed.state.flightsRequested).toBe(true);
+    expect(composed.state.accommodationRequested).toBe(true);
+    expect(composed.state.carHireRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.activitiesRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(thingsToDo.state.activitiesRequested).toBe(true);
+    expect(tours.state.activitiesRequested).toBe(true);
+    expect(specialisedPreserved.state.activitiesRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(

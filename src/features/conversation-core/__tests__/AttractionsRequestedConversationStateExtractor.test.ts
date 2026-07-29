@@ -787,8 +787,8 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       nationalParksRequested: false,
     });
 
-    // ActivitiesRequested intentionally ignores messages that also mention
-    // attractions, so this composed cue set omits an activities emission.
+    // Phase 8K: clear attraction/activity cues may emit activitiesRequested
+    // alongside attractionsRequested from this composed message.
     const attractionsActiveMessage =
       'add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
     expect(
@@ -804,6 +804,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         flightsRequested: true,
         accommodationRequested: true,
         carHireRequested: true,
+        activitiesRequested: true,
         restaurantsRequested: true,
         nearbyDiscoveryRequested: true,
         beachesRequested: true,
@@ -819,7 +820,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         message: attractionsActiveMessage,
         currentState,
       }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
       extractors[10]?.extract({
         message: 'book activities',

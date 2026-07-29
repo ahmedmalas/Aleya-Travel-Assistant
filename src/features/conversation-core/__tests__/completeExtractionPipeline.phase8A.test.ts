@@ -410,6 +410,12 @@ describe('phase 8A — complete extraction pipeline verification', () => {
   it('reaches all 27 behavioural extractors through processConversationTurn with single-field activation', () => {
     expect(BEHAVIOURAL_RUNTIME_CUES).toHaveLength(27);
 
+    // Phase 8K: general activities cues overlap attraction wording, so
+    // "add attractions" may also set activitiesRequested.
+    const allowedCrossField: Readonly<Record<string, readonly string[]>> = {
+      'add attractions': ['activitiesRequested'],
+    };
+
     const crossFieldActivations: string[] = [];
 
     BEHAVIOURAL_RUNTIME_CUES.forEach((cue, index) => {
@@ -425,6 +431,10 @@ describe('phase 8A — complete extraction pipeline verification', () => {
           continue;
         }
         if (after[field] !== before[field]) {
+          const allowed = allowedCrossField[cue.message] ?? [];
+          if (allowed.includes(field)) {
+            continue;
+          }
           crossFieldActivations.push(
             `${cue.message} changed ${field}: ${String(before[field])} → ${String(after[field])}`,
           );

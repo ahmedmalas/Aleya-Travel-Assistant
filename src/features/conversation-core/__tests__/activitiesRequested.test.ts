@@ -85,7 +85,7 @@ describe('phase 3K — explicit activitiesRequested only', () => {
     const first = turn('Hello', initial, 0, { activitiesRequested: true });
     expect(first.state.activitiesRequested).toBe(true);
 
-    const second = turn('tours attractions', first.state, 1);
+    const second = turn('sightseeing entertainment', first.state, 1);
     expect(second.state.activitiesRequested).toBe(true);
 
     const third = turn('Hello', second.state, 2, {
@@ -93,7 +93,7 @@ describe('phase 3K — explicit activitiesRequested only', () => {
     });
     expect(third.state.activitiesRequested).toBe(false);
 
-    const fourth = turn('experiences adventures', third.state, 3);
+    const fourth = turn('adventures tourism', third.state, 3);
     expect(fourth.state.activitiesRequested).toBe(false);
   });
 
@@ -117,12 +117,12 @@ describe('phase 3K — explicit activitiesRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'tours',
-      'attractions',
-      'experiences',
       'adventures',
       'sightseeing',
       'entertainment',
+      'tourism',
+      'physical activity',
+      'restaurants',
     ];
 
     let state = initial;
@@ -131,6 +131,73 @@ describe('phase 3K — explicit activitiesRequested only', () => {
       expect(result.state.activitiesRequested).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit activity-request cue in the message sets activitiesRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('I need activities', initial, 0);
+    expect(result.state.activitiesRequested).toBe(true);
+  });
+
+  it('phase 8K clear activity cues set activitiesRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const thingsToDo = turn('things to do', initial, 0);
+    expect(thingsToDo.state.activitiesRequested).toBe(true);
+    expect(thingsToDo.state.flightsRequested).toBeNull();
+    expect(thingsToDo.state.restaurantsRequested).toBeNull();
+    expect(thingsToDo.state.beachesRequested).toBeNull();
+
+    const tours = turn('book a tour', initial, 1);
+    expect(tours.state.activitiesRequested).toBe(true);
+
+    const experiences = turn('local experiences', initial, 2);
+    expect(experiences.state.activitiesRequested).toBe(true);
+
+    const inRequest = turn(
+      'I need activities. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.activitiesRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, {
+      activitiesRequested: false,
+    });
+    const negated = turn('no activities', seeded.state, 5);
+    expect(negated.state.activitiesRequested).toBe(false);
+    const physical = turn('physical activity', seeded.state, 6);
+    expect(physical.state.activitiesRequested).toBe(false);
+    const specialised = turn('beaches', seeded.state, 7);
+    expect(specialised.state.activitiesRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.activitiesRequested overrides an extracted activity request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('book activities', initial, 0, {
+      activitiesRequested: false,
+    });
+    expect(overriddenFalse.state.activitiesRequested).toBe(false);
+
+    const overriddenTrue = turn('no activities', initial, 1, {
+      activitiesRequested: true,
+    });
+    expect(overriddenTrue.state.activitiesRequested).toBe(true);
+
+    const nullOverride = turn('book activities', initial, 2, {
+      activitiesRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.activitiesRequested).toBeNull();
   });
 
   it('all existing request flags and earlier fields remain preserved', () => {

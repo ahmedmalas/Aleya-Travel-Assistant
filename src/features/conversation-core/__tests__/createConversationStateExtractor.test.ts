@@ -927,6 +927,9 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'show me experiences', currentState }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      extractor.extract({ message: 'sightseeing', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
@@ -1068,10 +1071,20 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
 
     expect(
       extractor.extract({ message: 'show me attractions', currentState }),
-    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    ).toEqual({
+      stateUpdate: {
+        activitiesRequested: true,
+        attractionsRequested: true,
+      },
+    });
     expect(
       extractor.extract({ message: 'show me attractions', currentState }),
-    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    ).toEqual({
+      stateUpdate: {
+        activitiesRequested: true,
+        attractionsRequested: true,
+      },
+    });
     expect(
       extractor.extract({ message: 'no attractions', currentState }),
     ).toEqual({ stateUpdate: {} });
