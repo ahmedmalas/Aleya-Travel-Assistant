@@ -121,6 +121,72 @@ describe('phase 3J — explicit carHireRequested only', () => {
     });
   });
 
+  it('explicit car-hire-request cue in the message sets carHireRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('I need car hire', initial, 0);
+    expect(result.state.carHireRequested).toBe(true);
+  });
+
+  it('phase 8J clear car-hire cues set carHireRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const rentalCar = turn('rental car', initial, 0);
+    expect(rentalCar.state.carHireRequested).toBe(true);
+    expect(rentalCar.state.flightsRequested).toBeNull();
+    expect(rentalCar.state.accommodationRequested).toBeNull();
+
+    const vehicleHire = turn('vehicle hire', initial, 1);
+    expect(vehicleHire.state.carHireRequested).toBe(true);
+
+    const options = turn('car hire options', initial, 2);
+    expect(options.state.carHireRequested).toBe(true);
+
+    const inRequest = turn(
+      'I need car hire. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.carHireRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, {
+      carHireRequested: false,
+    });
+    const negated = turn('no car hire', seeded.state, 5);
+    expect(negated.state.carHireRequested).toBe(false);
+    const personalCar = turn('my car', seeded.state, 6);
+    expect(personalCar.state.carHireRequested).toBe(false);
+    const alreadyBooked = turn('I have a rental car', seeded.state, 7);
+    expect(alreadyBooked.state.carHireRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.carHireRequested overrides an extracted car-hire request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('book car hire', initial, 0, {
+      carHireRequested: false,
+    });
+    expect(overriddenFalse.state.carHireRequested).toBe(false);
+
+    const overriddenTrue = turn('no car hire', initial, 1, {
+      carHireRequested: true,
+    });
+    expect(overriddenTrue.state.carHireRequested).toBe(true);
+
+    const nullOverride = turn('book car hire', initial, 2, {
+      carHireRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.carHireRequested).toBeNull();
+  });
+
   it('flightsRequested, accommodationRequested and earlier fields remain preserved', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,

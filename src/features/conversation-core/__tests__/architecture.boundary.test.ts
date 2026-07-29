@@ -653,6 +653,8 @@ describe('conversation-core architectural boundary', () => {
     expect(carHireRequestedExtractor).toMatch(
       /export class CarHireRequestedConversationStateExtractor/,
     );
+    expect(carHireRequestedExtractor).toContain('Phase 7J');
+    expect(carHireRequestedExtractor).toContain('Phase 8J');
     expect(carHireRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );
