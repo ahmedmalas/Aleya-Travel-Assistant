@@ -11,7 +11,7 @@ export const ENGINE_NOT_ASSEMBLED_REPLY =
 export type ProcessConversationTurnTrace = {
   entryPoint: 'processConversationTurn';
   stateStatus: 'empty';
-  turnCount: 0;
+  turnCount: number;
   stateChanged: true;
   messageInterpreted: false;
   persistenceUsed: false;
@@ -36,28 +36,18 @@ export type ProcessConversationTurnResult = {
   trace: ProcessConversationTurnTrace;
 };
 
-const RECORDING_TRACE: ProcessConversationTurnTrace = {
-  entryPoint: 'processConversationTurn',
-  stateStatus: 'empty',
-  turnCount: 0,
-  stateChanged: true,
-  messageInterpreted: false,
-  persistenceUsed: false,
-  userMessageRecorded: true,
-  assistantMessageRecorded: true,
-};
-
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 2B: append raw user message then the existing placeholder assistant
- * reply. Does not interpret, trim, normalise, increment turns, update lifecycle
- * timestamps, or persist.
+ * Phase 2C: append raw user + placeholder assistant entries, then increment
+ * turnCount by exactly one from the incoming state's value. Does not interpret,
+ * trim, normalise, update lifecycle timestamps, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
 ): ProcessConversationTurnResult {
   const base = resolveBaseState(input);
+  const nextTurnCount = base.turnCount + 1;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -76,7 +66,7 @@ export function processConversationTurn(
   const state: ConversationCoreState = {
     conversationId: base.conversationId,
     status: 'empty',
-    turnCount: 0,
+    turnCount: nextTurnCount,
     createdAt: base.createdAt,
     updatedAt: base.updatedAt,
     transcript: [...base.transcript, userEntry, assistantEntry],
@@ -85,7 +75,16 @@ export function processConversationTurn(
   return {
     state,
     reply: ENGINE_NOT_ASSEMBLED_REPLY,
-    trace: RECORDING_TRACE,
+    trace: {
+      entryPoint: 'processConversationTurn',
+      stateStatus: 'empty',
+      turnCount: nextTurnCount,
+      stateChanged: true,
+      messageInterpreted: false,
+      persistenceUsed: false,
+      userMessageRecorded: true,
+      assistantMessageRecorded: true,
+    },
   };
 }
 

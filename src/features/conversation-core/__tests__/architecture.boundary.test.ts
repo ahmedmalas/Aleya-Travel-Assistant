@@ -40,7 +40,8 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn).toMatch(/export function processConversationTurn/);
     expect(types).toMatch(/export function createInitialConversationCoreState/);
     expect(types).toMatch(/status: 'empty'/);
-    expect(types).toMatch(/turnCount: 0/);
+    expect(types).toMatch(/turnCount: number/);
+    expect(types).toMatch(/turnCount: 0,/);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);

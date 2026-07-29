@@ -127,13 +127,13 @@ describe('processConversationTurn placeholder behaviour', () => {
     expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });
 
-  it('does not increment turnCount and keeps status empty', () => {
+  it('keeps status empty while allowing turnCount progression', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: NOW,
     });
     const result = turn('Hello', initial);
-    expect(result.state.turnCount).toBe(0);
+    expect(result.state.turnCount).toBe(1);
     expect(result.state.status).toBe('empty');
     expect(initial.turnCount).toBe(0);
   });

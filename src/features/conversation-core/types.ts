@@ -1,7 +1,7 @@
 /**
  * Canonical first-principles conversation-core state.
  *
- * Phase 2B records chronological user + assistant transcript entries only.
+ * Phase 2C increments turnCount once per completed user-assistant pair.
  * No travel intelligence, persistence, or schema lineage.
  */
 
@@ -29,7 +29,7 @@ export type ConversationTranscriptEntry =
 export type ConversationCoreState = {
   conversationId: string;
   status: ConversationCoreStatus;
-  turnCount: 0;
+  turnCount: number;
   createdAt: string;
   updatedAt: string;
   transcript: ConversationTranscriptEntry[];
