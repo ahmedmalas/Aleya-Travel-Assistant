@@ -125,6 +125,16 @@ export type ConversationStateUpdate = {
   accessibleTravelRequested?: boolean | null;
 };
 
+/**
+ * Output contract for a future travel-state extraction layer.
+ *
+ * Contains only the existing explicit update boundary. No metadata,
+ * confidence, intents, spans, warnings, or runtime behaviour.
+ */
+export type ConversationStateExtractionResult = {
+  stateUpdate: ConversationStateUpdate;
+};
+
 export type CreateInitialConversationCoreStateInput = {
   conversationId: string;
   now: Date;
