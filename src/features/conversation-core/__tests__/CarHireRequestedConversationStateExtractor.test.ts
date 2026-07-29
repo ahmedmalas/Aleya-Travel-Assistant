@@ -11,12 +11,60 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
+import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
+import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
 const CAR_HIRE_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/CarHireRequestedConversationStateExtractor.ts',
+);
+const ACCOMMODATION_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AccommodationRequestedConversationStateExtractor.ts',
+);
+const FLIGHTS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/FlightsRequestedConversationStateExtractor.ts',
+);
+const INFANT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/InfantCountConversationStateExtractor.ts',
+);
+const CHILD_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ChildCountConversationStateExtractor.ts',
+);
+const ADULT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AdultCountConversationStateExtractor.ts',
+);
+const DESTINATION_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DestinationConversationStateExtractor.ts',
+);
+const ORIGIN_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/OriginConversationStateExtractor.ts',
+);
+const DEPARTURE_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
+);
+const RETURN_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ReturnDateConversationStateExtractor.ts',
 );
 
 function createState(
@@ -24,16 +72,21 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-5t',
+      conversationId: 'conversation-7j',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
     turnCount: 2,
     destination: 'Brisbane',
     origin: 'Melbourne',
+    departureDate: '2026-09-01',
+    returnDate: '2026-09-08',
+    adultCount: 2,
+    childCount: 1,
+    infantCount: 0,
     flightsRequested: true,
     accommodationRequested: true,
-    carHireRequested: true,
+    carHireRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -66,8 +119,18 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+describe('phase 7J — CarHireRequestedConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit carHireRequested true contract', () => {
     expectTypeOf<CarHireRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<CarHireRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
       [ConversationStateExtractionInput]
@@ -75,111 +138,110 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
     expectTypeOf<CarHireRequestedConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new CarHireRequestedConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'I need car hire',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'I need car hire',
+        currentState: createState({ carHireRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
   });
 
-  it('cannot create, replace, or clear carHireRequested from car-hire-like message text', () => {
+  it('extracts supported explicit car-hire-request forms as true', () => {
     const extractor = new CarHireRequestedConversationStateExtractor();
-    const withCarHire = createState({
-      carHireRequested: true,
-      accommodationRequested: true,
-      flightsRequested: true,
-    });
-    const withoutCarHire = createState({
-      carHireRequested: false,
-      accommodationRequested: true,
-      flightsRequested: true,
-    });
-
-    const messages = [
+    const cases = [
+      'car hire',
+      'hire a car',
+      'rent a car',
+      'rental car',
+      'book car hire',
       'I need car hire',
-      'book me a rental car',
-      'find a hire car',
-      'I need a vehicle',
-      'I want to drive',
-      'pick up the car at the airport',
-      'drop it off on Monday',
-      'airport pickup please',
-      'I need an SUV',
-      'find me a 4WD',
-      'a ute would be better',
-      'book a van',
-      'flights accommodation and car hire',
-      'yes add car hire',
-      'actually add a rental car',
-      'do not book a car',
-      'no car hire',
-      'remove the car',
-      'forget car hire',
-      'I will use public transport instead',
-      'keep the hotel but remove the rental car',
+      'include car hire',
+      'add car hire',
+      'book a rental car',
+      'need hire a car',
+      'add rent a car',
     ];
 
-    for (const message of messages) {
+    for (const message of cases) {
       expect(
         extractor.extract({
           message,
           currentState: createState({ carHireRequested: null }),
         }),
-      ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withCarHire,
-        }),
-      ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withoutCarHire,
-        }),
-      ).toEqual({ stateUpdate: {} });
+        message,
+      ).toEqual({ stateUpdate: { carHireRequested: true } });
     }
-
-    const result = extractor.extract({
-      message: 'keep the rental car',
-      currentState: withCarHire,
-    });
-    expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('carHireRequested');
-    expect(result.stateUpdate).not.toHaveProperty('accommodationRequested');
-    expect(result.stateUpdate).not.toHaveProperty('flightsRequested');
-    expect(withCarHire.carHireRequested).toBe(true);
-    expect(withoutCarHire.carHireRequested).toBe(false);
-    expect(withCarHire.accommodationRequested).toBe(true);
   });
 
-  it('returns the same empty result for different messages and states', () => {
+  it('returns empty for vehicle brand/model, taxi/transfer, negation, remove/forget, keep, and vague transport wording', () => {
     const extractor = new CarHireRequestedConversationStateExtractor();
+    const unsupported = [
+      'Tesla',
+      'BMW X5',
+      'Ferrari',
+      'Hertz',
+      'Avis Brisbane',
+      'I need a taxi',
+      'book a transfer',
+      'airport transfer please',
+      'chauffeur to the hotel',
+      'uber to the airport',
+      'rideshare from the station',
+      'I need a vehicle',
+      'I want to drive',
+      'find transport',
+      'get around town',
+      'pick up the car at the airport',
+      'I need an SUV',
+      'find me a 4WD',
+      'a ute would be better',
+      'book a van',
+      'find a hire car',
+      'do not book car hire',
+      'no car hire',
+      'remove the car hire',
+      'forget car hire',
+      'keep the car hire',
+      'keep flights but remove car hire',
+      'actually add car hire',
+      'I will use public transport instead',
+      'Hello',
+      '',
+    ];
 
-    expect(
-      extractor.extract({
-        message: 'I want to drive',
-        currentState: createState({ carHireRequested: true }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Cancel everything',
-        currentState: createState({
-          destination: 'Darwin',
-          origin: 'Adelaide',
-          carHireRequested: false,
-          accommodationRequested: true,
-          flightsRequested: true,
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ carHireRequested: false }),
         }),
-      }),
-    ).toEqual({ stateUpdate: {} });
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('never emits carHireRequested false or null from extraction', () => {
+    const extractor = new CarHireRequestedConversationStateExtractor();
+    const blocked = extractor.extract({
+      message: 'no car hire',
+      currentState: createState({ carHireRequested: true }),
+    });
+    expect(blocked.stateUpdate).toEqual({});
+    expect(blocked.stateUpdate).not.toHaveProperty('carHireRequested');
+
+    const update = extractor.extract({
+      message: 'book car hire',
+      currentState: createState({ carHireRequested: null }),
+    }).stateUpdate;
+    expect(update.carHireRequested).toBe(true);
+    expect(update.carHireRequested).not.toBe(false);
+    expect(update.carHireRequested).not.toBeNull();
   });
 
   it('does not mutate input or retain state across calls or instances', () => {
     const extractor = new CarHireRequestedConversationStateExtractor();
     const currentState = createState({
-      carHireRequested: true,
+      carHireRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -190,7 +252,7 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'book me a rental car',
+      message: 'book a rental car',
       currentState,
     };
     const before = structuredClone(input);
@@ -208,7 +270,7 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { carHireRequested: true } });
 
     const other =
       new CarHireRequestedConversationStateExtractor() as CarHireRequestedConversationStateExtractor & {
@@ -221,23 +283,27 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
     ).retained = 'first-only';
     expect(other.retained).toBeUndefined();
     expect(
-      other.extract({ message: 'fresh', currentState: createState() }),
-    ).toEqual({ stateUpdate: {} });
+      other.extract({
+        message: 'car hire',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
   });
 
-  it('contains no inspection, keyword matching, regex, or provider imports', () => {
+  it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(/carHireRequested\s*:/);
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
-    expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|rental|SUV|4WD|pickup|drop-?off/i,
-    );
-    expect(source).not.toMatch(/provider|search|discovery|travel-location|hertz|avis/i);
+    expect(source).toMatch(/carHireRequested\s*:\s*true/);
+    expect(source).not.toMatch(/carHireRequested\s*:\s*false/);
+    expect(source).not.toMatch(/carHireRequested\s*:\s*null/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
+    expect(source).not.toMatch(/\.includes\(/);
+    expect(source).not.toMatch(/provider|travel-location/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
     expect(source).not.toMatch(/from '\.\.\/|from '\.\.\/\.\.\//);
   });
@@ -277,77 +343,176 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
     }
   });
 
-  it('keeps processor carHireRequested behaviour unchanged with the skeleton in the path', () => {
+  it('proves existing active extractors remain unchanged', () => {
+    expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7I',
+    );
+
+    expect(
+      new AccommodationRequestedConversationStateExtractor().extract({
+        message: 'book a hotel',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      new FlightsRequestedConversationStateExtractor().extract({
+        message: 'book flights',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
+    expect(
+      new InfantCountConversationStateExtractor().extract({
+        message: '1 infant',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { infantCount: 1 } });
+    expect(
+      new AdultCountConversationStateExtractor().extract({
+        message: '2 adults',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { adultCount: 2 } });
+    expect(
+      new ChildCountConversationStateExtractor().extract({
+        message: '2 children',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { childCount: 2 } });
+    expect(
+      new DestinationConversationStateExtractor().extract({
+        message: 'go to Cairns',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(
+      new OriginConversationStateExtractor().extract({
+        message: 'from Sydney',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(
+      new DepartureDateConversationStateExtractor().extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+    expect(
+      new ReturnDateConversationStateExtractor().extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
+  });
+
+  it('applies extracted carHireRequested through the live processor with trusted explicit precedence', () => {
     const currentState = createState({
-      carHireRequested: true,
-      accommodationRequested: true,
       flightsRequested: true,
+      accommodationRequested: true,
+      carHireRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
-    const injected = processConversationTurn({
-      message: 'actually add a rental car',
+    const extracted = processConversationTurn({
+      message: 'I need car hire',
       state: currentState,
-      userEntryId: 'user-5t',
-      assistantEntryId: 'assistant-5t',
+      userEntryId: 'user-7j-a',
+      assistantEntryId: 'assistant-7j-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
-      stateUpdate: { carHireRequested: true },
     });
-    const cleared = processConversationTurn({
+    const overriddenTrue = processConversationTurn({
       message: 'no car hire',
       state: currentState,
-      userEntryId: 'user-5t-b',
-      assistantEntryId: 'assistant-5t-b',
+      userEntryId: 'user-7j-b',
+      assistantEntryId: 'assistant-7j-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
-      stateUpdate: { carHireRequested: false },
+      stateUpdate: { carHireRequested: true },
     });
-    const nullCleared = processConversationTurn({
-      message: 'remove the car',
+    const overriddenFalse = processConversationTurn({
+      message: 'book car hire',
       state: currentState,
-      userEntryId: 'user-5t-c',
-      assistantEntryId: 'assistant-5t-c',
+      userEntryId: 'user-7j-c',
+      assistantEntryId: 'assistant-7j-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
-      stateUpdate: { carHireRequested: null },
+      stateUpdate: { carHireRequested: false },
     });
-    const messageOnly = processConversationTurn({
-      message: 'I need car hire and an SUV',
+    const nullOverride = processConversationTurn({
+      message: 'book car hire',
       state: currentState,
-      userEntryId: 'user-5t-d',
-      assistantEntryId: 'assistant-5t-d',
+      userEntryId: 'user-7j-d',
+      assistantEntryId: 'assistant-7j-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
+      stateUpdate: { carHireRequested: null },
     });
-    const accommodationInjected = processConversationTurn({
-      message: 'add hotel',
+    const preserved = processConversationTurn({
+      message: 'I need a vehicle',
       state: currentState,
-      userEntryId: 'user-5t-e',
-      assistantEntryId: 'assistant-5t-e',
+      userEntryId: 'user-7j-e',
+      assistantEntryId: 'assistant-7j-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
-      stateUpdate: { accommodationRequested: false },
+    });
+    const composed = processConversationTurn({
+      message: 'book car hire. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+      }),
+      userEntryId: 'user-7j-f',
+      assistantEntryId: 'assistant-7j-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'book car hire. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+      }),
+      userEntryId: 'user-7j-g',
+      assistantEntryId: 'assistant-7j-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: {
+        origin: 'Perth',
+        destination: 'Hobart',
+        carHireRequested: false,
+      },
     });
 
-    expect(injected.state.carHireRequested).toBe(true);
-    expect(cleared.state.carHireRequested).toBe(false);
-    expect(nullCleared.state.carHireRequested).toBeNull();
-    expect(messageOnly.state.carHireRequested).toBe(true);
-    expect(accommodationInjected.state.accommodationRequested).toBe(false);
-    expect(accommodationInjected.state.carHireRequested).toBe(true);
-    expect(injected.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(injected).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(Object.keys(injected.trace).sort()).toEqual([
-      'assistantMessageRecorded',
-      'entryPoint',
-      'messageInterpreted',
-      'persistenceUsed',
-      'stateChanged',
-      'stateStatus',
-      'turnCount',
-      'userMessageRecorded',
-    ]);
+    expect(extracted.state.carHireRequested).toBe(true);
+    expect(extracted.state.flightsRequested).toBe(true);
+    expect(extracted.state.accommodationRequested).toBe(true);
+    expect(extracted.state.origin).toBe('Melbourne');
+    expect(overriddenTrue.state.carHireRequested).toBe(true);
+    expect(overriddenFalse.state.carHireRequested).toBe(false);
+    expect(nullOverride.state.carHireRequested).toBeNull();
+    expect(preserved.state.carHireRequested).toBe(false);
+    expect(composed.state.carHireRequested).toBe(true);
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Cairns');
+    expect(independentOverride.state.carHireRequested).toBe(false);
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Hobart');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
       Object.keys(conversationCore).filter(
         (name) =>
@@ -355,5 +520,104 @@ describe('phase 5T — CarHireRequestedConversationStateExtractor skeleton', () 
             'function' && name !== 'createInitialConversationCoreState',
       ),
     ).toEqual(['processConversationTurn']);
+  });
+
+  it('keeps Destination through CarHireRequested as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
+    expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
+    expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
+    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
+    expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
+    expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
+    expect(extractors[8]).toBeInstanceOf(
+      AccommodationRequestedConversationStateExtractor,
+    );
+    expect(extractors[9]).toBeInstanceOf(CarHireRequestedConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({
+      origin: 'Hobart',
+      destination: 'Hobart',
+      flightsRequested: false,
+      accommodationRequested: false,
+      carHireRequested: false,
+    });
+
+    const carHireActiveMessage =
+      'book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: carHireActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        flightsRequested: true,
+        accommodationRequested: true,
+        carHireRequested: true,
+      },
+    });
+
+    for (let index = 10; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: carHireActiveMessage,
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[9]?.extract({
+        message: carHireActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
+    expect(
+      extractors[8]?.extract({
+        message: carHireActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      extractors[7]?.extract({
+        message: carHireActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
+
+    const accommodationOnlyMessage = 'book a hotel';
+    expect(
+      extractors[8]?.extract({
+        message: accommodationOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      extractors[9]?.extract({
+        message: accommodationOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+
+    for (let index = 10; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: accommodationOnlyMessage,
+          currentState,
+        }),
+        `extractor ${index} on accommodation message`,
+      ).toEqual({ stateUpdate: {} });
+    }
   });
 });

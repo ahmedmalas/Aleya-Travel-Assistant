@@ -891,18 +891,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for car-hire-requested-like text', () => {
+  it('factory-created extraction sets carHireRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ carHireRequested: true });
+    const currentState = createState({ carHireRequested: false });
 
     expect(
       extractor.extract({ message: 'I need car hire', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
     expect(
       extractor.extract({ message: 'I need car hire', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
     expect(
       extractor.extract({ message: 'no car hire', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'I need a vehicle', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

@@ -558,12 +558,22 @@ describe('conversation-core architectural boundary', () => {
       /export class CarHireRequestedConversationStateExtractor/,
     );
     expect(carHireRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(carHireRequestedExtractor.includes('input.message')).toBe(false);
-    expect(carHireRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(carHireRequestedExtractor).toMatch(/input\.message/);
+    expect(carHireRequestedExtractor.includes('input.currentState')).toBe(
+      false,
+    );
+    expect(carHireRequestedExtractor.includes('.trim(')).toBe(false);
     expect(carHireRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(carHireRequestedExtractor.includes('includes(')).toBe(false);
+    expect(carHireRequestedExtractor).toMatch(/carHireRequested:\s*true/);
+    expect(carHireRequestedExtractor.includes('carHireRequested: false')).toBe(
+      false,
+    );
+    expect(carHireRequestedExtractor.includes('carHireRequested: null')).toBe(
+      false,
+    );
     const activitiesRequestedExtractor = readSrc(
       'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
     );
