@@ -263,6 +263,11 @@ describe('phase 5U — ActivitiesRequestedConversationStateExtractor skeleton', 
     const allowedConstruct = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
       ACTIVITIES_REQUESTED_SOURCE,
+      // Class name is a suffix of SnowActivitiesRequestedConversationStateExtractor.
+      resolve(
+        ROOT,
+        'src/features/conversation-core/SnowActivitiesRequestedConversationStateExtractor.ts',
+      ),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowedConstruct.has(path),
