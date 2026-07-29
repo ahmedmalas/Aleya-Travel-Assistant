@@ -14,9 +14,9 @@ function turn(
   state: ConversationCoreState,
   index: number,
   fields: {
-    origin?: string;
-    destination?: string;
-    departureDate?: string;
+    origin?: string | null;
+    destination?: string | null;
+    departureDate?: string | null;
   } = {},
 ) {
   return processConversationTurn({
@@ -90,6 +90,13 @@ describe('phase 3C — explicit departureDate only', () => {
       'departing on 15 August',
       'fly out tomorrow',
       '2026-08-15',
+      'returning 31 August 2026',
+      'until 31 August 2026',
+      'hotel booked for 28 August 2026',
+      'event on 28 August 2026',
+      'sometime in August',
+      'late August',
+      'the 28th',
     ];
 
     let state = initial;
@@ -109,6 +116,30 @@ describe('phase 3C — explicit departureDate only', () => {
     expect(result.state.departureDate).toBe('2026-08-28');
   });
 
+  it('departure is and from-place-on-date cues update departureDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const departureIs = turn('departure is 28 August 2026', initial, 0);
+    expect(departureIs.state.departureDate).toBe('2026-08-28');
+
+    const fromPlaceOnDate = turn('from Sydney on 28 August 2026', initial, 1);
+    expect(fromPlaceOnDate.state.departureDate).toBe('2026-08-28');
+  });
+
+  it('unsupported return-only wording preserves an existing departureDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const first = turn('Hello', initial, 0, { departureDate: '2026-08-15' });
+    expect(first.state.departureDate).toBe('2026-08-15');
+
+    const second = turn('returning 31 August 2026', first.state, 1);
+    expect(second.state.departureDate).toBe('2026-08-15');
+  });
+
   it('trusted explicit stateUpdate.departureDate overrides an extracted departureDate', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -120,7 +151,7 @@ describe('phase 3C — explicit departureDate only', () => {
     expect(overridden.state.departureDate).toBe('2026-11-01');
 
     const nullOverride = turn('Depart on 28 August 2026', initial, 1, {
-      departureDate: null as unknown as string,
+      departureDate: null,
     });
     expect(nullOverride.state.departureDate).toBeNull();
   });

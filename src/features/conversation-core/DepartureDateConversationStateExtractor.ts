@@ -8,8 +8,9 @@ import type {
  * Internal departure-date extraction boundary.
  *
  * Phase 7C: recognises only narrow, explicit departure-date statements in the
- * current message. Deterministic and local — no Date API, geographic
- * services, return-date extraction, or currentState inspection.
+ * current message. Phase 8C extends clear departure-date cues only.
+ * Deterministic and local — no Date API, geographic services, return-date
+ * extraction, or currentState inspection.
  */
 export class DepartureDateConversationStateExtractor
   implements ConversationStateExtractor
@@ -63,7 +64,15 @@ function isBlockedDepartureDateMessage(message: string): boolean {
   if (
     /\breturn(?:ing)?\b/i.test(message) ||
     /\bcome\s+back\b/i.test(message) ||
-    /\bback\s+on\b/i.test(message)
+    /\bback\s+on\b/i.test(message) ||
+    /\buntil\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\bhotel\s+booked\s+for\b/i.test(message) ||
+    /\bevents?\s+on\b/i.test(message) ||
+    /\bconcerts?\s+on\b/i.test(message)
   ) {
     return true;
   }
@@ -74,7 +83,12 @@ function isBlockedDepartureDateMessage(message: string): boolean {
     ) ||
     /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
       message,
-    )
+    ) ||
+    /\bsometime\b/i.test(message) ||
+    /\blate\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
+      message,
+    ) ||
+    /\bthe\s+\d{1,2}(?:st|nd|rd|th)\b/i.test(message)
   ) {
     return true;
   }
@@ -108,10 +122,12 @@ function isBlockedDepartureDateMessage(message: string): boolean {
 
 const EXPLICIT_DEPARTURE_DATE_CUES: readonly RegExp[] = [
   /\bdeparture\s+date\s+is\s+(.+)$/i,
+  /\bdeparture\s+is\s+(.+)$/i,
   /\bdepart(?:ing)?\s+(?:on\s+)?(.+)$/i,
   /\bleav(?:e|ing)\s+(?:on\s+)?(.+)$/i,
   /\bfly(?:ing)?\s+on\s+(.+)$/i,
   /\btravel(?:l?ing)?\s+on\s+(.+)$/i,
+  /\bfrom\s+.+\s+on\s+(.+)$/i,
 ];
 
 const DAY_MONTH_YEAR =
