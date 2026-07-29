@@ -28,6 +28,7 @@ export type AppliedConversationTravelState = {
   hikingWalkingRequested: boolean | null;
   fishingRequested: boolean | null;
   divingSnorkellingRequested: boolean | null;
+  wineriesFoodTrailsRequested: boolean | null;
   toursRequested: boolean | null;
   eventsRequested: boolean | null;
   nightlifeRequested: boolean | null;
@@ -140,6 +141,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.divingSnorkellingRequested !== undefined
         ? stateUpdate.divingSnorkellingRequested
         : currentState.divingSnorkellingRequested,
+    wineriesFoodTrailsRequested:
+      stateUpdate?.wineriesFoodTrailsRequested !== undefined
+        ? stateUpdate.wineriesFoodTrailsRequested
+        : currentState.wineriesFoodTrailsRequested,
     toursRequested:
       stateUpdate?.toursRequested !== undefined
         ? stateUpdate.toursRequested

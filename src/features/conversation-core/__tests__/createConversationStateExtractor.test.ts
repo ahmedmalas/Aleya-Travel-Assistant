@@ -1164,18 +1164,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for wineries-food-trails-requested-like text', () => {
+  it('factory-created extraction sets wineriesFoodTrailsRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ wineriesFoodTrailsRequested: false });
 
     expect(
       extractor.extract({ message: 'show me wineries', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
     expect(
       extractor.extract({ message: 'food trails', currentState }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractor.extract({ message: 'no wineries', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'no wine tasting', currentState }),
+      extractor.extract({ message: 'show me wine tours', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'wine', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

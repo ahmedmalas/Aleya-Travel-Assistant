@@ -47,6 +47,7 @@ const CANONICAL_KEYS = [
   'turnCount',
   'updatedAt',
   'wellnessRequested',
+  'wineriesFoodTrailsRequested',
 ] as const;
 
 const FORBIDDEN_STATE_FIELDS = [
@@ -125,6 +126,7 @@ describe('canonical conversation-core state', () => {
       hikingWalkingRequested: null,
       fishingRequested: null,
       divingSnorkellingRequested: null,
+      wineriesFoodTrailsRequested: null,
       toursRequested: null,
       eventsRequested: null,
       nightlifeRequested: null,

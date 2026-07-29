@@ -27,6 +27,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'hikingWalkingRequested',
   'fishingRequested',
   'divingSnorkellingRequested',
+  'wineriesFoodTrailsRequested',
   'toursRequested',
   'eventsRequested',
   'nightlifeRequested',

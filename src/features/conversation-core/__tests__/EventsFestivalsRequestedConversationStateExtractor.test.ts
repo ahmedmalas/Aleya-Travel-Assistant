@@ -51,6 +51,7 @@ function createState(
     hikingWalkingRequested: true,
     fishingRequested: true,
     divingSnorkellingRequested: true,
+    wineriesFoodTrailsRequested: true,
     eventsRequested: true,
     transcript: [
       {
@@ -143,6 +144,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       hikingWalkingRequested: true,
       fishingRequested: true,
       divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
@@ -154,6 +156,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       hikingWalkingRequested: true,
       fishingRequested: true,
       divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
       eventsRequested: false,
     });
 
@@ -369,6 +372,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       hikingWalkingRequested: true,
       fishingRequested: true,
       divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       origin: 'Melbourne',

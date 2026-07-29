@@ -6,7 +6,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 
-const CONVERSATION_ID = 'conversation-core-diving-snorkelling-requested-001';
+const CONVERSATION_ID = 'conversation-core-wineries-food-trails-requested-001';
 const CREATED_AT = new Date('2026-07-29T00:00:00.000Z');
 
 function turn(
@@ -53,13 +53,13 @@ function turn(
   });
 }
 
-describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction activation', () => {
-  it('initial divingSnorkellingRequested is null', () => {
+describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction activation', () => {
+  it('initial wineriesFoodTrailsRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    expect(state.divingSnorkellingRequested).toBeNull();
+    expect(state.wineriesFoodTrailsRequested).toBeNull();
   });
 
   it('explicit true is stored', () => {
@@ -67,10 +67,10 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const result = turn('I want diving', initial, 0, {
-      divingSnorkellingRequested: true,
+    const result = turn('I want wineries', initial, 0, {
+      wineriesFoodTrailsRequested: true,
     });
-    expect(result.state.divingSnorkellingRequested).toBe(true);
+    expect(result.state.wineriesFoodTrailsRequested).toBe(true);
   });
 
   it('explicit false is stored', () => {
@@ -78,16 +78,16 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const withTrue = turn('need scuba', initial, 0, {
-      divingSnorkellingRequested: true,
+    const withTrue = turn('need vineyards', initial, 0, {
+      wineriesFoodTrailsRequested: true,
     });
-    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
+    expect(withTrue.state.wineriesFoodTrailsRequested).toBe(true);
 
-    const withFalse = turn('no scuba', withTrue.state, 1, {
-      divingSnorkellingRequested: false,
+    const withFalse = turn('no vineyards', withTrue.state, 1, {
+      wineriesFoodTrailsRequested: false,
     });
-    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
-    expect(withFalse.state.divingSnorkellingRequested).not.toBeNull();
+    expect(withFalse.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(withFalse.state.wineriesFoodTrailsRequested).not.toBeNull();
   });
 
   it('omission preserves a previous true', () => {
@@ -96,12 +96,12 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
     });
-    expect(first.state.divingSnorkellingRequested).toBe(true);
+    expect(first.state.wineriesFoodTrailsRequested).toBe(true);
 
-    const second = turn('scuba dive boats', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(true);
+    const second = turn('wine food restaurants', first.state, 1);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
   });
 
   it('omission preserves a previous false', () => {
@@ -110,33 +110,33 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: false,
+      wineriesFoodTrailsRequested: false,
     });
-    expect(first.state.divingSnorkellingRequested).toBe(false);
+    expect(first.state.wineriesFoodTrailsRequested).toBe(false);
 
-    const second = turn('scuba diving reef diving', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(false);
+    const second = turn('wine tours food tours', first.state, 1);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(false);
   });
 
-  it('user message text cannot set divingSnorkellingRequested from unsupported wording', () => {
+  it('user message text cannot set wineriesFoodTrailsRequested from unsupported wording', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'dive',
-      'snorkel',
-      'scuba',
-      'boats',
-      'gear',
-      'scuba diving',
-      'reef diving',
+      'wine',
+      'food',
+      'restaurants',
+      'vineyards',
+      'cellar doors',
+      'wine tours',
+      'food tours',
     ];
 
     let state = initial;
     phrases.forEach((message, index) => {
       const result = turn(message, state, index);
-      expect(result.state.divingSnorkellingRequested).toBeNull();
+      expect(result.state.wineriesFoodTrailsRequested).toBeNull();
       state = result.state;
     });
   });
@@ -147,24 +147,24 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const withTrue = turn('Hello', initial, 0, {
-      divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
     });
-    expect(withTrue.state.divingSnorkellingRequested).toBe(true);
+    expect(withTrue.state.wineriesFoodTrailsRequested).toBe(true);
 
-    const afterWords = turn('scuba diving gear', withTrue.state, 1);
-    expect(afterWords.state.divingSnorkellingRequested).toBe(true);
+    const afterWords = turn('wine tours vineyards', withTrue.state, 1);
+    expect(afterWords.state.wineriesFoodTrailsRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
-      divingSnorkellingRequested: false,
+      wineriesFoodTrailsRequested: false,
     });
-    expect(withFalse.state.divingSnorkellingRequested).toBe(false);
+    expect(withFalse.state.wineriesFoodTrailsRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'scuba dive boats gear',
+      'wine food restaurants markets',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.divingSnorkellingRequested).toBe(false);
+    expect(afterMoreWords.state.wineriesFoodTrailsRequested).toBe(false);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {
@@ -198,6 +198,7 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       divingSnorkellingRequested: true,
       wineriesFoodTrailsRequested: true,
     });
+    expect(first.state.wineriesFoodTrailsRequested).toBe(true);
     expect(first.state.divingSnorkellingRequested).toBe(true);
     expect(first.state.fishingRequested).toBe(true);
     expect(first.state.hikingWalkingRequested).toBe(true);
@@ -207,10 +208,11 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
     expect(first.state.status).toBe('active');
     expect(first.state.turnCount).toBe(1);
 
-    const second = turn('no diving', first.state, 1, {
-      divingSnorkellingRequested: false,
+    const second = turn('no wineries', first.state, 1, {
+      wineriesFoodTrailsRequested: false,
     });
-    expect(second.state.divingSnorkellingRequested).toBe(false);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(false);
+    expect(second.state.divingSnorkellingRequested).toBe(true);
     expect(second.state.fishingRequested).toBe(true);
     expect(second.state.hikingWalkingRequested).toBe(true);
     expect(second.state.origin).toBe('Sydney');
@@ -223,7 +225,7 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       now: CREATED_AT,
     });
     const first = turn('Sydney to Gold Coast!!!!', initial, 0, {
-      divingSnorkellingRequested: true,
+      wineriesFoodTrailsRequested: true,
     });
 
     expect(first.state.transcript.map((entry) => entry.role)).toEqual([
@@ -234,8 +236,8 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('scuba dive boats', first.state, 1);
-    expect(second.state.divingSnorkellingRequested).toBe(true);
+    const second = turn('wine food restaurants', first.state, 1);
+    expect(second.state.wineriesFoodTrailsRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });
