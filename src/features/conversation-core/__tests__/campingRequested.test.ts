@@ -101,7 +101,7 @@ describe('phase 3O — explicit campingRequested only', () => {
     const first = turn('Hello', initial, 0, { campingRequested: false });
     expect(first.state.campingRequested).toBe(false);
 
-    const second = turn('camping campsite', first.state, 1);
+    const second = turn('camp caravan tent', first.state, 1);
     expect(second.state.campingRequested).toBe(false);
   });
 
@@ -110,7 +110,7 @@ describe('phase 3O — explicit campingRequested only', () => {
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const phrases = ['camp', 'camping', 'caravan', 'tent', 'campsite'];
+    const phrases = ['camp', 'caravan', 'tent', 'campsite', 'glamping'];
 
     let state = initial;
     phrases.forEach((message, index) => {
@@ -136,7 +136,7 @@ describe('phase 3O — explicit campingRequested only', () => {
     });
     expect(withFalse.state.campingRequested).toBe(false);
 
-    const afterMoreWords = turn('campsite camping', withFalse.state, 3);
+    const afterMoreWords = turn('campsite caravan tent', withFalse.state, 3);
     expect(afterMoreWords.state.campingRequested).toBe(false);
   });
 
