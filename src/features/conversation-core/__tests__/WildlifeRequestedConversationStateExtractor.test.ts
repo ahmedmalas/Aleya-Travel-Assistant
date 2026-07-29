@@ -14,21 +14,35 @@ import {
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
-import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
 import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
+import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
-const EVENTS_FESTIVALS_REQUESTED_SOURCE = resolve(
+const WILDLIFE_REQUESTED_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/extractors/EventsFestivalsRequestedConversationStateExtractor.ts',
+  'src/features/conversation-core/extractors/WildlifeRequestedConversationStateExtractor.ts',
 );
+const TYPES_SOURCE = resolve(ROOT, 'src/features/conversation-core/types.ts');
+
+const WILDLIFE_RELATED_FIELDS = [
+  'wildlifeRequested',
+  'animalsRequested',
+  'wildlifeExperiencesRequested',
+  'safariRequested',
+  'birdwatchingRequested',
+  'whaleWatchingRequested',
+  'marineWildlifeRequested',
+  'animalEncountersRequested',
+  'zoosRequested',
+  'sanctuariesRequested',
+] as const;
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6i',
+      conversationId: 'conversation-6j',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -90,49 +104,45 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skeleton', () => {
+describe('phase 6J — WildlifeRequestedConversationStateExtractor skeleton', () => {
   it('implements ConversationStateExtractor with empty result contract', () => {
-    expectTypeOf<EventsFestivalsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
+    expectTypeOf<WildlifeRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<
-      EventsFestivalsRequestedConversationStateExtractor['extract']
+      WildlifeRequestedConversationStateExtractor['extract']
     >().parameters.toEqualTypeOf<[ConversationStateExtractionInput]>();
     expectTypeOf<
-      EventsFestivalsRequestedConversationStateExtractor['extract']
+      WildlifeRequestedConversationStateExtractor['extract']
     >().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+    const extractor = new WildlifeRequestedConversationStateExtractor();
     const input: ConversationStateExtractionInput = {
-      message: 'show me local events',
+      message: 'show me wildlife',
       currentState: createState(),
     };
     expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
   });
 
-  it('does not introduce new events/festivals canonical fields beyond the existing explicit eventsRequested', () => {
+  it('proves no wildlife-related canonical field exists and none was added', () => {
+    const typesSource = readFileSync(TYPES_SOURCE, 'utf8');
     const initial = createInitialConversationCoreState({
-      conversationId: 'conversation-6i-field',
+      conversationId: 'conversation-6j-field',
       now: new Date('2026-07-29T00:00:00.000Z'),
     });
-    expect(Object.prototype.hasOwnProperty.call(initial, 'eventsRequested')).toBe(
-      true,
-    );
-    for (const field of [
-      'festivalsRequested',
-      'eventsFestivalsRequested',
-      'concertsRequested',
-      'marketsRequested',
-      'exhibitionsRequested',
-      'sportingEventsRequested',
-      'culturalEventsRequested',
-      'localEventsRequested',
-    ]) {
+
+    for (const field of WILDLIFE_RELATED_FIELDS) {
       expect(Object.prototype.hasOwnProperty.call(initial, field)).toBe(false);
       expect(field in initial).toBe(false);
+      expect(typesSource.includes(field)).toBe(false);
+      expect(typesSource).not.toMatch(new RegExp(`${field}\\s*[?:]`));
     }
+
+    expect(typesSource).not.toMatch(/\bwildlife\w*Requested\b/i);
+    expect(typesSource).not.toMatch(/\banimalsRequested\b/);
+    expect(typesSource).not.toMatch(/\bsafariRequested\b/);
   });
 
-  it('cannot create state from event, festival, concert, market, or related wording', () => {
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+  it('cannot create state from wildlife, safari, birdwatching, marine, or zoo wording', () => {
+    const extractor = new WildlifeRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
       restaurantsRequested: true,
@@ -140,56 +150,50 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       eventsRequested: true,
       nearbyDiscoveryRequested: true,
     });
-    const withoutEvents = createState({
-      attractionsRequested: true,
-      eventsRequested: false,
-    });
 
     const messages = [
-      'events',
-      'local events',
-      'festivals',
-      'music festivals',
-      'food festivals',
-      'cultural festivals',
-      'concerts',
-      'live music',
-      'shows',
-      'theatre',
-      'markets',
-      'night markets',
-      'farmers markets',
-      'fairs',
-      'carnivals',
-      'parades',
-      'exhibitions',
-      'art exhibitions',
-      'trade shows',
-      'sporting events',
-      'sports matches',
-      'races',
-      'community events',
-      'seasonal events',
-      "what's on",
-      'things happening nearby',
-      'show me festivals',
-      'find concerts nearby',
-      'I want night markets',
-      'add art exhibitions',
-      'yes include local events',
-      'actually show me sporting events',
-      'do not include festivals',
-      'no concerts',
-      'remove events',
-      'forget markets',
-      'keep attractions but remove festivals',
+      'wildlife',
+      'wildlife experiences',
+      'see wildlife',
+      'animal encounters',
+      'safari',
+      'wildlife safari',
+      'birdwatching',
+      'bird watching',
+      'whale watching',
+      'whale-watching',
+      'dolphin watching',
+      'seal watching',
+      'marine life',
+      'marine wildlife',
+      'penguins',
+      'koalas',
+      'kangaroos',
+      'zoos',
+      'wildlife parks',
+      'animal parks',
+      'sanctuaries',
+      'wildlife sanctuaries',
+      'conservation centres',
+      'nature reserves',
+      'show me wildlife',
+      'find a safari nearby',
+      'I want bird watching',
+      'add whale-watching',
+      'yes include marine life',
+      'actually show me zoos',
+      'do not include wildlife',
+      'no safari',
+      'remove wildlife parks',
+      'forget sanctuaries',
+      'keep attractions but remove wildlife',
     ];
 
     for (const message of messages) {
       expect(
         extractor.extract({
           message,
-          currentState: createState({ eventsRequested: null }),
+          currentState: createState(),
         }),
       ).toEqual({ stateUpdate: {} });
       expect(
@@ -198,29 +202,24 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
           currentState: withRelatedFlags,
         }),
       ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withoutEvents,
-        }),
-      ).toEqual({ stateUpdate: {} });
     }
 
     const result = extractor.extract({
-      message: 'keep attractions but remove festivals',
+      message: 'keep attractions but remove wildlife',
       currentState: withRelatedFlags,
     });
     expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('eventsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('festivalsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('eventsFestivalsRequested');
+    for (const field of WILDLIFE_RELATED_FIELDS) {
+      expect(result.stateUpdate).not.toHaveProperty(field);
+    }
     expect(result.stateUpdate).not.toHaveProperty('attractionsRequested');
+    expect(result.stateUpdate).not.toHaveProperty('eventsRequested');
+    expect(withRelatedFlags.attractionsRequested).toBe(true);
     expect(withRelatedFlags.eventsRequested).toBe(true);
-    expect(withoutEvents.eventsRequested).toBe(false);
   });
 
   it('does not mutate input or retain state across calls', () => {
-    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+    const extractor = new WildlifeRequestedConversationStateExtractor();
     const currentState = createState({
       eventsRequested: true,
       transcript: [
@@ -233,7 +232,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'music festivals',
+      message: 'wildlife safari',
       currentState,
     };
     const before = structuredClone(input);
@@ -254,22 +253,22 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     expect(second).toEqual({ stateUpdate: {} });
   });
 
-  it('is included once in the production composite after wineries/food-trails and before empty', () => {
+  it('is included once in the production composite after events/festivals and before empty', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
     expect(extractors).toHaveLength(27);
-    const wineriesIndexes = extractors
+    const eventsIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof WineriesFoodTrailsRequestedConversationStateExtractor
+        extractor instanceof EventsFestivalsRequestedConversationStateExtractor
           ? index
           : -1,
       )
       .filter((index) => index >= 0);
-    const eventsIndexes = extractors
+    const wildlifeIndexes = extractors
       .map((extractor, index) =>
-        extractor instanceof EventsFestivalsRequestedConversationStateExtractor
+        extractor instanceof WildlifeRequestedConversationStateExtractor
           ? index
           : -1,
       )
@@ -280,34 +279,34 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       )
       .filter((index) => index >= 0);
 
-    expect(wineriesIndexes).toEqual([23]);
     expect(eventsIndexes).toEqual([24]);
+    expect(wildlifeIndexes).toEqual([25]);
     expect(emptyIndexes).toEqual([26]);
-    expect(extractors[23]).toBeInstanceOf(
-      WineriesFoodTrailsRequestedConversationStateExtractor,
-    );
     expect(extractors[24]).toBeInstanceOf(
       EventsFestivalsRequestedConversationStateExtractor,
+    );
+    expect(extractors[25]).toBeInstanceOf(
+      WildlifeRequestedConversationStateExtractor,
     );
     expect(extractors[26]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
-    const source = readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8');
+    const source = readFileSync(WILDLIFE_REQUESTED_SOURCE, 'utf8');
 
     expect(source).toMatch(/_input: ConversationStateExtractionInput/);
     expect(source).not.toMatch(/input\.message|input\.currentState/);
     expect(source).not.toMatch(/\.message\b/);
     expect(source).not.toMatch(/currentState\./);
     expect(source).not.toMatch(
-      /eventsRequested\s*:|festivalsRequested\s*:|eventsFestivalsRequested\s*:/,
+      /wildlifeRequested\s*:|animalsRequested\s*:|safariRequested\s*:/,
     );
     expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
     expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|concert|theatre|carnival|parade|exhibition|market|fair|sporting|what's on|whats on|trade.?show|farmers.?market/i,
+      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|safari|birdwatching|bird watching|whale.?watching|dolphin|seal watching|marine life|penguin|koala|kangaroo|zoo|sanctuar|conservation|nature reserve/i,
     );
     expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|ticket|event)/i,
+      /geolocation|getCurrentPosition|google\.maps|mapbox|provider|from ['"][^'"]*(?:search|discovery|map|route|ticket|wildlife|animal)/i,
     );
     expect(source).not.toMatch(/metadata|confidence|warnings/);
   });
@@ -323,28 +322,26 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     );
     const allowedConstruct = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
-      EVENTS_FESTIVALS_REQUESTED_SOURCE,
+      WILDLIFE_REQUESTED_SOURCE,
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowedConstruct.has(path),
     );
 
-    expect(index).not.toMatch(/EventsFestivalsRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/WildlifeRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty(
-      'EventsFestivalsRequestedConversationStateExtractor',
+      'WildlifeRequestedConversationStateExtractor',
     );
-    expect(processTurn).not.toMatch(
-      /EventsFestivalsRequestedConversationStateExtractor/,
-    );
+    expect(processTurn).not.toMatch(/WildlifeRequestedConversationStateExtractor/);
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
       expect(
-        src.includes('new EventsFestivalsRequestedConversationStateExtractor'),
+        src.includes('new WildlifeRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
       expect(
-        src.includes('EventsFestivalsRequestedConversationStateExtractor'),
+        src.includes('WildlifeRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
     }
@@ -359,15 +356,15 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
       destination: 'Brisbane',
     });
     const messageOnly = processConversationTurn({
-      message: 'show me festivals and night markets',
+      message: 'show me wildlife safari and whale watching',
       state: currentState,
-      userEntryId: 'user-6i',
-      assistantEntryId: 'assistant-6i',
+      userEntryId: 'user-6j',
+      assistantEntryId: 'assistant-6j',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const factoryResult = createConversationStateExtractor().extract({
-      message: "what's on",
+      message: 'bird watching near nature reserves',
       currentState,
     });
 
@@ -376,12 +373,11 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     expect(messageOnly.state.activitiesRequested).toBe(true);
     expect(messageOnly.state.eventsRequested).toBe(true);
     expect(messageOnly.state.destination).toBe('Brisbane');
-    expect(
-      Object.prototype.hasOwnProperty.call(
-        messageOnly.state,
-        'eventsFestivalsRequested',
-      ),
-    ).toBe(false);
+    for (const field of WILDLIFE_RELATED_FIELDS) {
+      expect(Object.prototype.hasOwnProperty.call(messageOnly.state, field)).toBe(
+        false,
+      );
+    }
     expect(messageOnly.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(messageOnly).sort()).toEqual(['reply', 'state', 'trace']);
     expect(messageOnly.trace.messageInterpreted).toBe(false);

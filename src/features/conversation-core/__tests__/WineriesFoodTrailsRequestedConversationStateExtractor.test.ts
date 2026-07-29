@@ -240,7 +240,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(extractors).toHaveLength(26);
+    expect(extractors).toHaveLength(27);
     const divingIndexes = extractors
       .map((extractor, index) =>
         extractor instanceof DivingSnorkellingRequestedConversationStateExtractor
@@ -263,14 +263,14 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
 
     expect(divingIndexes).toEqual([22]);
     expect(wineriesIndexes).toEqual([23]);
-    expect(emptyIndexes).toEqual([25]);
+    expect(emptyIndexes).toEqual([26]);
     expect(extractors[22]).toBeInstanceOf(
       DivingSnorkellingRequestedConversationStateExtractor,
     );
     expect(extractors[23]).toBeInstanceOf(
       WineriesFoodTrailsRequestedConversationStateExtractor,
     );
-    expect(extractors[25]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[26]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {

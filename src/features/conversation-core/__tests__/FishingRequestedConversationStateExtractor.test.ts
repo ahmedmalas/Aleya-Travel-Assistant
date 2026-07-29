@@ -231,7 +231,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(extractors).toHaveLength(26);
+    expect(extractors).toHaveLength(27);
     const hikingIndexes = extractors
       .map((extractor, index) =>
         extractor instanceof HikingWalkingRequestedConversationStateExtractor
@@ -252,12 +252,12 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
 
     expect(hikingIndexes).toEqual([20]);
     expect(fishingIndexes).toEqual([21]);
-    expect(emptyIndexes).toEqual([25]);
+    expect(emptyIndexes).toEqual([26]);
     expect(extractors[20]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
     expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[25]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[26]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('contains no inspection, keyword matching, regex, or provider imports', () => {
