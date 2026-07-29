@@ -221,7 +221,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
       0,
     );
     expect(result.state.flightsRequested).toBe(true);
-    expect(result.state.accommodationRequested).toBeNull();
+    expect(result.state.accommodationRequested).toBe(true);
     expect(result.state.carHireRequested).toBeNull();
     expect(result.state.beachesRequested).toBeNull();
     expect(result.state.nightlifeRequested).toBeNull();

@@ -75,7 +75,7 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     expect(withFalse.state.accommodationRequested).not.toBeNull();
   });
 
-  it('omitting accommodationRequested preserves the existing value', () => {
+  it('omitting accommodationRequested preserves the existing value when the message is unsupported', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -85,7 +85,7 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     });
     expect(first.state.accommodationRequested).toBe(true);
 
-    const second = turn('hotel room resort', first.state, 1);
+    const second = turn('find somewhere to stay', first.state, 1);
     expect(second.state.accommodationRequested).toBe(true);
 
     const third = turn('Hello', second.state, 2, {
@@ -93,7 +93,7 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     });
     expect(third.state.accommodationRequested).toBe(false);
 
-    const fourth = turn('apartment accommodation', third.state, 3);
+    const fourth = turn('I need an apartment', third.state, 3);
     expect(fourth.state.accommodationRequested).toBe(false);
   });
 
@@ -113,18 +113,18 @@ describe('phase 3I — explicit accommodationRequested only', () => {
     expect(second.state.accommodationRequested).toBe(true);
   });
 
-  it('message text alone never changes accommodationRequested', () => {
+  it('unsupported stay wording in the user message alone never changes accommodationRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'hotel',
       'stay',
       'room',
       'resort',
-      'accommodation',
       'apartment',
+      'find somewhere to stay',
+      'Hilton',
     ];
 
     let state = initial;
@@ -133,6 +133,31 @@ describe('phase 3I — explicit accommodationRequested only', () => {
       expect(result.state.accommodationRequested).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit accommodation-request cue in the message sets accommodationRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('I need accommodation', initial, 0);
+    expect(result.state.accommodationRequested).toBe(true);
+  });
+
+  it('trusted explicit stateUpdate.accommodationRequested overrides an extracted accommodation request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('book a hotel', initial, 0, {
+      accommodationRequested: false,
+    });
+    expect(overriddenFalse.state.accommodationRequested).toBe(false);
+
+    const nullOverride = turn('book a hotel', initial, 1, {
+      accommodationRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.accommodationRequested).toBeNull();
   });
 
   it('flightsRequested and earlier fields remain preserved when accommodationRequested changes', () => {

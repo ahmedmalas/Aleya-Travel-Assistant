@@ -101,7 +101,7 @@ describe('phase 5F — extractConversationState execution only', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('extracts origin, adult count, and flights request from explicit from-route wording without inventing other fields', () => {
+  it('extracts origin, adult count, flights, and accommodation requests from explicit from-route wording without inventing other fields', () => {
     const result = extractConversationState({
       message:
         'From Sydney to Cairns on 28 August for two adults; book flights, hotel and activities',
@@ -113,10 +113,11 @@ describe('phase 5F — extractConversationState execution only', () => {
         origin: 'Sydney',
         adultCount: 2,
         flightsRequested: true,
+        accommodationRequested: true,
       },
     });
     expect(result.stateUpdate).not.toHaveProperty('destination');
-    expect(result.stateUpdate).not.toHaveProperty('accommodationRequested');
+    expect(result.stateUpdate).not.toHaveProperty('activitiesRequested');
   });
 
   it('does not copy existing canonical travel values into the result', () => {

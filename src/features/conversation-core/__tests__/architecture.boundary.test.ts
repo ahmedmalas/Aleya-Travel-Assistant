@@ -533,12 +533,24 @@ describe('conversation-core architectural boundary', () => {
       /export class AccommodationRequestedConversationStateExtractor/,
     );
     expect(accommodationRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(accommodationRequestedExtractor.includes('input.message')).toBe(false);
-    expect(accommodationRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(accommodationRequestedExtractor).toMatch(/input\.message/);
+    expect(accommodationRequestedExtractor.includes('input.currentState')).toBe(
+      false,
+    );
+    expect(accommodationRequestedExtractor.includes('.trim(')).toBe(false);
     expect(accommodationRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(accommodationRequestedExtractor.includes('includes(')).toBe(false);
+    expect(accommodationRequestedExtractor).toMatch(
+      /accommodationRequested:\s*true/,
+    );
+    expect(
+      accommodationRequestedExtractor.includes('accommodationRequested: false'),
+    ).toBe(false);
+    expect(
+      accommodationRequestedExtractor.includes('accommodationRequested: null'),
+    ).toBe(false);
     const carHireRequestedExtractor = readSrc(
       'src/features/conversation-core/CarHireRequestedConversationStateExtractor.ts',
     );

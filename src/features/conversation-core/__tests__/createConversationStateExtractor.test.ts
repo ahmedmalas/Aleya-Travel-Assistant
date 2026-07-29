@@ -873,18 +873,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for accommodation-requested-like text', () => {
+  it('factory-created extraction sets accommodationRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ accommodationRequested: true });
+    const currentState = createState({ accommodationRequested: false });
 
     expect(
       extractor.extract({ message: 'I need accommodation', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
     expect(
       extractor.extract({ message: 'I need accommodation', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
     expect(
       extractor.extract({ message: 'no hotel', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'find somewhere to stay', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
