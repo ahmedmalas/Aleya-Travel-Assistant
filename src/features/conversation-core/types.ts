@@ -58,6 +58,8 @@ export type ConversationCoreState = {
   activitiesRequested: boolean | null;
   /** Explicitly supplied restaurants request flag only — never detected from message text. */
   restaurantsRequested: boolean | null;
+  /** Explicitly supplied nearby-discovery request flag only — never detected from message text. */
+  nearbyDiscoveryRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -94,6 +96,7 @@ export function createInitialConversationCoreState(
     carHireRequested: null,
     activitiesRequested: null,
     restaurantsRequested: null,
+    nearbyDiscoveryRequested: null,
     transcript: [],
   };
 }

@@ -52,6 +52,8 @@ export type ProcessConversationTurnInput = {
   activitiesRequested?: boolean;
   /** Explicit restaurants request flag only — stored as injected; never read from message. */
   restaurantsRequested?: boolean;
+  /** Explicit nearby-discovery request flag only — stored as injected; never read from message. */
+  nearbyDiscoveryRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -63,13 +65,14 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3L: append raw user + placeholder assistant entries, increment
+ * Phase 3M: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
- * activitiesRequested/restaurantsRequested only. Does not interpret, trim,
- * normalise, extract, validate counts, calculate duration, or persist.
+ * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested only.
+ * Does not interpret, trim, normalise, extract, validate counts, calculate
+ * duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -114,6 +117,10 @@ export function processConversationTurn(
     input.restaurantsRequested !== undefined
       ? input.restaurantsRequested
       : base.restaurantsRequested;
+  const nearbyDiscoveryRequested =
+    input.nearbyDiscoveryRequested !== undefined
+      ? input.nearbyDiscoveryRequested
+      : base.nearbyDiscoveryRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -148,6 +155,7 @@ export function processConversationTurn(
     carHireRequested,
     activitiesRequested,
     restaurantsRequested,
+    nearbyDiscoveryRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
