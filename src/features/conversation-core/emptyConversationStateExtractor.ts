@@ -5,10 +5,12 @@ import type {
 } from './types';
 
 /**
- * Internal deterministic extractor used to establish the implementation boundary.
+ * Internal intentional no-op extraction boundary.
  *
- * It intentionally ignores all input and always returns a new empty explicit
- * state update. It is not wired into the conversation runtime.
+ * Phase 7AB: finalised as the last production composite extractor. Deterministic
+ * and local — ignores all input and always returns a new empty explicit state
+ * update. Emits no canonical fields and never true, false, or null. Not a
+ * public runtime API.
  */
 export class EmptyConversationStateExtractor
   implements ConversationStateExtractor
