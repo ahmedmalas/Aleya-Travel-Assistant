@@ -1017,18 +1017,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for four-wheel-driving-requested-like text', () => {
+  it('factory-created extraction sets fourWheelDriveRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ fourWheelDriveRequested: true });
+    const currentState = createState({ fourWheelDriveRequested: false });
 
     expect(
-      extractor.extract({ message: 'show me 4WD tracks', currentState }),
-    ).toEqual({ stateUpdate: {} });
+      extractor.extract({ message: 'add four-wheel driving', currentState }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
-      extractor.extract({ message: 'show me 4WD tracks', currentState }),
-    ).toEqual({ stateUpdate: {} });
+      extractor.extract({ message: 'add four-wheel driving', currentState }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       extractor.extract({ message: 'no 4WD', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'show me 4WD tracks', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'hire a 4WD', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

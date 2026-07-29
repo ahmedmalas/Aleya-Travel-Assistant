@@ -721,14 +721,24 @@ describe('conversation-core architectural boundary', () => {
       /export class FourWheelDrivingRequestedConversationStateExtractor/,
     );
     expect(fourWheelDrivingRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(fourWheelDrivingRequestedExtractor.includes('input.message')).toBe(false);
+    expect(fourWheelDrivingRequestedExtractor).toMatch(/input\.message/);
     expect(fourWheelDrivingRequestedExtractor.includes('input.currentState')).toBe(
       false,
     );
+    expect(fourWheelDrivingRequestedExtractor.includes('.trim(')).toBe(false);
     expect(fourWheelDrivingRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(fourWheelDrivingRequestedExtractor.includes('includes(')).toBe(false);
+    expect(fourWheelDrivingRequestedExtractor).toMatch(
+      /fourWheelDriveRequested:\s*true/,
+    );
+    expect(
+      fourWheelDrivingRequestedExtractor.includes('fourWheelDriveRequested: false'),
+    ).toBe(false);
+    expect(
+      fourWheelDrivingRequestedExtractor.includes('fourWheelDriveRequested: null'),
+    ).toBe(false);
     const scenicDrivesRequestedExtractor = readSrc(
       'src/features/conversation-core/ScenicDrivesRequestedConversationStateExtractor.ts',
     );

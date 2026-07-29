@@ -107,7 +107,7 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     });
     expect(first.state.fourWheelDriveRequested).toBe(false);
 
-    const second = turn('four-wheel driving', first.state, 1);
+    const second = turn('4x4 SUV off-road', first.state, 1);
     expect(second.state.fourWheelDriveRequested).toBe(false);
   });
 
@@ -117,11 +117,11 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      '4WD',
+      '4x4',
+      'SUV',
       'four-wheel drive',
       'off-road',
       'off-roading',
-      'four-wheel driving',
     ];
 
     let state = initial;
@@ -155,7 +155,7 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     expect(withFalse.state.fourWheelDriveRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'off-roading four-wheel driving',
+      'off-roading 4x4 SUV',
       withFalse.state,
       3,
     );
