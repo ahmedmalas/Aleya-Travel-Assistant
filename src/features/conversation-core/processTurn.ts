@@ -10,7 +10,7 @@ export const ENGINE_NOT_ASSEMBLED_REPLY =
 
 export type ProcessConversationTurnTrace = {
   entryPoint: 'processConversationTurn';
-  stateStatus: 'empty';
+  stateStatus: 'active';
   turnCount: number;
   stateChanged: true;
   messageInterpreted: false;
@@ -39,9 +39,9 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 2D: append raw user + placeholder assistant entries, increment
- * turnCount by one, and set updatedAt from the injected assistantMessageAt.
- * Does not interpret, trim, normalise, or persist.
+ * Phase 2E: append raw user + placeholder assistant entries, increment
+ * turnCount by one, set updatedAt from assistantMessageAt, and set status
+ * to active. Does not interpret, trim, normalise, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -66,7 +66,7 @@ export function processConversationTurn(
 
   const state: ConversationCoreState = {
     conversationId: base.conversationId,
-    status: 'empty',
+    status: 'active',
     turnCount: nextTurnCount,
     createdAt: base.createdAt,
     updatedAt: assistantTimestamp,
@@ -78,7 +78,7 @@ export function processConversationTurn(
     reply: ENGINE_NOT_ASSEMBLED_REPLY,
     trace: {
       entryPoint: 'processConversationTurn',
-      stateStatus: 'empty',
+      stateStatus: 'active',
       turnCount: nextTurnCount,
       stateChanged: true,
       messageInterpreted: false,

@@ -120,7 +120,6 @@ describe('phase 2D — updatedAt progression only', () => {
     expect(first.state.transcript[0]?.message).toBe('Sydney to Gold Coast!!!!');
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(first.state.status).toBe('empty');
     expect(first.state.conversationId).toBe(CONVERSATION_ID);
     expect(first.state.updatedAt).toBe('2026-07-29T00:00:01.000Z');
 

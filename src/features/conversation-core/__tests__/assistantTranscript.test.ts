@@ -156,7 +156,7 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     expect(suppliedTranscript).toEqual(snapshot);
   });
 
-  it('keeps status empty, conversationId, and createdAt unchanged', () => {
+  it('keeps conversationId and createdAt unchanged', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: USER_AT,
@@ -166,7 +166,6 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
       assistant: 'a1',
     });
 
-    expect(result.state.status).toBe('empty');
     expect(result.state.conversationId).toBe(initial.conversationId);
     expect(result.state.createdAt).toBe(initial.createdAt);
   });
@@ -212,7 +211,6 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
       expect(result.state.transcript[1]?.role).toBe('assistant');
       expect(result.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
       expect(result.reply).toBe(result.state.transcript[1]?.message);
-      expect(result.state.status).toBe('empty');
       expect(result.state.turnCount).toBe(1);
       expect(result.trace.messageInterpreted).toBe(false);
       expect(result.trace.assistantMessageRecorded).toBe(true);

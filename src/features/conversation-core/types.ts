@@ -9,7 +9,7 @@
 export const CONVERSATION_CORE_STORAGE_NAMESPACE =
   'aleya-travel:conversation-core:first-principles' as const;
 
-export type ConversationCoreStatus = 'empty';
+export type ConversationCoreStatus = 'empty' | 'active';
 
 /** Chronological transcript memory only — not intelligence. */
 export type ConversationTranscriptEntry =
