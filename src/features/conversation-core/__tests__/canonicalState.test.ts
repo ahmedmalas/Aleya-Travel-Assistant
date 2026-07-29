@@ -40,6 +40,7 @@ const CANONICAL_KEYS = [
   'transcript',
   'turnCount',
   'updatedAt',
+  'wellnessRequested',
 ] as const;
 
 const FORBIDDEN_STATE_FIELDS = [
@@ -118,6 +119,7 @@ describe('canonical conversation-core state', () => {
       eventsRequested: null,
       nightlifeRequested: null,
       shoppingRequested: null,
+      wellnessRequested: null,
       transcript: [],
     });
   });

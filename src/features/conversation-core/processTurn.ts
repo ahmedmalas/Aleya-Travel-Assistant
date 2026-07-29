@@ -74,6 +74,8 @@ export type ProcessConversationTurnInput = {
   nightlifeRequested?: boolean;
   /** Explicit shopping request flag only — stored as injected; never read from message. */
   shoppingRequested?: boolean;
+  /** Explicit wellness request flag only — stored as injected; never read from message. */
+  wellnessRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -85,7 +87,7 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3W: append raw user + placeholder assistant entries, increment
+ * Phase 3X: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
@@ -93,9 +95,9 @@ export type ProcessConversationTurnResult = {
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
  * beachesRequested/campingRequested/kayakingRequested/
  * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
- * toursRequested/eventsRequested/nightlifeRequested/shoppingRequested
- * only. Does not interpret, trim, normalise, extract, validate counts,
- * calculate duration, or persist.
+ * toursRequested/eventsRequested/nightlifeRequested/shoppingRequested/
+ * wellnessRequested only. Does not interpret, trim, normalise, extract,
+ * validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -184,6 +186,10 @@ export function processConversationTurn(
     input.shoppingRequested !== undefined
       ? input.shoppingRequested
       : base.shoppingRequested;
+  const wellnessRequested =
+    input.wellnessRequested !== undefined
+      ? input.wellnessRequested
+      : base.wellnessRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -229,6 +235,7 @@ export function processConversationTurn(
     eventsRequested,
     nightlifeRequested,
     shoppingRequested,
+    wellnessRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
