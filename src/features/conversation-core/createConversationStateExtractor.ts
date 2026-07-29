@@ -19,6 +19,7 @@ import { OriginConversationStateExtractor } from './OriginConversationStateExtra
 import { RestaurantsRequestedConversationStateExtractor } from './RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from './ScenicDrivesRequestedConversationStateExtractor';
+import { SnowActivitiesRequestedConversationStateExtractor } from './SnowActivitiesRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -44,6 +45,7 @@ import type { ConversationStateExtractor } from './types';
  * FourWheelDrivingRequestedConversationStateExtractor, then a new
  * ScenicDrivesRequestedConversationStateExtractor, then a new
  * AttractionsRequestedConversationStateExtractor, then a new
+ * SnowActivitiesRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -68,6 +70,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new FourWheelDrivingRequestedConversationStateExtractor(),
     new ScenicDrivesRequestedConversationStateExtractor(),
     new AttractionsRequestedConversationStateExtractor(),
+    new SnowActivitiesRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
