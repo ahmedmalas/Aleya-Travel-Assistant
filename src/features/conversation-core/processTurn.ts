@@ -58,6 +58,8 @@ export type ProcessConversationTurnInput = {
   beachesRequested?: boolean;
   /** Explicit camping request flag only — stored as injected; never read from message. */
   campingRequested?: boolean;
+  /** Explicit kayaking request flag only — stored as injected; never read from message. */
+  kayakingRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -69,14 +71,15 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3O: append raw user + placeholder assistant entries, increment
+ * Phase 3P: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
  * flightsRequested/accommodationRequested/carHireRequested/
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
- * beachesRequested/campingRequested only. Does not interpret, trim,
- * normalise, extract, validate counts, calculate duration, or persist.
+ * beachesRequested/campingRequested/kayakingRequested only. Does not
+ * interpret, trim, normalise, extract, validate counts, calculate duration,
+ * or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -133,6 +136,10 @@ export function processConversationTurn(
     input.campingRequested !== undefined
       ? input.campingRequested
       : base.campingRequested;
+  const kayakingRequested =
+    input.kayakingRequested !== undefined
+      ? input.kayakingRequested
+      : base.kayakingRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -170,6 +177,7 @@ export function processConversationTurn(
     nearbyDiscoveryRequested,
     beachesRequested,
     campingRequested,
+    kayakingRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
