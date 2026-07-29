@@ -458,11 +458,14 @@ describe('conversation-core architectural boundary', () => {
     expect(returnDateExtractor).toMatch(
       /export class ReturnDateConversationStateExtractor/,
     );
-    expect(returnDateExtractor).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(returnDateExtractor.includes('input.message')).toBe(false);
+    expect(returnDateExtractor).toMatch(/input: ConversationStateExtractionInput/);
+    expect(returnDateExtractor).toMatch(/input\.message/);
     expect(returnDateExtractor.includes('input.currentState')).toBe(false);
+    expect(returnDateExtractor.includes('.trim(')).toBe(false);
+    expect(returnDateExtractor.includes('.toLowerCase(')).toBe(false);
     expect(returnDateExtractor.includes('new Date')).toBe(false);
     expect(returnDateExtractor.includes('Date.now')).toBe(false);
+    expect(returnDateExtractor.includes('Date.parse')).toBe(false);
     const adultCountExtractor = readSrc(
       'src/features/conversation-core/AdultCountConversationStateExtractor.ts',
     );

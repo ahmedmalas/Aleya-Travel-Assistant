@@ -780,22 +780,25 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'Return on 2026-10-22', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { returnDate: '2026-10-22' } });
   });
 
-  it('factory-created extraction remains empty and deterministic for return-date-like text', () => {
+  it('factory-created extraction updates returnDate for explicit return-on dates and rejects relative wording', () => {
     const extractor = createConversationStateExtractor();
     const currentState = createState({ returnDate: '2026-09-08' });
 
     expect(
       extractor.extract({ message: 'Return on 2026-10-22', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { returnDate: '2026-10-22' } });
     expect(
       extractor.extract({ message: 'Return on 2026-10-22', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { returnDate: '2026-10-22' } });
     expect(
       extractor.extract({ message: 'Back after 7 nights', currentState }),
     ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Leave on 2026-10-15', currentState }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
   });
 
   it('factory-created extraction remains empty and deterministic for adult-count-like text', () => {

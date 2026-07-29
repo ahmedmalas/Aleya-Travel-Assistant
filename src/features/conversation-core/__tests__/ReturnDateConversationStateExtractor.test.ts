@@ -11,6 +11,12 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -18,13 +24,17 @@ const RETURN_DATE_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/ReturnDateConversationStateExtractor.ts',
 );
+const DEPARTURE_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
+);
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-5n',
+      conversationId: 'conversation-7d',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -65,8 +75,18 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+describe('phase 7D — ReturnDateConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit returnDate result contract', () => {
     expectTypeOf<ReturnDateConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<ReturnDateConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
       [ConversationStateExtractionInput]
@@ -74,96 +94,102 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
     expectTypeOf<ReturnDateConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new ReturnDateConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'Return on 2026-10-22',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'Return on 2026-10-22',
+        currentState: createState({ returnDate: null }),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-10-22' } });
   });
 
-  it('cannot create, replace, or clear return date from return-like message text', () => {
+  it('extracts supported explicit return-date forms into canonical ISO', () => {
     const extractor = new ReturnDateConversationStateExtractor();
-    const withReturn = createState({
-      departureDate: '2026-09-01',
-      returnDate: '2026-09-08',
-    });
+    const cases: Array<[string, string]> = [
+      ['Return on 31 August 2026', '2026-08-31'],
+      ['returning 31 August 2026', '2026-08-31'],
+      ['come back on 31 August 2026', '2026-08-31'],
+      ['coming back 31 August 2026', '2026-08-31'],
+      ['return date is 31 August 2026', '2026-08-31'],
+      ['Return on 2026-10-22', '2026-10-22'],
+      ['Coming back 22 October 2026', '2026-10-22'],
+    ];
 
-    expect(
-      extractor.extract({
-        message: 'Coming back 22 October 2026',
-        currentState: createState({ returnDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Return next Sunday',
-        currentState: createState({ returnDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Back tomorrow / next week',
-        currentState: createState({ returnDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Stay for 7 nights then return',
-        currentState: createState({ returnDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Actually return on 2026-11-01 instead of 2026-09-08',
-        currentState: withReturn,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Forget the return date / not 2026-09-08',
-        currentState: withReturn,
-      }),
-    ).toEqual({ stateUpdate: {} });
+    for (const [message, returnDate] of cases) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ returnDate: null }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: { returnDate } });
+    }
+  });
 
+  it('replaces an existing returnDate when a new explicit date is stated', () => {
+    const extractor = new ReturnDateConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState({ returnDate: '2026-08-22' }),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
+  });
+
+  it('returns empty for departure-date, vague, relative, price, time, negation, and keep wording', () => {
+    const extractor = new ReturnDateConversationStateExtractor();
+    const unsupported = [
+      'Depart on 28 August 2026',
+      'Leave on 2026-10-15',
+      'Fly on 28 August 2026',
+      'Travel on 28 August 2026',
+      'Departure date is 28 August 2026',
+      'Returning soon',
+      'Return next week',
+      'Come back tomorrow',
+      'Return on Friday',
+      'Return on Monday',
+      'Flights from $450',
+      'Return at 10am',
+      'Back after 7 nights',
+      'Stay for 7 nights then return',
+      'Do not return on 31 August 2026',
+      'Keep my return date',
+      'Forget the return date',
+      'Return on 31 August 2026 instead',
+      'Actually return on 31 August 2026',
+      'Actually return on 2026-11-01 instead of 2026-09-08',
+      'Forget the return date / not 2026-09-08',
+      'Returning tomorrow after 5 nights',
+      'Hello',
+      '',
+    ];
+
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ returnDate: '2026-09-08' }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('never emits returnDate null from extraction', () => {
+    const extractor = new ReturnDateConversationStateExtractor();
     const result = extractor.extract({
-      message: 'keep 2026-09-08',
-      currentState: withReturn,
+      message: 'Forget the return date',
+      currentState: createState({ returnDate: '2026-09-08' }),
     });
     expect(result.stateUpdate).toEqual({});
     expect(result.stateUpdate).not.toHaveProperty('returnDate');
-    expect(result.stateUpdate).not.toHaveProperty('departureDate');
-    expect(withReturn.returnDate).toBe('2026-09-08');
-    expect(withReturn.departureDate).toBe('2026-09-01');
-  });
 
-  it('returns the same empty result for different messages and states', () => {
-    const extractor = new ReturnDateConversationStateExtractor();
-
-    expect(
-      extractor.extract({
-        message: 'Return on Monday',
-        currentState: createState({ returnDate: '2026-08-10' }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Cancel everything',
-        currentState: createState({
-          destination: 'Darwin',
-          origin: 'Adelaide',
-          departureDate: '2026-12-01',
-          returnDate: '2026-12-10',
-          adultCount: 4,
-          flightsRequested: true,
-        }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Take me to Cairns from Sydney leaving Friday',
-        currentState: createState({ returnDate: null }),
-      }),
-    ).toEqual({ stateUpdate: {} });
+    const update = extractor.extract({
+      message: 'Return on 31 August 2026',
+      currentState: createState({ returnDate: null }),
+    }).stateUpdate;
+    expect(update.returnDate).toBe('2026-08-31');
+    expect(update.returnDate).not.toBeNull();
   });
 
   it('does not mutate input or retain state across calls or instances', () => {
@@ -180,7 +206,7 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'Return next Sunday',
+      message: 'Return on 2026-10-22',
       currentState,
     };
     const before = structuredClone(input);
@@ -198,7 +224,7 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { returnDate: '2026-10-22' } });
 
     const other =
       new ReturnDateConversationStateExtractor() as ReturnDateConversationStateExtractor & {
@@ -209,26 +235,28 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
     ).retained = 'first-only';
     expect(other.retained).toBeUndefined();
     expect(
-      other.extract({ message: 'fresh', currentState: createState() }),
-    ).toEqual({ stateUpdate: {} });
+      other.extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
   });
 
-  it('contains no inspection, date, duration, regex, lexicon, or provider imports', () => {
+  it('contains no trim/toLowerCase, Date API, currentState inspection, or provider imports', () => {
     const source = readFileSync(RETURN_DATE_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(/returnDate\s*:/);
+    expect(source).toMatch(/returnDate\s*:/);
     expect(source).not.toMatch(/departureDate\s*:/);
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
     expect(source).not.toMatch(/new Date\b|Date\.now|Date\.parse/);
-    expect(source).not.toMatch(
-      /lexicon|weekday|monthNames|relativeDate|timezone|nights|duration/i,
-    );
+    expect(source).not.toMatch(/monthNames|relativeDate|timezone/i);
     expect(source).not.toMatch(/date-fns|dayjs|luxon|moment|Temporal/);
-    expect(source).not.toMatch(/provider|search|discovery|travel-location|calendar/i);
+    expect(source).not.toMatch(/provider|travel-location|calendar/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
     expect(source).not.toMatch(/from '\.\.\/|from '\.\.\/\.\.\//);
   });
@@ -251,7 +279,9 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
     );
 
     expect(index).not.toMatch(/ReturnDateConversationStateExtractor/);
-    expect(conversationCore).not.toHaveProperty('ReturnDateConversationStateExtractor');
+    expect(conversationCore).not.toHaveProperty(
+      'ReturnDateConversationStateExtractor',
+    );
     expect(processTurn).not.toMatch(/ReturnDateConversationStateExtractor/);
 
     for (const file of srcFiles) {
@@ -259,75 +289,127 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
       expect(src.includes('new ReturnDateConversationStateExtractor'), file).toBe(
         false,
       );
-      expect(src.includes('ReturnDateConversationStateExtractor'), file).toBe(false);
+      expect(src.includes('ReturnDateConversationStateExtractor'), file).toBe(
+        false,
+      );
     }
   });
 
-  it('keeps processor return-date behaviour unchanged with the skeleton in the path', () => {
+  it('proves DepartureDate production source remains unchanged', () => {
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain(
+      'Phase 7C: recognises only narrow, explicit departure-date statements',
+    );
+    const departure = new DepartureDateConversationStateExtractor();
+    expect(
+      departure.extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+    expect(
+      departure.extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('applies extracted returnDate through the live processor with trusted explicit precedence', () => {
     const currentState = createState({
       departureDate: '2026-09-01',
       returnDate: '2026-09-08',
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
-    const injected = processConversationTurn({
-      message: 'Come back on Sunday instead',
+    const extracted = processConversationTurn({
+      message: 'Return on 31 August 2026',
       state: currentState,
-      userEntryId: 'user-5n',
-      assistantEntryId: 'assistant-5n',
+      userEntryId: 'user-7d-a',
+      assistantEntryId: 'assistant-7d-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
-      stateUpdate: { returnDate: '2026-10-22' },
     });
-    const cleared = processConversationTurn({
-      message: 'Forget the return date',
+    const replaced = processConversationTurn({
+      message: 'Return on 2026-10-22',
       state: currentState,
-      userEntryId: 'user-5n-b',
-      assistantEntryId: 'assistant-5n-b',
+      userEntryId: 'user-7d-b',
+      assistantEntryId: 'assistant-7d-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
-      stateUpdate: { returnDate: null },
     });
-    const messageOnly = processConversationTurn({
-      message: 'Returning tomorrow after 5 nights',
+    const overridden = processConversationTurn({
+      message: 'Return on 31 August 2026',
       state: currentState,
-      userEntryId: 'user-5n-c',
-      assistantEntryId: 'assistant-5n-c',
+      userEntryId: 'user-7d-c',
+      assistantEntryId: 'assistant-7d-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
+      stateUpdate: { returnDate: '2026-11-12' },
     });
-    const departureInjected = processConversationTurn({
-      message: 'Leave earlier',
+    const nullOverride = processConversationTurn({
+      message: 'Return on 31 August 2026',
       state: currentState,
-      userEntryId: 'user-5n-d',
-      assistantEntryId: 'assistant-5n-d',
+      userEntryId: 'user-7d-d',
+      assistantEntryId: 'assistant-7d-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
-      stateUpdate: { departureDate: '2026-08-20' },
+      stateUpdate: { returnDate: null },
     });
-    const placesInjected = processConversationTurn({
-      message: 'Sydney to Perth',
+    const preserved = processConversationTurn({
+      message: 'Returning tomorrow after 5 nights',
       state: currentState,
-      userEntryId: 'user-5n-e',
-      assistantEntryId: 'assistant-5n-e',
+      userEntryId: 'user-7d-e',
+      assistantEntryId: 'assistant-7d-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
-      stateUpdate: { origin: 'Sydney', destination: 'Perth' },
+    });
+    const composed = processConversationTurn({
+      message: 'Return on 31 August 2026. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        returnDate: null,
+      }),
+      userEntryId: 'user-7d-f',
+      assistantEntryId: 'assistant-7d-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'Return on 31 August 2026. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        returnDate: null,
+      }),
+      userEntryId: 'user-7d-g',
+      assistantEntryId: 'assistant-7d-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: {
+        origin: 'Perth',
+        destination: 'Hobart',
+        returnDate: '2026-12-15',
+      },
     });
 
-    expect(injected.state.returnDate).toBe('2026-10-22');
-    expect(injected.state.departureDate).toBe('2026-09-01');
-    expect(injected.state.origin).toBe('Melbourne');
-    expect(cleared.state.returnDate).toBeNull();
-    expect(messageOnly.state.returnDate).toBe('2026-09-08');
-    expect(departureInjected.state.departureDate).toBe('2026-08-20');
-    expect(departureInjected.state.returnDate).toBe('2026-09-08');
-    expect(placesInjected.state.origin).toBe('Sydney');
-    expect(placesInjected.state.destination).toBe('Perth');
-    expect(placesInjected.state.returnDate).toBe('2026-09-08');
-    expect(injected.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(injected).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(Object.keys(injected.trace).sort()).toEqual([
+    expect(extracted.state.returnDate).toBe('2026-08-31');
+    expect(extracted.state.departureDate).toBe('2026-09-01');
+    expect(extracted.state.origin).toBe('Melbourne');
+    expect(replaced.state.returnDate).toBe('2026-10-22');
+    expect(overridden.state.returnDate).toBe('2026-11-12');
+    expect(nullOverride.state.returnDate).toBeNull();
+    expect(preserved.state.returnDate).toBe('2026-09-08');
+    expect(composed.state.returnDate).toBe('2026-08-31');
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Cairns');
+    expect(composed.state.departureDate).toBe('2026-09-01');
+    expect(independentOverride.state.returnDate).toBe('2026-12-15');
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Hobart');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
+    expect(Object.keys(extracted.trace).sort()).toEqual([
       'assistantMessageRecorded',
       'entryPoint',
       'messageInterpreted',
@@ -344,5 +426,104 @@ describe('phase 5N — ReturnDateConversationStateExtractor skeleton', () => {
             'function' && name !== 'createInitialConversationCoreState',
       ),
     ).toEqual(['processConversationTurn']);
+  });
+
+  it('keeps Destination, Origin, DepartureDate, and ReturnDate as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
+    expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
+    expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({
+      origin: 'Hobart',
+      destination: 'Hobart',
+      departureDate: '2026-01-01',
+      returnDate: '2026-01-10',
+    });
+
+    const returnActiveMessage = 'Return on 31 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: returnActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        returnDate: '2026-08-31',
+      },
+    });
+
+    for (let index = 4; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: returnActiveMessage,
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[0]?.extract({
+        message: returnActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(
+      extractors[1]?.extract({
+        message: returnActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(
+      extractors[2]?.extract({
+        message: returnActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[3]?.extract({
+        message: returnActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
+
+    const departureActiveMessage =
+      'Depart on 28 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: departureActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+      },
+    });
+    expect(
+      extractors[3]?.extract({
+        message: departureActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+
+    for (let index = 4; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: departureActiveMessage,
+          currentState,
+        }),
+        `extractor ${index} on departure message`,
+      ).toEqual({ stateUpdate: {} });
+    }
   });
 });

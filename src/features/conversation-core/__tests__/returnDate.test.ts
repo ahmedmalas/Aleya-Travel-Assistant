@@ -81,7 +81,7 @@ describe('phase 3D — explicit returnDate only', () => {
     expect(second.state.returnDate).toBe('2026-09-10');
   });
 
-  it('return-date wording in the user message alone never changes returnDate', () => {
+  it('unsupported return-date wording in the user message alone never changes returnDate', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -99,6 +99,31 @@ describe('phase 3D — explicit returnDate only', () => {
       expect(result.state.returnDate).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit return-date cue in the message updates returnDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('Return on 31 August 2026', initial, 0);
+    expect(result.state.returnDate).toBe('2026-08-31');
+  });
+
+  it('trusted explicit stateUpdate.returnDate overrides an extracted returnDate', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overridden = turn('Return on 31 August 2026', initial, 0, {
+      returnDate: '2026-11-12',
+    });
+    expect(overridden.state.returnDate).toBe('2026-11-12');
+
+    const nullOverride = turn('Return on 31 August 2026', initial, 1, {
+      returnDate: null as unknown as string,
+    });
+    expect(nullOverride.state.returnDate).toBeNull();
   });
 
   it('origin, destination and departureDate remain preserved when returnDate changes', () => {
