@@ -18,6 +18,7 @@ import { DepartureDateConversationStateExtractor } from '../DepartureDateConvers
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
 const COMPOSITE_SOURCE = resolve(
@@ -337,7 +338,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     for (const file of srcFiles) {
@@ -349,15 +350,16 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     }
   });
 
-  it('production destination-origin-departure-date-empty sequence stays empty without altering merge behaviour', () => {
+  it('production destination-origin-departure-return-date-empty sequence stays empty without altering merge behaviour', () => {
     const input: ConversationStateExtractionInput = {
-      message: 'Flying from Melbourne to Cairns next Friday',
+      message: 'Flying from Melbourne to Cairns next Friday, back Sunday',
       currentState: createState(),
     };
     const received: ConversationStateExtractionInput[] = [];
     const destination = new DestinationConversationStateExtractor();
     const origin = new OriginConversationStateExtractor();
     const departureDate = new DepartureDateConversationStateExtractor();
+    const returnDate = new ReturnDateConversationStateExtractor();
     const empty = new EmptyConversationStateExtractor();
     const destinationExtract = vi
       .spyOn(destination, 'extract')
@@ -377,6 +379,12 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
         received.push(receivedInput);
         return { stateUpdate: {} };
       });
+    const returnDateExtract = vi
+      .spyOn(returnDate, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
     const emptyExtract = vi
       .spyOn(empty, 'extract')
       .mockImplementation((receivedInput) => {
@@ -388,6 +396,7 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
       destination,
       origin,
       departureDate,
+      returnDate,
       empty,
     ]);
     const first = production.extract(input);
@@ -400,20 +409,23 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(destinationExtract).toHaveBeenCalledTimes(2);
     expect(originExtract).toHaveBeenCalledTimes(2);
     expect(departureDateExtract).toHaveBeenCalledTimes(2);
+    expect(returnDateExtract).toHaveBeenCalledTimes(2);
     expect(emptyExtract).toHaveBeenCalledTimes(2);
-    expect(received).toHaveLength(8);
+    expect(received).toHaveLength(10);
     expect(received.every((value) => value === input)).toBe(true);
 
     const mergeStillWorks = new CompositeConversationStateExtractor([
       stubExtractor({ destination: 'Brisbane', origin: 'Melbourne' }),
       stubExtractor({ origin: 'Sydney' }),
       stubExtractor({ departureDate: '2026-10-15' }),
+      stubExtractor({ returnDate: '2026-10-22' }),
       stubExtractor({}),
     ]).extract(input);
     expect(mergeStillWorks.stateUpdate).toEqual({
       destination: 'Brisbane',
       origin: 'Sydney',
       departureDate: '2026-10-15',
+      returnDate: '2026-10-22',
     });
   });
 

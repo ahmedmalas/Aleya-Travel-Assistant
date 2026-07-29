@@ -3,6 +3,7 @@ import { DepartureDateConversationStateExtractor } from './DepartureDateConversa
 import { DestinationConversationStateExtractor } from './DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from './emptyConversationStateExtractor';
 import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -12,6 +13,7 @@ import type { ConversationStateExtractor } from './types';
  * DestinationConversationStateExtractor, then a new
  * OriginConversationStateExtractor, then a new
  * DepartureDateConversationStateExtractor, then a new
+ * ReturnDateConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -20,6 +22,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new DestinationConversationStateExtractor(),
     new OriginConversationStateExtractor(),
     new DepartureDateConversationStateExtractor(),
+    new ReturnDateConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }
