@@ -16,6 +16,7 @@ const CANONICAL_KEYS = [
   'departureDate',
   'destination',
   'origin',
+  'returnDate',
   'status',
   'transcript',
   'turnCount',
@@ -78,6 +79,7 @@ describe('canonical conversation-core state', () => {
       destination: null,
       origin: null,
       departureDate: null,
+      returnDate: null,
       transcript: [],
     });
   });
