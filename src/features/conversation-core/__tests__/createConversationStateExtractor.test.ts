@@ -1038,18 +1038,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for scenic-drives-requested-like text', () => {
+  it('factory-created extraction sets scenicDrivesRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ scenicDrivesRequested: true });
+    const currentState = createState({ scenicDrivesRequested: false });
 
     expect(
       extractor.extract({ message: 'show me scenic drives', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       extractor.extract({ message: 'show me scenic drives', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       extractor.extract({ message: 'no scenic drives', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'coastal drive', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'road trip', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

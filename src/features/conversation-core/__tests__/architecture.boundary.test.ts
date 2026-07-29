@@ -746,12 +746,20 @@ describe('conversation-core architectural boundary', () => {
       /export class ScenicDrivesRequestedConversationStateExtractor/,
     );
     expect(scenicDrivesRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(scenicDrivesRequestedExtractor.includes('input.message')).toBe(false);
+    expect(scenicDrivesRequestedExtractor).toMatch(/input\.message/);
     expect(scenicDrivesRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(scenicDrivesRequestedExtractor.includes('.trim(')).toBe(false);
     expect(scenicDrivesRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(scenicDrivesRequestedExtractor.includes('includes(')).toBe(false);
+    expect(scenicDrivesRequestedExtractor).toMatch(/scenicDrivesRequested:\s*true/);
+    expect(scenicDrivesRequestedExtractor.includes('scenicDrivesRequested: false')).toBe(
+      false,
+    );
+    expect(scenicDrivesRequestedExtractor.includes('scenicDrivesRequested: null')).toBe(
+      false,
+    );
     const attractionsRequestedExtractor = readSrc(
       'src/features/conversation-core/AttractionsRequestedConversationStateExtractor.ts',
     );

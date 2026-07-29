@@ -108,7 +108,7 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     });
     expect(first.state.scenicDrivesRequested).toBe(false);
 
-    const second = turn('scenic drive', first.state, 1);
+    const second = turn('road trip coastal drive', first.state, 1);
     expect(second.state.scenicDrivesRequested).toBe(false);
   });
 
@@ -118,9 +118,9 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'scenic drive',
       'road trip',
       'coastal drive',
+      'mountain drive',
       'driving route',
       'lookout drive',
     ];
@@ -156,7 +156,7 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     expect(withFalse.state.scenicDrivesRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'driving route lookout drive',
+      'driving route lookout drive coastal drive',
       withFalse.state,
       3,
     );

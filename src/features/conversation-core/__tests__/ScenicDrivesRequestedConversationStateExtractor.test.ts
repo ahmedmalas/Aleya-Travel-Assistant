@@ -11,6 +11,26 @@ import {
   type ConversationStateExtractionResult,
   type ConversationStateExtractor,
 } from '../index';
+import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
+import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
+import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
+import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
+import { FourWheelDrivingRequestedConversationStateExtractor } from '../FourWheelDrivingRequestedConversationStateExtractor';
+import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
+import { KayakingRequestedConversationStateExtractor } from '../KayakingRequestedConversationStateExtractor';
+import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -18,19 +38,92 @@ const SCENIC_DRIVES_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/ScenicDrivesRequestedConversationStateExtractor.ts',
 );
+const FOUR_WHEEL_DRIVING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/FourWheelDrivingRequestedConversationStateExtractor.ts',
+);
+const KAYAKING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/KayakingRequestedConversationStateExtractor.ts',
+);
+const CAMPING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/CampingRequestedConversationStateExtractor.ts',
+);
+const BEACHES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
+);
+const NEARBY_DISCOVERY_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/NearbyDiscoveryRequestedConversationStateExtractor.ts',
+);
+const RESTAURANTS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/RestaurantsRequestedConversationStateExtractor.ts',
+);
+const ACTIVITIES_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
+);
+const CAR_HIRE_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/CarHireRequestedConversationStateExtractor.ts',
+);
+const ACCOMMODATION_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AccommodationRequestedConversationStateExtractor.ts',
+);
+const FLIGHTS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/FlightsRequestedConversationStateExtractor.ts',
+);
+const INFANT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/InfantCountConversationStateExtractor.ts',
+);
+const CHILD_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ChildCountConversationStateExtractor.ts',
+);
+const ADULT_COUNT_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/AdultCountConversationStateExtractor.ts',
+);
+const DESTINATION_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DestinationConversationStateExtractor.ts',
+);
+const ORIGIN_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/OriginConversationStateExtractor.ts',
+);
+const DEPARTURE_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
+);
+const RETURN_DATE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/ReturnDateConversationStateExtractor.ts',
+);
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-6b',
+      conversationId: 'conversation-7r',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
     turnCount: 2,
     destination: 'Brisbane',
     origin: 'Melbourne',
+    departureDate: '2026-09-01',
+    returnDate: '2026-09-08',
+    adultCount: 2,
+    childCount: 1,
+    infantCount: 0,
     flightsRequested: true,
     accommodationRequested: true,
     carHireRequested: true,
@@ -41,7 +134,7 @@ function createState(
     campingRequested: true,
     kayakingRequested: true,
     fourWheelDriveRequested: true,
-    scenicDrivesRequested: true,
+    scenicDrivesRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -74,8 +167,18 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton', () => {
-  it('implements ConversationStateExtractor with empty result contract', () => {
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+describe('phase 7R — ScenicDrivesRequestedConversationStateExtractor activation', () => {
+  it('implements ConversationStateExtractor with explicit scenicDrivesRequested true contract', () => {
     expectTypeOf<ScenicDrivesRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<ScenicDrivesRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
       [ConversationStateExtractionInput]
@@ -83,162 +186,111 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
     expectTypeOf<ScenicDrivesRequestedConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
 
     const extractor = new ScenicDrivesRequestedConversationStateExtractor();
-    const input: ConversationStateExtractionInput = {
-      message: 'show me scenic drives',
-      currentState: createState(),
-    };
-    expect(extractor.extract(input)).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({
+        message: 'add scenic drives',
+        currentState: createState({ scenicDrivesRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
   });
 
-  it('cannot create, replace, or clear scenicDrivesRequested from scenic-drive-like message text', () => {
+  it('extracts supported explicit scenic-drive-request forms as true', () => {
     const extractor = new ScenicDrivesRequestedConversationStateExtractor();
-    const withScenic = createState({
-      scenicDrivesRequested: true,
-      fourWheelDriveRequested: true,
-      kayakingRequested: true,
-      campingRequested: true,
-      beachesRequested: true,
-      nearbyDiscoveryRequested: true,
-      restaurantsRequested: true,
-      activitiesRequested: true,
-      carHireRequested: true,
-      accommodationRequested: true,
-      flightsRequested: true,
-    });
-    const withoutScenic = createState({
-      scenicDrivesRequested: false,
-      fourWheelDriveRequested: true,
-      kayakingRequested: true,
-      campingRequested: true,
-      beachesRequested: true,
-      nearbyDiscoveryRequested: true,
-      restaurantsRequested: true,
-      activitiesRequested: true,
-      carHireRequested: true,
-      accommodationRequested: true,
-      flightsRequested: true,
-    });
-
-    const messages = [
+    const cases = [
+      'scenic drives',
+      'scenic drive',
+      'show scenic drives',
       'show me scenic drives',
-      'find scenic routes',
-      'plan a road trip',
-      'show me driving routes',
-      'find coastal drives',
-      'show me mountain drives',
-      'drive through the countryside',
-      'find hinterland drives',
-      'show me forest roads',
-      'drive through the valley',
-      'find drives with lookouts',
-      'show me viewpoint routes',
-      'find panoramic drives',
-      'find a sunset drive',
-      'show me sunrise driving routes',
-      'plan a scenic day trip',
-      'find a loop drive',
-      'show me self-drive routes',
-      'find touring routes',
-      'show me heritage drives',
-      'drive through a wine region',
-      'scenic drives in national parks',
-      'find waterfall driving routes',
-      'show me beach driving routes',
-      'find an island drive',
-      'show me remote scenic drives',
-      'find scenic sealed roads',
-      'show me scenic unsealed roads',
-      'family-friendly scenic drives',
-      'scenic drives near the hotel',
-      'find a short scenic drive',
-      'show me a long scenic drive',
+      'find scenic drives',
+      'I need scenic drives',
+      'include scenic drives',
       'add scenic drives',
-      'yes include scenic drives',
-      'actually show me scenic drives',
-      'do not include scenic drives',
-      'no scenic drives',
-      'remove scenic drives',
-      'forget scenic drives',
-      'keep four-wheel driving but remove scenic drives',
+      'need scenic drive',
+      'book scenic drives',
     ];
 
-    for (const message of messages) {
+    for (const message of cases) {
       expect(
         extractor.extract({
           message,
           currentState: createState({ scenicDrivesRequested: null }),
         }),
-      ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withScenic,
-        }),
-      ).toEqual({ stateUpdate: {} });
-      expect(
-        extractor.extract({
-          message,
-          currentState: withoutScenic,
-        }),
-      ).toEqual({ stateUpdate: {} });
+        message,
+      ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     }
-
-    const result = extractor.extract({
-      message: 'keep the scenic drives',
-      currentState: withScenic,
-    });
-    expect(result.stateUpdate).toEqual({});
-    expect(result.stateUpdate).not.toHaveProperty('scenicDrivesRequested');
-    expect(result.stateUpdate).not.toHaveProperty('fourWheelDriveRequested');
-    expect(result.stateUpdate).not.toHaveProperty('kayakingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('campingRequested');
-    expect(result.stateUpdate).not.toHaveProperty('beachesRequested');
-    expect(result.stateUpdate).not.toHaveProperty('nearbyDiscoveryRequested');
-    expect(result.stateUpdate).not.toHaveProperty('restaurantsRequested');
-    expect(result.stateUpdate).not.toHaveProperty('activitiesRequested');
-    expect(result.stateUpdate).not.toHaveProperty('carHireRequested');
-    expect(result.stateUpdate).not.toHaveProperty('accommodationRequested');
-    expect(result.stateUpdate).not.toHaveProperty('flightsRequested');
-    expect(withScenic.scenicDrivesRequested).toBe(true);
-    expect(withoutScenic.scenicDrivesRequested).toBe(false);
-    expect(withScenic.fourWheelDriveRequested).toBe(true);
   });
 
-  it('returns the same empty result for different messages and states', () => {
+  it('returns empty for road/route/place names, driving/road-trip alone, coastal/mountain/country variants, typed scenic wording, nearby, negation, remove/forget, and keep wording', () => {
     const extractor = new ScenicDrivesRequestedConversationStateExtractor();
+    const unsupported = [
+      'Great Ocean Road',
+      'Pacific Coast Highway',
+      'Cairns to Port Douglas',
+      'driving',
+      'road trip',
+      'roadtrip',
+      'lookout drive',
+      'driving route',
+      'coastal drive',
+      'mountain drive',
+      'country drive',
+      'coastal scenic drives',
+      'mountain scenic drive',
+      'country scenic drives',
+      'easy scenic drives',
+      'guided scenic drives',
+      'family-friendly scenic drives',
+      'scenic drives near the hotel',
+      'nearby scenic drives',
+      'scenic drive along the coast',
+      'scenic drives through the mountains',
+      'do not include scenic drives',
+      'no scenic drives',
+      "don't add scenic drive",
+      'without scenic drives',
+      'remove scenic drives',
+      'forget scenic drives',
+      'keep scenic drives',
+      'actually show me scenic drives',
+      'instead scenic drives',
+      'not scenic drives but 4WD',
+      'Hello',
+      '',
+    ];
 
-    expect(
-      extractor.extract({
-        message: 'find scenic routes',
-        currentState: createState({ scenicDrivesRequested: true }),
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({
-        message: 'Cancel everything',
-        currentState: createState({
-          destination: 'Darwin',
-          origin: 'Adelaide',
-          scenicDrivesRequested: false,
-          fourWheelDriveRequested: true,
-          kayakingRequested: true,
-          campingRequested: true,
-          beachesRequested: true,
-          nearbyDiscoveryRequested: true,
-          restaurantsRequested: true,
-          activitiesRequested: true,
-          carHireRequested: true,
-          accommodationRequested: true,
-          flightsRequested: true,
+    for (const message of unsupported) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ scenicDrivesRequested: false }),
         }),
-      }),
-    ).toEqual({ stateUpdate: {} });
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
+  });
+
+  it('never emits scenicDrivesRequested false or null from extraction', () => {
+    const extractor = new ScenicDrivesRequestedConversationStateExtractor();
+    const blocked = extractor.extract({
+      message: 'no scenic drives',
+      currentState: createState({ scenicDrivesRequested: true }),
+    });
+    expect(blocked.stateUpdate).toEqual({});
+    expect(blocked.stateUpdate).not.toHaveProperty('scenicDrivesRequested');
+
+    const update = extractor.extract({
+      message: 'add scenic drives',
+      currentState: createState({ scenicDrivesRequested: null }),
+    }).stateUpdate;
+    expect(update.scenicDrivesRequested).toBe(true);
+    expect(update.scenicDrivesRequested).not.toBe(false);
+    expect(update.scenicDrivesRequested).not.toBeNull();
   });
 
   it('does not mutate input or retain state across calls or instances', () => {
     const extractor = new ScenicDrivesRequestedConversationStateExtractor();
     const currentState = createState({
-      scenicDrivesRequested: true,
+      scenicDrivesRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -249,7 +301,7 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'plan a road trip',
+      message: 'show me scenic drives',
       currentState,
     };
     const before = structuredClone(input);
@@ -267,7 +319,7 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
     expect(currentState.transcript).toEqual(before.currentState.transcript);
     expect(first).not.toBe(second);
     expect(first.stateUpdate).not.toBe(second.stateUpdate);
-    expect(second).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
 
     const other =
       new ScenicDrivesRequestedConversationStateExtractor() as ScenicDrivesRequestedConversationStateExtractor & {
@@ -280,25 +332,27 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
     ).retained = 'first-only';
     expect(other.retained).toBeUndefined();
     expect(
-      other.extract({ message: 'fresh', currentState: createState() }),
-    ).toEqual({ stateUpdate: {} });
+      other.extract({
+        message: 'scenic drive',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
   });
 
-  it('contains no inspection, keyword matching, regex, or provider imports', () => {
+  it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8');
 
-    expect(source).toMatch(/_input: ConversationStateExtractionInput/);
-    expect(source).not.toMatch(/input\.message|input\.currentState/);
-    expect(source).not.toMatch(/\.message\b/);
+    expect(source).toMatch(/input: ConversationStateExtractionInput/);
+    expect(source).toMatch(/input\.message/);
+    expect(source).not.toMatch(/input\.currentState/);
     expect(source).not.toMatch(/currentState\./);
-    expect(source).not.toMatch(/scenicDrivesRequested\s*:/);
-    expect(source).not.toMatch(/new RegExp|\/.+\/[gimsuy]*/);
-    expect(source).not.toMatch(
-      /toLowerCase|includes\(|startsWith\(|keyword|token|lexicon|road trip|coastal|hinterland|lookout|viewpoint|panoramic|sunset|sunrise|self-drive|heritage|wine region|waterfall|unsealed|sealed-road/i,
-    );
-    expect(source).not.toMatch(
-      /geolocation|getCurrentPosition|google\.maps|mapbox|weather|traffic|road-condition|tourism|provider|from ['"][^'"]*(?:search|discovery|map|route|traffic|weather|park|tourism)/i,
-    );
+    expect(source).toMatch(/scenicDrivesRequested\s*:\s*true/);
+    expect(source).not.toMatch(/scenicDrivesRequested\s*:\s*false/);
+    expect(source).not.toMatch(/scenicDrivesRequested\s*:\s*null/);
+    expect(source).not.toMatch(/\.trim\(/);
+    expect(source).not.toMatch(/\.toLowerCase\(/);
+    expect(source).not.toMatch(/\.includes\(/);
+    expect(source).not.toMatch(/provider|travel-location/i);
     expect(source).not.toMatch(/metadata|confidence|warnings/);
     expect(source).not.toMatch(/from '\.\.\/|from '\.\.\/\.\.\//);
   });
@@ -324,7 +378,9 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
     expect(conversationCore).not.toHaveProperty(
       'ScenicDrivesRequestedConversationStateExtractor',
     );
-    expect(processTurn).not.toMatch(/ScenicDrivesRequestedConversationStateExtractor/);
+    expect(processTurn).not.toMatch(
+      /ScenicDrivesRequestedConversationStateExtractor/,
+    );
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
@@ -339,85 +395,265 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
     }
   });
 
-  it('keeps processor scenicDrivesRequested behaviour unchanged with the skeleton in the path', () => {
+  it('proves existing active extractors remain unchanged', () => {
+    expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7I',
+    );
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7K',
+    );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7L',
+    );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7M',
+    );
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
+    expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7Q',
+    );
+
+    expect(
+      new FourWheelDrivingRequestedConversationStateExtractor().extract({
+        message: 'add four-wheel driving',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      new KayakingRequestedConversationStateExtractor().extract({
+        message: 'add kayaking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'add camping',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { campingRequested: true } });
+    expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me beaches',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'book activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new CarHireRequestedConversationStateExtractor().extract({
+        message: 'book car hire',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { carHireRequested: true } });
+    expect(
+      new AccommodationRequestedConversationStateExtractor().extract({
+        message: 'book a hotel',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { accommodationRequested: true } });
+    expect(
+      new FlightsRequestedConversationStateExtractor().extract({
+        message: 'book flights',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { flightsRequested: true } });
+    expect(
+      new InfantCountConversationStateExtractor().extract({
+        message: '1 infant',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { infantCount: 1 } });
+    expect(
+      new AdultCountConversationStateExtractor().extract({
+        message: '2 adults',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { adultCount: 2 } });
+    expect(
+      new ChildCountConversationStateExtractor().extract({
+        message: '2 children',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { childCount: 2 } });
+    expect(
+      new DestinationConversationStateExtractor().extract({
+        message: 'go to Cairns',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(
+      new OriginConversationStateExtractor().extract({
+        message: 'from Sydney',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(
+      new DepartureDateConversationStateExtractor().extract({
+        message: 'Depart on 28 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { departureDate: '2026-08-28' } });
+    expect(
+      new ReturnDateConversationStateExtractor().extract({
+        message: 'Return on 31 August 2026',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
+  });
+
+  it('applies extracted scenicDrivesRequested through the live processor with trusted explicit precedence', () => {
     const currentState = createState({
-      scenicDrivesRequested: true,
-      fourWheelDriveRequested: true,
-      kayakingRequested: true,
-      campingRequested: true,
-      beachesRequested: true,
-      nearbyDiscoveryRequested: true,
-      restaurantsRequested: true,
-      activitiesRequested: true,
-      carHireRequested: true,
-      accommodationRequested: true,
       flightsRequested: true,
+      accommodationRequested: true,
+      carHireRequested: true,
+      activitiesRequested: true,
+      restaurantsRequested: true,
+      nearbyDiscoveryRequested: true,
+      beachesRequested: true,
+      campingRequested: true,
+      kayakingRequested: true,
+      fourWheelDriveRequested: true,
+      scenicDrivesRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
-    const injected = processConversationTurn({
-      message: 'actually show me scenic drives',
+    const extracted = processConversationTurn({
+      message: 'add scenic drives',
       state: currentState,
-      userEntryId: 'user-6b',
-      assistantEntryId: 'assistant-6b',
+      userEntryId: 'user-7r-a',
+      assistantEntryId: 'assistant-7r-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
-      stateUpdate: { scenicDrivesRequested: true },
     });
-    const cleared = processConversationTurn({
+    const overriddenTrue = processConversationTurn({
       message: 'no scenic drives',
       state: currentState,
-      userEntryId: 'user-6b-b',
-      assistantEntryId: 'assistant-6b-b',
+      userEntryId: 'user-7r-b',
+      assistantEntryId: 'assistant-7r-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
-      stateUpdate: { scenicDrivesRequested: false },
+      stateUpdate: { scenicDrivesRequested: true },
     });
-    const nullCleared = processConversationTurn({
-      message: 'remove scenic drives',
+    const overriddenFalse = processConversationTurn({
+      message: 'add scenic drives',
       state: currentState,
-      userEntryId: 'user-6b-c',
-      assistantEntryId: 'assistant-6b-c',
+      userEntryId: 'user-7r-c',
+      assistantEntryId: 'assistant-7r-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
-      stateUpdate: { scenicDrivesRequested: null },
+      stateUpdate: { scenicDrivesRequested: false },
     });
-    const messageOnly = processConversationTurn({
-      message: 'show me scenic drives and coastal routes',
+    const nullOverride = processConversationTurn({
+      message: 'add scenic drives',
       state: currentState,
-      userEntryId: 'user-6b-d',
-      assistantEntryId: 'assistant-6b-d',
+      userEntryId: 'user-7r-d',
+      assistantEntryId: 'assistant-7r-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
+      stateUpdate: { scenicDrivesRequested: null },
     });
-    const fourWheelInjected = processConversationTurn({
-      message: 'add 4WD',
+    const preserved = processConversationTurn({
+      message: 'coastal drive',
       state: currentState,
-      userEntryId: 'user-6b-e',
-      assistantEntryId: 'assistant-6b-e',
+      userEntryId: 'user-7r-e',
+      assistantEntryId: 'assistant-7r-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
-      stateUpdate: { fourWheelDriveRequested: false },
+    });
+    const composed = processConversationTurn({
+      message: 'add scenic drives. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+        activitiesRequested: null,
+        restaurantsRequested: null,
+        nearbyDiscoveryRequested: null,
+        beachesRequested: null,
+        campingRequested: null,
+        kayakingRequested: null,
+        fourWheelDriveRequested: null,
+        scenicDrivesRequested: null,
+      }),
+      userEntryId: 'user-7r-f',
+      assistantEntryId: 'assistant-7r-f',
+      userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
+    });
+    const independentOverride = processConversationTurn({
+      message: 'add scenic drives. Fly from Sydney to Cairns',
+      state: createState({
+        origin: null,
+        destination: null,
+        accommodationRequested: null,
+        flightsRequested: null,
+        carHireRequested: null,
+        activitiesRequested: null,
+        restaurantsRequested: null,
+        nearbyDiscoveryRequested: null,
+        beachesRequested: null,
+        campingRequested: null,
+        kayakingRequested: null,
+        fourWheelDriveRequested: null,
+        scenicDrivesRequested: null,
+      }),
+      userEntryId: 'user-7r-g',
+      assistantEntryId: 'assistant-7r-g',
+      userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
+      stateUpdate: {
+        origin: 'Perth',
+        destination: 'Hobart',
+        scenicDrivesRequested: false,
+      },
     });
 
-    expect(injected.state.scenicDrivesRequested).toBe(true);
-    expect(cleared.state.scenicDrivesRequested).toBe(false);
-    expect(nullCleared.state.scenicDrivesRequested).toBeNull();
-    expect(messageOnly.state.scenicDrivesRequested).toBe(true);
-    expect(fourWheelInjected.state.fourWheelDriveRequested).toBe(false);
-    expect(fourWheelInjected.state.scenicDrivesRequested).toBe(true);
-    expect(injected.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(Object.keys(injected).sort()).toEqual(['reply', 'state', 'trace']);
-    expect(Object.keys(injected.trace).sort()).toEqual([
-      'assistantMessageRecorded',
-      'entryPoint',
-      'messageInterpreted',
-      'persistenceUsed',
-      'stateChanged',
-      'stateStatus',
-      'turnCount',
-      'userMessageRecorded',
-    ]);
+    expect(extracted.state.scenicDrivesRequested).toBe(true);
+    expect(extracted.state.fourWheelDriveRequested).toBe(true);
+    expect(extracted.state.kayakingRequested).toBe(true);
+    expect(extracted.state.flightsRequested).toBe(true);
+    expect(extracted.state.origin).toBe('Melbourne');
+    expect(overriddenTrue.state.scenicDrivesRequested).toBe(true);
+    expect(overriddenFalse.state.scenicDrivesRequested).toBe(false);
+    expect(nullOverride.state.scenicDrivesRequested).toBeNull();
+    expect(preserved.state.scenicDrivesRequested).toBe(false);
+    expect(composed.state.scenicDrivesRequested).toBe(true);
+    expect(composed.state.origin).toBe('Sydney');
+    expect(composed.state.destination).toBe('Cairns');
+    expect(independentOverride.state.scenicDrivesRequested).toBe(false);
+    expect(independentOverride.state.origin).toBe('Perth');
+    expect(independentOverride.state.destination).toBe('Hobart');
+    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
       Object.keys(conversationCore).filter(
         (name) =>
@@ -425,5 +661,138 @@ describe('phase 6B — ScenicDrivesRequestedConversationStateExtractor skeleton'
             'function' && name !== 'createInitialConversationCoreState',
       ),
     ).toEqual(['processConversationTurn']);
+  });
+
+  it('keeps Destination through ScenicDrivesRequested as the only behaviourally active production extractors', () => {
+    const extractors = readExtractors(
+      createConversationStateExtractor() as CompositeConversationStateExtractor,
+    );
+    expect(extractors).toHaveLength(28);
+    expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
+    expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
+    expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
+    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
+    expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
+    expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
+    expect(extractors[8]).toBeInstanceOf(
+      AccommodationRequestedConversationStateExtractor,
+    );
+    expect(extractors[9]).toBeInstanceOf(CarHireRequestedConversationStateExtractor);
+    expect(extractors[10]).toBeInstanceOf(
+      ActivitiesRequestedConversationStateExtractor,
+    );
+    expect(extractors[11]).toBeInstanceOf(
+      RestaurantsRequestedConversationStateExtractor,
+    );
+    expect(extractors[12]).toBeInstanceOf(
+      NearbyDiscoveryRequestedConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(
+      FourWheelDrivingRequestedConversationStateExtractor,
+    );
+    expect(extractors[17]).toBeInstanceOf(
+      ScenicDrivesRequestedConversationStateExtractor,
+    );
+    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+
+    const currentState = createState({
+      origin: 'Hobart',
+      destination: 'Hobart',
+      flightsRequested: false,
+      accommodationRequested: false,
+      carHireRequested: false,
+      activitiesRequested: false,
+      restaurantsRequested: false,
+      nearbyDiscoveryRequested: false,
+      beachesRequested: false,
+      campingRequested: false,
+      kayakingRequested: false,
+      fourWheelDriveRequested: false,
+      scenicDrivesRequested: false,
+    });
+
+    const scenicActiveMessage =
+      'add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+    expect(
+      createConversationStateExtractor().extract({
+        message: scenicActiveMessage,
+        currentState,
+      }),
+    ).toEqual({
+      stateUpdate: {
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        flightsRequested: true,
+        accommodationRequested: true,
+        carHireRequested: true,
+        activitiesRequested: true,
+        restaurantsRequested: true,
+        nearbyDiscoveryRequested: true,
+        beachesRequested: true,
+        campingRequested: true,
+        kayakingRequested: true,
+        fourWheelDriveRequested: true,
+        scenicDrivesRequested: true,
+      },
+    });
+
+    for (let index = 18; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: scenicActiveMessage,
+          currentState,
+        }),
+        `extractor ${index}`,
+      ).toEqual({ stateUpdate: {} });
+    }
+
+    expect(
+      extractors[17]?.extract({
+        message: scenicActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
+    expect(
+      extractors[16]?.extract({
+        message: scenicActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractors[15]?.extract({
+        message: scenicActiveMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+
+    const fourWheelOnlyMessage = 'add four-wheel driving';
+    expect(
+      extractors[16]?.extract({
+        message: fourWheelOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractors[17]?.extract({
+        message: fourWheelOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+
+    for (let index = 18; index < extractors.length; index += 1) {
+      expect(
+        extractors[index]?.extract({
+          message: fourWheelOnlyMessage,
+          currentState,
+        }),
+        `extractor ${index} on four-wheel-driving message`,
+      ).toEqual({ stateUpdate: {} });
+    }
   });
 });
