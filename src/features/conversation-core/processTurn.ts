@@ -39,9 +39,10 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 2E: append raw user + placeholder assistant entries, increment
- * turnCount by one, set updatedAt from assistantMessageAt, and set status
- * to active. Does not interpret, trim, normalise, or persist.
+ * Phase 2F: append raw user + placeholder assistant entries, increment
+ * turnCount by one, set updatedAt from assistantMessageAt, set status to
+ * active, and expose ageMs from assistantMessageAt vs createdAt. Does not
+ * interpret, trim, normalise, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -49,6 +50,8 @@ export function processConversationTurn(
   const base = resolveBaseState(input);
   const nextTurnCount = base.turnCount + 1;
   const assistantTimestamp = input.assistantMessageAt.toISOString();
+  const ageMs =
+    input.assistantMessageAt.getTime() - new Date(base.createdAt).getTime();
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -70,6 +73,7 @@ export function processConversationTurn(
     turnCount: nextTurnCount,
     createdAt: base.createdAt,
     updatedAt: assistantTimestamp,
+    ageMs,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 

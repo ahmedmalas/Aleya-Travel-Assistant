@@ -32,6 +32,8 @@ export type ConversationCoreState = {
   turnCount: number;
   createdAt: string;
   updatedAt: string;
+  /** Derived conversation age in milliseconds from createdAt. */
+  ageMs: number;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -55,6 +57,7 @@ export function createInitialConversationCoreState(
     turnCount: 0,
     createdAt: instant,
     updatedAt: instant,
+    ageMs: 0,
     transcript: [],
   };
 }

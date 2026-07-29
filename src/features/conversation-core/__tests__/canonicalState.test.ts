@@ -10,6 +10,7 @@ const LATER = new Date('2026-07-28T12:00:01.000Z');
 const CONVERSATION_ID = 'conversation-core-test-001';
 
 const CANONICAL_KEYS = [
+  'ageMs',
   'conversationId',
   'createdAt',
   'status',
@@ -72,6 +73,7 @@ describe('canonical conversation-core state', () => {
       turnCount: 0,
       createdAt: '2026-07-28T12:00:00.000Z',
       updatedAt: '2026-07-28T12:00:00.000Z',
+      ageMs: 0,
       transcript: [],
     });
   });
