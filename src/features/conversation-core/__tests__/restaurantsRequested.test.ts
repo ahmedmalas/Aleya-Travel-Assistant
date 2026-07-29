@@ -94,7 +94,7 @@ describe('phase 3L — explicit restaurantsRequested only', () => {
     });
     expect(third.state.restaurantsRequested).toBe(false);
 
-    const fourth = turn('cafe restaurant', third.state, 3);
+    const fourth = turn('cafe dining food', third.state, 3);
     expect(fourth.state.restaurantsRequested).toBe(false);
   });
 
@@ -118,12 +118,12 @@ describe('phase 3L — explicit restaurantsRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'restaurant',
       'dining',
       'food',
       'dinner',
       'lunch',
       'cafe',
+      'Italian cuisine',
     ];
 
     let state = initial;

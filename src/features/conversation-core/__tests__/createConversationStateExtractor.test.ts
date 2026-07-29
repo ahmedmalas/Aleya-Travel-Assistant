@@ -927,18 +927,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for restaurants-requested-like text', () => {
+  it('factory-created extraction sets restaurantsRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ restaurantsRequested: true });
+    const currentState = createState({ restaurantsRequested: false });
 
     expect(
       extractor.extract({ message: 'I need restaurants', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
       extractor.extract({ message: 'I need restaurants', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
       extractor.extract({ message: 'no restaurants', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'find good food', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

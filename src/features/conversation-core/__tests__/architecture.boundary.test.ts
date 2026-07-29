@@ -604,12 +604,24 @@ describe('conversation-core architectural boundary', () => {
       /export class RestaurantsRequestedConversationStateExtractor/,
     );
     expect(restaurantsRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(restaurantsRequestedExtractor.includes('input.message')).toBe(false);
-    expect(restaurantsRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(restaurantsRequestedExtractor).toMatch(/input\.message/);
+    expect(restaurantsRequestedExtractor.includes('input.currentState')).toBe(
+      false,
+    );
+    expect(restaurantsRequestedExtractor.includes('.trim(')).toBe(false);
     expect(restaurantsRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(restaurantsRequestedExtractor.includes('includes(')).toBe(false);
+    expect(restaurantsRequestedExtractor).toMatch(
+      /restaurantsRequested:\s*true/,
+    );
+    expect(
+      restaurantsRequestedExtractor.includes('restaurantsRequested: false'),
+    ).toBe(false);
+    expect(
+      restaurantsRequestedExtractor.includes('restaurantsRequested: null'),
+    ).toBe(false);
     const nearbyDiscoveryRequestedExtractor = readSrc(
       'src/features/conversation-core/NearbyDiscoveryRequestedConversationStateExtractor.ts',
     );
