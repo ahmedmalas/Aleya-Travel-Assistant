@@ -7,6 +7,7 @@ import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequ
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { AttractionsRequestedConversationStateExtractor } from '../AttractionsRequestedConversationStateExtractor';
 import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
 import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
@@ -131,7 +132,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('separate factory calls return separate composites with destination, origin, departure-date, return-date, adult-count, child-count, infant-count, flights-requested, accommodation-requested, car-hire-requested, activities-requested, restaurants-requested, nearby-discovery-requested, beaches-requested, camping-requested, kayaking-requested, four-wheel-driving-requested, scenic-drives-requested, then empty extractors', () => {
+  it('separate factory calls return separate composites with destination, origin, departure-date, return-date, adult-count, child-count, infant-count, flights-requested, accommodation-requested, car-hire-requested, activities-requested, restaurants-requested, nearby-discovery-requested, beaches-requested, camping-requested, kayaking-requested, four-wheel-driving-requested, scenic-drives-requested, attractions-requested, then empty extractors', () => {
     const first = createConversationStateExtractor();
     const second = createConversationStateExtractor();
 
@@ -147,8 +148,8 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     );
 
     expect(firstExtractors).not.toBe(secondExtractors);
-    expect(firstExtractors).toHaveLength(19);
-    expect(secondExtractors).toHaveLength(19);
+    expect(firstExtractors).toHaveLength(20);
+    expect(secondExtractors).toHaveLength(20);
     expect(firstExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(firstExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(firstExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -185,7 +186,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(firstExtractors[17]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(firstExtractors[18]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(firstExtractors[18]).toBeInstanceOf(
+      AttractionsRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[19]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(secondExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(secondExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(secondExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -222,7 +226,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(secondExtractors[17]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(secondExtractors[18]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(secondExtractors[18]).toBeInstanceOf(
+      AttractionsRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[19]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(firstExtractors[0]).not.toBe(secondExtractors[0]);
     expect(firstExtractors[1]).not.toBe(secondExtractors[1]);
     expect(firstExtractors[2]).not.toBe(secondExtractors[2]);
@@ -242,6 +249,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(firstExtractors[16]).not.toBe(secondExtractors[16]);
     expect(firstExtractors[17]).not.toBe(secondExtractors[17]);
     expect(firstExtractors[18]).not.toBe(secondExtractors[18]);
+    expect(firstExtractors[19]).not.toBe(secondExtractors[19]);
   });
 
   it('extractor instances do not share state', () => {
@@ -297,7 +305,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap|registry/);
     expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
@@ -350,6 +358,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(index).not.toMatch(/KayakingRequestedConversationStateExtractor/);
     expect(index).not.toMatch(/FourWheelDrivingRequestedConversationStateExtractor/);
     expect(index).not.toMatch(/ScenicDrivesRequestedConversationStateExtractor/);
+    expect(index).not.toMatch(/AttractionsRequestedConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('createConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('EmptyConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
@@ -395,6 +404,9 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(conversationCore).not.toHaveProperty(
       'ScenicDrivesRequestedConversationStateExtractor',
     );
+    expect(conversationCore).not.toHaveProperty(
+      'AttractionsRequestedConversationStateExtractor',
+    );
     expect(runtimeExports.filter((name) => /extract/i.test(name))).toEqual([]);
     expect(index).not.toMatch(/export function extract/);
     expect(conversationCore).not.toHaveProperty('defaultExtractor');
@@ -433,6 +445,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(processTurn).not.toMatch(/KayakingRequestedConversationStateExtractor/);
     expect(processTurn).not.toMatch(/FourWheelDrivingRequestedConversationStateExtractor/);
     expect(processTurn).not.toMatch(/ScenicDrivesRequestedConversationStateExtractor/);
+    expect(processTurn).not.toMatch(/AttractionsRequestedConversationStateExtractor/);
     expect(runtimeExports).toEqual(['processConversationTurn']);
     expect(typeof conversationCore.processConversationTurn).toBe('function');
   });
@@ -496,6 +509,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
         ROOT,
         'src/features/conversation-core/ScenicDrivesRequestedConversationStateExtractor.ts',
       ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/AttractionsRequestedConversationStateExtractor.ts',
+      ),
       resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
@@ -550,6 +567,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       ).toBe(false);
       expect(
         src.includes('ScenicDrivesRequestedConversationStateExtractor'),
+        file,
+      ).toBe(false);
+      expect(
+        src.includes('AttractionsRequestedConversationStateExtractor'),
         file,
       ).toBe(false);
     }
@@ -807,6 +828,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'no scenic drives', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('factory-created extraction remains empty and deterministic for attractions-requested-like text', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState({ attractionsRequested: true });
+
+    expect(
+      extractor.extract({ message: 'show me attractions', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'show me attractions', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'no attractions', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 });
