@@ -134,6 +134,72 @@ describe('phase 3L — explicit restaurantsRequested only', () => {
     });
   });
 
+  it('explicit restaurant-request cue in the message sets restaurantsRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('I need restaurants', initial, 0);
+    expect(result.state.restaurantsRequested).toBe(true);
+  });
+
+  it('phase 8L clear restaurant cues set restaurantsRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const placesToEat = turn('places to eat', initial, 0);
+    expect(placesToEat.state.restaurantsRequested).toBe(true);
+    expect(placesToEat.state.activitiesRequested).toBeNull();
+    expect(placesToEat.state.nearbyDiscoveryRequested).toBeNull();
+
+    const dining = turn('dining options', initial, 1);
+    expect(dining.state.restaurantsRequested).toBe(true);
+
+    const recommendations = turn('restaurant recommendations', initial, 2);
+    expect(recommendations.state.restaurantsRequested).toBe(true);
+
+    const inRequest = turn(
+      'find restaurants. Fly from Sydney to Brisbane',
+      initial,
+      3,
+    );
+    expect(inRequest.state.restaurantsRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 4, {
+      restaurantsRequested: false,
+    });
+    const negated = turn('no restaurants', seeded.state, 5);
+    expect(negated.state.restaurantsRequested).toBe(false);
+    const metadata = turn('restaurant menu', seeded.state, 6);
+    expect(metadata.state.restaurantsRequested).toBe(false);
+    const preference = turn('I like Italian food', seeded.state, 7);
+    expect(preference.state.restaurantsRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.restaurantsRequested overrides an extracted restaurant request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('find restaurants', initial, 0, {
+      restaurantsRequested: false,
+    });
+    expect(overriddenFalse.state.restaurantsRequested).toBe(false);
+
+    const overriddenTrue = turn('no restaurants', initial, 1, {
+      restaurantsRequested: true,
+    });
+    expect(overriddenTrue.state.restaurantsRequested).toBe(true);
+
+    const nullOverride = turn('find restaurants', initial, 2, {
+      restaurantsRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.restaurantsRequested).toBeNull();
+  });
+
   it('all existing request flags and earlier fields remain preserved', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,

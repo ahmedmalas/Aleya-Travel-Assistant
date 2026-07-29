@@ -24,6 +24,7 @@ import { EmptyConversationStateExtractor } from '../emptyConversationStateExtrac
 import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
 import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
@@ -35,6 +36,10 @@ const RESTAURANTS_REQUESTED_SOURCE = resolve(
 const ACTIVITIES_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/ActivitiesRequestedConversationStateExtractor.ts',
+);
+const NEARBY_DISCOVERY_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/NearbyDiscoveryRequestedConversationStateExtractor.ts',
 );
 const CAR_HIRE_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -82,7 +87,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7l',
+      conversationId: 'conversation-8l',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -141,7 +146,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation', () => {
+describe('phase 8L — RestaurantsRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit restaurantsRequested true contract', () => {
     expectTypeOf<RestaurantsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<RestaurantsRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -164,28 +169,94 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
       'restaurants',
       'restaurant',
       'find restaurants',
-      'show restaurants',
+      'search restaurants',
       'show me restaurants',
-      'I need restaurants',
+      'recommend restaurants',
+      'restaurant recommendations',
+      'restaurant options',
+      'book a restaurant',
+      'find me a restaurant',
+      'I need a restaurant',
+      'I want restaurants',
       'include restaurants',
       'add restaurants',
+      'compare restaurants',
+      'places to eat',
+      'somewhere to eat',
+      'where to eat',
+      'dining options',
+      'food recommendations',
+      'show restaurants',
       'need restaurants',
+      'find restaurants in Brisbane',
+      'show me places to eat near Surfers Paradise',
+      'I need flights, accommodation and restaurant recommendations',
+      'book a restaurant for two adults',
+      'find somewhere to eat tonight',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ restaurantsRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+        currentState: createState({ restaurantsRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { restaurantsRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty('flightsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'accommodationRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for restaurant names, cuisine-only, food-only, negation, remove/forget, and keep wording', () => {
+  it('emits only restaurantsRequested from combined service wording', () => {
+    const extractor = new RestaurantsRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message:
+          'I need flights, accommodation and restaurant recommendations',
+        currentState: createState({ restaurantsRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+  });
+
+  it('returns empty for metadata, hotel dining, food preferences, named restaurants, negation, and vague wording', () => {
     const extractor = new RestaurantsRequestedConversationStateExtractor();
     const unsupported = [
+      'hotel restaurant',
+      'restaurant address',
+      'restaurant phone number',
+      'restaurant opening hours',
+      'restaurant menu',
+      'restaurant review',
+      'restaurant rating',
+      'restaurant booking already confirmed',
+      'the restaurant was cancelled',
+      'restaurant manager',
+      'restaurant job',
+      'restaurant equipment',
+      'food allergy',
+      'meal preference',
+      'breakfast included',
+      'hotel breakfast',
+      'room service',
+      'grocery store',
+      'supermarket',
+      'cooking',
+      'restaurants?',
+      'what is a restaurant',
+      'I like Italian food',
+      'vegetarian meals',
+      'halal food',
+      'no seafood',
+      'gluten free',
       'Nobu',
       "McDonald's",
       'I want Italian cuisine',
@@ -195,13 +266,17 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
       'somewhere for lunch',
       'find a cafe',
       'show me bars',
-      'show me dining options',
-      'find somewhere to eat',
       'include hotel dining',
       'find halal restaurants',
       'Italian restaurants',
-      'do not add restaurants',
       'no restaurants',
+      'do not include restaurants',
+      'without restaurant recommendations',
+      'remove restaurants',
+      'cancel the restaurant',
+      "I don't need restaurants",
+      'no dining options',
+      'do not add restaurants',
       'remove the restaurants',
       'forget restaurants',
       'keep the restaurants',
@@ -295,6 +370,8 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7L');
+    expect(source).toContain('Phase 8L');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -351,18 +428,35 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
+    );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7M',
     );
 
     expect(
@@ -371,6 +465,30 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -442,20 +560,21 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
       restaurantsRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      adultCount: 2,
     });
     const extracted = processConversationTurn({
       message: 'I need restaurants',
       state: currentState,
-      userEntryId: 'user-7l-a',
-      assistantEntryId: 'assistant-7l-a',
+      userEntryId: 'user-8l-a',
+      assistantEntryId: 'assistant-8l-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no restaurants',
       state: currentState,
-      userEntryId: 'user-7l-b',
-      assistantEntryId: 'assistant-7l-b',
+      userEntryId: 'user-8l-b',
+      assistantEntryId: 'assistant-8l-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { restaurantsRequested: true },
@@ -463,8 +582,8 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
     const overriddenFalse = processConversationTurn({
       message: 'find restaurants',
       state: currentState,
-      userEntryId: 'user-7l-c',
-      assistantEntryId: 'assistant-7l-c',
+      userEntryId: 'user-8l-c',
+      assistantEntryId: 'assistant-8l-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { restaurantsRequested: false },
@@ -472,8 +591,8 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
     const nullOverride = processConversationTurn({
       message: 'find restaurants',
       state: currentState,
-      userEntryId: 'user-7l-d',
-      assistantEntryId: 'assistant-7l-d',
+      userEntryId: 'user-8l-d',
+      assistantEntryId: 'assistant-8l-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { restaurantsRequested: null },
@@ -481,13 +600,14 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
     const preserved = processConversationTurn({
       message: 'find good food',
       state: currentState,
-      userEntryId: 'user-7l-e',
-      assistantEntryId: 'assistant-7l-e',
+      userEntryId: 'user-8l-e',
+      assistantEntryId: 'assistant-8l-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'find restaurants. Fly from Sydney to Cairns',
+      message:
+        'find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -497,13 +617,14 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
         activitiesRequested: null,
         restaurantsRequested: null,
       }),
-      userEntryId: 'user-7l-f',
-      assistantEntryId: 'assistant-7l-f',
+      userEntryId: 'user-8l-f',
+      assistantEntryId: 'assistant-8l-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'find restaurants. Fly from Sydney to Cairns',
+      message:
+        'find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -513,8 +634,8 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
         activitiesRequested: null,
         restaurantsRequested: null,
       }),
-      userEntryId: 'user-7l-g',
-      assistantEntryId: 'assistant-7l-g',
+      userEntryId: 'user-8l-g',
+      assistantEntryId: 'assistant-8l-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -523,21 +644,53 @@ describe('phase 7L — RestaurantsRequestedConversationStateExtractor activation
         restaurantsRequested: false,
       },
     });
+    const placesToEat = processConversationTurn({
+      message: 'places to eat',
+      state: currentState,
+      userEntryId: 'user-8l-h',
+      assistantEntryId: 'assistant-8l-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const diningOptions = processConversationTurn({
+      message: 'dining options',
+      state: currentState,
+      userEntryId: 'user-8l-i',
+      assistantEntryId: 'assistant-8l-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const metadataPreserved = processConversationTurn({
+      message: 'restaurant menu',
+      state: currentState,
+      userEntryId: 'user-8l-j',
+      assistantEntryId: 'assistant-8l-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.restaurantsRequested).toBe(true);
     expect(extracted.state.activitiesRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
+    expect(extracted.state.accommodationRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.adultCount).toBe(2);
     expect(overriddenTrue.state.restaurantsRequested).toBe(true);
     expect(overriddenFalse.state.restaurantsRequested).toBe(false);
     expect(nullOverride.state.restaurantsRequested).toBeNull();
     expect(preserved.state.restaurantsRequested).toBe(false);
     expect(composed.state.restaurantsRequested).toBe(true);
+    expect(composed.state.activitiesRequested).toBe(true);
+    expect(composed.state.flightsRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.restaurantsRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(placesToEat.state.restaurantsRequested).toBe(true);
+    expect(diningOptions.state.restaurantsRequested).toBe(true);
+    expect(metadataPreserved.state.restaurantsRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(

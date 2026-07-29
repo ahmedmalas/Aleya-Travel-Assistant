@@ -703,6 +703,8 @@ describe('conversation-core architectural boundary', () => {
     expect(restaurantsRequestedExtractor).toMatch(
       /export class RestaurantsRequestedConversationStateExtractor/,
     );
+    expect(restaurantsRequestedExtractor).toContain('Phase 7L');
+    expect(restaurantsRequestedExtractor).toContain('Phase 8L');
     expect(restaurantsRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );
