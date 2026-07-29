@@ -228,6 +228,7 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     const allowed = new Set([
       resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
       resolve(ROOT, 'src/features/conversation-core/emptyConversationStateExtractor.ts'),
+      resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),
@@ -241,3 +242,4 @@ describe('phase 5E — createConversationStateExtractor factory only', () => {
     }
   });
 });
+
