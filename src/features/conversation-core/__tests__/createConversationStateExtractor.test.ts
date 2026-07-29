@@ -4,6 +4,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as conversationCore from '../index';
 import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
@@ -115,7 +116,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('separate factory calls return separate composites with destination, origin, then empty extractors', () => {
+  it('separate factory calls return separate composites with destination, origin, departure-date, then empty extractors', () => {
     const first = createConversationStateExtractor();
     const second = createConversationStateExtractor();
 
@@ -131,17 +132,20 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     );
 
     expect(firstExtractors).not.toBe(secondExtractors);
-    expect(firstExtractors).toHaveLength(3);
-    expect(secondExtractors).toHaveLength(3);
+    expect(firstExtractors).toHaveLength(4);
+    expect(secondExtractors).toHaveLength(4);
     expect(firstExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(firstExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
-    expect(firstExtractors[2]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(firstExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(firstExtractors[3]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(secondExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(secondExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
-    expect(secondExtractors[2]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(secondExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
+    expect(secondExtractors[3]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(firstExtractors[0]).not.toBe(secondExtractors[0]);
     expect(firstExtractors[1]).not.toBe(secondExtractors[1]);
     expect(firstExtractors[2]).not.toBe(secondExtractors[2]);
+    expect(firstExtractors[3]).not.toBe(secondExtractors[3]);
   });
 
   it('extractor instances do not share state', () => {
@@ -197,7 +201,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap|registry/);
     expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
@@ -234,11 +238,15 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(index).not.toMatch(/CompositeConversationStateExtractor/);
     expect(index).not.toMatch(/DestinationConversationStateExtractor/);
     expect(index).not.toMatch(/OriginConversationStateExtractor/);
+    expect(index).not.toMatch(/DepartureDateConversationStateExtractor/);
     expect(conversationCore).not.toHaveProperty('createConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('EmptyConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('DestinationConversationStateExtractor');
     expect(conversationCore).not.toHaveProperty('OriginConversationStateExtractor');
+    expect(conversationCore).not.toHaveProperty(
+      'DepartureDateConversationStateExtractor',
+    );
     expect(runtimeExports.filter((name) => /extract/i.test(name))).toEqual([]);
     expect(index).not.toMatch(/export function extract/);
     expect(conversationCore).not.toHaveProperty('defaultExtractor');
@@ -261,6 +269,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(processTurn).not.toMatch(/CompositeConversationStateExtractor/);
     expect(processTurn).not.toMatch(/DestinationConversationStateExtractor/);
     expect(processTurn).not.toMatch(/OriginConversationStateExtractor/);
+    expect(processTurn).not.toMatch(/DepartureDateConversationStateExtractor/);
     expect(runtimeExports).toEqual(['processConversationTurn']);
     expect(typeof conversationCore.processConversationTurn).toBe('function');
   });
@@ -272,6 +281,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       resolve(ROOT, 'src/features/conversation-core/CompositeConversationStateExtractor.ts'),
       resolve(ROOT, 'src/features/conversation-core/DestinationConversationStateExtractor.ts'),
       resolve(ROOT, 'src/features/conversation-core/OriginConversationStateExtractor.ts'),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',
+      ),
       resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
@@ -286,6 +299,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       expect(src.includes('CompositeConversationStateExtractor'), file).toBe(false);
       expect(src.includes('DestinationConversationStateExtractor'), file).toBe(false);
       expect(src.includes('OriginConversationStateExtractor'), file).toBe(false);
+      expect(src.includes('DepartureDateConversationStateExtractor'), file).toBe(false);
     }
   });
 
@@ -301,6 +315,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'Leaving from Cairns', currentState }),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('factory-created extraction remains empty and deterministic for date-like text', () => {
+    const extractor = createConversationStateExtractor();
+    const currentState = createState({ departureDate: '2026-09-01' });
+
+    expect(
+      extractor.extract({ message: 'Leave on 2026-10-15', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Leave on 2026-10-15', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Flying next Friday', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 });
