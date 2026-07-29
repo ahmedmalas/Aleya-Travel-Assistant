@@ -52,6 +52,8 @@ export type ConversationCoreState = {
   flightsRequested: boolean | null;
   /** Explicitly supplied accommodation request flag only — never detected from message text. */
   accommodationRequested: boolean | null;
+  /** Explicitly supplied car-hire request flag only — never detected from message text. */
+  carHireRequested: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -85,6 +87,7 @@ export function createInitialConversationCoreState(
     infantCount: null,
     flightsRequested: null,
     accommodationRequested: null,
+    carHireRequested: null,
     transcript: [],
   };
 }

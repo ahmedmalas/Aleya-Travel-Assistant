@@ -13,6 +13,7 @@ const CANONICAL_KEYS = [
   'accommodationRequested',
   'adultCount',
   'ageMs',
+  'carHireRequested',
   'childCount',
   'conversationId',
   'createdAt',
@@ -90,6 +91,7 @@ describe('canonical conversation-core state', () => {
       infantCount: null,
       flightsRequested: null,
       accommodationRequested: null,
+      carHireRequested: null,
       transcript: [],
     });
   });

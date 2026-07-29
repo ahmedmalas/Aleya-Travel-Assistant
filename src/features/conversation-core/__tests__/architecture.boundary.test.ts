@@ -103,6 +103,12 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn).toMatch(
       /input\.accommodationRequested !== undefined[\s\S]*\? input\.accommodationRequested[\s\S]*: base\.accommodationRequested/,
     );
+    expect(types).toMatch(/carHireRequested: boolean \| null/);
+    expect(types).toMatch(/carHireRequested: null,/);
+    expect(processTurn).toMatch(/carHireRequested\?: boolean/);
+    expect(processTurn).toMatch(
+      /input\.carHireRequested !== undefined[\s\S]*\? input\.carHireRequested[\s\S]*: base\.carHireRequested/,
+    );
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
