@@ -112,6 +112,7 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('NearbyDiscoveryRequestedConversationStateExtractor')).toBe(
       false,
     );
+    expect(index.includes('BeachesRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
     expect(index.includes('extractAndApplyConversationState')).toBe(false);
     expect(index.includes('transitionConversationStateFromExtraction')).toBe(false);
@@ -145,6 +146,9 @@ describe('conversation-core architectural boundary', () => {
     expect(
       processTurn.includes('NearbyDiscoveryRequestedConversationStateExtractor'),
     ).toBe(false);
+    expect(processTurn.includes('BeachesRequestedConversationStateExtractor')).toBe(
+      false,
+    );
     expect(processTurn.includes('extractConversationState')).toBe(false);
     expect(processTurn.includes('extractAndApplyConversationState')).toBe(false);
     expect(processTurn.includes('transitionConversationStateFromExtraction')).toBe(
@@ -340,7 +344,7 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     const destinationExtractor = readSrc(
@@ -494,6 +498,19 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(nearbyDiscoveryRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(nearbyDiscoveryRequestedExtractor.includes('includes(')).toBe(false);
+    const beachesRequestedExtractor = readSrc(
+      'src/features/conversation-core/BeachesRequestedConversationStateExtractor.ts',
+    );
+    expect(beachesRequestedExtractor).toMatch(
+      /export class BeachesRequestedConversationStateExtractor/,
+    );
+    expect(beachesRequestedExtractor).toMatch(
+      /_input: ConversationStateExtractionInput/,
+    );
+    expect(beachesRequestedExtractor.includes('input.message')).toBe(false);
+    expect(beachesRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(beachesRequestedExtractor.includes('toLowerCase')).toBe(false);
+    expect(beachesRequestedExtractor.includes('includes(')).toBe(false);
     expect(compositeExtractor).toMatch(
       /export class CompositeConversationStateExtractor/,
     );
