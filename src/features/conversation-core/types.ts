@@ -1,8 +1,8 @@
 /**
  * Canonical first-principles conversation-core state.
  *
- * Travel intelligence, transcript, persistence, and schema lineage are
- * intentionally absent. Later phases extend this contract deliberately.
+ * Phase 2A adds chronological user-message memory only. No travel intelligence,
+ * persistence, or schema lineage.
  */
 
 /** Reserved for a later persistence piece — not used in this phase. */
@@ -11,12 +11,21 @@ export const CONVERSATION_CORE_STORAGE_NAMESPACE =
 
 export type ConversationCoreStatus = 'empty';
 
+/** Chronological raw user message only — not intelligence. */
+export type ConversationTranscriptEntry = {
+  id: string;
+  role: 'user';
+  message: string;
+  timestamp: string;
+};
+
 export type ConversationCoreState = {
   conversationId: string;
   status: ConversationCoreStatus;
   turnCount: 0;
   createdAt: string;
   updatedAt: string;
+  transcript: ConversationTranscriptEntry[];
 };
 
 export type CreateInitialConversationCoreStateInput = {
@@ -39,5 +48,6 @@ export function createInitialConversationCoreState(
     turnCount: 0,
     createdAt: instant,
     updatedAt: instant,
+    transcript: [],
   };
 }

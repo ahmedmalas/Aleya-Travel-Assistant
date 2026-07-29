@@ -7,16 +7,18 @@ import {
 
 const NOW = new Date('2026-07-28T12:00:00.000Z');
 const CONVERSATION_ID = 'conversation-core-test-001';
+const ENTRY_ID = 'entry-test-001';
 
 const CANONICAL_KEYS = [
   'conversationId',
   'createdAt',
   'status',
+  'transcript',
   'turnCount',
   'updatedAt',
 ] as const;
 
-const FORBIDDEN_FIELDS = [
+const FORBIDDEN_STATE_FIELDS = [
   'origin',
   'destination',
   'dates',
@@ -31,7 +33,6 @@ const FORBIDDEN_FIELDS = [
   'lastOffer',
   'summary',
   'history',
-  'transcript',
   'messages',
   'schemaVersion',
   'migrationVersion',
@@ -40,7 +41,7 @@ const FORBIDDEN_FIELDS = [
 ] as const;
 
 describe('canonical conversation-core state', () => {
-  it('returns the exact canonical shape', () => {
+  it('returns the exact canonical shape with empty transcript', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: NOW,
@@ -53,6 +54,7 @@ describe('canonical conversation-core state', () => {
       turnCount: 0,
       createdAt: '2026-07-28T12:00:00.000Z',
       updatedAt: '2026-07-28T12:00:00.000Z',
+      transcript: [],
     });
   });
 
@@ -77,19 +79,12 @@ describe('canonical conversation-core state', () => {
     expect(state.createdAt).toBe(NOW.toISOString());
   });
 
-  it('initial status is exactly empty', () => {
+  it('initial status is exactly empty and turnCount is 0', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: NOW,
     });
     expect(state.status).toBe('empty');
-  });
-
-  it('initial turn count is exactly 0', () => {
-    const state = createInitialConversationCoreState({
-      conversationId: CONVERSATION_ID,
-      now: NOW,
-    });
     expect(state.turnCount).toBe(0);
   });
 
@@ -98,18 +93,9 @@ describe('canonical conversation-core state', () => {
       conversationId: CONVERSATION_ID,
       now: NOW,
     });
-    for (const field of FORBIDDEN_FIELDS) {
+    for (const field of FORBIDDEN_STATE_FIELDS) {
       expect(Object.hasOwn(state, field), field).toBe(false);
     }
-  });
-
-  it('contains no schemaVersion or migration field', () => {
-    const state = createInitialConversationCoreState({
-      conversationId: CONVERSATION_ID,
-      now: NOW,
-    });
-    expect(Object.hasOwn(state, 'schemaVersion')).toBe(false);
-    expect(Object.hasOwn(state, 'migrationVersion')).toBe(false);
   });
 
   it('does not call persistence APIs', () => {
@@ -119,6 +105,15 @@ describe('canonical conversation-core state', () => {
       conversationId: CONVERSATION_ID,
       now: NOW,
     });
+    processConversationTurn({
+      message: 'Hello',
+      state: createInitialConversationCoreState({
+        conversationId: CONVERSATION_ID,
+        now: NOW,
+      }),
+      now: NOW,
+      entryId: ENTRY_ID,
+    });
     expect(getItem).not.toHaveBeenCalled();
     expect(setItem).not.toHaveBeenCalled();
     getItem.mockRestore();
@@ -126,23 +121,25 @@ describe('canonical conversation-core state', () => {
   });
 });
 
-describe('processConversationTurn with canonical empty state', () => {
-  it('does not mutate supplied state and returns the placeholder', () => {
+describe('processConversationTurn placeholder behaviour', () => {
+  it('does not mutate the supplied state object', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: NOW,
     });
-    const frozen = Object.freeze({ ...initial });
     const result = processConversationTurn({
       message: 'I want to visit Melbourne',
-      state: frozen,
+      state: initial,
+      now: NOW,
+      entryId: ENTRY_ID,
     });
-    expect(result.state).toEqual(initial);
-    expect(result.state).toBe(frozen);
+    expect(result.state).not.toBe(initial);
+    expect(initial.transcript).toEqual([]);
+    expect(result.state.transcript).toHaveLength(1);
     expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
   });
 
-  it('does not increment turnCount', () => {
+  it('does not increment turnCount and keeps status empty', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: NOW,
@@ -150,52 +147,11 @@ describe('processConversationTurn with canonical empty state', () => {
     const result = processConversationTurn({
       message: 'Hello',
       state: initial,
+      now: NOW,
+      entryId: ENTRY_ID,
     });
     expect(result.state.turnCount).toBe(0);
+    expect(result.state.status).toBe('empty');
     expect(initial.turnCount).toBe(0);
-  });
-
-  it('arbitrary travel messages do not change state', () => {
-    const initial = createInitialConversationCoreState({
-      conversationId: CONVERSATION_ID,
-      now: NOW,
-    });
-    for (const message of [
-      'Hello',
-      'Melbourne',
-      'I want to go somewhere tropical',
-      'Sydney to Gold Coast',
-      '28 August 2026',
-      'Flights and accommodation',
-      'Forget Melbourne',
-      'Start searching',
-    ]) {
-      const result = processConversationTurn({ message, state: initial });
-      expect(result.state).toEqual(initial);
-      expect(result.state.status).toBe('empty');
-      expect(result.state.turnCount).toBe(0);
-      expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-      expect(result.trace).toEqual({
-        entryPoint: 'processConversationTurn',
-        stateStatus: 'empty',
-        turnCount: 0,
-        stateChanged: false,
-        messageInterpreted: false,
-        persistenceUsed: false,
-      });
-    }
-  });
-
-  it('does not write localStorage', () => {
-    localStorage.clear();
-    const setItem = vi.spyOn(Storage.prototype, 'setItem');
-    processConversationTurn({
-      message: 'Sydney to Melbourne',
-      conversationId: CONVERSATION_ID,
-      now: NOW,
-    });
-    expect(localStorage.length).toBe(0);
-    expect(setItem).not.toHaveBeenCalled();
-    setItem.mockRestore();
   });
 });

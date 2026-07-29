@@ -93,6 +93,7 @@ export function ConciergePlanPanel() {
       message: trimmed,
       conversationId: crypto.randomUUID(),
       now: new Date(),
+      entryId: crypto.randomUUID(),
     });
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),

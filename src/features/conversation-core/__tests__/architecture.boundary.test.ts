@@ -41,9 +41,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/export function createInitialConversationCoreState/);
     expect(types).toMatch(/status: 'empty'/);
     expect(types).toMatch(/turnCount: 0/);
+    expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
+    expect(types).toMatch(/role: 'user'/);
   });
 
-  it('has no old engine, persistence, or travel-feature imports in conversation-core', () => {
+  it('has no old engine, persistence, travel-feature, or message-interpretation code', () => {
     const coreFiles = listFiles(resolve(ROOT, 'src/features/conversation-core')).filter(
       (path) => !path.includes(`${join('conversation-core', '__tests__')}`),
     );
@@ -59,6 +61,9 @@ describe('conversation-core architectural boundary', () => {
       expect(src.includes('travel-location-intelligence'), file).toBe(false);
       expect(src.includes('destination-discovery'), file).toBe(false);
       expect(src.includes('schemaVersion'), file).toBe(false);
+      expect(src.includes('.trim('), file).toBe(false);
+      expect(src.includes('.toLowerCase('), file).toBe(false);
+      expect(src.includes('.normalize('), file).toBe(false);
     }
   });
 

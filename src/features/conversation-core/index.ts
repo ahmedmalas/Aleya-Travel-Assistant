@@ -5,6 +5,7 @@
  * - createInitialConversationCoreState (sole state factory)
  * - processConversationTurn (sole turn entry)
  *
+ * Phase 2A records raw user transcript entries only.
  * Persistence namespace is reserved and must not be enabled yet.
  */
 
@@ -13,6 +14,7 @@ export {
   createInitialConversationCoreState,
   type ConversationCoreState,
   type ConversationCoreStatus,
+  type ConversationTranscriptEntry,
   type CreateInitialConversationCoreStateInput,
 } from './types';
 

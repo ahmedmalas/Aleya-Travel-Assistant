@@ -118,6 +118,8 @@ export function AiPlanningPanel() {
     const result = processConversationTurn({
       message: request,
       state: coreState,
+      now: new Date(),
+      entryId: createId(),
     });
     setCoreState(result.state);
     reply(result.reply);
