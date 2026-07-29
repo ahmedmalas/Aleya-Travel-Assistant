@@ -91,10 +91,14 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(index.includes('extractConversationState')).toBe(false);
     expect(index.includes('extractAndApplyConversationState')).toBe(false);
+    expect(index.includes('transitionConversationStateFromExtraction')).toBe(false);
     expect(processTurn.includes('createConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('extractConversationState')).toBe(false);
     expect(processTurn.includes('extractAndApplyConversationState')).toBe(false);
+    expect(processTurn.includes('transitionConversationStateFromExtraction')).toBe(
+      false,
+    );
     const applyUpdate = readSrc(
       'src/features/conversation-core/applyConversationStateUpdate.ts',
     );
@@ -305,6 +309,18 @@ describe('conversation-core architectural boundary', () => {
     expect(extractAndApply.includes('createConversationStateExtractor')).toBe(false);
     expect(extractAndApply.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(extractAndApply.includes('hasConversationStateUpdateChanged')).toBe(false);
+    const transition = readSrc(
+      'src/features/conversation-core/transitionConversationStateFromExtraction.ts',
+    );
+    expect(transition).toMatch(
+      /export function transitionConversationStateFromExtraction\(\s*input: TransitionConversationStateFromExtractionInput,\s*\): TransitionConversationStateFromExtractionResult/,
+    );
+    expect(transition).toMatch(/extractConversationState\(/);
+    expect(transition).toMatch(/hasConversationStateUpdateChanged\(/);
+    expect(transition).toMatch(/applyConversationStateUpdate\(/);
+    expect(transition.includes('extractAndApplyConversationState')).toBe(false);
+    expect(transition.includes('createConversationStateExtractor')).toBe(false);
+    expect(transition.includes('EmptyConversationStateExtractor')).toBe(false);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);

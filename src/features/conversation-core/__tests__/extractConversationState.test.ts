@@ -296,6 +296,10 @@ describe('phase 5F — extractConversationState execution only', () => {
     const allowed = new Set([
       EXECUTION_SOURCE,
       resolve(ROOT, 'src/features/conversation-core/extractAndApplyConversationState.ts'),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/transitionConversationStateFromExtraction.ts',
+      ),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),
