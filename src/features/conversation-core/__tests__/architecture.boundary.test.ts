@@ -247,9 +247,14 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn.includes('flightsRequested?:')).toBe(false);
     expect(index).toMatch(/ConversationStateUpdate/);
     expect(index).toMatch(/ConversationStateExtractionResult/);
+    expect(index).toMatch(/ConversationStateExtractionInput/);
     expect(types).toMatch(/export type ConversationStateExtractionResult/);
     expect(types).toMatch(
       /export type ConversationStateExtractionResult = \{\s*stateUpdate: ConversationStateUpdate;\s*\}/,
+    );
+    expect(types).toMatch(/export type ConversationStateExtractionInput/);
+    expect(types).toMatch(
+      /export type ConversationStateExtractionInput = \{\s*message: string;\s*currentState: ConversationCoreState;\s*\}/,
     );
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);

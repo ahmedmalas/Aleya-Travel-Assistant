@@ -135,6 +135,17 @@ export type ConversationStateExtractionResult = {
   stateUpdate: ConversationStateUpdate;
 };
 
+/**
+ * Input contract for a future travel-state extraction layer.
+ *
+ * Contains only the current user message and canonical state. No locale,
+ * metadata, options, profile, or provider context.
+ */
+export type ConversationStateExtractionInput = {
+  message: string;
+  currentState: ConversationCoreState;
+};
+
 export type CreateInitialConversationCoreStateInput = {
   conversationId: string;
   now: Date;
