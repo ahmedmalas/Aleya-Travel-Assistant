@@ -8,8 +8,9 @@ import type {
  * Internal infant-count extraction boundary.
  *
  * Phase 7G: recognises only narrow, explicit infant passenger-count statements
- * in the current message. Deterministic and local — no numeric coercion helpers,
- * adult/child extraction, or currentState inspection.
+ * in the current message. Phase 8G extends clear infant-count cues only.
+ * Deterministic and local — no numeric coercion helpers, adult/child
+ * extraction, or currentState inspection.
  */
 export class InfantCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -102,8 +103,26 @@ function isBlockedInfantCountMessage(message: string): boolean {
   if (/\?/.test(message)) {
     return true;
   }
+  if (/\bhow\s+many\b/i.test(message)) {
+    return true;
+  }
   if (
-    /\b(?:adult|adults|child|children|kids?)\b/i.test(message)
+    /-\d+\s+infants?\b/i.test(message) ||
+    /\d+\.\d+\s+infants?\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\binfant\s+fare\b/i.test(message) ||
+    /\binfant\s+ticket\b/i.test(message) ||
+    /\binfant\s+seat\b/i.test(message) ||
+    /\bbassinet\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\bunder\s+(?:\d+|two)\b/i.test(message) ||
+    /\b(?:months?|years?)\s+old\b/i.test(message)
   ) {
     return true;
   }
@@ -142,10 +161,15 @@ function isBlockedInfantCountMessage(message: string): boolean {
   return false;
 }
 
+const COUNT_TOKEN = String.raw`(\d+|one|two|three|four|five|six|seven|eight|nine|ten)`;
+
 const EXPLICIT_INFANT_COUNT_CUES: readonly RegExp[] = [
-  /\binfant\s+count\s+is\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/i,
-  /\b(?:for|travell?ing\s+with)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+infants?\b/i,
-  /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+infants?\b/i,
+  new RegExp(String.raw`\binfant\s+count\s+is\s+${COUNT_TOKEN}\b`, 'i'),
+  new RegExp(
+    String.raw`\b(?:we\s+have|book\s+for|for|travell?ing\s+with)\s+${COUNT_TOKEN}\s+infants?\b`,
+    'i',
+  ),
+  new RegExp(String.raw`\b${COUNT_TOKEN}\s+infants?\b`, 'i'),
 ];
 
 function extractExplicitInfantCount(message: string): number | null {

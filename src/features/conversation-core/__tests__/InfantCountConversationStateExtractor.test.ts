@@ -57,7 +57,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7g',
+      conversationId: 'conversation-8g',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -111,7 +111,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7G — InfantCountConversationStateExtractor activation', () => {
+describe('phase 8G — InfantCountConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit infantCount result contract', () => {
     expectTypeOf<InfantCountConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<InfantCountConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -132,25 +132,47 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
     const extractor = new InfantCountConversationStateExtractor();
     const cases: Array<[string, number]> = [
       ['1 infant', 1],
-      ['2 infants', 2],
       ['one infant', 1],
+      ['2 infants', 2],
       ['two infants', 2],
-      ['travelling with 2 infants', 2],
+      ['for 1 infant', 1],
+      ['travelling with one infant', 1],
       ['traveling with 2 infants', 2],
+      ['we have 2 infants', 2],
+      ['book for one infant', 1],
       ['for three infants', 3],
       ['infant count is 2', 2],
       ['infant count is ten', 10],
+      ['2 adults, 1 child and 1 infant', 1],
+      ['flights for 2 infants', 2],
+      ['Sydney to Brisbane for one infant', 1],
     ];
 
     for (const [message, infantCount] of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ infantCount: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { infantCount } });
+        currentState: createState({ infantCount: null }),
+      });
+      expect(result, message).toEqual({ stateUpdate: { infantCount } });
+      expect(result.stateUpdate, message).not.toHaveProperty('adultCount');
+      expect(result.stateUpdate, message).not.toHaveProperty('childCount');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
+  });
+
+  it('extracts only infantCount from mixed adult, child and infant wording', () => {
+    const extractor = new InfantCountConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: '2 adults, 1 child and 1 infant',
+        currentState: createState({
+          infantCount: null,
+          adultCount: null,
+          childCount: null,
+        }),
+      }),
+    ).toEqual({ stateUpdate: { infantCount: 1 } });
   });
 
   it('replaces an existing infantCount when a new explicit count is stated', () => {
@@ -163,13 +185,33 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
     ).toEqual({ stateUpdate: { infantCount: 2 } });
   });
 
-  it('returns empty for adult/child, total, vague, negation, and keep wording', () => {
+  it('returns empty for adult-only, child-only, baby, fare, zero, negative, decimal, and vague wording', () => {
     const extractor = new InfantCountConversationStateExtractor();
     const unsupported = [
+      'baby',
+      'our baby',
+      'newborn',
+      'toddler',
+      'under 2',
+      '18 months old',
+      'infant fare',
+      'infant ticket',
+      'infant seat',
+      'bassinet',
       '2 adults',
-      '2 children',
+      '1 child',
+      '3 travellers',
+      '2 passengers',
+      '0 infants',
+      '-1 infant',
+      '2.5 infants',
+      'how many infants',
+      'infants?',
+      'babies',
+      'under two',
+      'our family',
+      'travelling together',
       'two adults and one child',
-      '1 infant and 1 child',
       'four travellers',
       'party of 4',
       '3 passengers',
@@ -327,10 +369,15 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
 
     expect(
       new DestinationConversationStateExtractor().extract({
@@ -368,6 +415,18 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { childCount: 2 } });
+    expect(
+      new AdultCountConversationStateExtractor().extract({
+        message: '2 adults, 1 child and 1 infant',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new ChildCountConversationStateExtractor().extract({
+        message: '2 adults, 1 child and 1 infant',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { childCount: 1 } });
   });
 
   it('applies extracted infantCount through the live processor with trusted explicit precedence', () => {
@@ -377,28 +436,29 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
       infantCount: 1,
       origin: 'Melbourne',
       destination: 'Brisbane',
+      flightsRequested: true,
     });
     const extracted = processConversationTurn({
       message: '1 infant',
       state: currentState,
-      userEntryId: 'user-7g-a',
-      assistantEntryId: 'assistant-7g-a',
+      userEntryId: 'user-8g-a',
+      assistantEntryId: 'assistant-8g-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const replaced = processConversationTurn({
       message: 'for two infants',
       state: currentState,
-      userEntryId: 'user-7g-b',
-      assistantEntryId: 'assistant-7g-b',
+      userEntryId: 'user-8g-b',
+      assistantEntryId: 'assistant-8g-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
     });
     const overridden = processConversationTurn({
       message: '1 infant',
       state: currentState,
-      userEntryId: 'user-7g-c',
-      assistantEntryId: 'assistant-7g-c',
+      userEntryId: 'user-8g-c',
+      assistantEntryId: 'assistant-8g-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { infantCount: 3 },
@@ -406,17 +466,17 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
     const nullOverride = processConversationTurn({
       message: '1 infant',
       state: currentState,
-      userEntryId: 'user-7g-d',
-      assistantEntryId: 'assistant-7g-d',
+      userEntryId: 'user-8g-d',
+      assistantEntryId: 'assistant-8g-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { infantCount: null },
     });
     const preserved = processConversationTurn({
-      message: 'two adults and one child',
+      message: 'travelling with a baby',
       state: currentState,
-      userEntryId: 'user-7g-e',
-      assistantEntryId: 'assistant-7g-e',
+      userEntryId: 'user-8g-e',
+      assistantEntryId: 'assistant-8g-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
@@ -427,8 +487,8 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
         destination: null,
         infantCount: null,
       }),
-      userEntryId: 'user-7g-f',
-      assistantEntryId: 'assistant-7g-f',
+      userEntryId: 'user-8g-f',
+      assistantEntryId: 'assistant-8g-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
@@ -439,8 +499,8 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
         destination: null,
         infantCount: null,
       }),
-      userEntryId: 'user-7g-g',
-      assistantEntryId: 'assistant-7g-g',
+      userEntryId: 'user-8g-g',
+      assistantEntryId: 'assistant-8g-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -449,11 +509,41 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
         infantCount: 2,
       },
     });
+    const mixed = processConversationTurn({
+      message: '2 adults, 1 child and 1 infant',
+      state: createState({
+        adultCount: null,
+        childCount: null,
+        infantCount: null,
+      }),
+      userEntryId: 'user-8g-h',
+      assistantEntryId: 'assistant-8g-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const adultOnlyPreserved = processConversationTurn({
+      message: '2 adults',
+      state: currentState,
+      userEntryId: 'user-8g-i',
+      assistantEntryId: 'assistant-8g-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const childOnlyPreserved = processConversationTurn({
+      message: '1 child',
+      state: currentState,
+      userEntryId: 'user-8g-j',
+      assistantEntryId: 'assistant-8g-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.infantCount).toBe(1);
     expect(extracted.state.adultCount).toBe(2);
     expect(extracted.state.childCount).toBe(1);
     expect(extracted.state.origin).toBe('Melbourne');
+    expect(extracted.state.destination).toBe('Brisbane');
+    expect(extracted.state.flightsRequested).toBe(true);
     expect(replaced.state.infantCount).toBe(2);
     expect(overridden.state.infantCount).toBe(3);
     expect(nullOverride.state.infantCount).toBeNull();
@@ -464,6 +554,11 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
     expect(independentOverride.state.infantCount).toBe(2);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(mixed.state.infantCount).toBe(1);
+    expect(mixed.state.childCount).toBe(1);
+    expect(mixed.state.adultCount).toBeNull();
+    expect(adultOnlyPreserved.state.infantCount).toBe(1);
+    expect(childOnlyPreserved.state.infantCount).toBe(1);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
@@ -589,5 +684,25 @@ describe('phase 7G — InfantCountConversationStateExtractor activation', () => 
         `extractor ${index} on child message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    const mixedMessage = '2 adults, 1 child and 1 infant';
+    expect(
+      extractors[4]?.extract({
+        message: mixedMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[5]?.extract({
+        message: mixedMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { childCount: 1 } });
+    expect(
+      extractors[6]?.extract({
+        message: mixedMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { infantCount: 1 } });
   });
 });

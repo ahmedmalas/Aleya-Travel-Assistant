@@ -584,6 +584,8 @@ describe('conversation-core architectural boundary', () => {
     expect(infantCountExtractor).toMatch(
       /export class InfantCountConversationStateExtractor/,
     );
+    expect(infantCountExtractor).toContain('Phase 7G');
+    expect(infantCountExtractor).toContain('Phase 8G');
     expect(infantCountExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(infantCountExtractor).toMatch(/input\.message/);
     expect(infantCountExtractor.includes('input.currentState')).toBe(false);
@@ -591,6 +593,10 @@ describe('conversation-core architectural boundary', () => {
     expect(infantCountExtractor.includes('.toLowerCase(')).toBe(false);
     expect(infantCountExtractor.includes('Number(')).toBe(false);
     expect(infantCountExtractor.includes('parseInt')).toBe(false);
+    expect(infantCountExtractor).toMatch(/infantCount:\s*infantCount/);
+    expect(infantCountExtractor.includes('infantCount: null')).toBe(false);
+    expect(infantCountExtractor.includes('adultCount:')).toBe(false);
+    expect(infantCountExtractor.includes('childCount:')).toBe(false);
     const flightsRequestedExtractor = readSrc(
       'src/features/conversation-core/FlightsRequestedConversationStateExtractor.ts',
     );

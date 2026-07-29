@@ -110,6 +110,45 @@ describe('phase 3G — explicit infantCount only', () => {
     expect(result.state.infantCount).toBe(1);
   });
 
+  it('phase 8G clear infant cues update infantCount without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const written = turn('one infant', initial, 0);
+    expect(written.state.infantCount).toBe(1);
+    expect(written.state.adultCount).toBeNull();
+    expect(written.state.childCount).toBeNull();
+
+    const mixed = turn('2 adults, 1 child and 1 infant', initial, 1);
+    expect(mixed.state.infantCount).toBe(1);
+    expect(mixed.state.childCount).toBe(1);
+    expect(mixed.state.adultCount).toBeNull();
+
+    const inRequest = turn(
+      'Fly from Sydney to Brisbane for one infant',
+      initial,
+      2,
+    );
+    expect(inRequest.state.infantCount).toBe(1);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 3, {
+      infantCount: 1,
+      adultCount: 2,
+      childCount: 1,
+    });
+    const adultOnly = turn('2 adults', seeded.state, 4);
+    expect(adultOnly.state.infantCount).toBe(1);
+    const childOnly = turn('1 child', seeded.state, 5);
+    expect(childOnly.state.infantCount).toBe(1);
+    const baby = turn('our baby', seeded.state, 6);
+    expect(baby.state.infantCount).toBe(1);
+    const zero = turn('0 infants', seeded.state, 7);
+    expect(zero.state.infantCount).toBe(1);
+  });
+
   it('trusted explicit stateUpdate.infantCount overrides an extracted infantCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
