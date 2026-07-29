@@ -68,6 +68,8 @@ export type ProcessConversationTurnInput = {
   attractionsRequested?: boolean;
   /** Explicit tours request flag only — stored as injected; never read from message. */
   toursRequested?: boolean;
+  /** Explicit events request flag only — stored as injected; never read from message. */
+  eventsRequested?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -79,7 +81,7 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3T: append raw user + placeholder assistant entries, increment
+ * Phase 3U: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
  * active, expose ageMs, and record explicitly supplied destination/origin/
  * departureDate/returnDate/adultCount/childCount/infantCount/
@@ -87,8 +89,8 @@ export type ProcessConversationTurnResult = {
  * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
  * beachesRequested/campingRequested/kayakingRequested/
  * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
- * toursRequested only. Does not interpret, trim, normalise, extract,
- * validate counts, calculate duration, or persist.
+ * toursRequested/eventsRequested only. Does not interpret, trim,
+ * normalise, extract, validate counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -165,6 +167,10 @@ export function processConversationTurn(
     input.toursRequested !== undefined
       ? input.toursRequested
       : base.toursRequested;
+  const eventsRequested =
+    input.eventsRequested !== undefined
+      ? input.eventsRequested
+      : base.eventsRequested;
 
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
@@ -207,6 +213,7 @@ export function processConversationTurn(
     scenicDrivesRequested,
     attractionsRequested,
     toursRequested,
+    eventsRequested,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
