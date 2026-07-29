@@ -23,6 +23,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'fourWheelDriveRequested',
   'scenicDrivesRequested',
   'attractionsRequested',
+  'snowActivitiesRequested',
   'toursRequested',
   'eventsRequested',
   'nightlifeRequested',

@@ -47,6 +47,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: true,
+    snowActivitiesRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -129,6 +130,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const extractor = new FishingRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       scenicDrivesRequested: true,
       activitiesRequested: true,
       nearbyDiscoveryRequested: true,
@@ -195,6 +197,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
     const extractor = new FishingRequestedConversationStateExtractor();
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -318,6 +321,7 @@ describe('phase 6F — FishingRequestedConversationStateExtractor skeleton', () 
   it('keeps every production extractor behaviourally empty with the skeleton in the path', () => {
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       activitiesRequested: true,
       kayakingRequested: true,
       origin: 'Melbourne',

@@ -141,6 +141,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: false,
+    snowActivitiesRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -298,6 +299,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
     const extractor = new AttractionsRequestedConversationStateExtractor();
     const currentState = createState({
       attractionsRequested: false,
+      snowActivitiesRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -558,6 +560,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       fourWheelDriveRequested: true,
       scenicDrivesRequested: true,
       attractionsRequested: false,
+      snowActivitiesRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
@@ -621,6 +624,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         fourWheelDriveRequested: null,
         scenicDrivesRequested: null,
         attractionsRequested: null,
+        snowActivitiesRequested: null,
       }),
       userEntryId: 'user-7s-f',
       assistantEntryId: 'assistant-7s-f',
@@ -644,6 +648,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
         fourWheelDriveRequested: null,
         scenicDrivesRequested: null,
         attractionsRequested: null,
+        snowActivitiesRequested: null,
       }),
       userEntryId: 'user-7s-g',
       assistantEntryId: 'assistant-7s-g',
@@ -737,6 +742,7 @@ describe('phase 7S — AttractionsRequestedConversationStateExtractor activation
       fourWheelDriveRequested: false,
       scenicDrivesRequested: false,
       attractionsRequested: false,
+      snowActivitiesRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention

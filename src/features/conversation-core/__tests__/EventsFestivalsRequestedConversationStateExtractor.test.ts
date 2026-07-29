@@ -47,6 +47,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: true,
+    snowActivitiesRequested: true,
     eventsRequested: true,
     transcript: [
       {
@@ -135,6 +136,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
@@ -142,6 +144,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
     });
     const withoutEvents = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       eventsRequested: false,
     });
 
@@ -353,6 +356,7 @@ describe('phase 6I — EventsFestivalsRequestedConversationStateExtractor skelet
   it('keeps every production extractor behaviourally empty with the skeleton in the path', () => {
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       origin: 'Melbourne',

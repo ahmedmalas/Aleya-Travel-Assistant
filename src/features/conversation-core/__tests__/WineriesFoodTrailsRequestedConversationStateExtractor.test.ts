@@ -47,6 +47,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: true,
+    snowActivitiesRequested: true,
     transcript: [
       {
         id: 'user-0',
@@ -132,6 +133,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
     const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       scenicDrivesRequested: true,
@@ -204,6 +206,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
     const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       transcript: [
         {
           id: 'user-0',
@@ -334,6 +337,7 @@ describe('phase 6H — WineriesFoodTrailsRequestedConversationStateExtractor ske
   it('keeps every production extractor behaviourally empty with the skeleton in the path', () => {
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       activitiesRequested: true,
       restaurantsRequested: true,
       origin: 'Melbourne',

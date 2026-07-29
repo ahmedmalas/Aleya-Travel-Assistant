@@ -1080,18 +1080,24 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('factory-created extraction remains empty and deterministic for snow-activities-requested-like text', () => {
+  it('factory-created extraction sets snowActivitiesRequested true for explicit requests and rejects negation', () => {
     const extractor = createConversationStateExtractor();
-    const currentState = createState({ attractionsRequested: true });
+    const currentState = createState({ snowActivitiesRequested: false });
 
     expect(
       extractor.extract({ message: 'show me snow activities', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
       extractor.extract({ message: 'show me snow activities', currentState }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractor.extract({ message: 'no snow activities', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'no skiing', currentState }),
+      extractor.extract({ message: 'skiing', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'snow resorts', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

@@ -60,6 +60,7 @@ function createState(
     fourWheelDriveRequested: true,
     scenicDrivesRequested: true,
     attractionsRequested: true,
+    snowActivitiesRequested: true,
     eventsRequested: true,
     transcript: [
       {
@@ -144,6 +145,7 @@ describe('phase 6K — NationalParksRequestedConversationStateExtractor skeleton
     const extractor = new NationalParksRequestedConversationStateExtractor();
     const withRelatedFlags = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       restaurantsRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
@@ -337,6 +339,7 @@ describe('phase 6K — NationalParksRequestedConversationStateExtractor skeleton
   it('keeps every production extractor behaviourally empty with the skeleton in the path', () => {
     const currentState = createState({
       attractionsRequested: true,
+      snowActivitiesRequested: true,
       activitiesRequested: true,
       eventsRequested: true,
       campingRequested: true,
