@@ -44,66 +44,8 @@ function turn(
     assistantEntryId: `assistant-${index}`,
     userMessageAt: new Date(CREATED_AT.getTime() + index * 2000),
     assistantMessageAt: new Date(CREATED_AT.getTime() + index * 2000 + 1000),
-    ...(fields.origin !== undefined ? { origin: fields.origin } : {}),
-    ...(fields.destination !== undefined
-      ? { destination: fields.destination }
-      : {}),
-    ...(fields.departureDate !== undefined
-      ? { departureDate: fields.departureDate }
-      : {}),
-    ...(fields.returnDate !== undefined
-      ? { returnDate: fields.returnDate }
-      : {}),
-    ...(fields.adultCount !== undefined
-      ? { adultCount: fields.adultCount }
-      : {}),
-    ...(fields.childCount !== undefined
-      ? { childCount: fields.childCount }
-      : {}),
-    ...(fields.infantCount !== undefined
-      ? { infantCount: fields.infantCount }
-      : {}),
-    ...(fields.flightsRequested !== undefined
-      ? { flightsRequested: fields.flightsRequested }
-      : {}),
-    ...(fields.accommodationRequested !== undefined
-      ? { accommodationRequested: fields.accommodationRequested }
-      : {}),
-    ...(fields.carHireRequested !== undefined
-      ? { carHireRequested: fields.carHireRequested }
-      : {}),
-    ...(fields.activitiesRequested !== undefined
-      ? { activitiesRequested: fields.activitiesRequested }
-      : {}),
-    ...(fields.restaurantsRequested !== undefined
-      ? { restaurantsRequested: fields.restaurantsRequested }
-      : {}),
-    ...(fields.nearbyDiscoveryRequested !== undefined
-      ? { nearbyDiscoveryRequested: fields.nearbyDiscoveryRequested }
-      : {}),
-    ...(fields.beachesRequested !== undefined
-      ? { beachesRequested: fields.beachesRequested }
-      : {}),
-    ...(fields.campingRequested !== undefined
-      ? { campingRequested: fields.campingRequested }
-      : {}),
-    ...(fields.kayakingRequested !== undefined
-      ? { kayakingRequested: fields.kayakingRequested }
-      : {}),
-    ...(fields.fourWheelDriveRequested !== undefined
-      ? { fourWheelDriveRequested: fields.fourWheelDriveRequested }
-      : {}),
-    ...(fields.scenicDrivesRequested !== undefined
-      ? { scenicDrivesRequested: fields.scenicDrivesRequested }
-      : {}),
-    ...(fields.attractionsRequested !== undefined
-      ? { attractionsRequested: fields.attractionsRequested }
-      : {}),
-    ...(fields.toursRequested !== undefined
-      ? { toursRequested: fields.toursRequested }
-      : {}),
-    ...(fields.eventsRequested !== undefined
-      ? { eventsRequested: fields.eventsRequested }
+    ...(Object.keys(fields).length > 0
+      ? { stateUpdate: fields }
       : {}),
   });
 }

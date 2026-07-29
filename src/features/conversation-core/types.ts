@@ -89,6 +89,42 @@ export type ConversationCoreState = {
   transcript: ConversationTranscriptEntry[];
 };
 
+/**
+ * Sole public boundary for explicit travel-field updates.
+ *
+ * Every property is optional. Omitted properties preserve prior state.
+ * Explicit `null` / `false` values are stored as supplied — never inferred
+ * from message text.
+ */
+export type ConversationStateUpdate = {
+  destination?: string | null;
+  origin?: string | null;
+  departureDate?: string | null;
+  returnDate?: string | null;
+  adultCount?: number | null;
+  childCount?: number | null;
+  infantCount?: number | null;
+  flightsRequested?: boolean | null;
+  accommodationRequested?: boolean | null;
+  carHireRequested?: boolean | null;
+  activitiesRequested?: boolean | null;
+  restaurantsRequested?: boolean | null;
+  nearbyDiscoveryRequested?: boolean | null;
+  beachesRequested?: boolean | null;
+  campingRequested?: boolean | null;
+  kayakingRequested?: boolean | null;
+  fourWheelDriveRequested?: boolean | null;
+  scenicDrivesRequested?: boolean | null;
+  attractionsRequested?: boolean | null;
+  toursRequested?: boolean | null;
+  eventsRequested?: boolean | null;
+  nightlifeRequested?: boolean | null;
+  shoppingRequested?: boolean | null;
+  wellnessRequested?: boolean | null;
+  familyActivitiesRequested?: boolean | null;
+  accessibleTravelRequested?: boolean | null;
+};
+
 export type CreateInitialConversationCoreStateInput = {
   conversationId: string;
   now: Date;

@@ -22,7 +22,7 @@ function turn(
     assistantEntryId: `assistant-${index}`,
     userMessageAt: new Date(CREATED_AT.getTime() + index * 2000),
     assistantMessageAt: new Date(CREATED_AT.getTime() + index * 2000 + 1000),
-    ...(destination !== undefined ? { destination } : {}),
+    ...(destination !== undefined ? { stateUpdate: { destination } } : {}),
   });
 }
 

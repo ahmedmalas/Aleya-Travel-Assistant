@@ -1,6 +1,7 @@
 import {
   createInitialConversationCoreState,
   type ConversationCoreState,
+  type ConversationStateUpdate,
   type ConversationTranscriptEntry,
 } from './types';
 
@@ -28,58 +29,12 @@ export type ProcessConversationTurnInput = {
   state?: ConversationCoreState;
   /** Required when `state` is omitted — keeps the factory free of hidden globals. */
   conversationId?: string;
-  /** Explicit destination only — stored as injected; never read from message. */
-  destination?: string;
-  /** Explicit origin only — stored as injected; never read from message. */
-  origin?: string;
-  /** Explicit departure date only — stored as injected; never read from message. */
-  departureDate?: string;
-  /** Explicit return date only — stored as injected; never read from message. */
-  returnDate?: string;
-  /** Explicit adult count only — stored as injected; never read from message. */
-  adultCount?: number;
-  /** Explicit child count only — stored as injected; never read from message. */
-  childCount?: number;
-  /** Explicit infant count only — stored as injected; never read from message. */
-  infantCount?: number;
-  /** Explicit flights request flag only — stored as injected; never read from message. */
-  flightsRequested?: boolean;
-  /** Explicit accommodation request flag only — stored as injected; never read from message. */
-  accommodationRequested?: boolean;
-  /** Explicit car-hire request flag only — stored as injected; never read from message. */
-  carHireRequested?: boolean;
-  /** Explicit activities request flag only — stored as injected; never read from message. */
-  activitiesRequested?: boolean;
-  /** Explicit restaurants request flag only — stored as injected; never read from message. */
-  restaurantsRequested?: boolean;
-  /** Explicit nearby-discovery request flag only — stored as injected; never read from message. */
-  nearbyDiscoveryRequested?: boolean;
-  /** Explicit beaches request flag only — stored as injected; never read from message. */
-  beachesRequested?: boolean;
-  /** Explicit camping request flag only — stored as injected; never read from message. */
-  campingRequested?: boolean;
-  /** Explicit kayaking request flag only — stored as injected; never read from message. */
-  kayakingRequested?: boolean;
-  /** Explicit 4WD request flag only — stored as injected; never read from message. */
-  fourWheelDriveRequested?: boolean;
-  /** Explicit scenic-drives request flag only — stored as injected; never read from message. */
-  scenicDrivesRequested?: boolean;
-  /** Explicit attractions request flag only — stored as injected; never read from message. */
-  attractionsRequested?: boolean;
-  /** Explicit tours request flag only — stored as injected; never read from message. */
-  toursRequested?: boolean;
-  /** Explicit events request flag only — stored as injected; never read from message. */
-  eventsRequested?: boolean;
-  /** Explicit nightlife request flag only — stored as injected; never read from message. */
-  nightlifeRequested?: boolean;
-  /** Explicit shopping request flag only — stored as injected; never read from message. */
-  shoppingRequested?: boolean;
-  /** Explicit wellness request flag only — stored as injected; never read from message. */
-  wellnessRequested?: boolean;
-  /** Explicit family-activities request flag only — stored as injected; never read from message. */
-  familyActivitiesRequested?: boolean;
-  /** Explicit accessible-travel request flag only — stored as injected; never read from message. */
-  accessibleTravelRequested?: boolean;
+  /**
+   * Sole explicit travel-field update boundary. Omitted properties preserve
+   * prior state; supplied values (including `false` and `null`) are stored
+   * exactly. Never read from message text.
+   */
+  stateUpdate?: ConversationStateUpdate;
 };
 
 export type ProcessConversationTurnResult = {
@@ -91,18 +46,11 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 3Z: append raw user + placeholder assistant entries, increment
+ * Phase 4A: append raw user + placeholder assistant entries, increment
  * turnCount by one, set updatedAt from assistantMessageAt, set status to
- * active, expose ageMs, and record explicitly supplied destination/origin/
- * departureDate/returnDate/adultCount/childCount/infantCount/
- * flightsRequested/accommodationRequested/carHireRequested/
- * activitiesRequested/restaurantsRequested/nearbyDiscoveryRequested/
- * beachesRequested/campingRequested/kayakingRequested/
- * fourWheelDriveRequested/scenicDrivesRequested/attractionsRequested/
- * toursRequested/eventsRequested/nightlifeRequested/shoppingRequested/
- * wellnessRequested/familyActivitiesRequested/accessibleTravelRequested
- * only. Does not interpret, trim, normalise, extract, validate counts,
- * calculate duration, or persist.
+ * active, expose ageMs, and apply explicitly supplied ConversationStateUpdate
+ * fields only. Does not interpret, trim, normalise, extract, validate
+ * counts, calculate duration, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -112,96 +60,98 @@ export function processConversationTurn(
   const assistantTimestamp = input.assistantMessageAt.toISOString();
   const ageMs =
     input.assistantMessageAt.getTime() - new Date(base.createdAt).getTime();
+  const update = input.stateUpdate;
   const destination =
-    input.destination !== undefined ? input.destination : base.destination;
-  const origin = input.origin !== undefined ? input.origin : base.origin;
+    update?.destination !== undefined ? update.destination : base.destination;
+  const origin =
+    update?.origin !== undefined ? update.origin : base.origin;
   const departureDate =
-    input.departureDate !== undefined
-      ? input.departureDate
+    update?.departureDate !== undefined
+      ? update.departureDate
       : base.departureDate;
   const returnDate =
-    input.returnDate !== undefined ? input.returnDate : base.returnDate;
+    update?.returnDate !== undefined ? update.returnDate : base.returnDate;
   const adultCount =
-    input.adultCount !== undefined ? input.adultCount : base.adultCount;
+    update?.adultCount !== undefined ? update.adultCount : base.adultCount;
   const childCount =
-    input.childCount !== undefined ? input.childCount : base.childCount;
+    update?.childCount !== undefined ? update.childCount : base.childCount;
   const infantCount =
-    input.infantCount !== undefined ? input.infantCount : base.infantCount;
+    update?.infantCount !== undefined ? update.infantCount : base.infantCount;
   const flightsRequested =
-    input.flightsRequested !== undefined
-      ? input.flightsRequested
+    update?.flightsRequested !== undefined
+      ? update.flightsRequested
       : base.flightsRequested;
   const accommodationRequested =
-    input.accommodationRequested !== undefined
-      ? input.accommodationRequested
+    update?.accommodationRequested !== undefined
+      ? update.accommodationRequested
       : base.accommodationRequested;
   const carHireRequested =
-    input.carHireRequested !== undefined
-      ? input.carHireRequested
+    update?.carHireRequested !== undefined
+      ? update.carHireRequested
       : base.carHireRequested;
   const activitiesRequested =
-    input.activitiesRequested !== undefined
-      ? input.activitiesRequested
+    update?.activitiesRequested !== undefined
+      ? update.activitiesRequested
       : base.activitiesRequested;
   const restaurantsRequested =
-    input.restaurantsRequested !== undefined
-      ? input.restaurantsRequested
+    update?.restaurantsRequested !== undefined
+      ? update.restaurantsRequested
       : base.restaurantsRequested;
   const nearbyDiscoveryRequested =
-    input.nearbyDiscoveryRequested !== undefined
-      ? input.nearbyDiscoveryRequested
+    update?.nearbyDiscoveryRequested !== undefined
+      ? update.nearbyDiscoveryRequested
       : base.nearbyDiscoveryRequested;
   const beachesRequested =
-    input.beachesRequested !== undefined
-      ? input.beachesRequested
+    update?.beachesRequested !== undefined
+      ? update.beachesRequested
       : base.beachesRequested;
   const campingRequested =
-    input.campingRequested !== undefined
-      ? input.campingRequested
+    update?.campingRequested !== undefined
+      ? update.campingRequested
       : base.campingRequested;
   const kayakingRequested =
-    input.kayakingRequested !== undefined
-      ? input.kayakingRequested
+    update?.kayakingRequested !== undefined
+      ? update.kayakingRequested
       : base.kayakingRequested;
   const fourWheelDriveRequested =
-    input.fourWheelDriveRequested !== undefined
-      ? input.fourWheelDriveRequested
+    update?.fourWheelDriveRequested !== undefined
+      ? update.fourWheelDriveRequested
       : base.fourWheelDriveRequested;
   const scenicDrivesRequested =
-    input.scenicDrivesRequested !== undefined
-      ? input.scenicDrivesRequested
+    update?.scenicDrivesRequested !== undefined
+      ? update.scenicDrivesRequested
       : base.scenicDrivesRequested;
   const attractionsRequested =
-    input.attractionsRequested !== undefined
-      ? input.attractionsRequested
+    update?.attractionsRequested !== undefined
+      ? update.attractionsRequested
       : base.attractionsRequested;
   const toursRequested =
-    input.toursRequested !== undefined
-      ? input.toursRequested
+    update?.toursRequested !== undefined
+      ? update.toursRequested
       : base.toursRequested;
   const eventsRequested =
-    input.eventsRequested !== undefined
-      ? input.eventsRequested
+    update?.eventsRequested !== undefined
+      ? update.eventsRequested
       : base.eventsRequested;
   const nightlifeRequested =
-    input.nightlifeRequested !== undefined
-      ? input.nightlifeRequested
+    update?.nightlifeRequested !== undefined
+      ? update.nightlifeRequested
       : base.nightlifeRequested;
   const shoppingRequested =
-    input.shoppingRequested !== undefined
-      ? input.shoppingRequested
+    update?.shoppingRequested !== undefined
+      ? update.shoppingRequested
       : base.shoppingRequested;
   const wellnessRequested =
-    input.wellnessRequested !== undefined
-      ? input.wellnessRequested
+    update?.wellnessRequested !== undefined
+      ? update.wellnessRequested
       : base.wellnessRequested;
   const familyActivitiesRequested =
-    input.familyActivitiesRequested !== undefined
-      ? input.familyActivitiesRequested
+    update?.familyActivitiesRequested !== undefined
+      ? update.familyActivitiesRequested
       : base.familyActivitiesRequested;
   const accessibleTravelRequested =
-    input.accessibleTravelRequested !== undefined
-      ? input.accessibleTravelRequested
+    update?.accessibleTravelRequested !== undefined
+      ? update.accessibleTravelRequested
       : base.accessibleTravelRequested;
 
   const userEntry: ConversationTranscriptEntry = {

@@ -27,15 +27,8 @@ function turn(
     assistantEntryId: `assistant-${index}`,
     userMessageAt: new Date(CREATED_AT.getTime() + index * 2000),
     assistantMessageAt: new Date(CREATED_AT.getTime() + index * 2000 + 1000),
-    ...(fields.origin !== undefined ? { origin: fields.origin } : {}),
-    ...(fields.destination !== undefined
-      ? { destination: fields.destination }
-      : {}),
-    ...(fields.departureDate !== undefined
-      ? { departureDate: fields.departureDate }
-      : {}),
-    ...(fields.returnDate !== undefined
-      ? { returnDate: fields.returnDate }
+    ...(Object.keys(fields).length > 0
+      ? { stateUpdate: fields }
       : {}),
   });
 }

@@ -51,160 +51,166 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(types).toMatch(/destination: string \| null/);
     expect(types).toMatch(/destination: null,/);
-    expect(processTurn).toMatch(/destination\?: string/);
+    expect(types).toMatch(/export type ConversationStateUpdate/);
+    expect(types).toMatch(/destination\?: string \| null/);
+    expect(types).toMatch(/origin\?: string \| null/);
+    expect(types).toMatch(/departureDate\?: string \| null/);
+    expect(types).toMatch(/returnDate\?: string \| null/);
+    expect(types).toMatch(/adultCount\?: number \| null/);
+    expect(types).toMatch(/childCount\?: number \| null/);
+    expect(types).toMatch(/infantCount\?: number \| null/);
+    expect(types).toMatch(/flightsRequested\?: boolean \| null/);
+    expect(types).toMatch(/accommodationRequested\?: boolean \| null/);
+    expect(types).toMatch(/carHireRequested\?: boolean \| null/);
+    expect(types).toMatch(/activitiesRequested\?: boolean \| null/);
+    expect(types).toMatch(/restaurantsRequested\?: boolean \| null/);
+    expect(types).toMatch(/nearbyDiscoveryRequested\?: boolean \| null/);
+    expect(types).toMatch(/beachesRequested\?: boolean \| null/);
+    expect(types).toMatch(/campingRequested\?: boolean \| null/);
+    expect(types).toMatch(/kayakingRequested\?: boolean \| null/);
+    expect(types).toMatch(/fourWheelDriveRequested\?: boolean \| null/);
+    expect(types).toMatch(/scenicDrivesRequested\?: boolean \| null/);
+    expect(types).toMatch(/attractionsRequested\?: boolean \| null/);
+    expect(types).toMatch(/toursRequested\?: boolean \| null/);
+    expect(types).toMatch(/eventsRequested\?: boolean \| null/);
+    expect(types).toMatch(/nightlifeRequested\?: boolean \| null/);
+    expect(types).toMatch(/shoppingRequested\?: boolean \| null/);
+    expect(types).toMatch(/wellnessRequested\?: boolean \| null/);
+    expect(types).toMatch(/familyActivitiesRequested\?: boolean \| null/);
+    expect(types).toMatch(/accessibleTravelRequested\?: boolean \| null/);
+    expect(processTurn).toMatch(/stateUpdate\?: ConversationStateUpdate/);
+    expect(processTurn).toMatch(/const update = input\.stateUpdate/);
     expect(processTurn).toMatch(
-      /input\.destination !== undefined \? input\.destination : base\.destination/,
+      /update\?\.destination !== undefined \? update\.destination : base\.destination/,
     );
     expect(types).toMatch(/origin: string \| null/);
     expect(types).toMatch(/origin: null,/);
-    expect(processTurn).toMatch(/origin\?: string/);
     expect(processTurn).toMatch(
-      /input\.origin !== undefined \? input\.origin : base\.origin/,
+      /update\?\.origin !== undefined \? update\.origin : base\.origin/,
     );
     expect(types).toMatch(/departureDate: string \| null/);
     expect(types).toMatch(/departureDate: null,/);
-    expect(processTurn).toMatch(/departureDate\?: string/);
     expect(processTurn).toMatch(
-      /input\.departureDate !== undefined[\s\S]*\? input\.departureDate[\s\S]*: base\.departureDate/,
+      /update\?\.departureDate !== undefined[\s\S]*\? update\.departureDate[\s\S]*: base\.departureDate/,
     );
     expect(types).toMatch(/returnDate: string \| null/);
     expect(types).toMatch(/returnDate: null,/);
-    expect(processTurn).toMatch(/returnDate\?: string/);
     expect(processTurn).toMatch(
-      /input\.returnDate !== undefined \? input\.returnDate : base\.returnDate/,
+      /update\?\.returnDate !== undefined \? update\.returnDate : base\.returnDate/,
     );
     expect(types).toMatch(/adultCount: number \| null/);
     expect(types).toMatch(/adultCount: null,/);
-    expect(processTurn).toMatch(/adultCount\?: number/);
     expect(processTurn).toMatch(
-      /input\.adultCount !== undefined \? input\.adultCount : base\.adultCount/,
+      /update\?\.adultCount !== undefined \? update\.adultCount : base\.adultCount/,
     );
     expect(types).toMatch(/childCount: number \| null/);
     expect(types).toMatch(/childCount: null,/);
-    expect(processTurn).toMatch(/childCount\?: number/);
     expect(processTurn).toMatch(
-      /input\.childCount !== undefined \? input\.childCount : base\.childCount/,
+      /update\?\.childCount !== undefined \? update\.childCount : base\.childCount/,
     );
     expect(types).toMatch(/infantCount: number \| null/);
     expect(types).toMatch(/infantCount: null,/);
-    expect(processTurn).toMatch(/infantCount\?: number/);
     expect(processTurn).toMatch(
-      /input\.infantCount !== undefined \? input\.infantCount : base\.infantCount/,
+      /update\?\.infantCount !== undefined \? update\.infantCount : base\.infantCount/,
     );
     expect(types).toMatch(/flightsRequested: boolean \| null/);
     expect(types).toMatch(/flightsRequested: null,/);
-    expect(processTurn).toMatch(/flightsRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.flightsRequested !== undefined[\s\S]*\? input\.flightsRequested[\s\S]*: base\.flightsRequested/,
+      /update\?\.flightsRequested !== undefined[\s\S]*\? update\.flightsRequested[\s\S]*: base\.flightsRequested/,
     );
     expect(types).toMatch(/accommodationRequested: boolean \| null/);
     expect(types).toMatch(/accommodationRequested: null,/);
-    expect(processTurn).toMatch(/accommodationRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.accommodationRequested !== undefined[\s\S]*\? input\.accommodationRequested[\s\S]*: base\.accommodationRequested/,
+      /update\?\.accommodationRequested !== undefined[\s\S]*\? update\.accommodationRequested[\s\S]*: base\.accommodationRequested/,
     );
     expect(types).toMatch(/carHireRequested: boolean \| null/);
     expect(types).toMatch(/carHireRequested: null,/);
-    expect(processTurn).toMatch(/carHireRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.carHireRequested !== undefined[\s\S]*\? input\.carHireRequested[\s\S]*: base\.carHireRequested/,
+      /update\?\.carHireRequested !== undefined[\s\S]*\? update\.carHireRequested[\s\S]*: base\.carHireRequested/,
     );
     expect(types).toMatch(/activitiesRequested: boolean \| null/);
     expect(types).toMatch(/activitiesRequested: null,/);
-    expect(processTurn).toMatch(/activitiesRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.activitiesRequested !== undefined[\s\S]*\? input\.activitiesRequested[\s\S]*: base\.activitiesRequested/,
+      /update\?\.activitiesRequested !== undefined[\s\S]*\? update\.activitiesRequested[\s\S]*: base\.activitiesRequested/,
     );
     expect(types).toMatch(/restaurantsRequested: boolean \| null/);
     expect(types).toMatch(/restaurantsRequested: null,/);
-    expect(processTurn).toMatch(/restaurantsRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.restaurantsRequested !== undefined[\s\S]*\? input\.restaurantsRequested[\s\S]*: base\.restaurantsRequested/,
+      /update\?\.restaurantsRequested !== undefined[\s\S]*\? update\.restaurantsRequested[\s\S]*: base\.restaurantsRequested/,
     );
     expect(types).toMatch(/nearbyDiscoveryRequested: boolean \| null/);
     expect(types).toMatch(/nearbyDiscoveryRequested: null,/);
-    expect(processTurn).toMatch(/nearbyDiscoveryRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.nearbyDiscoveryRequested !== undefined[\s\S]*\? input\.nearbyDiscoveryRequested[\s\S]*: base\.nearbyDiscoveryRequested/,
+      /update\?\.nearbyDiscoveryRequested !== undefined[\s\S]*\? update\.nearbyDiscoveryRequested[\s\S]*: base\.nearbyDiscoveryRequested/,
     );
     expect(types).toMatch(/beachesRequested: boolean \| null/);
     expect(types).toMatch(/beachesRequested: null,/);
-    expect(processTurn).toMatch(/beachesRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.beachesRequested !== undefined[\s\S]*\? input\.beachesRequested[\s\S]*: base\.beachesRequested/,
+      /update\?\.beachesRequested !== undefined[\s\S]*\? update\.beachesRequested[\s\S]*: base\.beachesRequested/,
     );
     expect(types).toMatch(/campingRequested: boolean \| null/);
     expect(types).toMatch(/campingRequested: null,/);
-    expect(processTurn).toMatch(/campingRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.campingRequested !== undefined[\s\S]*\? input\.campingRequested[\s\S]*: base\.campingRequested/,
+      /update\?\.campingRequested !== undefined[\s\S]*\? update\.campingRequested[\s\S]*: base\.campingRequested/,
     );
     expect(types).toMatch(/kayakingRequested: boolean \| null/);
     expect(types).toMatch(/kayakingRequested: null,/);
-    expect(processTurn).toMatch(/kayakingRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.kayakingRequested !== undefined[\s\S]*\? input\.kayakingRequested[\s\S]*: base\.kayakingRequested/,
+      /update\?\.kayakingRequested !== undefined[\s\S]*\? update\.kayakingRequested[\s\S]*: base\.kayakingRequested/,
     );
     expect(types).toMatch(/fourWheelDriveRequested: boolean \| null/);
     expect(types).toMatch(/fourWheelDriveRequested: null,/);
-    expect(processTurn).toMatch(/fourWheelDriveRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.fourWheelDriveRequested !== undefined[\s\S]*\? input\.fourWheelDriveRequested[\s\S]*: base\.fourWheelDriveRequested/,
+      /update\?\.fourWheelDriveRequested !== undefined[\s\S]*\? update\.fourWheelDriveRequested[\s\S]*: base\.fourWheelDriveRequested/,
     );
     expect(types).toMatch(/scenicDrivesRequested: boolean \| null/);
     expect(types).toMatch(/scenicDrivesRequested: null,/);
-    expect(processTurn).toMatch(/scenicDrivesRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.scenicDrivesRequested !== undefined[\s\S]*\? input\.scenicDrivesRequested[\s\S]*: base\.scenicDrivesRequested/,
+      /update\?\.scenicDrivesRequested !== undefined[\s\S]*\? update\.scenicDrivesRequested[\s\S]*: base\.scenicDrivesRequested/,
     );
     expect(types).toMatch(/attractionsRequested: boolean \| null/);
     expect(types).toMatch(/attractionsRequested: null,/);
-    expect(processTurn).toMatch(/attractionsRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.attractionsRequested !== undefined[\s\S]*\? input\.attractionsRequested[\s\S]*: base\.attractionsRequested/,
+      /update\?\.attractionsRequested !== undefined[\s\S]*\? update\.attractionsRequested[\s\S]*: base\.attractionsRequested/,
     );
     expect(types).toMatch(/toursRequested: boolean \| null/);
     expect(types).toMatch(/toursRequested: null,/);
-    expect(processTurn).toMatch(/toursRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.toursRequested !== undefined[\s\S]*\? input\.toursRequested[\s\S]*: base\.toursRequested/,
+      /update\?\.toursRequested !== undefined[\s\S]*\? update\.toursRequested[\s\S]*: base\.toursRequested/,
     );
     expect(types).toMatch(/eventsRequested: boolean \| null/);
     expect(types).toMatch(/eventsRequested: null,/);
-    expect(processTurn).toMatch(/eventsRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.eventsRequested !== undefined[\s\S]*\? input\.eventsRequested[\s\S]*: base\.eventsRequested/,
+      /update\?\.eventsRequested !== undefined[\s\S]*\? update\.eventsRequested[\s\S]*: base\.eventsRequested/,
     );
     expect(types).toMatch(/nightlifeRequested: boolean \| null/);
     expect(types).toMatch(/nightlifeRequested: null,/);
-    expect(processTurn).toMatch(/nightlifeRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.nightlifeRequested !== undefined[\s\S]*\? input\.nightlifeRequested[\s\S]*: base\.nightlifeRequested/,
+      /update\?\.nightlifeRequested !== undefined[\s\S]*\? update\.nightlifeRequested[\s\S]*: base\.nightlifeRequested/,
     );
     expect(types).toMatch(/shoppingRequested: boolean \| null/);
     expect(types).toMatch(/shoppingRequested: null,/);
-    expect(processTurn).toMatch(/shoppingRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.shoppingRequested !== undefined[\s\S]*\? input\.shoppingRequested[\s\S]*: base\.shoppingRequested/,
+      /update\?\.shoppingRequested !== undefined[\s\S]*\? update\.shoppingRequested[\s\S]*: base\.shoppingRequested/,
     );
     expect(types).toMatch(/wellnessRequested: boolean \| null/);
     expect(types).toMatch(/wellnessRequested: null,/);
-    expect(processTurn).toMatch(/wellnessRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.wellnessRequested !== undefined[\s\S]*\? input\.wellnessRequested[\s\S]*: base\.wellnessRequested/,
+      /update\?\.wellnessRequested !== undefined[\s\S]*\? update\.wellnessRequested[\s\S]*: base\.wellnessRequested/,
     );
     expect(types).toMatch(/familyActivitiesRequested: boolean \| null/);
     expect(types).toMatch(/familyActivitiesRequested: null,/);
-    expect(processTurn).toMatch(/familyActivitiesRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.familyActivitiesRequested !== undefined[\s\S]*\? input\.familyActivitiesRequested[\s\S]*: base\.familyActivitiesRequested/,
+      /update\?\.familyActivitiesRequested !== undefined[\s\S]*\? update\.familyActivitiesRequested[\s\S]*: base\.familyActivitiesRequested/,
     );
     expect(types).toMatch(/accessibleTravelRequested: boolean \| null/);
     expect(types).toMatch(/accessibleTravelRequested: null,/);
-    expect(processTurn).toMatch(/accessibleTravelRequested\?: boolean/);
     expect(processTurn).toMatch(
-      /input\.accessibleTravelRequested !== undefined[\s\S]*\? input\.accessibleTravelRequested[\s\S]*: base\.accessibleTravelRequested/,
+      /update\?\.accessibleTravelRequested !== undefined[\s\S]*\? update\.accessibleTravelRequested[\s\S]*: base\.accessibleTravelRequested/,
     );
+    expect(processTurn.includes('destination?:')).toBe(false);
+    expect(processTurn.includes('flightsRequested?:')).toBe(false);
+    expect(index).toMatch(/ConversationStateUpdate/);
     expect(types).toMatch(/transcript: ConversationTranscriptEntry\[\]/);
     expect(types).toMatch(/role: 'user'/);
     expect(types).toMatch(/role: 'assistant'/);
