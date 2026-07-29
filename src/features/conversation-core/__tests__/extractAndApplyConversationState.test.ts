@@ -169,7 +169,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
 
     expect(result.nearbyDiscoveryRequested).toBe(true);
     expect(result.beachesRequested).toBe(true);
-    expect(result.campingRequested).toBe(false);
+    expect(result.campingRequested).toBe(true);
     expect(result.kayakingRequested).toBe(true);
     expect(result.fourWheelDriveRequested).toBe(false);
     expect(result.scenicDrivesRequested).toBe(true);

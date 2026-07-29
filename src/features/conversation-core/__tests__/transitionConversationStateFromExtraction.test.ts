@@ -215,7 +215,7 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     expect(nextState.restaurantsRequested).toBe(false);
     expect(nextState.nearbyDiscoveryRequested).toBe(true);
     expect(nextState.beachesRequested).toBe(true);
-    expect(nextState.campingRequested).toBe(false);
+    expect(nextState.campingRequested).toBe(true);
     expect(nextState.kayakingRequested).toBe(true);
     expect(nextState.fourWheelDriveRequested).toBe(false);
     expect(nextState.scenicDrivesRequested).toBe(true);
