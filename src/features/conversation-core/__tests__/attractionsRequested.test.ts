@@ -109,7 +109,7 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     });
     expect(first.state.attractionsRequested).toBe(false);
 
-    const second = turn('attractions', first.state, 1);
+    const second = turn('sightseeing landmarks museums', first.state, 1);
     expect(second.state.attractionsRequested).toBe(false);
   });
 
@@ -119,9 +119,9 @@ describe('phase 3S — explicit attractionsRequested only', () => {
       now: CREATED_AT,
     });
     const phrases = [
-      'attractions',
       'tourist attractions',
       'landmarks',
+      'museums',
       'places to visit',
       'sightseeing',
     ];
@@ -157,7 +157,7 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     expect(withFalse.state.attractionsRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'places to visit sightseeing',
+      'places to visit sightseeing landmarks',
       withFalse.state,
       3,
     );

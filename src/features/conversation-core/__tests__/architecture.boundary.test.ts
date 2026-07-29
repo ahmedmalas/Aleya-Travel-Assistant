@@ -767,12 +767,20 @@ describe('conversation-core architectural boundary', () => {
       /export class AttractionsRequestedConversationStateExtractor/,
     );
     expect(attractionsRequestedExtractor).toMatch(
-      /_input: ConversationStateExtractionInput/,
+      /input: ConversationStateExtractionInput/,
     );
-    expect(attractionsRequestedExtractor.includes('input.message')).toBe(false);
+    expect(attractionsRequestedExtractor).toMatch(/input\.message/);
     expect(attractionsRequestedExtractor.includes('input.currentState')).toBe(false);
+    expect(attractionsRequestedExtractor.includes('.trim(')).toBe(false);
     expect(attractionsRequestedExtractor.includes('toLowerCase')).toBe(false);
     expect(attractionsRequestedExtractor.includes('includes(')).toBe(false);
+    expect(attractionsRequestedExtractor).toMatch(/attractionsRequested:\s*true/);
+    expect(attractionsRequestedExtractor.includes('attractionsRequested: false')).toBe(
+      false,
+    );
+    expect(attractionsRequestedExtractor.includes('attractionsRequested: null')).toBe(
+      false,
+    );
     const snowActivitiesRequestedExtractor = readSrc(
       'src/features/conversation-core/SnowActivitiesRequestedConversationStateExtractor.ts',
     );
