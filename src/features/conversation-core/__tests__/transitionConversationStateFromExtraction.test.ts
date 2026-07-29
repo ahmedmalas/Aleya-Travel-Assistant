@@ -180,7 +180,7 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     ]);
   });
 
-  it('applies explicit destination cues while preserving origin, dates, and traveller counts', () => {
+  it('applies explicit destination and adult-count cues while preserving origin, dates, and other traveller counts', () => {
     const currentState = createState();
     const { nextState, hasStateChanged, extractionResult } =
       transitionConversationStateFromExtraction({
@@ -188,13 +188,15 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
         currentState,
       });
 
-    expect(extractionResult).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(extractionResult).toEqual({
+      stateUpdate: { destination: 'Cairns', adultCount: 3 },
+    });
     expect(hasStateChanged).toBe(true);
     expect(nextState.destination).toBe('Cairns');
     expect(nextState.origin).toBe('Sydney');
     expect(nextState.departureDate).toBe('2026-08-15');
     expect(nextState.returnDate).toBe('2026-08-22');
-    expect(nextState.adultCount).toBe(2);
+    expect(nextState.adultCount).toBe(3);
     expect(nextState.childCount).toBe(1);
     expect(nextState.infantCount).toBe(0);
   });

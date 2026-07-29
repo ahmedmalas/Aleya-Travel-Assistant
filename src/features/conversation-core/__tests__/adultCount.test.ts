@@ -55,7 +55,7 @@ describe('phase 3E — explicit adultCount only', () => {
     expect(odd.state.adultCount).toBe(-3.5);
   });
 
-  it('omitting adultCount preserves the existing value', () => {
+  it('omitting adultCount preserves the existing value when the message is unsupported', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -63,7 +63,7 @@ describe('phase 3E — explicit adultCount only', () => {
     const first = turn('Hello', initial, 0, { adultCount: 2 });
     expect(first.state.adultCount).toBe(2);
 
-    const second = turn('3 adults travelling', first.state, 1);
+    const second = turn('three travellers', first.state, 1);
     expect(second.state.adultCount).toBe(2);
   });
 
@@ -79,16 +79,16 @@ describe('phase 3E — explicit adultCount only', () => {
     expect(second.state.adultCount).toBe(4);
   });
 
-  it('traveller wording in the user message alone never changes adultCount', () => {
+  it('unsupported traveller wording in the user message alone never changes adultCount', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      '2 adults',
       'three travellers',
       'adults: 5',
       'party of 4',
+      'just me',
     ];
 
     let state = initial;
@@ -97,6 +97,29 @@ describe('phase 3E — explicit adultCount only', () => {
       expect(result.state.adultCount).toBeNull();
       state = result.state;
     });
+  });
+
+  it('explicit adult-count cue in the message updates adultCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('2 adults', initial, 0);
+    expect(result.state.adultCount).toBe(2);
+  });
+
+  it('trusted explicit stateUpdate.adultCount overrides an extracted adultCount', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overridden = turn('2 adults', initial, 0, { adultCount: 5 });
+    expect(overridden.state.adultCount).toBe(5);
+
+    const nullOverride = turn('2 adults', initial, 1, {
+      adultCount: null as unknown as number,
+    });
+    expect(nullOverride.state.adultCount).toBeNull();
   });
 
   it('origin, destination and dates remain preserved when adultCount changes', () => {

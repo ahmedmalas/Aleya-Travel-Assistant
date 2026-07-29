@@ -801,18 +801,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: { departureDate: '2026-10-15' } });
   });
 
-  it('factory-created extraction remains empty and deterministic for adult-count-like text', () => {
+  it('factory-created extraction updates adultCount for explicit adult counts and rejects vague wording', () => {
     const extractor = createConversationStateExtractor();
     const currentState = createState({ adultCount: 2 });
 
     expect(
       extractor.extract({ message: '2 adults', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { adultCount: 2 } });
     expect(
       extractor.extract({ message: '2 adults', currentState }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { adultCount: 2 } });
     expect(
       extractor.extract({ message: 'my wife and I', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: '2 adults and 1 child', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

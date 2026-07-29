@@ -129,7 +129,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     expect(result).not.toHaveProperty('stateUpdate');
   });
 
-  it('applies explicit destination cues while preserving origin and dates', () => {
+  it('applies explicit destination and adult-count cues while preserving origin and dates', () => {
     const currentState = createState();
     const result = extractAndApplyConversationState({
       message: 'Change destination to Cairns for three adults',
@@ -140,16 +140,17 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     expect(result.origin).toBe('Sydney');
     expect(result.departureDate).toBe('2026-08-15');
     expect(result.returnDate).toBe('2026-08-22');
+    expect(result.adultCount).toBe(3);
   });
 
-  it('preserves traveller counts and service-request flags', () => {
+  it('applies explicit adult count while preserving other traveller counts and service-request flags', () => {
     const currentState = createState();
     const result = extractAndApplyConversationState({
       message: 'We need three adults and flights only',
       currentState,
     });
 
-    expect(result.adultCount).toBe(2);
+    expect(result.adultCount).toBe(3);
     expect(result.childCount).toBe(1);
     expect(result.infantCount).toBe(0);
     expect(result.flightsRequested).toBe(true);
