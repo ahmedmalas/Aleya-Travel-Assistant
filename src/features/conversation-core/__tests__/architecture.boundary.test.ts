@@ -857,6 +857,8 @@ describe('conversation-core architectural boundary', () => {
     expect(scenicDrivesRequestedExtractor).toMatch(
       /export class ScenicDrivesRequestedConversationStateExtractor/,
     );
+    expect(scenicDrivesRequestedExtractor).toContain('Phase 7R');
+    expect(scenicDrivesRequestedExtractor).toContain('Phase 8U');
     expect(scenicDrivesRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

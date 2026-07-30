@@ -1058,7 +1058,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'show me scenic drives', currentState }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
-      extractor.extract({ message: 'show me scenic drives', currentState }),
+      extractor.extract({ message: 'scenic drive options', currentState }),
+    ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
+    expect(
+      extractor.extract({ message: 'road trips', currentState }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       extractor.extract({ message: 'no scenic drives', currentState }),
@@ -1067,7 +1070,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'coastal drive', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'road trip', currentState }),
+      extractor.extract({ message: 'scenic drive map', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

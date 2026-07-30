@@ -108,21 +108,25 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     });
     expect(first.state.scenicDrivesRequested).toBe(false);
 
-    const second = turn('road trip coastal drive', first.state, 1);
+    const second = turn('coastal drive lookout drive', first.state, 1);
     expect(second.state.scenicDrivesRequested).toBe(false);
   });
 
-  it('user message text cannot set scenicDrivesRequested', () => {
+  it('unsupported scenic-drive-adjacent wording cannot set scenicDrivesRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'road trip',
       'coastal drive',
       'mountain drive',
-      'driving route',
       'lookout drive',
+      'scenic drive map',
+      'road conditions',
+      'Great Ocean Road',
+      'car hire for a road trip',
+      'scenic drives?',
+      'I like scenic drives',
     ];
 
     let state = initial;
@@ -133,7 +137,84 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('explicit scenic-drive cue in the message sets scenicDrivesRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me scenic drives', initial, 0);
+    expect(result.state.scenicDrivesRequested).toBe(true);
+  });
+
+  it('phase 8U clear scenic-drive-discovery cues set scenicDrivesRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('scenic drives', initial, 0);
+    expect(bare.state.scenicDrivesRequested).toBe(true);
+    expect(bare.state.carHireRequested).toBeNull();
+    expect(bare.state.beachesRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+    expect(bare.state.fourWheelDriveRequested).toBeNull();
+
+    const routes = turn('scenic routes', initial, 1);
+    expect(routes.state.scenicDrivesRequested).toBe(true);
+
+    const roadTrip = turn('road trips', initial, 2);
+    expect(roadTrip.state.scenicDrivesRequested).toBe(true);
+
+    const options = turn('scenic drive options', initial, 3);
+    expect(options.state.scenicDrivesRequested).toBe(true);
+
+    const places = turn('places to drive', initial, 4);
+    expect(places.state.scenicDrivesRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me scenic drives near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      5,
+    );
+    expect(inRequest.state.scenicDrivesRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 6, {
+      scenicDrivesRequested: false,
+    });
+    const negated = turn('no scenic drives', seeded.state, 7);
+    expect(negated.state.scenicDrivesRequested).toBe(false);
+    const map = turn('scenic drive map', seeded.state, 8);
+    expect(map.state.scenicDrivesRequested).toBe(false);
+    const hire = turn('car hire for a road trip', seeded.state, 9);
+    expect(hire.state.scenicDrivesRequested).toBe(false);
+    const named = turn('Great Ocean Road', seeded.state, 10);
+    expect(named.state.scenicDrivesRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.scenicDrivesRequested overrides an extracted scenic-drive request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me scenic drives', initial, 0, {
+      scenicDrivesRequested: false,
+    });
+    expect(overriddenFalse.state.scenicDrivesRequested).toBe(false);
+
+    const overriddenTrue = turn('no scenic drives', initial, 1, {
+      scenicDrivesRequested: true,
+    });
+    expect(overriddenTrue.state.scenicDrivesRequested).toBe(true);
+
+    const nullOverride = turn('show me scenic drives', initial, 2, {
+      scenicDrivesRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.scenicDrivesRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing scenicDrivesRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -143,11 +224,7 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     });
     expect(withTrue.state.scenicDrivesRequested).toBe(true);
 
-    const afterWords = turn(
-      'scenic drive road trip coastal drive',
-      withTrue.state,
-      1,
-    );
+    const afterWords = turn('coastal drive lookout drive', withTrue.state, 1);
     expect(afterWords.state.scenicDrivesRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
@@ -156,7 +233,7 @@ describe('phase 3R — explicit scenicDrivesRequested only', () => {
     expect(withFalse.state.scenicDrivesRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'driving route lookout drive coastal drive',
+      'scenic drive map road conditions',
       withFalse.state,
       3,
     );
