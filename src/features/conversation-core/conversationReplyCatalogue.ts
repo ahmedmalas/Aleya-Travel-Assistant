@@ -36,6 +36,8 @@
  * "Departure date removed."
  * Phase 11M — return-date removal acknowledgement:
  * "Return date removed."
+ * Phase 11N — adult-count removal acknowledgement:
+ * "Adult count removed."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -57,6 +59,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
       adultCount === 1
         ? `Perfect — ${adultCount} adult travelling.`
         : `Perfect — ${adultCount} adults travelling.`,
+    adultCountRemoved: 'Adult count removed.',
     childCount: (childCount: number) =>
       childCount === 1
         ? `Perfect — ${childCount} child travelling.`
