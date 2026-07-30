@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
 } from '../index';
 
@@ -192,7 +191,8 @@ describe('processConversationTurn placeholder behaviour', () => {
     expect(result.state).not.toBe(initial);
     expect(result.state.transcript).not.toBe(originalTranscript);
     expect(initial.transcript).toEqual([]);
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
   });
 
   it('allows turnCount progression after a successful turn', () => {

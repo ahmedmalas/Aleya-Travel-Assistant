@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
@@ -272,8 +271,9 @@ describe('phase 3V — explicit nightlifeRequested only', () => {
       'assistant',
     ]);
     expect(first.state.transcript[0]?.message).toBe('Sydney to Gold Coast!!!!');
-    expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(first.state.transcript[1]?.message).toBe(first.reply);
+    expect(first.reply).toBe(first.state.transcript.at(-1)?.message);
+    expect(first.reply).not.toMatch(/assembled|unavailable/i);
 
     const second = turn('nightlife bars clubs', first.state, 1);
     expect(second.state.nightlifeRequested).toBe(true);
@@ -286,6 +286,7 @@ describe('phase 3V — explicit nightlifeRequested only', () => {
       'user',
       'assistant',
     ]);
-    expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(second.reply).toBe(second.state.transcript.at(-1)?.message);
+    expect(second.reply).not.toMatch(/assembled|unavailable/i);
   });
 });

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
@@ -78,8 +77,9 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     });
 
     expect(result.state.transcript[0]?.message).toBe('Sydney to Gold Coast!!!!');
-    expect(result.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.state.transcript[1]?.message).toBe(result.reply);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
     expect(result.reply).toBe(result.state.transcript[1]?.message);
   });
 
@@ -102,9 +102,10 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     expect(result.state.transcript[1]).toEqual({
       id: 'injected-assistant',
       role: 'assistant',
-      message: ENGINE_NOT_ASSEMBLED_REPLY,
+      message: result.reply,
       timestamp: '2026-07-29T00:00:01.000Z',
     });
+    expect(result.reply).toBe('What else should I know about your trip?');
   });
 
   it('appends without altering prior transcript entries or deduplicating repeats', () => {
@@ -194,7 +195,7 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
     setItem.mockRestore();
   });
 
-  it('acceptance scenarios each produce one user entry then one placeholder assistant entry', () => {
+  it('acceptance scenarios each produce one user entry then one assistant reply entry', () => {
     for (const message of ACCEPTANCE_MESSAGES) {
       const initial = createInitialConversationCoreState({
         conversationId: CONVERSATION_ID,
@@ -209,10 +210,10 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
       expect(result.state.transcript[0]?.role).toBe('user');
       expect(result.state.transcript[0]?.message).toBe(message);
       expect(result.state.transcript[1]?.role).toBe('assistant');
-      expect(result.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+      expect(result.state.transcript[1]?.message).toBe(result.reply);
       expect(result.reply).toBe(result.state.transcript[1]?.message);
+      expect(result.reply).not.toMatch(/assembled|unavailable/i);
       expect(result.state.turnCount).toBe(1);
-      expect(result.trace.messageInterpreted).toBe(false);
       expect(result.trace.assistantMessageRecorded).toBe(true);
     }
   });

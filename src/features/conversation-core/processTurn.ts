@@ -1,4 +1,8 @@
 import { applyConversationStateUpdate } from './applyConversationStateUpdate';
+import {
+  generateConversationReply,
+  hasSupportedTravelFieldChange,
+} from './generateConversationReply';
 import { hasConversationStateUpdateChanged } from './hasConversationStateUpdateChanged';
 import { transitionConversationStateFromExtraction } from './transitionConversationStateFromExtraction';
 import {
@@ -8,16 +12,12 @@ import {
   type ConversationTranscriptEntry,
 } from './types';
 
-/** Temporary boundary reply — no capture of assistant intelligence, inference, or search. */
-export const ENGINE_NOT_ASSEMBLED_REPLY =
-  'The new Aleya conversation engine has not been assembled yet. Trip planning turns are temporarily unavailable.';
-
 export type ProcessConversationTurnTrace = {
   entryPoint: 'processConversationTurn';
   stateStatus: 'active';
   turnCount: number;
   stateChanged: true;
-  messageInterpreted: false;
+  messageInterpreted: boolean;
   persistenceUsed: false;
   userMessageRecorded: true;
   assistantMessageRecorded: true;
@@ -49,13 +49,12 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 5I: run the internal extraction transition first, then apply any
- * explicit injected ConversationStateUpdate (explicit input wins). Append
- * raw user + placeholder assistant entries, increment turnCount by one, set
- * updatedAt from assistantMessageAt, set status to active, and expose ageMs.
- * Extraction metadata is internal only and does not alter the public result.
- * Does not interpret, trim, normalise, validate counts, calculate duration,
- * or persist.
+ * Phase 5I/10B: run the internal extraction transition, apply any explicit
+ * injected ConversationStateUpdate (explicit input wins), generate a
+ * deterministic reply from final travel state, append raw user + assistant
+ * transcript entries, increment turnCount by one, set updatedAt from
+ * assistantMessageAt, set status to active, and expose ageMs. Does not ask
+ * next questions, call search/itinerary, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -79,6 +78,24 @@ export function processConversationTurn(
     input.stateUpdate,
   );
 
+  const provisionalState: ConversationCoreState = {
+    conversationId: base.conversationId,
+    status: 'active',
+    turnCount: nextTurnCount,
+    createdAt: base.createdAt,
+    updatedAt: assistantTimestamp,
+    ageMs,
+    ...travel,
+    transcript: base.transcript,
+  };
+
+  const reply = generateConversationReply({
+    message: input.message,
+    state: provisionalState,
+    previousState: base,
+  });
+  const messageInterpreted = hasSupportedTravelFieldChange(base, provisionalState);
+
   const userEntry: ConversationTranscriptEntry = {
     id: input.userEntryId,
     role: 'user',
@@ -89,30 +106,24 @@ export function processConversationTurn(
   const assistantEntry: ConversationTranscriptEntry = {
     id: input.assistantEntryId,
     role: 'assistant',
-    message: ENGINE_NOT_ASSEMBLED_REPLY,
+    message: reply,
     timestamp: assistantTimestamp,
   };
 
   const state: ConversationCoreState = {
-    conversationId: base.conversationId,
-    status: 'active',
-    turnCount: nextTurnCount,
-    createdAt: base.createdAt,
-    updatedAt: assistantTimestamp,
-    ageMs,
-    ...travel,
+    ...provisionalState,
     transcript: [...base.transcript, userEntry, assistantEntry],
   };
 
   return {
     state,
-    reply: ENGINE_NOT_ASSEMBLED_REPLY,
+    reply,
     trace: {
       entryPoint: 'processConversationTurn',
       stateStatus: 'active',
       turnCount: nextTurnCount,
       stateChanged: true,
-      messageInterpreted: false,
+      messageInterpreted,
       persistenceUsed: false,
       userMessageRecorded: true,
       assistantMessageRecorded: true,

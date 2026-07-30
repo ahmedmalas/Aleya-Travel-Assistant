@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
@@ -102,7 +101,8 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(omitted.state.updatedAt).toBe('2026-07-29T00:00:03.000Z');
     expect(omitted.state.createdAt).toBe(initial.createdAt);
     expect(omitted.state.conversationId).toBe(CONVERSATION_ID);
-    expect(omitted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(omitted.reply).toBe(omitted.state.transcript.at(-1)?.message);
+    expect(omitted.reply).not.toMatch(/assembled|unavailable/i);
     expect(omitted.state.transcript).toHaveLength(4);
   });
 

@@ -4,7 +4,6 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import * as conversationCore from '../index';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateExtractionInput,
@@ -729,7 +728,8 @@ describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
     expect(result.state.destination).toBe('Sydney');
     expect(result.state.flightsRequested).toBe(false);
     expect(result.state.origin).toBe('Melbourne');
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
     expect(Object.keys(result).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
       Object.keys(conversationCore).filter(

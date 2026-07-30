@@ -7,7 +7,6 @@ import * as transitionModule from '../transitionConversationStateFromExtraction'
 import type { TransitionConversationStateFromExtractionResult } from '../transitionConversationStateFromExtraction';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ProcessConversationTurnResult,
@@ -52,7 +51,7 @@ function seededState(
       {
         id: 'assistant-0',
         role: 'assistant',
-        message: ENGINE_NOT_ASSEMBLED_REPLY,
+        message: 'seed-assistant',
         timestamp: '2026-07-29T00:00:01.000Z',
       },
     ],
@@ -264,7 +263,8 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
       { destination: '  Gold Coast!!!!  ', adultCount: 0, flightsRequested: false },
     );
 
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
     expect(result.state.destination).toBe('  Gold Coast!!!!  ');
     expect(result.state.origin).toBe('Sydney');
     expect(result.state.departureDate).toBe('2026-09-01');
@@ -294,15 +294,16 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
     expect(result.state.transcript[3]).toEqual({
       id: 'assistant-5i',
       role: 'assistant',
-      message: ENGINE_NOT_ASSEMBLED_REPLY,
+      message: result.reply,
       timestamp: '2026-07-29T00:00:11.000Z',
     });
+    expect(result.reply).toBe('Sounds good —   Gold Coast!!!!  .');
     expect(result.trace).toEqual({
       entryPoint: 'processConversationTurn',
       stateStatus: 'active',
       turnCount: 3,
       stateChanged: true,
-      messageInterpreted: false,
+      messageInterpreted: true,
       persistenceUsed: false,
       userMessageRecorded: true,
       assistantMessageRecorded: true,

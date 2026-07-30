@@ -4,7 +4,6 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as conversationCore from '../index';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateExtractionInput,
@@ -473,13 +472,14 @@ describe('phase 7A — DestinationConversationStateExtractor activation', () => 
     expect(unrelatedExplicit.state.destination).toBe('Darwin');
     expect(unrelatedExplicit.state.flightsRequested).toBe(false);
     expect(preserved.state.destination).toBe('Brisbane');
-    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(extracted.trace.messageInterpreted).toBe(false);
+    expect(extracted.reply).toBe(extracted.state.transcript.at(-1)?.message);
+    expect(extracted.reply).not.toMatch(/assembled|unavailable/i);
+    expect(extracted.trace.messageInterpreted).toBe(true);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(extracted.state.transcript).toHaveLength(3);
     expect(extracted.state.transcript[1]?.role).toBe('user');
     expect(extracted.state.transcript[1]?.message).toBe('go to Cairns');
-    expect(extracted.state.transcript[2]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(extracted.state.transcript[2]?.message).toBe(extracted.reply);
   });
 
   it('keeps destination as the only behaviourally active production extractor', () => {

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
@@ -260,6 +259,7 @@ describe('phase 3L — explicit restaurantsRequested only', () => {
       'user',
       'assistant',
     ]);
-    expect(second.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(second.reply).toBe(second.state.transcript.at(-1)?.message);
+    expect(second.reply).not.toMatch(/assembled|unavailable/i);
   });
 });

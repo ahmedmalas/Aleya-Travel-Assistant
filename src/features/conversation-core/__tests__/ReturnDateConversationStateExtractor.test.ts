@@ -4,7 +4,6 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as conversationCore from '../index';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateExtractionInput,
@@ -499,7 +498,8 @@ describe('phase 8D — ReturnDateConversationStateExtractor activation', () => {
     expect(combined.state.departureDate).toBeNull();
     expect(departureOnlyPreserved.state.returnDate).toBe('2026-09-08');
     expect(departureOnlyPreserved.state.departureDate).toBe('2026-08-28');
-    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(extracted.reply).toBe(extracted.state.transcript.at(-1)?.message);
+    expect(extracted.reply).not.toMatch(/assembled|unavailable/i);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(Object.keys(extracted.trace).sort()).toEqual([
       'assistantMessageRecorded',

@@ -4,7 +4,6 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as conversationCore from '../index';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateExtractionInput,
@@ -525,7 +524,8 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       expect(turned.state.wildlifeRequested, message).toBe(true);
       expect(turned.state.eventsFestivalsRequested, message).toBe(true);
       expect(turned.state.flightsRequested, message).toBe(true);
-      expect(turned.reply, message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+      expect(turned.reply, message).toBe(turned.state.transcript.at(-1)?.message);
+      expect(turned.reply, message).not.toMatch(/assembled|unavailable/i);
     }
   });
 
@@ -597,7 +597,8 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     expect(independentOverride.state.nationalParksRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
-    expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(extracted.reply).toBe(extracted.state.transcript.at(-1)?.message);
+    expect(extracted.reply).not.toMatch(/assembled|unavailable/i);
   });
 
   it('keeps every extractor implementation off the public index', () => {

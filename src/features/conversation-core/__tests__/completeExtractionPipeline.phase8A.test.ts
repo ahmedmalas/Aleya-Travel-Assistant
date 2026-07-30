@@ -9,7 +9,6 @@ import * as hasChangedModule from '../hasConversationStateUpdateChanged';
 import * as transitionModule from '../transitionConversationStateFromExtraction';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateUpdate,
@@ -404,7 +403,8 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     // explicit apply follows extraction transition apply
     expect(order.filter((step) => step === 'apply').length).toBeGreaterThanOrEqual(2);
     expect(result.state.nationalParksRequested).toBe(false);
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
   });
 
   it('reaches all 27 behavioural extractors through processConversationTurn with single-field activation', () => {
@@ -468,7 +468,8 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     unsupported.forEach((message, index) => {
       const result = runTurn(message, state, undefined, index);
       expect(travelSnapshot(result.state), message).toEqual(before);
-      expect(result.reply, message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+      expect(result.reply, message).toBe(result.state.transcript.at(-1)?.message);
+      expect(result.reply, message).not.toMatch(/assembled|unavailable/i);
     });
   });
 

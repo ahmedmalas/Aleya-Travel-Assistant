@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
@@ -118,8 +117,9 @@ describe('phase 2D — updatedAt progression only', () => {
       'assistant',
     ]);
     expect(first.state.transcript[0]?.message).toBe('Sydney to Gold Coast!!!!');
-    expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
-    expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(first.state.transcript[1]?.message).toBe(first.reply);
+    expect(first.reply).toBe(first.state.transcript.at(-1)?.message);
+    expect(first.reply).not.toMatch(/assembled|unavailable/i);
     expect(first.state.conversationId).toBe(CONVERSATION_ID);
     expect(first.state.updatedAt).toBe('2026-07-29T00:00:01.000Z');
 

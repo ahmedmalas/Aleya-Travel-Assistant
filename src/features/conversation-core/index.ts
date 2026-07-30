@@ -9,7 +9,8 @@
  * - ConversationStateExtractionInput (sole future extractor input contract)
  * - ConversationStateExtractor (sole future extractor interface contract)
  *
- * Phase 2B records raw user + placeholder assistant transcript entries only.
+ * Phase 2B records raw user + assistant transcript entries. Phase 10B fills
+ * the assistant reply via an internal reply-generation boundary.
  * Persistence namespace is reserved and must not be enabled yet.
  */
 
@@ -27,7 +28,6 @@ export {
 } from './types';
 
 export {
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
   type ProcessConversationTurnInput,
   type ProcessConversationTurnResult,

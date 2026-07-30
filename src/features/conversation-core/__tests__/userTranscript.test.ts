@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
-  ENGINE_NOT_ASSEMBLED_REPLY,
   processConversationTurn,
 } from '../index';
 
@@ -27,7 +26,8 @@ describe('phase 2A carry-forward — raw user message recording', () => {
       timestamp: '2026-07-29T00:00:00.000Z',
     });
     expect(result.state.transcript[0]?.message).not.toBe(raw.trim());
-    expect(result.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
   });
 
   it('starts with an empty transcript from the factory', () => {
