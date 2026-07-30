@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3V/7V — explicit fishingRequested with extraction activation', () => {
+describe('phase 3V/7V/8Y — explicit fishingRequested with extraction activation', () => {
   it('initial fishingRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -134,6 +134,10 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       'tackle',
       'fishing charters',
       'deep-sea fishing',
+      'fishing licence',
+      'fishing rod',
+      'hotel near fishing spots',
+      'what is fly fishing',
     ];
 
     let state = initial;
@@ -142,6 +146,34 @@ describe('phase 3V/7V — explicit fishingRequested with extraction activation',
       expect(result.state.fishingRequested).toBeNull();
       state = result.state;
     });
+  });
+
+  it('user message text sets fishingRequested from clear fishing discovery wording', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const phrases = [
+      'show me fishing spots',
+      'find fishing near me',
+      'where can I go fishing?',
+      'I want to go fishing',
+      'include fishing on the trip',
+      'show me beach fishing locations',
+    ];
+
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.fishingRequested, message).toBe(true);
+    });
+    expect(initial.fishingRequested).toBeNull();
   });
 
   it('user message text cannot clear or change an existing value via unsupported wording', () => {

@@ -1168,6 +1168,15 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'go fishing', currentState }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
+      extractor.extract({ message: 'show me fishing spots', currentState }),
+    ).toEqual({ stateUpdate: { fishingRequested: true } });
+    expect(
+      extractor.extract({ message: 'where can I go fishing?', currentState }),
+    ).toEqual({ stateUpdate: { fishingRequested: true } });
+    expect(
+      extractor.extract({ message: 'fishing options', currentState }),
+    ).toEqual({ stateUpdate: { fishingRequested: true } });
+    expect(
       extractor.extract({ message: 'no fishing', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
