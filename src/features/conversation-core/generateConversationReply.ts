@@ -1,96 +1,12 @@
+import { classifyConversationStateChange } from './classifyConversationStateChange';
 import {
-  classifyConversationStateChange,
-  fieldValueChanged,
-} from './classifyConversationStateChange';
-import type {
-  ConversationCoreState,
-  ConversationStateUpdate,
-} from './types';
+  NEUTRAL_TRIP_FALLBACK_REPLY,
+  createConversationReplyPlan,
+  type ConversationReplyPlan,
+} from './createConversationReplyPlan';
+import type { ConversationCoreState } from './types';
 
-/**
- * Neutral continuation when no supported travel-field change occurred, or when
- * core requirements and capability-specific follow-ups are already satisfied.
- */
-export const NEUTRAL_TRIP_FALLBACK_REPLY =
-  'What else should I know about your trip?';
-
-/**
- * Stable capability-label order for multi-capability acknowledgements.
- *
- * Matches the activated behavioural/service request order used by the
- * extractor factory, with accessible travel inserted after nearby discovery
- * (explicit-only field; no extractor).
- */
-const CAPABILITY_LABELS = [
-  ['flightsRequested', 'flights'],
-  ['accommodationRequested', 'accommodation'],
-  ['carHireRequested', 'car hire'],
-  ['activitiesRequested', 'activities'],
-  ['restaurantsRequested', 'restaurants'],
-  ['nearbyDiscoveryRequested', 'nearby discovery'],
-  ['accessibleTravelRequested', 'accessible travel'],
-  ['beachesRequested', 'beaches'],
-  ['campingRequested', 'camping'],
-  ['kayakingRequested', 'kayaking'],
-  ['fourWheelDriveRequested', 'four-wheel driving'],
-  ['scenicDrivesRequested', 'scenic drives'],
-  ['attractionsRequested', 'attractions'],
-  ['snowActivitiesRequested', 'snow activities'],
-  ['hikingWalkingRequested', 'hiking and walking'],
-  ['fishingRequested', 'fishing'],
-  ['divingSnorkellingRequested', 'diving and snorkelling'],
-  ['wineriesFoodTrailsRequested', 'wineries and food trails'],
-  ['eventsFestivalsRequested', 'events and festivals'],
-  ['wildlifeRequested', 'wildlife'],
-  ['nationalParksRequested', 'national parks'],
-] as const satisfies ReadonlyArray<
-  readonly [keyof ConversationStateUpdate, string]
->;
-
-/**
- * Fixed progression priority for the next missing core travel requirement.
- * Phase 10C — deterministic; derived only from final canonical state.
- */
-const PROGRESSION_QUESTIONS = [
-  ['destination', 'Where would you like to travel?'],
-  ['origin', 'Where will you be travelling from?'],
-  ['departureDate', 'When would you like to depart?'],
-  ['returnDate', 'When would you like to return?'],
-] as const satisfies ReadonlyArray<
-  readonly [keyof ConversationCoreState, string]
->;
-
-/**
- * Fixed contextual follow-up priority after core fields are complete.
- * Phase 10D/10E — deterministic; derived only from final canonical state.
- *
- * Phase 10E suppression: skip any contextual question whose required
- * information already exists, then continue to the next eligible question.
- * Traveller/guest counts share adultCount. Activity/dining interest has no
- * dedicated state field yet, so those questions remain eligible while the
- * capability stays requested.
- */
-const CONTEXTUAL_QUESTIONS = [
-  {
-    applies: (state: ConversationCoreState) =>
-      state.flightsRequested === true && state.adultCount === null,
-    question: 'How many adults will be travelling?',
-  },
-  {
-    applies: (state: ConversationCoreState) =>
-      state.accommodationRequested === true && state.adultCount === null,
-    question: 'How many guests will be staying?',
-  },
-  {
-    applies: (state: ConversationCoreState) => state.activitiesRequested === true,
-    question: 'What kinds of activities are you interested in?',
-  },
-  {
-    applies: (state: ConversationCoreState) =>
-      state.restaurantsRequested === true,
-    question: 'What type of dining are you looking for?',
-  },
-] as const;
+export { NEUTRAL_TRIP_FALLBACK_REPLY };
 
 export type GenerateConversationReplyInput = {
   message: string;
@@ -103,18 +19,13 @@ export type GenerateConversationReplyInput = {
 /**
  * Internal conversation-core reply boundary.
  *
- * Phase 10B: deterministic state-aware acknowledgements from current-turn
- * travel-field changes only. Phase 10C: after any acknowledgement, append
- * exactly one follow-up for the first missing core requirement
- * (destination → origin → departureDate → returnDate). Phase 10D: when those
- * four are present, append exactly one capability-specific contextual
- * follow-up. Phase 10E: suppress contextual questions whose answers already
- * exist in final state and fall through to the next eligible question, or the
- * neutral continuation. Phase 10F: acknowledgements are driven by an internal
- * change classification of previous vs final state. Invoked solely by
- * processConversationTurn after extraction and explicit stateUpdate
- * precedence. Does not re-extract, inspect message text, call
- * search/itinerary, or use an AI provider.
+ * Phase 10B–10E: deterministic acknowledgements, core progression, contextual
+ * follow-ups, and suppression. Phase 10F: acknowledgements are driven by an
+ * internal change classification of previous vs final state. Phase 10G:
+ * classification feeds createConversationReplyPlan, and this function only
+ * renders the planned reply text. Invoked solely by processConversationTurn
+ * after extraction and explicit stateUpdate precedence. Does not re-extract,
+ * inspect message text, call search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,
@@ -122,37 +33,8 @@ export function generateConversationReply(
   void input.message;
   const { state, previousState } = input;
   const classification = classifyConversationStateChange(previousState, state);
-
-  const newlyRequestedLabels = CAPABILITY_LABELS.filter(([field]) =>
-    classification.newlyEnabledRequestFlags.includes(field),
-  ).map(([, label]) => label);
-
-  if (newlyRequestedLabels.length > 0) {
-    return withProgression(
-      `I've added ${formatLabelList(newlyRequestedLabels)} to your trip requirements.`,
-      state,
-    );
-  }
-
-  if (
-    state.destination !== null &&
-    fieldValueChanged(classification, 'destination')
-  ) {
-    return withProgression(`Sounds good — ${state.destination}.`, state);
-  }
-
-  if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
-    return withProgression(
-      `Got it — travelling from ${state.origin}.`,
-      state,
-    );
-  }
-
-  if (classification.hasAnyChange) {
-    return withProgression('Got it.', state);
-  }
-
-  return NEUTRAL_TRIP_FALLBACK_REPLY;
+  const plan = createConversationReplyPlan({ state, classification });
+  return renderConversationReplyPlan(plan);
 }
 
 /** True when any canonical travel field differs between pre- and post-turn state. */
@@ -163,36 +45,15 @@ export function hasSupportedTravelFieldChange(
   return classifyConversationStateChange(previousState, state).hasAnyChange;
 }
 
-function withProgression(
-  acknowledgement: string,
-  state: ConversationCoreState,
+/** Render a reply plan into the deterministic assistant reply string. */
+export function renderConversationReplyPlan(
+  plan: ConversationReplyPlan,
 ): string {
-  return `${acknowledgement}\n${nextMissingRequirementQuestion(state)}`;
-}
-
-function nextMissingRequirementQuestion(state: ConversationCoreState): string {
-  for (const [field, question] of PROGRESSION_QUESTIONS) {
-    if (state[field] === null) {
-      return question;
-    }
+  if (plan.acknowledgements.length === 0) {
+    return plan.followUpQuestion ?? NEUTRAL_TRIP_FALLBACK_REPLY;
   }
-  // Phase 10E: walk contextual candidates in priority order; skip any whose
-  // required information is already present in the final canonical state.
-  for (const entry of CONTEXTUAL_QUESTIONS) {
-    if (entry.applies(state)) {
-      return entry.question;
-    }
+  if (plan.followUpQuestion === null) {
+    return plan.acknowledgements.join(' ');
   }
-  return NEUTRAL_TRIP_FALLBACK_REPLY;
-}
-
-function formatLabelList(labels: readonly string[]): string {
-  if (labels.length === 1) {
-    return labels[0]!;
-  }
-  if (labels.length === 2) {
-    return `${labels[0]} and ${labels[1]}`;
-  }
-  const head = labels.slice(0, -1).join(', ');
-  return `${head} and ${labels[labels.length - 1]}`;
+  return `${plan.acknowledgements.join(' ')}\n${plan.followUpQuestion}`;
 }

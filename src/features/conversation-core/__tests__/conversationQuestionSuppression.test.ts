@@ -12,9 +12,9 @@ import {
 } from '../generateConversationReply';
 
 const ROOT = process.cwd();
-const REPLY_SOURCE = resolve(
+const PLAN_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/generateConversationReply.ts',
+  'src/features/conversation-core/createConversationReplyPlan.ts',
 );
 
 function createState(
@@ -65,7 +65,7 @@ function questionCount(reply: string): number {
 
 describe('phase 10E — deterministic question suppression', () => {
   it('documents Phase 10E suppression in the reply boundary', () => {
-    const source = readFileSync(REPLY_SOURCE, 'utf8');
+    const source = readFileSync(PLAN_SOURCE, 'utf8');
     expect(source).toContain('Phase 10E');
     expect(source).toMatch(/suppress/i);
     expect(source).not.toMatch(/replySource|nextRequiredField/);
