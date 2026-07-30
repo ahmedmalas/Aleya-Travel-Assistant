@@ -99,12 +99,12 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
 
   it('puts a present acknowledgement into a one-item array', () => {
     const plan = assembleConversationReplyPlan({
-      acknowledgement: 'Sounds good — Brisbane.',
+      acknowledgement: 'Great — Brisbane.',
       followUpQuestion: 'Where will you be travelling from?',
       continuationPrompt: null,
       messageInterpreted: true,
     });
-    expect(plan.acknowledgements).toEqual(['Sounds good — Brisbane.']);
+    expect(plan.acknowledgements).toEqual(['Great — Brisbane.']);
     expect(plan.acknowledgements).toHaveLength(1);
   });
 

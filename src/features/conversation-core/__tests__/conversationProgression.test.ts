@@ -48,7 +48,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     const result = turn('go to Brisbane', createState());
     expect(result.state.destination).toBe('Brisbane');
     expect(result.reply).toBe(
-      'Sounds good — Brisbane.\nWhere will you be travelling from?',
+      'Great — Brisbane.\nWhere will you be travelling from?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -124,7 +124,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     });
     expect(forcedDestination.state.destination).toBe('Hobart');
     expect(forcedDestination.reply).toBe(
-      'Sounds good — Hobart.\nWhere will you be travelling from?',
+      'Great — Hobart.\nWhere will you be travelling from?',
     );
 
     const completeViaExplicit = turn(

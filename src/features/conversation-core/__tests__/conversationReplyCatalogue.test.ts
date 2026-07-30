@@ -55,7 +55,10 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
     expect(catalogueSource).toContain('Phase 10K');
+    expect(catalogueSource).toContain('Phase 10O');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
+    expect(catalogueSource).toContain('Great — ${destination}.');
+    expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
     expect(catalogueSource).not.toMatch(/ConversationCoreState/);
     expect(catalogueSource).not.toMatch(/classifyConversationStateChange/);
     expect(catalogueSource).not.toMatch(/selectConversation/);
@@ -86,7 +89,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     );
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination('Brisbane'),
-    ).toBe('Sounds good — Brisbane.');
+    ).toBe('Great — Brisbane.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin('Sydney'),
     ).toBe('Got it — travelling from Sydney.');

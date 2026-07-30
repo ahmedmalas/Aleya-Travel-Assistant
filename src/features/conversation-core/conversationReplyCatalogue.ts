@@ -5,12 +5,14 @@
  * Contains deterministic fixed strings (and pure wording templates for
  * interpolated values). Has no selection logic, eligibility rules,
  * priority, suppression, state mutation, AI, or randomness.
+ * Phase 10O — destination acknowledgement wording refined to
+ * "Great — {destination}."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
     addedCapabilities: (labelList: string) =>
       `I've added ${labelList} to your trip requirements.`,
-    destination: (destination: string) => `Sounds good — ${destination}.`,
+    destination: (destination: string) => `Great — ${destination}.`,
     origin: (origin: string) => `Got it — travelling from ${origin}.`,
     genericTravelFieldChange: 'Got it.',
   },

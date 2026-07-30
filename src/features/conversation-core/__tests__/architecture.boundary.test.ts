@@ -1192,9 +1192,11 @@ describe('conversation-core architectural boundary', () => {
     const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
 
     expect(catalogue).toContain('Phase 10K');
+    expect(catalogue).toContain('Phase 10O');
     expect(catalogue).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogue).toContain("I've added ${labelList} to your trip requirements.");
-    expect(catalogue).toContain('Sounds good — ${destination}.');
+    expect(catalogue).toContain('Great — ${destination}.');
+    expect(catalogue).not.toContain('Sounds good — ${destination}.');
     expect(catalogue).toContain('Got it — travelling from ${origin}.');
     expect(catalogue).toContain("'Got it.'");
     expect(catalogue).toContain('Where would you like to travel?');

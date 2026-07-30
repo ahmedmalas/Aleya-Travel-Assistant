@@ -128,11 +128,11 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     const previous = createState();
     const state = createState({ destination: 'Brisbane' });
     const plan = planFor(previous, state);
-    expect(plan.acknowledgements).toEqual(['Sounds good — Brisbane.']);
+    expect(plan.acknowledgements).toEqual(['Great — Brisbane.']);
     expect(plan.followUpQuestion).toBe('Where will you be travelling from?');
     expect(plan.messageInterpreted).toBe(true);
     expect(renderConversationReplyPlan(plan)).toBe(
-      'Sounds good — Brisbane.\nWhere will you be travelling from?',
+      'Great — Brisbane.\nWhere will you be travelling from?',
     );
   });
 

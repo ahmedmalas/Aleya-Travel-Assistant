@@ -109,7 +109,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     const result = turn('go to Cairns', createState());
     expect(result.state.destination).toBe('Cairns');
     expect(result.reply).toBe(
-      'Sounds good — Cairns.\nWhere will you be travelling from?',
+      'Great — Cairns.\nWhere will you be travelling from?',
     );
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);
@@ -183,7 +183,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     });
     expect(overriddenDestination.state.destination).toBe('Hobart');
     expect(overriddenDestination.reply).toBe(
-      'Sounds good — Hobart.\nWhere will you be travelling from?',
+      'Great — Hobart.\nWhere will you be travelling from?',
     );
 
     const forcedCapability = turn('Hello', createState(), {

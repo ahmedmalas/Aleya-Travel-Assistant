@@ -114,13 +114,13 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
     expect(selectorSource).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
     expect(selectorSource).not.toMatch(/I've added \$\{/);
-    expect(selectorSource).not.toMatch(/Sounds good — \$\{/);
+    expect(selectorSource).not.toMatch(/Great — \$\{/);
     expect(planSource).toContain('Phase 10I');
     expect(planSource).toMatch(/selectConversationReplyComponents\(/);
     expect(componentsSource).toMatch(/selectConversationAcknowledgement\(/);
     expect(planSource).not.toMatch(/CAPABILITY_LABELS|formatLabelList/);
     expect(planSource).not.toMatch(/I've added \$\{/);
-    expect(planSource).not.toMatch(/Sounds good —/);
+    expect(planSource).not.toMatch(/Great —/);
     expect(index).not.toMatch(/selectConversationAcknowledgement/);
     expect(processTurn).not.toMatch(/selectConversationAcknowledgement/);
   });
@@ -128,7 +128,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
   it('selects a new destination acknowledgement', () => {
     expect(
       acknowledgementFor(createState(), createState({ destination: 'Brisbane' })),
-    ).toBe('Sounds good — Brisbane.');
+    ).toBe('Great — Brisbane.');
   });
 
   it('selects an updated destination acknowledgement', () => {
@@ -137,7 +137,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         createState({ destination: 'Brisbane' }),
         createState({ destination: 'Hobart' }),
       ),
-    ).toBe('Sounds good — Hobart.');
+    ).toBe('Great — Hobart.');
   });
 
   it('selects a new origin acknowledgement', () => {
@@ -252,7 +252,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         createState({ destination: 'Brisbane', origin: 'Sydney' }),
         createState({ destination: 'Hobart', origin: 'Melbourne' }),
       ),
-    ).toBe('Sounds good — Hobart.');
+    ).toBe('Great — Hobart.');
 
     // origin beats other travel-field changes
     expect(

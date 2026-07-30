@@ -150,7 +150,7 @@ describe('phase 10F — deterministic change classification', () => {
 
   it('preserves existing acknowledgement, progression and suppression behaviour', () => {
     expect(turn('go to Brisbane', createState()).reply).toBe(
-      'Sounds good — Brisbane.\nWhere will you be travelling from?',
+      'Great — Brisbane.\nWhere will you be travelling from?',
     );
 
     expect(
