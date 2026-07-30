@@ -1237,6 +1237,28 @@ describe('conversation-core architectural boundary', () => {
     );
   });
 
+  it('keeps the Phase 10M reply-plan assembler internal', () => {
+    const assembler = readSrc(
+      'src/features/conversation-core/assembleConversationReplyPlan.ts',
+    );
+    const plan = readSrc(
+      'src/features/conversation-core/createConversationReplyPlan.ts',
+    );
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
+
+    expect(assembler).toContain('Phase 10M');
+    expect(assembler).toMatch(/export function assembleConversationReplyPlan/);
+    expect(assembler).toMatch(/export type ConversationReplyPlan/);
+    expect(assembler.includes('selectConversation')).toBe(false);
+    expect(assembler.includes('ConversationCoreState')).toBe(false);
+    expect(assembler.includes('Math.random')).toBe(false);
+    expect(plan).toContain('Phase 10M');
+    expect(plan).toMatch(/assembleConversationReplyPlan\(/);
+    expect(index.includes('assembleConversationReplyPlan')).toBe(false);
+    expect(processTurn.includes('assembleConversationReplyPlan')).toBe(false);
+  });
+
   it('rejected conversation package is absent under src/features', () => {
     const features = resolve(ROOT, 'src/features');
     const names = readdirSync(features);
