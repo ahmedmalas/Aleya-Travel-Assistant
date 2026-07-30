@@ -5,8 +5,7 @@ import type {
 
 /**
  * Neutral continuation when no supported travel-field change occurred, or when
- * destination, origin, departureDate and returnDate are already present after
- * an acknowledgement.
+ * core requirements and capability-specific follow-ups are already satisfied.
  */
 export const NEUTRAL_TRIP_FALLBACK_REPLY =
   'What else should I know about your trip?';
@@ -94,6 +93,36 @@ const PROGRESSION_QUESTIONS = [
   readonly [keyof ConversationCoreState, string]
 >;
 
+/**
+ * Fixed contextual follow-up priority after core fields are complete.
+ * Phase 10D — deterministic; derived only from final canonical state.
+ *
+ * Traveller/guest counts share adultCount. Activity/dining interest has no
+ * dedicated state field yet, so those questions apply while the capability
+ * remains requested.
+ */
+const CONTEXTUAL_QUESTIONS = [
+  {
+    applies: (state: ConversationCoreState) =>
+      state.flightsRequested === true && state.adultCount === null,
+    question: 'How many adults will be travelling?',
+  },
+  {
+    applies: (state: ConversationCoreState) =>
+      state.accommodationRequested === true && state.adultCount === null,
+    question: 'How many guests will be staying?',
+  },
+  {
+    applies: (state: ConversationCoreState) => state.activitiesRequested === true,
+    question: 'What kinds of activities are you interested in?',
+  },
+  {
+    applies: (state: ConversationCoreState) =>
+      state.restaurantsRequested === true,
+    question: 'What type of dining are you looking for?',
+  },
+] as const;
+
 export type GenerateConversationReplyInput = {
   message: string;
   /** Final post-precedence travel state for this turn. */
@@ -108,8 +137,9 @@ export type GenerateConversationReplyInput = {
  * Phase 10B: deterministic state-aware acknowledgements from current-turn
  * travel-field changes only. Phase 10C: after any acknowledgement, append
  * exactly one follow-up for the first missing core requirement
- * (destination → origin → departureDate → returnDate), or the neutral
- * continuation when all four are present. Invoked solely by
+ * (destination → origin → departureDate → returnDate). Phase 10D: when those
+ * four are present, append exactly one capability-specific contextual
+ * follow-up, otherwise the neutral continuation. Invoked solely by
  * processConversationTurn after extraction and explicit stateUpdate
  * precedence. Does not re-extract, inspect message text, call
  * search/itinerary, or use an AI provider.
@@ -176,6 +206,11 @@ function nextMissingRequirementQuestion(state: ConversationCoreState): string {
   for (const [field, question] of PROGRESSION_QUESTIONS) {
     if (state[field] === null) {
       return question;
+    }
+  }
+  for (const entry of CONTEXTUAL_QUESTIONS) {
+    if (entry.applies(state)) {
+      return entry.question;
     }
   }
   return NEUTRAL_TRIP_FALLBACK_REPLY;

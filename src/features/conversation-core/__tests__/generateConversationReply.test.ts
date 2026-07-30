@@ -69,6 +69,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     expect(replySource).toMatch(/export function generateConversationReply/);
     expect(replySource).toContain('Phase 10B');
     expect(replySource).toContain('Phase 10C');
+    expect(replySource).toContain('Phase 10D');
     expect(processTurn).toMatch(/generateConversationReply\(/);
     expect(processTurn).toMatch(
       /applyConversationStateUpdate\([\s\S]*generateConversationReply\(/,
