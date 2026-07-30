@@ -6,7 +6,7 @@ import {
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
-import { classifyConversationStateChange } from '../classifyConversationStateChange';
+import { classifyConversationStateChange, fieldValueChanged } from '../classifyConversationStateChange';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   createConversationReplyPlan,
@@ -1241,6 +1241,221 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
       expect(plan.followUpQuestion).not.toMatch(/adults will be travelling/i);
       expect(plan.followUpQuestion).not.toMatch(/guests will be staying/i);
+    });
+  });
+
+  describe('phase 11A — generic acknowledgement coverage characterisation', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        flightsRequested: true,
+        ...overrides,
+      });
+
+    function classify(
+      previousState: ConversationCoreState,
+      state: ConversationCoreState,
+    ) {
+      return classifyConversationStateChange(previousState, state);
+    }
+
+    it('characterises service/capability disable as generic Perfect.', () => {
+      const previous = filled();
+      const disabled = filled({ flightsRequested: false });
+      const classification = classify(previous, disabled);
+
+      expect(classification.newlyEnabledRequestFlags).toEqual([]);
+      expect(classification.updated).toContain('flightsRequested');
+      expect(fieldValueChanged(classification, 'flightsRequested')).toBe(true);
+      expect(acknowledgementFor(previous, disabled)).toBe('Perfect.');
+
+      const clearedFlag = filled({ flightsRequested: null });
+      expect(acknowledgementFor(previous, clearedFlag)).toBe('Perfect.');
+    });
+
+    it('characterises unlabeled capability enable as generic Perfect.', () => {
+      const previous = filled();
+      for (const field of [
+        'toursRequested',
+        'eventsRequested',
+        'nightlifeRequested',
+        'shoppingRequested',
+        'wellnessRequested',
+        'familyActivitiesRequested',
+      ] as const) {
+        const next = filled({ [field]: true });
+        const classification = classify(previous, next);
+        expect(classification.newlyEnabledRequestFlags).toContain(field);
+        expect(acknowledgementFor(previous, next)).toBe('Perfect.');
+      }
+    });
+
+    it('characterises destination, origin, and date clears as generic Perfect.', () => {
+      const previous = filled();
+
+      const destinationCleared = filled({ destination: null });
+      expect(fieldValueChanged(classify(previous, destinationCleared), 'destination')).toBe(
+        true,
+      );
+      expect(destinationCleared.destination).toBeNull();
+      expect(acknowledgementFor(previous, destinationCleared)).toBe('Perfect.');
+
+      const originCleared = filled({ origin: null });
+      expect(acknowledgementFor(previous, originCleared)).toBe('Perfect.');
+
+      const departureCleared = filled({ departureDate: null });
+      expect(acknowledgementFor(previous, departureCleared)).toBe('Perfect.');
+
+      const returnCleared = filled({ returnDate: null });
+      expect(acknowledgementFor(previous, returnCleared)).toBe('Perfect.');
+    });
+
+    it('characterises passenger-count clears as generic Perfect.', () => {
+      const previous = filled();
+
+      expect(
+        acknowledgementFor(previous, filled({ adultCount: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(previous, filled({ childCount: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(previous, filled({ infantCount: null })),
+      ).toBe('Perfect.');
+    });
+
+    it('characterises multiple removals in one turn as a single generic Perfect.', () => {
+      const previous = filled();
+      const next = filled({
+        destination: null,
+        origin: null,
+        departureDate: null,
+        returnDate: null,
+        adultCount: null,
+        childCount: null,
+        infantCount: null,
+        flightsRequested: false,
+      });
+      const classification = classify(previous, next);
+
+      expect(classification.hasAnyChange).toBe(true);
+      expect(acknowledgementFor(previous, next)).toBe('Perfect.');
+      expect(planFor(previous, next).acknowledgements).toEqual(['Perfect.']);
+    });
+
+    it('characterises replacement-plus-removal priority against generic clears', () => {
+      const previous = filled();
+
+      // destination replacement beats adultCount clear
+      expect(
+        acknowledgementFor(
+          previous,
+          filled({ destination: 'Hobart', adultCount: null }),
+        ),
+      ).toBe('Great — Hobart.');
+
+      // adultCount replacement beats childCount clear
+      expect(
+        acknowledgementFor(
+          previous,
+          filled({ adultCount: 3, childCount: null }),
+        ),
+      ).toBe('Perfect — 3 adults travelling.');
+
+      // labeled capability enable beats destination clear
+      expect(
+        acknowledgementFor(
+          previous,
+          filled({
+            destination: null,
+            beachesRequested: true,
+          }),
+        ),
+      ).toBe("I've added beaches to your trip requirements.");
+
+      // unlabeled capability enable with destination clear still generic
+      expect(
+        acknowledgementFor(
+          previous,
+          filled({
+            destination: null,
+            toursRequested: true,
+          }),
+        ),
+      ).toBe('Perfect.');
+    });
+
+    it('characterises unchanged null values as no acknowledgement', () => {
+      const previous = filled({
+        childCount: null,
+        infantCount: null,
+        toursRequested: null,
+      });
+      const next = filled({
+        childCount: null,
+        infantCount: null,
+        toursRequested: null,
+      });
+      const classification = classify(previous, next);
+
+      expect(classification.hasAnyChange).toBe(false);
+      expect(fieldValueChanged(classification, 'childCount')).toBe(false);
+      expect(acknowledgementFor(previous, next)).toBeNull();
+      expect(planFor(previous, next).acknowledgements).toEqual([]);
+    });
+
+    it('characterises null/reset transitions as ineligible for field-specific branches', () => {
+      const previous = filled();
+      const clearedAdult = filled({ adultCount: null });
+      const classification = classify(previous, clearedAdult);
+
+      // Classification still marks the field as changed…
+      expect(classification.updated).toContain('adultCount');
+      expect(fieldValueChanged(classification, 'adultCount')).toBe(true);
+      // …but the selector requires a non-null final value, so the
+      // adult-count branch is unreachable and generic Perfect. is used.
+      expect(clearedAdult.adultCount).toBeNull();
+      expect(acknowledgementFor(previous, clearedAdult)).toBe('Perfect.');
+      expect(acknowledgementFor(previous, clearedAdult)).not.toMatch(/adult/);
+    });
+
+    it('characterises generic acknowledgement eligibility for residual travel changes', () => {
+      // null → false request-flag transitions are newlyPopulated (false is
+      // non-null), not newlyEnabled, so labeled capabilities fall through
+      // to Perfect. rather than the added-capabilities branch.
+      const previous = createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        accommodationRequested: null,
+        kayakingRequested: null,
+      });
+      const nullToFalse = {
+        ...previous,
+        accommodationRequested: false as boolean | null,
+      };
+      const classification = classify(previous, nullToFalse);
+      expect(classification.newlyEnabledRequestFlags).toEqual([]);
+      expect(classification.newlyPopulated).toContain('accommodationRequested');
+      expect(classification.updated).not.toContain('accommodationRequested');
+      expect(acknowledgementFor(previous, nullToFalse)).toBe('Perfect.');
+
+      expect(
+        acknowledgementFor(
+          { ...previous, kayakingRequested: true },
+          { ...previous, kayakingRequested: false },
+        ),
+      ).toBe('Perfect.');
     });
   });
 });
