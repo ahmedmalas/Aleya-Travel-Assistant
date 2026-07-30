@@ -297,7 +297,9 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
       message: result.reply,
       timestamp: '2026-07-29T00:00:11.000Z',
     });
-    expect(result.reply).toBe('Sounds good —   Gold Coast!!!!  .');
+    expect(result.reply).toBe(
+      'Sounds good —   Gold Coast!!!!  .\nWhat else should I know about your trip?',
+    );
     expect(result.trace).toEqual({
       entryPoint: 'processConversationTurn',
       stateStatus: 'active',

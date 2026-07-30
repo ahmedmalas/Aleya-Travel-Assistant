@@ -57,7 +57,7 @@ function turn(
   });
 }
 
-describe('phase 10B — generateConversationReply boundary', () => {
+describe('phase 10B/10C — generateConversationReply boundary', () => {
   it('is internal-only and invoked by processConversationTurn after final state precedence', () => {
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
     const index = readFileSync(
@@ -68,6 +68,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
 
     expect(replySource).toMatch(/export function generateConversationReply/);
     expect(replySource).toContain('Phase 10B');
+    expect(replySource).toContain('Phase 10C');
     expect(processTurn).toMatch(/generateConversationReply\(/);
     expect(processTurn).toMatch(
       /applyConversationStateUpdate\([\s\S]*generateConversationReply\(/,
@@ -88,23 +89,27 @@ describe('phase 10B — generateConversationReply boundary', () => {
     ).toEqual(['processConversationTurn']);
   });
 
-  it('acknowledges a newly recognised destination without asking the next question', () => {
+  it('acknowledges a newly recognised destination and asks for origin', () => {
     const result = turn('go to Cairns', createState());
     expect(result.state.destination).toBe('Cairns');
-    expect(result.reply).toBe('Sounds good — Cairns.');
+    expect(result.reply).toBe(
+      'Sounds good — Cairns.\nWhere will you be travelling from?',
+    );
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);
   });
 
-  it('acknowledges a newly recognised origin without asking the next question', () => {
+  it('acknowledges a newly recognised origin and asks for departure date', () => {
     const result = turn('from Sydney', createState({ destination: 'Cairns' }));
     expect(result.state.origin).toBe('Sydney');
-    expect(result.reply).toBe('Got it — travelling from Sydney.');
+    expect(result.reply).toBe(
+      'Got it — travelling from Sydney.\nWhen would you like to depart?',
+    );
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);
   });
 
-  it('acknowledges a single newly requested capability', () => {
+  it('acknowledges a single newly requested capability with progression', () => {
     const result = turn(
       'add accommodation',
       createState({
@@ -114,7 +119,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
     );
     expect(result.state.accommodationRequested).toBe(true);
     expect(result.reply).toBe(
-      "I've added accommodation to your trip requirements.",
+      "I've added accommodation to your trip requirements.\nWhere will you be travelling from?",
     );
     expect(result.trace.messageInterpreted).toBe(true);
   });
@@ -128,7 +133,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
     expect(result.state.kayakingRequested).toBe(true);
     expect(result.state.nationalParksRequested).toBe(true);
     expect(result.reply).toBe(
-      "I've added beaches, kayaking and national parks to your trip requirements.",
+      "I've added beaches, kayaking and national parks to your trip requirements.\nWhere would you like to travel?",
     );
     expect(result.trace.messageInterpreted).toBe(true);
   });
@@ -139,7 +144,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
       createState(),
     );
     expect(result.reply).toBe(
-      "I've added flights and accommodation to your trip requirements.",
+      "I've added flights and accommodation to your trip requirements.\nWhere would you like to travel?",
     );
   });
 
@@ -151,7 +156,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
     });
     const result = turn('add accommodation', previous);
     expect(result.reply).toBe(
-      "I've added accommodation to your trip requirements.",
+      "I've added accommodation to your trip requirements.\nWhere will you be travelling from?",
     );
     expect(result.reply).not.toMatch(/Cairns|flights/i);
   });
@@ -161,14 +166,16 @@ describe('phase 10B — generateConversationReply boundary', () => {
       destination: 'Hobart',
     });
     expect(overriddenDestination.state.destination).toBe('Hobart');
-    expect(overriddenDestination.reply).toBe('Sounds good — Hobart.');
+    expect(overriddenDestination.reply).toBe(
+      'Sounds good — Hobart.\nWhere will you be travelling from?',
+    );
 
     const forcedCapability = turn('Hello', createState(), {
       wildlifeRequested: true,
     });
     expect(forcedCapability.state.wildlifeRequested).toBe(true);
     expect(forcedCapability.reply).toBe(
-      "I've added wildlife to your trip requirements.",
+      "I've added wildlife to your trip requirements.\nWhere would you like to travel?",
     );
     expect(forcedCapability.trace.messageInterpreted).toBe(true);
 
@@ -176,7 +183,9 @@ describe('phase 10B — generateConversationReply boundary', () => {
       flightsRequested: false,
     });
     expect(forcedFalse.state.flightsRequested).toBe(false);
-    expect(forcedFalse.reply).toBe('Got it.');
+    expect(forcedFalse.reply).toBe(
+      'Got it.\nWhere would you like to travel?',
+    );
     expect(forcedFalse.reply).not.toMatch(/flights/);
     expect(forcedFalse.trace.messageInterpreted).toBe(true);
   });
@@ -198,7 +207,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
     expect(result.state.destination).toBe('Cairns');
     expect(result.state.origin).toBe('Sydney');
     expect(result.reply).toBe(
-      "I've added flights to your trip requirements.",
+      "I've added flights to your trip requirements.\nWhen would you like to depart?",
     );
   });
 
@@ -221,7 +230,7 @@ describe('phase 10B — generateConversationReply boundary', () => {
         previousState,
       }),
     ).toBe(
-      "I've added kayaking and national parks to your trip requirements.",
+      "I've added kayaking and national parks to your trip requirements.\nWhere will you be travelling from?",
     );
   });
 

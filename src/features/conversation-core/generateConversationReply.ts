@@ -4,8 +4,9 @@ import type {
 } from './types';
 
 /**
- * Neutral fallback when the current turn produces no supported travel-field
- * change. Must not claim the message was understood.
+ * Neutral continuation when no supported travel-field change occurred, or when
+ * destination, origin, departureDate and returnDate are already present after
+ * an acknowledgement.
  */
 export const NEUTRAL_TRIP_FALLBACK_REPLY =
   'What else should I know about your trip?';
@@ -80,6 +81,19 @@ const TRAVEL_COMPARE_KEYS = [
   'accessibleTravelRequested',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
+/**
+ * Fixed progression priority for the next missing core travel requirement.
+ * Phase 10C — deterministic; derived only from final canonical state.
+ */
+const PROGRESSION_QUESTIONS = [
+  ['destination', 'Where would you like to travel?'],
+  ['origin', 'Where will you be travelling from?'],
+  ['departureDate', 'When would you like to depart?'],
+  ['returnDate', 'When would you like to return?'],
+] as const satisfies ReadonlyArray<
+  readonly [keyof ConversationCoreState, string]
+>;
+
 export type GenerateConversationReplyInput = {
   message: string;
   /** Final post-precedence travel state for this turn. */
@@ -92,9 +106,13 @@ export type GenerateConversationReplyInput = {
  * Internal conversation-core reply boundary.
  *
  * Phase 10B: deterministic state-aware acknowledgements from current-turn
- * travel-field changes only. Invoked solely by processConversationTurn after
- * extraction and explicit stateUpdate precedence. Does not re-extract, ask
- * next questions, call search/itinerary, or use an AI provider.
+ * travel-field changes only. Phase 10C: after any acknowledgement, append
+ * exactly one follow-up for the first missing core requirement
+ * (destination → origin → departureDate → returnDate), or the neutral
+ * continuation when all four are present. Invoked solely by
+ * processConversationTurn after extraction and explicit stateUpdate
+ * precedence. Does not re-extract, inspect message text, call
+ * search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,
@@ -107,22 +125,28 @@ export function generateConversationReply(
   }).map(([, label]) => label);
 
   if (newlyRequestedLabels.length > 0) {
-    return `I've added ${formatLabelList(newlyRequestedLabels)} to your trip requirements.`;
+    return withProgression(
+      `I've added ${formatLabelList(newlyRequestedLabels)} to your trip requirements.`,
+      state,
+    );
   }
 
   if (
     state.destination !== null &&
     state.destination !== previousState.destination
   ) {
-    return `Sounds good — ${state.destination}.`;
+    return withProgression(`Sounds good — ${state.destination}.`, state);
   }
 
   if (state.origin !== null && state.origin !== previousState.origin) {
-    return `Got it — travelling from ${state.origin}.`;
+    return withProgression(
+      `Got it — travelling from ${state.origin}.`,
+      state,
+    );
   }
 
   if (hasSupportedTravelFieldChange(previousState, state)) {
-    return 'Got it.';
+    return withProgression('Got it.', state);
   }
 
   return NEUTRAL_TRIP_FALLBACK_REPLY;
@@ -139,6 +163,22 @@ export function hasSupportedTravelFieldChange(
     }
   }
   return false;
+}
+
+function withProgression(
+  acknowledgement: string,
+  state: ConversationCoreState,
+): string {
+  return `${acknowledgement}\n${nextMissingRequirementQuestion(state)}`;
+}
+
+function nextMissingRequirementQuestion(state: ConversationCoreState): string {
+  for (const [field, question] of PROGRESSION_QUESTIONS) {
+    if (state[field] === null) {
+      return question;
+    }
+  }
+  return NEUTRAL_TRIP_FALLBACK_REPLY;
 }
 
 function formatLabelList(labels: readonly string[]): string {
