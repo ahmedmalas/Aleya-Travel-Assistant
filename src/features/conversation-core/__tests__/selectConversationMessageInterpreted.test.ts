@@ -116,11 +116,17 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
     expect(planSource).not.toMatch(
       /const messageInterpreted = classification\.hasAnyChange/,
     );
+    expect(planSource).not.toMatch(
+      /const messageInterpreted = classification\.hasAcknowledgementEligibleChange/,
+    );
     expect(selectorSource).toMatch(
       /return classification\.hasInterpretedChange/,
     );
     expect(selectorSource).not.toMatch(
       /return classification\.hasAnyChange/,
+    );
+    expect(selectorSource).not.toMatch(
+      /return classification\.hasAcknowledgementEligibleChange/,
     );
     expect(index).not.toMatch(/selectConversationMessageInterpreted/);
     expect(processTurn).not.toMatch(/selectConversationMessageInterpreted/);
@@ -189,7 +195,7 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
       completeCore({ flightsRequested: null }),
     );
     expect(classification.hasInterpretedChange).toBe(true);
-    expect(classification.hasAnyChange).toBe(false);
+    expect(classification.hasAcknowledgementEligibleChange).toBe(false);
   });
 
   it('keeps reply-plan output, rendered replies, and messageInterpreted identical', () => {

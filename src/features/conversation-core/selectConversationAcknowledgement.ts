@@ -155,7 +155,7 @@ export function selectConversationAcknowledgement(
     );
   }
 
-  if (classification.hasAnyChange) {
+  if (classification.hasAcknowledgementEligibleChange) {
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements
       .genericTravelFieldChange;
   }

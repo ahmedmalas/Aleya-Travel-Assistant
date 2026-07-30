@@ -84,12 +84,15 @@ const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
  * Phase 11E — newlyDisabledRequestFlags also includes null → false (explicit
  * disable from unset), while true → null and false → null remain excluded.
  * Phase 11F — true → null and false → null still classify as updated, but do
- * not contribute to hasAnyChange, so the generic Perfect. acknowledgement is
- * suppressed when those clears are the only travel-field changes.
+ * not contribute to acknowledgement-eligible change, so the generic Perfect.
+ * acknowledgement is suppressed when those clears are the only travel-field
+ * changes.
  * Phase 11G — hasInterpretedChange is true for any travel-field difference
- * (including interpretation-only request-flag clears to null). hasAnyChange
- * remains acknowledgement-eligible only, so Perfect. stays suppressed when
- * the sole change is interpretation-only.
+ * (including interpretation-only request-flag clears to null).
+ * Acknowledgement-eligible change remains narrower, so Perfect. stays
+ * suppressed when the sole change is interpretation-only.
+ * Phase 11H — renames the acknowledgement-eligible flag to
+ * hasAcknowledgementEligibleChange.
  */
 export type ConversationStateChangeClassification = {
   /** Fields that moved from null to a non-null value (excluding newly-enabled true flags and null → false disables). */
@@ -107,7 +110,7 @@ export type ConversationStateChangeClassification = {
    * previous and final state. Request-flag clears to null (true → null,
    * false → null) are recorded in updated but do not set this flag alone.
    */
-  hasAnyChange: boolean;
+  hasAcknowledgementEligibleChange: boolean;
   /**
    * True when any canonical travel field differs between previous and final
    * state, including acknowledgement-inert request-flag clears to null.
@@ -164,7 +167,7 @@ export function classifyConversationStateChange(
     updated.push(key);
   }
 
-  const hasAnyChange =
+  const hasAcknowledgementEligibleChange =
     newlyPopulated.length > 0 ||
     newlyEnabledRequestFlags.length > 0 ||
     newlyDisabledRequestFlags.length > 0 ||
@@ -184,7 +187,7 @@ export function classifyConversationStateChange(
     unchanged,
     newlyEnabledRequestFlags,
     newlyDisabledRequestFlags,
-    hasAnyChange,
+    hasAcknowledgementEligibleChange,
     hasInterpretedChange,
   };
 }

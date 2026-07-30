@@ -984,7 +984,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         entry.message,
       ).toBe(result.reply);
 
-      if (!classification.hasAnyChange) {
+      if (!classification.hasAcknowledgementEligibleChange) {
         expect(acknowledgement).toBeNull();
       }
       if (!classification.hasInterpretedChange) {
@@ -1379,7 +1379,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       });
       const classification = classify(previous, next);
 
-      expect(classification.hasAnyChange).toBe(true);
+      expect(classification.hasAcknowledgementEligibleChange).toBe(true);
       expect(classification.newlyDisabledRequestFlags).toEqual([]);
       expect(acknowledgementFor(previous, next)).toBe('Perfect.');
       expect(planFor(previous, next).acknowledgements).toEqual(['Perfect.']);
@@ -1440,7 +1440,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       });
       const classification = classify(previous, next);
 
-      expect(classification.hasAnyChange).toBe(false);
+      expect(classification.hasAcknowledgementEligibleChange).toBe(false);
       expect(fieldValueChanged(classification, 'childCount')).toBe(false);
       expect(acknowledgementFor(previous, next)).toBeNull();
       expect(planFor(previous, next).acknowledgements).toEqual([]);
@@ -2150,7 +2150,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const classification = classifyConversationStateChange(previous, next);
 
       expect(classification.hasInterpretedChange).toBe(true);
-      expect(classification.hasAnyChange).toBe(false);
+      expect(classification.hasAcknowledgementEligibleChange).toBe(false);
       expect(acknowledgementFor(previous, next)).toBeNull();
       expect(planFor(previous, next).acknowledgements).toEqual([]);
       expect(planFor(previous, next).messageInterpreted).toBe(true);

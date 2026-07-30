@@ -1178,6 +1178,29 @@ describe('conversation-core architectural boundary', () => {
     expect(types.includes('new Date()')).toBe(false);
   });
 
+  it('Phase 11H — classification uses hasAcknowledgementEligibleChange, not hasAnyChange', () => {
+    const classify = readSrc(
+      'src/features/conversation-core/classifyConversationStateChange.ts',
+    );
+    const ackSelector = readSrc(
+      'src/features/conversation-core/selectConversationAcknowledgement.ts',
+    );
+    const interpretation = readSrc(
+      'src/features/conversation-core/selectConversationMessageInterpreted.ts',
+    );
+
+    expect(classify).toContain('Phase 11H');
+    expect(classify).toMatch(/hasAcknowledgementEligibleChange/);
+    expect(classify).toMatch(/hasInterpretedChange/);
+    expect(classify).not.toMatch(/\bhasAnyChange\b/);
+    expect(ackSelector).toMatch(
+      /classification\.hasAcknowledgementEligibleChange/,
+    );
+    expect(ackSelector).not.toMatch(/\bhasAnyChange\b/);
+    expect(interpretation).toMatch(/classification\.hasInterpretedChange/);
+    expect(interpretation).not.toMatch(/\bhasAnyChange\b/);
+  });
+
   it('keeps the Phase 10K reply catalogue internal and wording-only', () => {
     const catalogue = readSrc(
       'src/features/conversation-core/conversationReplyCatalogue.ts',

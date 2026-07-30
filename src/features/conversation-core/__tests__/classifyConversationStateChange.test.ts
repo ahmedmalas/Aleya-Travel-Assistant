@@ -84,8 +84,11 @@ describe('phase 10F — deterministic change classification', () => {
     expect(classifySource).toContain('Phase 11E');
     expect(classifySource).toContain('Phase 11F');
     expect(classifySource).toContain('Phase 11G');
+    expect(classifySource).toContain('Phase 11H');
     expect(classifySource).toMatch(/newlyDisabledRequestFlags/);
     expect(classifySource).toMatch(/hasInterpretedChange/);
+    expect(classifySource).toMatch(/hasAcknowledgementEligibleChange/);
+    expect(classifySource).not.toMatch(/\bhasAnyChange\b/);
     expect(classifySource).toMatch(/export function classifyConversationStateChange/);
     expect(replySource).toContain('Phase 10F');
     expect(replySource).toMatch(/classifyConversationStateChange\(/);
@@ -103,7 +106,7 @@ describe('phase 10F — deterministic change classification', () => {
     );
     expect(classification.newlyPopulated).not.toContain('origin');
     expect(fieldValueChanged(classification, 'destination')).toBe(true);
-    expect(classification.hasAnyChange).toBe(true);
+    expect(classification.hasAcknowledgementEligibleChange).toBe(true);
   });
 
   it('classifies updated fields', () => {
@@ -164,7 +167,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(trueToFalse.newlyDisabledRequestFlags).toEqual(['flightsRequested']);
     expect(trueToFalse.updated).not.toContain('flightsRequested');
     expect(trueToFalse.newlyEnabledRequestFlags).toEqual([]);
-    expect(trueToFalse.hasAnyChange).toBe(true);
+    expect(trueToFalse.hasAcknowledgementEligibleChange).toBe(true);
 
     const trueToNull = classifyConversationStateChange(
       createState({ flightsRequested: true }),
@@ -172,7 +175,7 @@ describe('phase 10F — deterministic change classification', () => {
     );
     expect(trueToNull.newlyDisabledRequestFlags).toEqual([]);
     expect(trueToNull.updated).toContain('flightsRequested');
-    expect(trueToNull.hasAnyChange).toBe(false);
+    expect(trueToNull.hasAcknowledgementEligibleChange).toBe(false);
     expect(trueToNull.hasInterpretedChange).toBe(true);
 
     const nullToFalse = classifyConversationStateChange(
@@ -189,7 +192,7 @@ describe('phase 10F — deterministic change classification', () => {
     );
     expect(falseToNull.newlyDisabledRequestFlags).toEqual([]);
     expect(falseToNull.updated).toContain('flightsRequested');
-    expect(falseToNull.hasAnyChange).toBe(false);
+    expect(falseToNull.hasAcknowledgementEligibleChange).toBe(false);
     expect(falseToNull.hasInterpretedChange).toBe(true);
 
     const falseUnchanged = classifyConversationStateChange(
@@ -246,5 +249,63 @@ describe('phase 10F — deterministic change classification', () => {
     ).toBe(
       `I've added beaches to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
+  });
+});
+
+describe('phase 11H — acknowledgement-eligible change rename', () => {
+  it('exposes hasAcknowledgementEligibleChange and omits hasAnyChange', () => {
+    const classification = classifyConversationStateChange(
+      createState(),
+      createState({ destination: 'Brisbane' }),
+    );
+    expect(classification).toHaveProperty('hasAcknowledgementEligibleChange');
+    expect(classification).toHaveProperty('hasInterpretedChange');
+    expect(classification).not.toHaveProperty('hasAnyChange');
+  });
+
+  it('keeps interpreted and acknowledgement-eligible flags aligned for visible changes', () => {
+    const destination = classifyConversationStateChange(
+      createState(),
+      createState({ destination: 'Brisbane' }),
+    );
+    expect(destination.hasInterpretedChange).toBe(true);
+    expect(destination.hasAcknowledgementEligibleChange).toBe(true);
+
+    const enabled = classifyConversationStateChange(
+      createState({ flightsRequested: null }),
+      createState({ flightsRequested: true }),
+    );
+    expect(enabled.hasInterpretedChange).toBe(true);
+    expect(enabled.hasAcknowledgementEligibleChange).toBe(true);
+
+    const removed = classifyConversationStateChange(
+      createState({ flightsRequested: true }),
+      createState({ flightsRequested: false }),
+    );
+    expect(removed.hasInterpretedChange).toBe(true);
+    expect(removed.hasAcknowledgementEligibleChange).toBe(true);
+
+    const cleared = classifyConversationStateChange(
+      createState({ destination: 'Cairns' }),
+      createState({ destination: null }),
+    );
+    expect(cleared.hasInterpretedChange).toBe(true);
+    expect(cleared.hasAcknowledgementEligibleChange).toBe(true);
+  });
+
+  it('keeps request-flag clears to null interpreted but not acknowledgement-eligible alone', () => {
+    const trueToNull = classifyConversationStateChange(
+      createState({ flightsRequested: true }),
+      createState({ flightsRequested: null }),
+    );
+    expect(trueToNull.hasInterpretedChange).toBe(true);
+    expect(trueToNull.hasAcknowledgementEligibleChange).toBe(false);
+
+    const falseToNull = classifyConversationStateChange(
+      createState({ flightsRequested: false }),
+      createState({ flightsRequested: null }),
+    );
+    expect(falseToNull.hasInterpretedChange).toBe(true);
+    expect(falseToNull.hasAcknowledgementEligibleChange).toBe(false);
   });
 });
