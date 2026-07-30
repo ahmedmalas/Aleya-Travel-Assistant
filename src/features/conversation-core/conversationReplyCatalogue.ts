@@ -32,6 +32,8 @@
  * "Destination removed."
  * Phase 11K — origin-removal acknowledgement:
  * "Departure location removed."
+ * Phase 11L — departure-date removal acknowledgement:
+ * "Departure date removed."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -45,6 +47,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     originRemoved: 'Departure location removed.',
     departureDate: (departureDate: string) =>
       `Perfect — departing on ${departureDate}.`,
+    departureDateRemoved: 'Departure date removed.',
     returnDate: (returnDate: string) =>
       `Perfect — returning on ${returnDate}.`,
     adultCount: (adultCount: number) =>

@@ -69,11 +69,15 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 11C');
     expect(catalogueSource).toContain('Phase 11J');
     expect(catalogueSource).toContain('Phase 11K');
+    expect(catalogueSource).toContain('Phase 11L');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).toContain("destinationRemoved: 'Destination removed.'");
     expect(catalogueSource).toContain(
       "originRemoved: 'Departure location removed.'",
+    );
+    expect(catalogueSource).toContain(
+      "departureDateRemoved: 'Departure date removed.'",
     );
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
     expect(catalogueSource).toContain('Perfect — departing from ${origin}.');
@@ -171,6 +175,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDate('2026-08-28'),
     ).toBe('Perfect — departing on 2026-08-28.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDateRemoved,
+    ).toBe('Departure date removed.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDate('2026-09-05'),
     ).toBe('Perfect — returning on 2026-09-05.');
