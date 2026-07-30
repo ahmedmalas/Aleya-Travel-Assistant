@@ -64,6 +64,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10U');
     expect(catalogueSource).toContain('Phase 10V');
     expect(catalogueSource).toContain('Phase 10W');
+    expect(catalogueSource).toContain('Phase 10X');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
@@ -80,6 +81,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     );
     expect(catalogueSource).toContain(
       'Perfect — ${adultCount} adults travelling.',
+    );
+    expect(catalogueSource).toContain(
+      'Perfect — ${childCount} child travelling.',
     );
     expect(catalogueSource).toContain(
       'Perfect — ${childCount} children travelling.',
@@ -142,7 +146,13 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     ).toBe('Perfect — 3 adults travelling.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(1),
-    ).toBe('Perfect — 1 children travelling.');
+    ).toBe('Perfect — 1 child travelling.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(2),
+    ).toBe('Perfect — 2 children travelling.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(3),
+    ).toBe('Perfect — 3 children travelling.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(1),
     ).toBe('Perfect — 1 infants travelling.');
@@ -198,6 +208,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).not.toMatch(/PROGRESSION_QUESTIONS/);
     expect(catalogueSource).not.toMatch(/CONTEXTUAL_QUESTIONS/);
     expect(catalogueSource).not.toMatch(/adultCount\s*===\s*null/);
+    expect(catalogueSource).not.toMatch(/childCount\s*===\s*null/);
     expect(catalogueSource).not.toMatch(/newlyEnabledRequestFlags/);
   });
 

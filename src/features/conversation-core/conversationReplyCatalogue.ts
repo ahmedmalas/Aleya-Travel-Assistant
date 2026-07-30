@@ -20,6 +20,8 @@
  * "Perfect — 1 adult travelling."
  * Phase 10U — child-count acknowledgement:
  * "Perfect — {childCount} children travelling."
+ * Phase 10X — child-count singular grammar when childCount === 1:
+ * "Perfect — 1 child travelling."
  * Phase 10V — infant-count acknowledgement:
  * "Perfect — {infantCount} infants travelling."
  */
@@ -38,7 +40,9 @@ export const CONVERSATION_REPLY_CATALOGUE = {
         ? `Perfect — ${adultCount} adult travelling.`
         : `Perfect — ${adultCount} adults travelling.`,
     childCount: (childCount: number) =>
-      `Perfect — ${childCount} children travelling.`,
+      childCount === 1
+        ? `Perfect — ${childCount} child travelling.`
+        : `Perfect — ${childCount} children travelling.`,
     infantCount: (infantCount: number) =>
       `Perfect — ${infantCount} infants travelling.`,
     genericTravelFieldChange: 'Perfect.',
