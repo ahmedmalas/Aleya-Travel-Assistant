@@ -112,6 +112,16 @@ const CAPABILITY_LABELS = [
  * adult count set or changed → adult count removed →
  * child count → infant count →
  * other travel-field change → null when unchanged.
+ * Phase 11O — child-count removal (stored → null) uses the
+ * child-count priority slot after child count set/changed:
+ * newly enabled capabilities → newly disabled capabilities →
+ * destination set or changed → destination removed →
+ * origin set or changed → origin removed →
+ * departure date set or changed → departure date removed →
+ * return date set or changed → return date removed →
+ * adult count set or changed → adult count removed →
+ * child count set or changed → child count removed →
+ * infant count → other travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -226,6 +236,15 @@ export function selectConversationAcknowledgement(
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(
       state.childCount,
     );
+  }
+
+  // Stored childCount → null: final value is null and childCount is in
+  // updated (not newlyPopulated). No new classification field required.
+  if (
+    state.childCount === null &&
+    classification.updated.includes('childCount')
+  ) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCountRemoved;
   }
 
   if (
