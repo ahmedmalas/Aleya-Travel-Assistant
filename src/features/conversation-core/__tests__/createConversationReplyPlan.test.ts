@@ -93,9 +93,11 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     expect(planSource).toContain('Phase 10G');
     expect(planSource).toContain('Phase 10H');
     expect(planSource).toContain('Phase 10I');
+    expect(planSource).toContain('Phase 10J');
     expect(planSource).toMatch(/export function createConversationReplyPlan/);
     expect(planSource).toMatch(/selectConversationFollowUpQuestion\(/);
     expect(planSource).toMatch(/selectConversationAcknowledgement\(/);
+    expect(planSource).toMatch(/selectConversationMessageInterpreted\(/);
     expect(replySource).toContain('Phase 10G');
     expect(replySource).toMatch(/createConversationReplyPlan\(/);
     expect(replySource).toMatch(/renderConversationReplyPlan\(/);
@@ -103,6 +105,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     expect(index).not.toMatch(/renderConversationReplyPlan/);
     expect(index).not.toMatch(/selectConversationFollowUpQuestion/);
     expect(index).not.toMatch(/selectConversationAcknowledgement/);
+    expect(index).not.toMatch(/selectConversationMessageInterpreted/);
     expect(processTurn).not.toMatch(/createConversationReplyPlan/);
   });
 

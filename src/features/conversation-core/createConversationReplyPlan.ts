@@ -4,6 +4,7 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   selectConversationFollowUpQuestion,
 } from './selectConversationFollowUpQuestion';
+import { selectConversationMessageInterpreted } from './selectConversationMessageInterpreted';
 import type { ConversationCoreState } from './types';
 
 export { NEUTRAL_TRIP_FALLBACK_REPLY };
@@ -15,7 +16,8 @@ export { NEUTRAL_TRIP_FALLBACK_REPLY };
  * one acknowledgement string and at most one follow-up question. Phase 10H:
  * follow-up selection is delegated to selectConversationFollowUpQuestion.
  * Phase 10I: acknowledgement selection is delegated to
- * selectConversationAcknowledgement.
+ * selectConversationAcknowledgement. Phase 10J: messageInterpreted is
+ * delegated to selectConversationMessageInterpreted.
  */
 export type ConversationReplyPlan = {
   acknowledgements: readonly string[];
@@ -32,13 +34,15 @@ export type CreateConversationReplyPlanInput = {
  * Build a structured reply plan from final canonical state and the turn's
  * change classification. Acknowledgement selection is owned by
  * selectConversationAcknowledgement; follow-up selection is owned by
- * selectConversationFollowUpQuestion.
+ * selectConversationFollowUpQuestion; messageInterpreted is owned by
+ * selectConversationMessageInterpreted.
  */
 export function createConversationReplyPlan(
   input: CreateConversationReplyPlanInput,
 ): ConversationReplyPlan {
   const { state, classification } = input;
-  const messageInterpreted = classification.hasAnyChange;
+  const messageInterpreted =
+    selectConversationMessageInterpreted(classification);
   const acknowledgement = selectConversationAcknowledgement(
     state,
     classification,

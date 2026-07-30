@@ -24,8 +24,9 @@ export type GenerateConversationReplyInput = {
  * internal change classification of previous vs final state. Phase 10G:
  * classification feeds createConversationReplyPlan. Phase 10H: follow-up
  * selection uses selectConversationFollowUpQuestion. Phase 10I:
- * acknowledgement selection uses selectConversationAcknowledgement. This
- * function only renders the planned reply text. Invoked solely by
+ * acknowledgement selection uses selectConversationAcknowledgement.
+ * Phase 10J: messageInterpreted uses selectConversationMessageInterpreted.
+ * This function only renders the planned reply text. Invoked solely by
  * processConversationTurn after extraction and explicit stateUpdate
  * precedence. Does not re-extract, inspect message text, call
  * search/itinerary, or use an AI provider.
