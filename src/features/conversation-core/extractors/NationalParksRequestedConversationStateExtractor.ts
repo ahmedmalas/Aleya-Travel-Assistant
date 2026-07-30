@@ -9,8 +9,11 @@ import type {
  *
  * Phase 7AA: recognises only narrow, explicit national-parks requests in the
  * current message. Phase 8Q extends clear national-park discovery request cues
- * only. Deterministic and local — emits only true, never false or null, and
- * ignores prior conversation state. Does not store park names.
+ * only. Phase 9D extends state parks, nature reserves, protected parks, park
+ * locations/options, places to visit/explore, and named parks only with a clear
+ * discovery request. Deterministic and local — emits only true, never false or
+ * null, and ignores prior conversation state. Does not store park names. Does
+ * not use a blanket question-mark block.
  */
 export class NationalParksRequestedConversationStateExtractor
   implements ConversationStateExtractor
@@ -36,24 +39,45 @@ function edgeTrim(value: string): string {
   return value.replace(/^\s+|\s+$/g, '');
 }
 
-const NATIONAL_PARK_SERVICE_PHRASE = String.raw`(?:national\s+parks?)`;
+const NATIONAL_PARK_SERVICE_PHRASE = String.raw`(?:national\s+parks?|state\s+parks?|nature\s+reserves?|protected\s+parks?|park\s+(?:locations?|options?))`;
+
+function hasDiscoveryVerb(message: string): boolean {
+  return /\b(?:book|find|search|need|want|include|add|show|recommend|suggest|compare|visit|explore|discover|see|go|try)\b/i.test(
+    message,
+  );
+}
 
 function hasActionNationalParksServiceCue(message: string): boolean {
   return (
     new RegExp(
-      String.raw`\b(?:book|find|search|need|want|include|add|show\s+me|recommend|compare|visit)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+)?(?:best\s+|family(?:[\s-]?friendly)?\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
+      String.raw`\b(?:book|find|search|need|want|include|add|show(?:\s+me)?|recommend(?:\s+me)?|suggest(?:\s+me)?|compare|visit|explore|discover|see|try|go)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+|to\s+(?:go\s+)?(?:visit\s+|explore\s+|see\s+)?)?(?:best\s+|family(?:[\s-]?friendly)?\s+|nearby\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
       'i',
     ).test(message) ||
     new RegExp(
-      String.raw`\bi\s+(?:need|want)\s+(?:a\s+|the\s+|some\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
+      String.raw`\bi\s+(?:need|want)(?:\s+to\s+(?:visit|explore|see|discover))?\s+(?:a\s+|the\s+|some\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
       'i',
     ).test(message) ||
-    /\bnational\s+park\s+(?:recommendations|options)\b/i.test(message) ||
-    /\bbest\s+national\s+parks?\b/i.test(message) ||
-    /\bnearby\s+national\s+parks?\b/i.test(message) ||
-    /\bnational\s+parks?\s+near\s+me\b/i.test(message) ||
-    /\bparks\s+to\s+visit\b/i.test(message) ||
-    /\bwhich\s+national\s+parks?\s+should\s+i\s+visit\b/i.test(message)
+    /\bcan\s+you\s+recommend\s+(?:\w+[\s-]*){0,3}?(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\b/i.test(
+      message,
+    ) ||
+    /\b(?:national\s+park|state\s+park|park)\s+(?:recommendations?|options?|locations?)\b/i.test(
+      message,
+    ) ||
+    /\bbest\s+(?:national\s+parks?|state\s+parks?)\b/i.test(message) ||
+    /\bnearby\s+(?:national\s+parks?|state\s+parks?|nature\s+reserves?|protected\s+parks?)\b/i.test(
+      message,
+    ) ||
+    /\b(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\s+near\s+me\b/i.test(
+      message,
+    ) ||
+    /\bparks?\s+to\s+visit\b/i.test(message) ||
+    /\bplaces?\s+to\s+visit\s+in\s+national\s+parks?\b/i.test(message) ||
+    /\bplaces?\s+to\s+explore\s+nature\b/i.test(message) ||
+    /\bwhere\s+can\s+(?:i|we)\s+(?:visit|explore|see|find)\s+(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\b/i.test(
+      message,
+    ) ||
+    /\bwhich\s+national\s+parks?\s+should\s+i\s+visit\b/i.test(message) ||
+    (hasNamedNationalPark(message) && hasDiscoveryVerb(message))
   );
 }
 
@@ -63,6 +87,11 @@ function hasClearNationalParksServiceCue(message: string): boolean {
     new RegExp(String.raw`\b${NATIONAL_PARK_SERVICE_PHRASE}\b`, 'i').test(
       message,
     ) ||
+    /\bnature\s+reserves?\b/i.test(message) ||
+    /\bprotected\s+parks?\b/i.test(message) ||
+    /\bpark\s+(?:locations?|options?)\b/i.test(message) ||
+    /\bplaces?\s+to\s+visit\s+in\s+national\s+parks?\b/i.test(message) ||
+    /\bplaces?\s+to\s+explore\s+nature\b/i.test(message) ||
     new RegExp(String.raw`^${NATIONAL_PARK_SERVICE_PHRASE}$`, 'i').test(
       edgeTrim(message),
     )
@@ -81,13 +110,25 @@ function hasNamedNationalPark(message: string): boolean {
 }
 
 function isBlockedNationalParksRequestMessage(message: string): boolean {
-  if (/\?/.test(message)) {
+  if (
+    /\?/.test(message) &&
+    !hasActionNationalParksServiceCue(message) &&
+    !/\bwhere\s+can\b/i.test(message) &&
+    !/\bcan\s+you\s+recommend\b/i.test(message) &&
+    !/\bwhich\s+national\s+parks?\s+should\b/i.test(message) &&
+    !/\bplaces?\s+to\s+(?:visit|explore)\b/i.test(message)
+  ) {
     return true;
   }
   if (/\bwhat\s+(?:is|are)\b/i.test(message)) {
     return true;
   }
-  if (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) {
+  if (
+    (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) &&
+    /\b(?:national\s+parks?|state\s+parks?|nature\s+reserves?|parks?)\b/i.test(
+      message,
+    )
+  ) {
     return true;
   }
   if (
@@ -115,23 +156,37 @@ function isBlockedNationalParksRequestMessage(message: string): boolean {
   ) {
     return true;
   }
-  if (hasNamedNationalPark(message)) {
+  if (hasNamedNationalPark(message) && !hasDiscoveryVerb(message)) {
     return true;
   }
   if (
-    /\bnational\s+park\s+(?:pass|permit|fees|rules|regulations|map|address|weather|conditions|warning|closure|fire\s+ban|accommodation)\b/i.test(
+    /\b(?:entry\s+)?(?:ticket|tickets|pass|passes)\b/i.test(message) ||
+    /\b(?:camping\s+booking|camping\s+bookings|book\s+camping)\b/i.test(
       message,
     ) ||
-    /\b(?:hotel|stay|staying)\s+near\s+(?:a\s+|the\s+)?national\s+park\b/i.test(
+    /\b(?:national\s+park|state\s+park|park)\s+(?:pass|permit|permits|fees|rules|regulations|map|maps|address|addresses|weather|conditions?|warning|closure|fire\s+ban|fire\s+warning|track\s+conditions?|accommodation|hotel|hotels|stay|stays|employment|volunteering|volunteer)\b/i.test(
       message,
-    )
+    ) ||
+    /\b(?:hotel|stay|staying|accommodation)\s+near\s+(?:a\s+|the\s+)?(?:national\s+park|state\s+park)\b/i.test(
+      message,
+    ) ||
+    /\b(?:licen[cs]e|licen[cs]es|permit|permits)\b/i.test(message) ||
+    (/\b(?:weather|conditions?|fire\s+ban|fire\s+warning|track\s+conditions?)\b/i.test(
+      message,
+    ) &&
+      hasClearNationalParksServiceCue(message)) ||
+    /\b(?:map|maps|address|addresses|directions?|navigation)\b/i.test(message)
   ) {
     return true;
   }
   if (
-    /\bwe\s+visited\s+(?:a\s+|the\s+)?national\s+park\b/i.test(message) ||
+    /\bwe\s+visited\s+(?:a\s+|the\s+)?(?:national\s+park|state\s+park)\b/i.test(
+      message,
+    ) ||
     /\b(?:the\s+)?national\s+park\s+was\s+crowded\b/i.test(message) ||
-    /\bi\s+like\s+national\s+parks?\b/i.test(message)
+    /\bi\s+like\s+(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\b/i.test(
+      message,
+    )
   ) {
     return true;
   }
@@ -144,7 +199,7 @@ function isBlockedNationalParksRequestMessage(message: string): boolean {
     return true;
   }
   if (
-    /\b(?:playgrounds?|gardens?|reserves?|state\s+parks?|conservation\s+areas?|protected\s+areas?|wilderness(?:\s+areas?)?)\b/i.test(
+    /\b(?:playgrounds?|gardens?|conservation\s+areas?|protected\s+areas?|wilderness(?:\s+areas?)?)\b/i.test(
       message,
     ) &&
     !hasClearNationalParksServiceCue(message)
@@ -153,6 +208,15 @@ function isBlockedNationalParksRequestMessage(message: string): boolean {
   }
   if (
     /\bparks?\b/i.test(message) &&
+    !hasClearNationalParksServiceCue(message) &&
+    !/\bparks?\s+to\s+visit\b/i.test(message) &&
+    !/\bpark\s+(?:locations?|options?)\b/i.test(message)
+  ) {
+    return true;
+  }
+  if (
+    /\breserves?\b/i.test(message) &&
+    !/\bnature\s+reserves?\b/i.test(message) &&
     !hasClearNationalParksServiceCue(message)
   ) {
     return true;
@@ -162,19 +226,28 @@ function isBlockedNationalParksRequestMessage(message: string): boolean {
 
 const EXPLICIT_NATIONAL_PARKS_REQUEST_CUES: readonly RegExp[] = [
   new RegExp(
-    String.raw`\b(?:book|find|search|need|want|include|add|show\s+me|recommend|compare|visit)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+)?(?:best\s+|family(?:[\s-]?friendly)?\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
+    String.raw`\b(?:book|find|search|need|want|include|add|show(?:\s+me)?|recommend(?:\s+me)?|suggest(?:\s+me)?|compare|visit|explore|discover|see|try|go)\s+(?:me\s+)?(?:a\s+|the\s+|some\s+|to\s+(?:go\s+)?(?:visit\s+|explore\s+|see\s+)?)?(?:best\s+|family(?:[\s-]?friendly)?\s+|nearby\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
     'i',
   ),
   new RegExp(
-    String.raw`\bi\s+(?:need|want)\s+(?:a\s+|the\s+|some\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
+    String.raw`\bi\s+(?:need|want)(?:\s+to\s+(?:visit|explore|see|discover))?\s+(?:a\s+|the\s+|some\s+)?${NATIONAL_PARK_SERVICE_PHRASE}\b`,
     'i',
   ),
-  /\bnational\s+park\s+(?:recommendations|options)\b/i,
-  /\bbest\s+national\s+parks?\b/i,
-  /\bnearby\s+national\s+parks?\b/i,
-  /\bnational\s+parks?\s+near\s+me\b/i,
-  /\bparks\s+to\s+visit\b/i,
+  /\bcan\s+you\s+recommend\s+(?:\w+[\s-]*){0,3}?(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\b/i,
+  /\b(?:national\s+park|state\s+park|park)\s+(?:recommendations?|options?|locations?)\b/i,
+  /\bbest\s+(?:national\s+parks?|state\s+parks?)\b/i,
+  /\bnearby\s+(?:national\s+parks?|state\s+parks?|nature\s+reserves?|protected\s+parks?)\b/i,
+  /\b(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\s+near\s+me\b/i,
+  /\bparks?\s+to\s+visit\b/i,
+  /\bplaces?\s+to\s+visit\s+in\s+national\s+parks?\b/i,
+  /\bplaces?\s+to\s+explore\s+nature\b/i,
+  /\bwhere\s+can\s+(?:i|we)\s+(?:visit|explore|see|find)\s+(?:national\s+parks?|state\s+parks?|nature\s+reserves?)\b/i,
   /\bwhich\s+national\s+parks?\s+should\s+i\s+visit\b/i,
+  /\broyal\s+national\s+park\b/i,
+  /\bblue\s+mountains\s+national\s+park\b/i,
+  /\bkakadu\s+national\s+park\b/i,
+  /\bkosciuszko\s+national\s+park\b/i,
+  /\bdaintree\s+national\s+park\b/i,
   new RegExp(String.raw`\b${NATIONAL_PARK_SERVICE_PHRASE}\b`, 'i'),
 ];
 

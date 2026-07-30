@@ -231,7 +231,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 8Q — NationalParksRequestedConversationStateExtractor activation', () => {
+describe('phase 9D — NationalParksRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit nationalParksRequested true contract', () => {
     expectTypeOf<NationalParksRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<NationalParksRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -277,6 +277,19 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       'include national parks on this trip',
       'recommend family-friendly national parks',
       'find national parks near the Gold Coast',
+      'state parks',
+      'nature reserves',
+      'protected parks',
+      'park locations',
+      'park options',
+      'places to visit in national parks',
+      'places to explore nature',
+      'explore nature reserves',
+      'discover state parks',
+      'see national parks',
+      'where can I visit national parks?',
+      'show me Kakadu National Park',
+      'visit Royal National Park',
     ];
 
     for (const message of cases) {
@@ -293,9 +306,16 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
       expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
       expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('wildlifeRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'eventsFestivalsRequested',
+      );
       expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
       expect(result.stateUpdate, message).not.toHaveProperty('origin');
       expect(result.stateUpdate, message).not.toHaveProperty('destination');
+      expect(JSON.stringify(result.stateUpdate), message).not.toMatch(
+        /Kakadu|Royal|Brisbane|Cairns/i,
+      );
     }
   });
 
@@ -321,11 +341,14 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
     ).toEqual({ stateUpdate: { nationalParksRequested: true } });
   });
 
-  it('returns empty for permits, weather, accommodation proximity, named parks, historical, negation, and ambiguous wording', () => {
+  it('returns empty for tickets, camping bookings, named-alone, weather, maps, historical, and negation wording', () => {
     const extractor = new NationalParksRequestedConversationStateExtractor();
     const unsupported = [
       'national park pass',
       'national park permit',
+      'park entry tickets',
+      'camping bookings',
+      'book camping',
       'national park fees',
       'national park rules',
       'national park regulations',
@@ -337,6 +360,7 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       'national park closure',
       'national park fire ban',
       'national park accommodation',
+      'park employment',
       'hotel near a national park',
       'we visited a national park',
       'the national park was crowded',
@@ -354,7 +378,6 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       'playground',
       'gardens',
       'reserves',
-      'state parks',
       'conservation areas',
       'protected areas',
       'coastal national parks',
@@ -466,6 +489,7 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
 
     expect(source).toContain('Phase 7AA');
     expect(source).toContain('Phase 8Q');
+    expect(source).toContain('Phase 9D');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -580,37 +604,54 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
     );
 
     expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7V');
-    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7W');
-    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7X');
+    expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8Y');
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7W',
+    );
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Z',
+    );
+    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7X',
+    );
+    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 9A',
+    );
     expect(
       new WineriesFoodTrailsRequestedConversationStateExtractor().extract({
-        message: 'add wineries',
+        message: 'winery options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
-    expect(readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7Y');
+    expect(readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7Y',
+    );
+    expect(readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 9B',
+    );
     expect(
       new EventsFestivalsRequestedConversationStateExtractor().extract({
-        message: 'add events',
+        message: 'festival options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(readFileSync(WILDLIFE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7Z');
+    expect(readFileSync(WILDLIFE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 9C');
     expect(
       new WildlifeRequestedConversationStateExtractor().extract({
-        message: 'add wildlife',
+        message: 'wildlife options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { wildlifeRequested: true } });
     expect(
       new DivingSnorkellingRequestedConversationStateExtractor().extract({
-        message: 'add diving',
+        message: 'diving options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
       new FishingRequestedConversationStateExtractor().extract({
-        message: 'add fishing',
+        message: 'fishing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
@@ -1097,7 +1138,7 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
-    const wildlifeOnlyMessage = 'add wildlife';
+    const wildlifeOnlyMessage = 'wildlife options';
     expect(
       extractors[25]?.extract({
         message: wildlifeOnlyMessage,
@@ -1111,7 +1152,7 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: {} });
 
-    const eventsOnlyMessage = 'add events';
+    const eventsOnlyMessage = 'festival options';
     expect(
       extractors[24]?.extract({
         message: eventsOnlyMessage,
@@ -1140,5 +1181,31 @@ describe('phase 8Q — NationalParksRequestedConversationStateExtractor activati
         `extractor ${index} on events message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    const parksOnlyMessage = 'park options';
+    expect(
+      extractors[26]?.extract({
+        message: parksOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractors[25]?.extract({
+        message: parksOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[24]?.extract({
+        message: parksOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[21]?.extract({
+        message: parksOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
   });
 });

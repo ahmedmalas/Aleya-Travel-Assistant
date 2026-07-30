@@ -1073,6 +1073,7 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(nationalParksRequestedExtractor).toContain('Phase 7AA');
     expect(nationalParksRequestedExtractor).toContain('Phase 8Q');
+    expect(nationalParksRequestedExtractor).toContain('Phase 9D');
     expect(nationalParksRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

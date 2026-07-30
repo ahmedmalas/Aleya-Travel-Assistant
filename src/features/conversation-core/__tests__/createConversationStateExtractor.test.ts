@@ -1339,6 +1339,21 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'nearby national parks', currentState }),
     ).toEqual({ stateUpdate: { nationalParksRequested: true } });
     expect(
+      extractor.extract({ message: 'state parks', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'nature reserves', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'park options', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'places to explore nature', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractor.extract({ message: 'show me Kakadu National Park', currentState }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
       extractor.extract({ message: 'Kakadu National Park', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
@@ -1346,9 +1361,6 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'national park weather', currentState }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractor.extract({ message: 'state parks', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'parks', currentState }),

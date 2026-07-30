@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3AA/7AA — explicit nationalParksRequested with extraction activation', () => {
+describe('phase 3AA/7AA/8Q/9D — explicit nationalParksRequested with extraction activation', () => {
   it('initial nationalParksRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -117,7 +117,7 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
     });
     expect(first.state.nationalParksRequested).toBe(false);
 
-    const second = turn('state parks conservation areas', first.state, 1);
+    const second = turn('conservation areas playground', first.state, 1);
     expect(second.state.nationalParksRequested).toBe(false);
   });
 
@@ -131,12 +131,13 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
       'playground',
       'gardens',
       'reserves',
-      'state parks',
       'conservation areas',
       'Sydney',
       'Kakadu National Park',
       'national park weather',
       'national park permit',
+      'park entry tickets',
+      'camping bookings',
       'national parks?',
       'I like national parks',
     ];
@@ -156,6 +157,31 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
     });
     const result = turn('show me national parks', initial, 0);
     expect(result.state.nationalParksRequested).toBe(true);
+  });
+
+  it('phase 9D clear park discovery cues set nationalParksRequested true without unrelated fields', () => {
+    const phrases = [
+      'state parks',
+      'nature reserves',
+      'protected parks',
+      'park options',
+      'places to visit in national parks',
+      'places to explore nature',
+      'show me Kakadu National Park',
+    ];
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-9d-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.nationalParksRequested, message).toBe(true);
+      expect(result.state.campingRequested, message).toBeNull();
+      expect(result.state.wildlifeRequested, message).toBeNull();
+    });
   });
 
   it('phase 8Q clear national-park discovery cues set nationalParksRequested true without unrelated fields', () => {
@@ -232,7 +258,7 @@ describe('phase 3AA/7AA — explicit nationalParksRequested with extraction acti
     });
     expect(withTrue.state.nationalParksRequested).toBe(true);
 
-    const afterWords = turn('state parks gardens playgrounds', withTrue.state, 1);
+    const afterWords = turn('conservation areas playground', withTrue.state, 1);
     expect(afterWords.state.nationalParksRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
