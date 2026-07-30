@@ -83,6 +83,9 @@ const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
  * exactly true → false.
  * Phase 11E — newlyDisabledRequestFlags also includes null → false (explicit
  * disable from unset), while true → null and false → null remain excluded.
+ * Phase 11F — true → null and false → null still classify as updated, but do
+ * not contribute to hasAnyChange, so the generic Perfect. acknowledgement is
+ * suppressed when those clears are the only travel-field changes.
  */
 export type ConversationStateChangeClassification = {
   /** Fields that moved from null to a non-null value (excluding newly-enabled true flags and null → false disables). */
@@ -95,7 +98,11 @@ export type ConversationStateChangeClassification = {
   newlyEnabledRequestFlags: readonly TravelCompareKey[];
   /** Boolean request flags that transitioned true → false or null → false this turn. */
   newlyDisabledRequestFlags: readonly TravelCompareKey[];
-  /** True when any travel field differs between previous and final state. */
+  /**
+   * True when any acknowledgement-eligible travel field differs between
+   * previous and final state. Request-flag clears to null (true → null,
+   * false → null) are recorded in updated but do not set this flag alone.
+   */
   hasAnyChange: boolean;
 };
 
@@ -155,9 +162,11 @@ export function classifyConversationStateChange(
     newlyDisabledRequestFlags,
     hasAnyChange:
       newlyPopulated.length > 0 ||
-      updated.length > 0 ||
       newlyEnabledRequestFlags.length > 0 ||
-      newlyDisabledRequestFlags.length > 0,
+      newlyDisabledRequestFlags.length > 0 ||
+      // Request-flag entries in updated are only true→null / false→null clears
+      // (Phase 11F) — acknowledgement-inert on their own.
+      updated.some((key) => !REQUEST_FLAG_KEYS.has(key)),
   };
 }
 

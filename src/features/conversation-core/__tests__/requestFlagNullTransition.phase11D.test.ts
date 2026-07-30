@@ -138,8 +138,8 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
       flightsRequested: null,
     });
     expect(cleared.state.flightsRequested).toBeNull();
-    expect(cleared.reply).toContain('Perfect.');
     expect(cleared.reply).not.toMatch(/I've removed flights/);
+    expect(cleared.reply).not.toMatch(/Perfect\./);
   });
 
   it('explicit null→false via stateUpdate is newlyDisabled and removal-acknowledged', () => {
@@ -162,7 +162,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(result.reply).not.toMatch(/I've added flights/);
   });
 
-  it('explicit true→null via stateUpdate is updated (not newlyDisabled) and Perfect.', () => {
+  it('explicit true→null via stateUpdate is updated (not newlyDisabled) with no acknowledgement', () => {
     const previous = createState({ flightsRequested: true });
     const result = turn('hello', previous, 0, { flightsRequested: null });
 
@@ -173,8 +173,9 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     );
     expect(classification.updated).toContain('flightsRequested');
     expect(classification.newlyDisabledRequestFlags).toEqual([]);
-    expect(result.reply).toContain('Perfect.');
+    expect(classification.hasAnyChange).toBe(false);
     expect(result.reply).not.toMatch(/I've removed flights/);
+    expect(result.reply).not.toMatch(/Perfect\./);
   });
 
   it('message extraction can enable a request flag (null→true) but not disable or clear', () => {

@@ -268,7 +268,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     expect(plan.messageInterpreted).toBe(true);
   });
 
-  it('plans Perfect for other changed travel fields', () => {
+  it('plans no acknowledgement for capability true→null clears', () => {
     const previous = createState({
       destination: 'Cairns',
       origin: 'Sydney',
@@ -290,9 +290,9 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       flightsRequested: null,
     });
     const plan = planFor(previous, state);
-    expect(plan.acknowledgements).toEqual(['Perfect.']);
+    expect(plan.acknowledgements).toEqual([]);
     expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(plan.messageInterpreted).toBe(true);
+    expect(plan.messageInterpreted).toBe(false);
   });
 
   it('plans a capability removal acknowledgement', () => {
