@@ -218,7 +218,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
         }),
       ),
-    ).toBe('Got it.');
+    ).toBe('Perfect.');
   });
 
   it('returns null for an unchanged state', () => {

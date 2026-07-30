@@ -1194,13 +1194,15 @@ describe('conversation-core architectural boundary', () => {
     expect(catalogue).toContain('Phase 10K');
     expect(catalogue).toContain('Phase 10O');
     expect(catalogue).toContain('Phase 10P');
+    expect(catalogue).toContain('Phase 10Q');
     expect(catalogue).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogue).toContain("I've added ${labelList} to your trip requirements.");
     expect(catalogue).toContain('Great — ${destination}.');
     expect(catalogue).not.toContain('Sounds good — ${destination}.');
     expect(catalogue).toContain('Perfect — departing from ${origin}.');
     expect(catalogue).not.toContain('Got it — travelling from ${origin}.');
-    expect(catalogue).toContain("'Got it.'");
+    expect(catalogue).toContain("'Perfect.'");
+    expect(catalogue).not.toContain("'Got it.'");
     expect(catalogue).toContain('Where would you like to travel?');
     expect(catalogue).toContain('What else should I know about your trip?');
     expect(catalogue.includes('ConversationCoreState')).toBe(false);

@@ -171,7 +171,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       departureDate: '2026-08-28',
     });
     const plan = planFor(previous, state);
-    expect(plan.acknowledgements).toEqual(['Got it.']);
+    expect(plan.acknowledgements).toEqual(['Perfect.']);
     expect(plan.followUpQuestion).toBe('When would you like to return?');
     expect(plan.messageInterpreted).toBe(true);
   });

@@ -75,7 +75,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.departureDate).toBe('2026-08-28');
     expect(result.reply).toBe(
-      'Got it.\nWhen would you like to return?',
+      'Perfect.\nWhen would you like to return?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });

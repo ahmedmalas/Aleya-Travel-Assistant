@@ -120,7 +120,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
 
   it('prefers follow-up over continuation prompt', () => {
     const plan = assembleConversationReplyPlan({
-      acknowledgement: 'Got it.',
+      acknowledgement: 'Perfect.',
       followUpQuestion: 'When would you like to depart?',
       continuationPrompt: NEUTRAL_TRIP_FALLBACK_REPLY,
       messageInterpreted: true,
