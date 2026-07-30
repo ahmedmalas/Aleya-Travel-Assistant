@@ -16,6 +16,8 @@
  * "Perfect — returning on {returnDate}."
  * Phase 10T — adult-count acknowledgement:
  * "Perfect — {adultCount} adults travelling."
+ * Phase 10W — adult-count singular grammar when adultCount === 1:
+ * "Perfect — 1 adult travelling."
  * Phase 10U — child-count acknowledgement:
  * "Perfect — {childCount} children travelling."
  * Phase 10V — infant-count acknowledgement:
@@ -32,7 +34,9 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     returnDate: (returnDate: string) =>
       `Perfect — returning on ${returnDate}.`,
     adultCount: (adultCount: number) =>
-      `Perfect — ${adultCount} adults travelling.`,
+      adultCount === 1
+        ? `Perfect — ${adultCount} adult travelling.`
+        : `Perfect — ${adultCount} adults travelling.`,
     childCount: (childCount: number) =>
       `Perfect — ${childCount} children travelling.`,
     infantCount: (infantCount: number) =>
