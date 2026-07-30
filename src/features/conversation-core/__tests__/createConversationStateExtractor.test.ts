@@ -1034,16 +1034,19 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'add four-wheel driving', currentState }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
-      extractor.extract({ message: 'add four-wheel driving', currentState }),
+      extractor.extract({ message: '4wd options', currentState }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractor.extract({ message: 'show me 4WD tracks', currentState }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       extractor.extract({ message: 'no 4WD', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'show me 4WD tracks', currentState }),
+      extractor.extract({ message: 'hire a 4WD', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'hire a 4WD', currentState }),
+      extractor.extract({ message: '4wd equipment', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

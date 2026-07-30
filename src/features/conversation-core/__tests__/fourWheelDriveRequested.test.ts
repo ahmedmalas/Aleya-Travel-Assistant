@@ -107,21 +107,26 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     });
     expect(first.state.fourWheelDriveRequested).toBe(false);
 
-    const second = turn('4x4 SUV off-road', first.state, 1);
+    const second = turn('SUV off-road hire a 4WD', first.state, 1);
     expect(second.state.fourWheelDriveRequested).toBe(false);
   });
 
-  it('user message text cannot set fourWheelDriveRequested', () => {
+  it('unsupported four-wheel-driving-adjacent wording cannot set fourWheelDriveRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      '4x4',
       'SUV',
       'four-wheel drive',
       'off-road',
       'off-roading',
+      '4wd hire',
+      '4wd equipment',
+      '4wd track conditions',
+      'Finke Desert Race',
+      '4wd?',
+      'I like 4wding',
     ];
 
     let state = initial;
@@ -132,7 +137,83 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('explicit four-wheel-driving cue in the message sets fourWheelDriveRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me 4wd tracks', initial, 0);
+    expect(result.state.fourWheelDriveRequested).toBe(true);
+  });
+
+  it('phase 8T clear four-wheel-driving-discovery cues set fourWheelDriveRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('4wd', initial, 0);
+    expect(bare.state.fourWheelDriveRequested).toBe(true);
+    expect(bare.state.carHireRequested).toBeNull();
+    expect(bare.state.campingRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+
+    const fourByFour = turn('4x4', initial, 1);
+    expect(fourByFour.state.fourWheelDriveRequested).toBe(true);
+
+    const offRoad = turn('off road driving', initial, 2);
+    expect(offRoad.state.fourWheelDriveRequested).toBe(true);
+
+    const options = turn('4wd options', initial, 3);
+    expect(options.state.fourWheelDriveRequested).toBe(true);
+
+    const places = turn('places to go four wheel driving', initial, 4);
+    expect(places.state.fourWheelDriveRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me 4wd tracks near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      5,
+    );
+    expect(inRequest.state.fourWheelDriveRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 6, {
+      fourWheelDriveRequested: false,
+    });
+    const negated = turn('no 4wding', seeded.state, 7);
+    expect(negated.state.fourWheelDriveRequested).toBe(false);
+    const hire = turn('hire a 4WD', seeded.state, 8);
+    expect(hire.state.fourWheelDriveRequested).toBe(false);
+    const gear = turn('4wd recovery gear', seeded.state, 9);
+    expect(gear.state.fourWheelDriveRequested).toBe(false);
+    const conditions = turn('4wd track conditions', seeded.state, 10);
+    expect(conditions.state.fourWheelDriveRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.fourWheelDriveRequested overrides an extracted four-wheel-driving request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me 4wd tracks', initial, 0, {
+      fourWheelDriveRequested: false,
+    });
+    expect(overriddenFalse.state.fourWheelDriveRequested).toBe(false);
+
+    const overriddenTrue = turn('no 4WD', initial, 1, {
+      fourWheelDriveRequested: true,
+    });
+    expect(overriddenTrue.state.fourWheelDriveRequested).toBe(true);
+
+    const nullOverride = turn('show me 4wd tracks', initial, 2, {
+      fourWheelDriveRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.fourWheelDriveRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing fourWheelDriveRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -142,11 +223,7 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     });
     expect(withTrue.state.fourWheelDriveRequested).toBe(true);
 
-    const afterWords = turn(
-      '4WD four-wheel drive off-road',
-      withTrue.state,
-      1,
-    );
+    const afterWords = turn('SUV off-road hire a 4WD', withTrue.state, 1);
     expect(afterWords.state.fourWheelDriveRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
@@ -155,7 +232,7 @@ describe('phase 3Q — explicit fourWheelDriveRequested only', () => {
     expect(withFalse.state.fourWheelDriveRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'off-roading 4x4 SUV',
+      '4wd equipment off road weather',
       withFalse.state,
       3,
     );

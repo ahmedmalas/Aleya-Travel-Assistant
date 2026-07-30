@@ -31,6 +31,8 @@ import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDis
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const FOUR_WHEEL_DRIVING_REQUESTED_SOURCE = resolve(
@@ -40,6 +42,14 @@ const FOUR_WHEEL_DRIVING_REQUESTED_SOURCE = resolve(
 const KAYAKING_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/KayakingRequestedConversationStateExtractor.ts',
+);
+const HIKING_WALKING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/HikingWalkingRequestedConversationStateExtractor.ts',
+);
+const NATIONAL_PARKS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
 );
 const CAMPING_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -107,7 +117,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7q',
+      conversationId: 'conversation-8t',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -171,7 +181,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activation', () => {
+describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit fourWheelDriveRequested true contract', () => {
     expectTypeOf<FourWheelDrivingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<FourWheelDrivingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -197,54 +207,149 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       '4-wheel driving',
       '4wd',
       '4WD',
-      'show four wheel driving',
-      'show me four-wheel driving',
-      'find four-wheel driving',
-      'I need four wheel driving',
-      'include 4-wheel driving',
-      'add 4wd',
-      'need 4 wheel driving',
-      'book four wheel driving',
+      '4x4',
+      'off road driving',
+      'off-road driving',
+      'four wheel drive tracks',
+      '4wd tracks',
+      '4x4 tracks',
+      'off road tracks',
+      'find 4wd tracks',
+      'find four wheel drive tracks',
+      'search 4wd tracks',
+      'show me 4wd tracks',
+      'recommend 4wd tracks',
+      '4wd recommendations',
+      '4wd options',
+      'best 4wd tracks',
+      'nearby 4wd tracks',
+      '4wd tracks near me',
+      'places to go four wheel driving',
+      'where can I go 4wding',
+      'include four wheel driving',
+      'add 4wding',
+      'I want 4wding',
+      'go four wheel driving',
+      'show me 4wd tracks near Brisbane',
+      'find the best four wheel drive tracks near Cairns',
+      'I want 4wding and camping',
+      'include four wheel driving on this trip',
+      'recommend beginner-friendly 4wd tracks',
+      'find places to go off road near the national park',
+      'four wheel driving in national parks',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ fourWheelDriveRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+        currentState: createState({ fourWheelDriveRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { fourWheelDriveRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nationalParksRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('kayakingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('carHireRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'scenicDrivesRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for 4x4/SUV/off-road alone, vehicle hire, tracks/trails, typed variants, negation, remove/forget, and keep wording', () => {
+  it('emits only fourWheelDriveRequested from nearby-4wd, 4wding-and-camping, and national-parks wording', () => {
+    const extractor = new FourWheelDrivingRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'nearby 4wd tracks',
+        currentState: createState({ fourWheelDriveRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractor.extract({
+        message: '4wd tracks near me',
+        currentState: createState({ fourWheelDriveRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'I want 4wding and camping',
+        currentState: createState({ fourWheelDriveRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'four wheel driving in national parks',
+        currentState: createState({ fourWheelDriveRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+  });
+
+  it('returns empty for hire, equipment, conditions, named tracks, historical, negation, and ambiguous wording', () => {
     const extractor = new FourWheelDrivingRequestedConversationStateExtractor();
     const unsupported = [
-      '4x4',
-      'SUV',
-      'off-road',
-      'off road adventure',
+      '4wd hire',
+      'four wheel drive hire',
+      '4wd rental',
+      '4x4 rental',
+      'buy a 4wd',
+      '4wd for sale',
+      '4wd dealership',
+      '4wd vehicle',
+      '4wd tyres',
+      '4wd accessories',
+      '4wd equipment',
+      '4wd recovery gear',
+      '4wd winch',
+      '4wd suspension',
+      '4wd service',
+      '4wd repairs',
+      '4wd permit',
+      '4wd rules',
+      '4wd regulations',
+      '4wd track map',
+      '4wd track conditions',
+      '4wd track closure',
+      '4wd warning',
+      'off road weather',
       'hire a 4WD',
       'rent a four-wheel drive',
       'vehicle hire',
-      'show me 4WD tracks',
-      'four wheel drive trail',
-      '4WD route near Alice Springs',
-      '4WD tour',
+      'SUV',
+      'off-road',
+      'off road adventure',
+      'four-wheel drive',
       'Finke Desert Race',
       'Larapinta Trail',
-      'easy four-wheel driving',
-      'guided four wheel driving',
-      'family 4WD',
-      'family-friendly 4WD',
-      'beginner-friendly four-wheel driving',
-      'scenic 4wd',
-      'do not include four-wheel driving',
-      'no 4WD',
-      "don't add 4wd",
-      'without four wheel driving',
-      'remove four-wheel driving',
+      'we went four wheel driving',
+      'we drove the track',
+      'I own a 4wd',
+      'I like 4wding',
+      '4wd?',
+      'what is four wheel driving',
+      'no four wheel driving',
+      'no 4wding',
+      'do not include 4wding',
+      "don't include four wheel driving",
+      'without 4wd tracks',
+      'remove four wheel driving',
+      'cancel the 4wd plans',
+      "I don't want 4wding",
+      'avoid off road driving',
+      'skip four wheel driving',
       'forget 4wd',
       'keep four-wheel driving',
       'actually show me 4wd',
@@ -338,6 +443,8 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7Q');
+    expect(source).toContain('Phase 8T');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -394,35 +501,100 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
     expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8P');
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7AA',
+    );
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Q',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7U',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8R',
+    );
     expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
+    expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8S');
 
     expect(
       new KayakingRequestedConversationStateExtractor().extract({
-        message: 'add kayaking',
+        message: 'show me kayaking',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      new KayakingRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new HikingWalkingRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      new HikingWalkingRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
         message: 'add camping',
@@ -430,11 +602,11 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
-      new BeachesRequestedConversationStateExtractor().extract({
-        message: 'show me beaches',
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    ).toEqual({ stateUpdate: {} });
     expect(
       new NearbyDiscoveryRequestedConversationStateExtractor().extract({
         message: 'what is nearby',
@@ -442,11 +614,11 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
-      new RestaurantsRequestedConversationStateExtractor().extract({
-        message: 'find restaurants',
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    ).toEqual({ stateUpdate: {} });
     expect(
       new ActivitiesRequestedConversationStateExtractor().extract({
         message: 'book activities',
@@ -454,11 +626,35 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { carHireRequested: true } });
+    expect(
+      new CarHireRequestedConversationStateExtractor().extract({
+        message: 'show me 4wd tracks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me beaches',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
       new AccommodationRequestedConversationStateExtractor().extract({
         message: 'book a hotel',
@@ -531,18 +727,18 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add four-wheel driving',
+      message: 'show me 4wd tracks',
       state: currentState,
-      userEntryId: 'user-7q-a',
-      assistantEntryId: 'assistant-7q-a',
+      userEntryId: 'user-8t-a',
+      assistantEntryId: 'assistant-8t-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no 4WD',
       state: currentState,
-      userEntryId: 'user-7q-b',
-      assistantEntryId: 'assistant-7q-b',
+      userEntryId: 'user-8t-b',
+      assistantEntryId: 'assistant-8t-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { fourWheelDriveRequested: true },
@@ -550,8 +746,8 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
     const overriddenFalse = processConversationTurn({
       message: 'add four-wheel driving',
       state: currentState,
-      userEntryId: 'user-7q-c',
-      assistantEntryId: 'assistant-7q-c',
+      userEntryId: 'user-8t-c',
+      assistantEntryId: 'assistant-8t-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { fourWheelDriveRequested: false },
@@ -559,8 +755,8 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
     const nullOverride = processConversationTurn({
       message: 'add four-wheel driving',
       state: currentState,
-      userEntryId: 'user-7q-d',
-      assistantEntryId: 'assistant-7q-d',
+      userEntryId: 'user-8t-d',
+      assistantEntryId: 'assistant-8t-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { fourWheelDriveRequested: null },
@@ -568,13 +764,14 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
     const preserved = processConversationTurn({
       message: 'hire a 4WD',
       state: currentState,
-      userEntryId: 'user-7q-e',
-      assistantEntryId: 'assistant-7q-e',
+      userEntryId: 'user-8t-e',
+      assistantEntryId: 'assistant-8t-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add four-wheel driving. Fly from Sydney to Cairns',
+      message:
+        'show me 4wd tracks. show me kayaking. show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -589,8 +786,8 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
         kayakingRequested: null,
         fourWheelDriveRequested: null,
       }),
-      userEntryId: 'user-7q-f',
-      assistantEntryId: 'assistant-7q-f',
+      userEntryId: 'user-8t-f',
+      assistantEntryId: 'assistant-8t-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
@@ -610,8 +807,8 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
         kayakingRequested: null,
         fourWheelDriveRequested: null,
       }),
-      userEntryId: 'user-7q-g',
-      assistantEntryId: 'assistant-7q-g',
+      userEntryId: 'user-8t-g',
+      assistantEntryId: 'assistant-8t-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -631,6 +828,7 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
     expect(nullOverride.state.fourWheelDriveRequested).toBeNull();
     expect(preserved.state.fourWheelDriveRequested).toBe(false);
     expect(composed.state.fourWheelDriveRequested).toBe(true);
+    expect(composed.state.kayakingRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.fourWheelDriveRequested).toBe(false);
@@ -750,27 +948,30 @@ describe('phase 7Q — FourWheelDrivingRequestedConversationStateExtractor activ
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
 
-    const kayakingOnlyMessage = 'add kayaking';
-    expect(
-      extractors[15]?.extract({
-        message: kayakingOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    const fourWheelOnlyMessage = '4wd options';
     expect(
       extractors[16]?.extract({
-        message: kayakingOnlyMessage,
+        message: fourWheelOnlyMessage,
         currentState,
       }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
+    expect(
+      createConversationStateExtractor().extract({
+        message: fourWheelOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
 
-    for (let index = 17; index < extractors.length; index += 1) {
+    for (let index = 0; index < extractors.length; index += 1) {
+      if (index === 16) {
+        continue;
+      }
       expect(
         extractors[index]?.extract({
-          message: kayakingOnlyMessage,
+          message: fourWheelOnlyMessage,
           currentState,
         }),
-        `extractor ${index} on kayaking message`,
+        `extractor ${index} on 4wd-only message`,
       ).toEqual({ stateUpdate: {} });
     }
   });

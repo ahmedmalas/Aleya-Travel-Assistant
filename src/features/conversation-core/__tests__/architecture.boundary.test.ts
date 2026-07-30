@@ -830,6 +830,8 @@ describe('conversation-core architectural boundary', () => {
     expect(fourWheelDrivingRequestedExtractor).toMatch(
       /export class FourWheelDrivingRequestedConversationStateExtractor/,
     );
+    expect(fourWheelDrivingRequestedExtractor).toContain('Phase 7Q');
+    expect(fourWheelDrivingRequestedExtractor).toContain('Phase 8T');
     expect(fourWheelDrivingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );
