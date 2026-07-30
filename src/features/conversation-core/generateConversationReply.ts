@@ -1,3 +1,7 @@
+import {
+  classifyConversationStateChange,
+  fieldValueChanged,
+} from './classifyConversationStateChange';
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
@@ -42,43 +46,6 @@ const CAPABILITY_LABELS = [
 ] as const satisfies ReadonlyArray<
   readonly [keyof ConversationStateUpdate, string]
 >;
-
-const TRAVEL_COMPARE_KEYS = [
-  'destination',
-  'origin',
-  'departureDate',
-  'returnDate',
-  'adultCount',
-  'childCount',
-  'infantCount',
-  'flightsRequested',
-  'accommodationRequested',
-  'carHireRequested',
-  'activitiesRequested',
-  'restaurantsRequested',
-  'nearbyDiscoveryRequested',
-  'beachesRequested',
-  'campingRequested',
-  'kayakingRequested',
-  'fourWheelDriveRequested',
-  'scenicDrivesRequested',
-  'attractionsRequested',
-  'snowActivitiesRequested',
-  'hikingWalkingRequested',
-  'fishingRequested',
-  'divingSnorkellingRequested',
-  'wineriesFoodTrailsRequested',
-  'eventsFestivalsRequested',
-  'wildlifeRequested',
-  'nationalParksRequested',
-  'toursRequested',
-  'eventsRequested',
-  'nightlifeRequested',
-  'shoppingRequested',
-  'wellnessRequested',
-  'familyActivitiesRequested',
-  'accessibleTravelRequested',
-] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
 /**
  * Fixed progression priority for the next missing core travel requirement.
@@ -143,19 +110,22 @@ export type GenerateConversationReplyInput = {
  * four are present, append exactly one capability-specific contextual
  * follow-up. Phase 10E: suppress contextual questions whose answers already
  * exist in final state and fall through to the next eligible question, or the
- * neutral continuation. Invoked solely by processConversationTurn after
- * extraction and explicit stateUpdate precedence. Does not re-extract,
- * inspect message text, call search/itinerary, or use an AI provider.
+ * neutral continuation. Phase 10F: acknowledgements are driven by an internal
+ * change classification of previous vs final state. Invoked solely by
+ * processConversationTurn after extraction and explicit stateUpdate
+ * precedence. Does not re-extract, inspect message text, call
+ * search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,
 ): string {
   void input.message;
   const { state, previousState } = input;
+  const classification = classifyConversationStateChange(previousState, state);
 
-  const newlyRequestedLabels = CAPABILITY_LABELS.filter(([field]) => {
-    return previousState[field] !== true && state[field] === true;
-  }).map(([, label]) => label);
+  const newlyRequestedLabels = CAPABILITY_LABELS.filter(([field]) =>
+    classification.newlyEnabledRequestFlags.includes(field),
+  ).map(([, label]) => label);
 
   if (newlyRequestedLabels.length > 0) {
     return withProgression(
@@ -166,19 +136,19 @@ export function generateConversationReply(
 
   if (
     state.destination !== null &&
-    state.destination !== previousState.destination
+    fieldValueChanged(classification, 'destination')
   ) {
     return withProgression(`Sounds good — ${state.destination}.`, state);
   }
 
-  if (state.origin !== null && state.origin !== previousState.origin) {
+  if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
     return withProgression(
       `Got it — travelling from ${state.origin}.`,
       state,
     );
   }
 
-  if (hasSupportedTravelFieldChange(previousState, state)) {
+  if (classification.hasAnyChange) {
     return withProgression('Got it.', state);
   }
 
@@ -190,12 +160,7 @@ export function hasSupportedTravelFieldChange(
   previousState: ConversationCoreState,
   state: ConversationCoreState,
 ): boolean {
-  for (const key of TRAVEL_COMPARE_KEYS) {
-    if (previousState[key] !== state[key]) {
-      return true;
-    }
-  }
-  return false;
+  return classifyConversationStateChange(previousState, state).hasAnyChange;
 }
 
 function withProgression(
