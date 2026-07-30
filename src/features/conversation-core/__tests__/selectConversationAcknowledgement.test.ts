@@ -1458,9 +1458,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     });
 
     it('characterises generic acknowledgement eligibility for residual travel changes', () => {
-      // null → false request-flag transitions are newlyPopulated (false is
-      // non-null), not newlyEnabled, so labeled capabilities fall through
-      // to Perfect. rather than the added-capabilities branch.
+      // Phase 11E — null → false request-flag transitions enter
+      // newlyDisabledRequestFlags and use removal wording, not Perfect.
       const previous = createState({
         destination: 'Cairns',
         origin: 'Sydney',
@@ -1476,9 +1475,15 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       };
       const classification = classify(previous, nullToFalse);
       expect(classification.newlyEnabledRequestFlags).toEqual([]);
-      expect(classification.newlyPopulated).toContain('accommodationRequested');
-      expect(classification.updated).not.toContain('accommodationRequested');
-      expect(acknowledgementFor(previous, nullToFalse)).toBe('Perfect.');
+      expect(classification.newlyDisabledRequestFlags).toEqual([
+        'accommodationRequested',
+      ]);
+      expect(classification.newlyPopulated).not.toContain(
+        'accommodationRequested',
+      );
+      expect(acknowledgementFor(previous, nullToFalse)).toBe(
+        "I've removed accommodation from your trip requirements.",
+      );
 
       expect(
         acknowledgementFor(
@@ -1596,7 +1601,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
     });
 
-    it('keeps capability true→null and null→false on the generic Perfect. path', () => {
+    it('keeps capability true→null on the generic Perfect. path; null→false uses removal', () => {
       expect(
         acknowledgementFor(
           filled({ flightsRequested: true }),
@@ -1608,7 +1613,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           filled({ accommodationRequested: null }),
           filled({ accommodationRequested: false }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've removed accommodation from your trip requirements.");
     });
 
     it('acknowledges capability true→false as removal', () => {
@@ -1652,7 +1657,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         ...overrides,
       });
 
-    it('classifies only true→false into newlyDisabledRequestFlags', () => {
+    it('classifies true→false and null→false into newlyDisabledRequestFlags', () => {
       const trueToFalse = classifyConversationStateChange(
         filled({ flightsRequested: true }),
         filled({ flightsRequested: false }),
@@ -1674,8 +1679,10 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         filled({ flightsRequested: null }),
         filled({ flightsRequested: false }),
       );
-      expect(nullToFalse.newlyDisabledRequestFlags).toEqual([]);
-      expect(nullToFalse.newlyPopulated).toContain('flightsRequested');
+      expect(nullToFalse.newlyDisabledRequestFlags).toEqual([
+        'flightsRequested',
+      ]);
+      expect(nullToFalse.newlyPopulated).not.toContain('flightsRequested');
 
       const falseToFalse = classifyConversationStateChange(
         filled({ flightsRequested: false }),
@@ -1795,7 +1802,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBe("I've removed flights from your trip requirements.");
     });
 
-    it('preserves true→null, null→false, non-capability clears, and addition wording', () => {
+    it('preserves true→null, non-capability clears, and addition wording; null→false uses removal', () => {
       expect(
         acknowledgementFor(
           filled({ flightsRequested: true }),
@@ -1807,7 +1814,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           filled({ accommodationRequested: null }),
           filled({ accommodationRequested: false }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've removed accommodation from your trip requirements.");
       expect(
         acknowledgementFor(filled(), filled({ destination: null })),
       ).toBe('Perfect.');
@@ -1836,6 +1843,174 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         "I've removed flights and tours from your trip requirements.",
       );
       expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+  });
+
+  describe('phase 11E — null→false capability disable handling', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('acknowledges single null→false capabilities with removal wording', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: null }),
+          filled({ flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ toursRequested: null }),
+          filled({ toursRequested: false }),
+        ),
+      ).toBe("I've removed tours from your trip requirements.");
+    });
+
+    it('combines multiple null→false capabilities into one removal acknowledgement', () => {
+      expect(
+        acknowledgementFor(
+          filled({
+            flightsRequested: null,
+            accommodationRequested: null,
+            carHireRequested: null,
+          }),
+          filled({
+            flightsRequested: false,
+            accommodationRequested: false,
+            carHireRequested: false,
+          }),
+        ),
+      ).toBe(
+        "I've removed flights, accommodation and car hire from your trip requirements.",
+      );
+    });
+
+    it('combines mixed true→false and null→false into one removal acknowledgement', () => {
+      expect(
+        acknowledgementFor(
+          filled({
+            flightsRequested: true,
+            toursRequested: null,
+            shoppingRequested: null,
+          }),
+          filled({
+            flightsRequested: false,
+            toursRequested: false,
+            shoppingRequested: false,
+          }),
+        ),
+      ).toBe(
+        "I've removed flights, tours and shopping from your trip requirements.",
+      );
+    });
+
+    it('lets enable beat null→false disable; null→false disable beat lower branches', () => {
+      expect(
+        acknowledgementFor(
+          filled({ accommodationRequested: null }),
+          filled({
+            accommodationRequested: false,
+            toursRequested: true,
+          }),
+        ),
+      ).toBe("I've added tours to your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            destination: 'Brisbane',
+            flightsRequested: null,
+          }),
+          filled({
+            destination: 'Hobart',
+            flightsRequested: false,
+            adultCount: 3,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            departureDate: '2026-08-28',
+            flightsRequested: null,
+          }),
+          filled({
+            departureDate: '2026-09-01',
+            flightsRequested: false,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            adultCount: 2,
+            flightsRequested: null,
+          }),
+          filled({
+            adultCount: 3,
+            flightsRequested: false,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+    });
+
+    it('keeps true→null generic and non-capability clears generic', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: null }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(filled(), filled({ destination: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(filled(), filled({ adultCount: null })),
+      ).toBe('Perfect.');
+    });
+
+    it('returns at most one acknowledgement for null→false disables', () => {
+      const acknowledgement = acknowledgementFor(
+        filled({
+          flightsRequested: null,
+          toursRequested: null,
+        }),
+        filled({
+          flightsRequested: false,
+          toursRequested: false,
+          destination: 'Hobart',
+          adultCount: 4,
+        }),
+      );
+      expect(acknowledgement).toBe(
+        "I've removed flights and tours from your trip requirements.",
+      );
+      expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+
+    it('reaches null→false removal through processConversationTurn', () => {
+      const previous = filled({ flightsRequested: null, adultCount: 2 });
+      const result = turn('hello', previous, {
+        flightsRequested: false,
+      });
+      expect(result.state.flightsRequested).toBe(false);
+      expect(result.reply).toContain(
+        "I've removed flights from your trip requirements.",
+      );
+      expect(result.reply).not.toMatch(/^Perfect\./);
     });
   });
 });

@@ -142,7 +142,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(cleared.reply).not.toMatch(/I've removed flights/);
   });
 
-  it('explicit null→false via stateUpdate is newlyPopulated and generic Perfect.', () => {
+  it('explicit null→false via stateUpdate is newlyDisabled and removal-acknowledged', () => {
     const previous = createState({ flightsRequested: null });
     const result = turn('hello', previous, 0, { flightsRequested: false });
 
@@ -151,11 +151,14 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
       previous,
       result.state,
     );
-    expect(classification.newlyPopulated).toContain('flightsRequested');
-    expect(classification.newlyDisabledRequestFlags).toEqual([]);
+    expect(classification.newlyDisabledRequestFlags).toEqual([
+      'flightsRequested',
+    ]);
+    expect(classification.newlyPopulated).not.toContain('flightsRequested');
     expect(classification.newlyEnabledRequestFlags).toEqual([]);
-    expect(result.reply).toContain('Perfect.');
-    expect(result.reply).not.toMatch(/I've removed flights/);
+    expect(result.reply).toContain(
+      "I've removed flights from your trip requirements.",
+    );
     expect(result.reply).not.toMatch(/I've added flights/);
   });
 
@@ -259,8 +262,8 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
       classifyConversationStateChange(
         { ...base, flightsRequested: null },
         { ...base, flightsRequested: false },
-      ).newlyPopulated,
-    ).toContain('flightsRequested');
+      ).newlyDisabledRequestFlags,
+    ).toEqual(['flightsRequested']);
 
     expect(
       classifyConversationStateChange(

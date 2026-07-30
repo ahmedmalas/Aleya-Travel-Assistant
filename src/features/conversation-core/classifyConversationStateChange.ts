@@ -81,9 +81,11 @@ const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
  * text, re-extract, or alter state.
  * Phase 11C — newlyDisabledRequestFlags for request flags transitioning
  * exactly true → false.
+ * Phase 11E — newlyDisabledRequestFlags also includes null → false (explicit
+ * disable from unset), while true → null and false → null remain excluded.
  */
 export type ConversationStateChangeClassification = {
-  /** Fields that moved from null to a non-null value (excluding newly-enabled true flags). */
+  /** Fields that moved from null to a non-null value (excluding newly-enabled true flags and null → false disables). */
   newlyPopulated: readonly TravelCompareKey[];
   /** Fields that changed between two non-null values, or were cleared / otherwise altered. */
   updated: readonly TravelCompareKey[];
@@ -91,7 +93,7 @@ export type ConversationStateChangeClassification = {
   unchanged: readonly TravelCompareKey[];
   /** Boolean request flags that became true this turn. */
   newlyEnabledRequestFlags: readonly TravelCompareKey[];
-  /** Boolean request flags that transitioned exactly true → false this turn. */
+  /** Boolean request flags that transitioned true → false or null → false this turn. */
   newlyDisabledRequestFlags: readonly TravelCompareKey[];
   /** True when any travel field differs between previous and final state. */
   hasAnyChange: boolean;
@@ -130,7 +132,7 @@ export function classifyConversationStateChange(
 
     if (
       REQUEST_FLAG_KEYS.has(key) &&
-      previousValue === true &&
+      (previousValue === true || previousValue === null) &&
       nextValue === false
     ) {
       newlyDisabledRequestFlags.push(key);

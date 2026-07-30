@@ -200,9 +200,8 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     });
     expect(forcedFalse.state.flightsRequested).toBe(false);
     expect(forcedFalse.reply).toBe(
-      'Perfect.\nWhere would you like to travel?',
+      "I've removed flights from your trip requirements.\nWhere would you like to travel?",
     );
-    expect(forcedFalse.reply).not.toMatch(/flights/);
     expect(forcedFalse.trace.messageInterpreted).toBe(true);
   });
 

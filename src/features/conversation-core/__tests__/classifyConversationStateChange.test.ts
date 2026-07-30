@@ -81,6 +81,7 @@ describe('phase 10F — deterministic change classification', () => {
 
     expect(classifySource).toContain('Phase 10F');
     expect(classifySource).toContain('Phase 11C');
+    expect(classifySource).toContain('Phase 11E');
     expect(classifySource).toMatch(/newlyDisabledRequestFlags/);
     expect(classifySource).toMatch(/export function classifyConversationStateChange/);
     expect(replySource).toContain('Phase 10F');
@@ -152,7 +153,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(fromFalse.newlyDisabledRequestFlags).toEqual([]);
   });
 
-  it('classifies newly disabled boolean request flags for true→false only', () => {
+  it('classifies newly disabled boolean request flags for true→false and null→false', () => {
     const trueToFalse = classifyConversationStateChange(
       createState({ flightsRequested: true }),
       createState({ flightsRequested: false }),
@@ -173,8 +174,9 @@ describe('phase 10F — deterministic change classification', () => {
       createState({ flightsRequested: null }),
       createState({ flightsRequested: false }),
     );
-    expect(nullToFalse.newlyDisabledRequestFlags).toEqual([]);
-    expect(nullToFalse.newlyPopulated).toContain('flightsRequested');
+    expect(nullToFalse.newlyDisabledRequestFlags).toEqual(['flightsRequested']);
+    expect(nullToFalse.newlyPopulated).not.toContain('flightsRequested');
+    expect(nullToFalse.updated).not.toContain('flightsRequested');
 
     const falseUnchanged = classifyConversationStateChange(
       createState({ flightsRequested: false }),
