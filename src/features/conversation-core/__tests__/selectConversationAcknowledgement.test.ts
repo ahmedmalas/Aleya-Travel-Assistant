@@ -1,0 +1,382 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import {
+  createInitialConversationCoreState,
+  processConversationTurn,
+  type ConversationCoreState,
+} from '../index';
+import { classifyConversationStateChange } from '../classifyConversationStateChange';
+import {
+  NEUTRAL_TRIP_FALLBACK_REPLY,
+  createConversationReplyPlan,
+} from '../createConversationReplyPlan';
+import {
+  generateConversationReply,
+  renderConversationReplyPlan,
+} from '../generateConversationReply';
+import { selectConversationAcknowledgement } from '../selectConversationAcknowledgement';
+
+const ROOT = process.cwd();
+const SELECTOR_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/selectConversationAcknowledgement.ts',
+);
+const PLAN_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/createConversationReplyPlan.ts',
+);
+const INDEX_SOURCE = resolve(ROOT, 'src/features/conversation-core/index.ts');
+const PROCESS_TURN_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/processTurn.ts',
+);
+
+function createState(
+  overrides: Partial<ConversationCoreState> = {},
+): ConversationCoreState {
+  return {
+    ...createInitialConversationCoreState({
+      conversationId: 'conversation-10i',
+      now: new Date('2026-07-29T00:00:00.000Z'),
+    }),
+    status: 'active',
+    turnCount: 2,
+    ...overrides,
+  };
+}
+
+function completeCore(
+  overrides: Partial<ConversationCoreState> = {},
+): ConversationCoreState {
+  return createState({
+    destination: 'Cairns',
+    origin: 'Sydney',
+    departureDate: '2026-09-01',
+    returnDate: '2026-09-08',
+    ...overrides,
+  });
+}
+
+function acknowledgementFor(
+  previousState: ConversationCoreState,
+  state: ConversationCoreState,
+) {
+  return selectConversationAcknowledgement(
+    state,
+    classifyConversationStateChange(previousState, state),
+  );
+}
+
+function planFor(
+  previousState: ConversationCoreState,
+  state: ConversationCoreState,
+) {
+  return createConversationReplyPlan({
+    state,
+    classification: classifyConversationStateChange(previousState, state),
+  });
+}
+
+function turn(
+  message: string,
+  state: ConversationCoreState,
+  stateUpdate?: Parameters<typeof processConversationTurn>[0]['stateUpdate'],
+) {
+  return processConversationTurn({
+    message,
+    state,
+    userEntryId: 'user-10i',
+    assistantEntryId: 'assistant-10i',
+    userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
+    assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
+    stateUpdate,
+  });
+}
+
+describe('phase 10I — deterministic acknowledgement selection boundary', () => {
+  it('keeps the acknowledgement selector internal and consumed by the reply plan', () => {
+    const selectorSource = readFileSync(SELECTOR_SOURCE, 'utf8');
+    const planSource = readFileSync(PLAN_SOURCE, 'utf8');
+    const index = readFileSync(INDEX_SOURCE, 'utf8');
+    const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
+
+    expect(selectorSource).toContain('Phase 10I');
+    expect(selectorSource).toMatch(
+      /export function selectConversationAcknowledgement/,
+    );
+    expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
+    expect(planSource).toContain('Phase 10I');
+    expect(planSource).toMatch(/selectConversationAcknowledgement\(/);
+    expect(planSource).not.toMatch(/CAPABILITY_LABELS|formatLabelList/);
+    expect(planSource).not.toMatch(/I've added \$\{/);
+    expect(planSource).not.toMatch(/Sounds good —/);
+    expect(index).not.toMatch(/selectConversationAcknowledgement/);
+    expect(processTurn).not.toMatch(/selectConversationAcknowledgement/);
+  });
+
+  it('selects a new destination acknowledgement', () => {
+    expect(
+      acknowledgementFor(createState(), createState({ destination: 'Brisbane' })),
+    ).toBe('Sounds good — Brisbane.');
+  });
+
+  it('selects an updated destination acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({ destination: 'Brisbane' }),
+        createState({ destination: 'Hobart' }),
+      ),
+    ).toBe('Sounds good — Hobart.');
+  });
+
+  it('selects a new origin acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({ destination: 'Brisbane' }),
+        createState({ destination: 'Brisbane', origin: 'Sydney' }),
+      ),
+    ).toBe('Got it — travelling from Sydney.');
+  });
+
+  it('selects an updated origin acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({ destination: 'Brisbane', origin: 'Sydney' }),
+        createState({ destination: 'Brisbane', origin: 'Melbourne' }),
+      ),
+    ).toBe('Got it — travelling from Melbourne.');
+  });
+
+  it('selects one newly enabled capability acknowledgement', () => {
+    expect(
+      acknowledgementFor(completeCore(), completeCore({ flightsRequested: true })),
+    ).toBe("I've added flights to your trip requirements.");
+  });
+
+  it('selects multiple newly enabled capabilities with stable label order', () => {
+    expect(
+      acknowledgementFor(
+        completeCore(),
+        completeCore({
+          nationalParksRequested: true,
+          flightsRequested: true,
+          accommodationRequested: true,
+          kayakingRequested: true,
+        }),
+      ),
+    ).toBe(
+      "I've added flights, accommodation, kayaking and national parks to your trip requirements.",
+    );
+  });
+
+  it('preserves stable capability-label ordering independent of enablement order', () => {
+    const reverseEnablement = acknowledgementFor(
+      createState(),
+      createState({
+        wildlifeRequested: true,
+        beachesRequested: true,
+        restaurantsRequested: true,
+        activitiesRequested: true,
+      }),
+    );
+    const forwardEnablement = acknowledgementFor(
+      createState(),
+      createState({
+        activitiesRequested: true,
+        restaurantsRequested: true,
+        beachesRequested: true,
+        wildlifeRequested: true,
+      }),
+    );
+    expect(reverseEnablement).toBe(forwardEnablement);
+    expect(reverseEnablement).toBe(
+      "I've added activities, restaurants, beaches and wildlife to your trip requirements.",
+    );
+  });
+
+  it('selects Got it for other changed travel fields', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+      ),
+    ).toBe('Got it.');
+  });
+
+  it('returns null for an unchanged state', () => {
+    expect(
+      acknowledgementFor(
+        createState({ destination: 'Cairns' }),
+        createState({ destination: 'Cairns' }),
+      ),
+    ).toBeNull();
+  });
+
+  it('applies deterministic priority when multiple change categories occur', () => {
+    // capabilities beat destination + origin
+    expect(
+      acknowledgementFor(
+        createState(),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          flightsRequested: true,
+          accommodationRequested: true,
+        }),
+      ),
+    ).toBe(
+      "I've added flights and accommodation to your trip requirements.",
+    );
+
+    // destination beats origin when both change without new capabilities
+    expect(
+      acknowledgementFor(
+        createState({ destination: 'Brisbane', origin: 'Sydney' }),
+        createState({ destination: 'Hobart', origin: 'Melbourne' }),
+      ),
+    ).toBe('Sounds good — Hobart.');
+
+    // origin beats other travel-field changes
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-01',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Melbourne',
+          departureDate: '2026-08-28',
+        }),
+      ),
+    ).toBe('Got it — travelling from Melbourne.');
+  });
+
+  it('returns at most one acknowledgement string', () => {
+    const samples = [
+      acknowledgementFor(createState(), createState({ destination: 'Brisbane' })),
+      acknowledgementFor(
+        createState({ destination: 'Brisbane' }),
+        createState({ destination: 'Brisbane', origin: 'Sydney' }),
+      ),
+      acknowledgementFor(completeCore(), completeCore({ flightsRequested: true })),
+      acknowledgementFor(
+        createState(),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          flightsRequested: true,
+          accommodationRequested: true,
+          activitiesRequested: true,
+        }),
+      ),
+      acknowledgementFor(
+        createState({ destination: 'Cairns' }),
+        createState({ destination: 'Cairns' }),
+      ),
+      acknowledgementFor(
+        createState({ destination: 'Cairns', origin: 'Sydney' }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          adultCount: 2,
+        }),
+      ),
+    ];
+
+    for (const acknowledgement of samples) {
+      if (acknowledgement === null) {
+        continue;
+      }
+      expect(typeof acknowledgement).toBe('string');
+      expect(acknowledgement.includes('\n')).toBe(false);
+    }
+    expect(samples.filter((value) => value !== null)).toHaveLength(
+      samples.length - 1,
+    );
+  });
+
+  it('keeps reply-plan output, rendered replies, and messageInterpreted identical', () => {
+    const cases: Array<{
+      message: string;
+      state: ConversationCoreState;
+      stateUpdate?: Parameters<typeof processConversationTurn>[0]['stateUpdate'];
+    }> = [
+      { message: 'go to Brisbane', state: createState() },
+      {
+        message: 'from Sydney',
+        state: createState({ destination: 'Brisbane' }),
+      },
+      { message: 'book flights', state: completeCore() },
+      {
+        message: 'book flights. book a hotel. book activities',
+        state: completeCore({ adultCount: 2 }),
+      },
+      {
+        message: 'Hello there',
+        state: createState({ destination: 'Cairns' }),
+      },
+      {
+        message: 'book flights. Fly from Sydney to Cairns',
+        state: createState(),
+      },
+      {
+        message: 'Hello',
+        state: completeCore(),
+        stateUpdate: { adultCount: 3, flightsRequested: true },
+      },
+      {
+        message: 'change destination to Hobart',
+        state: createState({ destination: 'Brisbane', origin: 'Sydney' }),
+        stateUpdate: { destination: 'Hobart' },
+      },
+    ];
+
+    for (const entry of cases) {
+      const result = turn(entry.message, entry.state, entry.stateUpdate);
+      const classification = classifyConversationStateChange(
+        entry.state,
+        result.state,
+      );
+      const acknowledgement = selectConversationAcknowledgement(
+        result.state,
+        classification,
+      );
+      const plan = planFor(entry.state, result.state);
+
+      expect(plan.acknowledgements).toEqual(
+        acknowledgement === null ? [] : [acknowledgement],
+      );
+      expect(plan.acknowledgements.length).toBeLessThanOrEqual(1);
+      expect(plan.messageInterpreted).toBe(classification.hasAnyChange);
+      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+        result.reply,
+      );
+      expect(plan.messageInterpreted, entry.message).toBe(
+        result.trace.messageInterpreted,
+      );
+      expect(
+        generateConversationReply({
+          message: entry.message,
+          previousState: entry.state,
+          state: result.state,
+        }),
+        entry.message,
+      ).toBe(result.reply);
+
+      if (!classification.hasAnyChange) {
+        expect(acknowledgement).toBeNull();
+        expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+      }
+    }
+  });
+});

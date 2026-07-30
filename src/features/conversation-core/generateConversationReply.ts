@@ -22,11 +22,13 @@ export type GenerateConversationReplyInput = {
  * Phase 10B–10E: deterministic acknowledgements, core progression, contextual
  * follow-ups, and suppression. Phase 10F: acknowledgements are driven by an
  * internal change classification of previous vs final state. Phase 10G:
- * classification feeds createConversationReplyPlan (which uses
- * selectConversationFollowUpQuestion), and this function only renders the
- * planned reply text. Invoked solely by processConversationTurn after
- * extraction and explicit stateUpdate precedence. Does not re-extract,
- * inspect message text, call search/itinerary, or use an AI provider.
+ * classification feeds createConversationReplyPlan. Phase 10H: follow-up
+ * selection uses selectConversationFollowUpQuestion. Phase 10I:
+ * acknowledgement selection uses selectConversationAcknowledgement. This
+ * function only renders the planned reply text. Invoked solely by
+ * processConversationTurn after extraction and explicit stateUpdate
+ * precedence. Does not re-extract, inspect message text, call
+ * search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,
