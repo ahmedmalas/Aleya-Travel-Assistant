@@ -1198,6 +1198,18 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'go snorkelling', currentState }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
+      extractor.extract({ message: 'diving options', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractor.extract({ message: 'snorkelling spots', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractor.extract({ message: 'places to dive', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractor.extract({ message: 'where can I go snorkelling?', currentState }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
       extractor.extract({ message: 'no diving', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(

@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction activation', () => {
+describe('phase 3W/7W/8Z — explicit divingSnorkellingRequested with extraction activation', () => {
   it('initial divingSnorkellingRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -134,6 +134,11 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       'gear',
       'scuba diving',
       'reef diving',
+      'diving equipment',
+      'diving course',
+      'diving charter',
+      'what is snorkelling',
+      'Great Barrier Reef',
     ];
 
     let state = initial;
@@ -141,6 +146,29 @@ describe('phase 3W/7W — explicit divingSnorkellingRequested with extraction ac
       const result = turn(message, state, index);
       expect(result.state.divingSnorkellingRequested).toBeNull();
       state = result.state;
+    });
+  });
+
+  it('user message text sets divingSnorkellingRequested from clear diving/snorkelling discovery wording', () => {
+    const phrases = [
+      'show me diving spots',
+      'find snorkelling near me',
+      'where can I go diving?',
+      'places to snorkel',
+      'include diving on the trip',
+      'diving options',
+    ];
+
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.divingSnorkellingRequested, message).toBe(true);
     });
   });
 

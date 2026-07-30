@@ -969,6 +969,8 @@ describe('conversation-core architectural boundary', () => {
     expect(divingSnorkellingRequestedExtractor).toMatch(
       /export class DivingSnorkellingRequestedConversationStateExtractor/,
     );
+    expect(divingSnorkellingRequestedExtractor).toContain('Phase 7W');
+    expect(divingSnorkellingRequestedExtractor).toContain('Phase 8Z');
     expect(divingSnorkellingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

@@ -211,7 +211,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor activation', () => {
+describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit divingSnorkellingRequested true contract', () => {
     expectTypeOf<DivingSnorkellingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<DivingSnorkellingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -252,20 +252,66 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
       'book snorkelling',
       'go diving',
       'go snorkelling',
+      'search diving spots',
+      'recommend snorkelling spots',
+      'try diving',
+      'try snorkelling',
+      'diving spots',
+      'snorkelling spots',
+      'dive locations',
+      'snorkelling locations',
+      'diving options',
+      'snorkelling options',
+      'nearby diving',
+      'nearby snorkelling',
+      'places to dive',
+      'places to snorkel',
+      'where can I go diving?',
+      'where can I go snorkelling?',
+      'I want to go diving',
+      'include snorkelling on the trip',
+      'find diving near me',
+      'diving near the hotel',
+      'diving in Cairns',
+      'show me diving and restaurants',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ divingSnorkellingRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+        currentState: createState({ divingSnorkellingRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { divingSnorkellingRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty('fishingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'snowActivitiesRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('attractionsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'scenicDrivesRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'fourWheelDriveRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('kayakingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for dive/snorkel/scuba, locations/boats/equipment, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+  it('returns empty for equipment, courses, charters, typed specialty diving, named sites, historical, informational, and negation wording', () => {
     const extractor = new DivingSnorkellingRequestedConversationStateExtractor();
     const unsupported = [
       'dive',
@@ -280,6 +326,17 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
       'diving boat',
       'diving gear',
       'diving equipment',
+      'diving mask',
+      'snorkelling fins',
+      'wetsuit hire',
+      'tank rental',
+      'diving course',
+      'diving certification',
+      'diving licence',
+      'boat hire',
+      'diving charter',
+      'tide times',
+      'diving visibility',
       'scuba diving',
       'reef diving',
       'reef snorkelling',
@@ -291,18 +348,20 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
       'boat diving',
       'night diving',
       'guided diving',
-      'diving spots',
-      'snorkelling locations',
-      'diving near the hotel',
-      'nearby diving',
-      'nearby snorkelling',
-      'diving in Cairns',
+      'show me scuba diving',
+      'we went diving yesterday',
+      'what is snorkelling',
+      'diving?',
       'do not include diving',
       'no diving',
       'no snorkelling',
       "don't add snorkelling",
+      "I don't want to dive",
       'without diving',
       'remove diving',
+      'cancel snorkelling',
+      'avoid diving',
+      'skip snorkelling',
       'forget snorkelling',
       'keep diving',
       'actually show me diving',
@@ -396,6 +455,8 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7W');
+    expect(source).toContain('Phase 8Z');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -486,60 +547,69 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
     expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7U',
     );
-
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8X',
+    );
+    expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8W',
+    );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8V',
+    );
     expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7V');
+    expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8Y');
     expect(
       new FishingRequestedConversationStateExtractor().extract({
-        message: 'add fishing',
+        message: 'fishing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
 
     expect(
       new HikingWalkingRequestedConversationStateExtractor().extract({
-        message: 'add hiking',
+        message: 'walking track options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
       new SnowActivitiesRequestedConversationStateExtractor().extract({
-        message: 'add snow activities',
+        message: 'skiing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
       new AttractionsRequestedConversationStateExtractor().extract({
-        message: 'add attractions',
+        message: 'attraction options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
       new ScenicDrivesRequestedConversationStateExtractor().extract({
-        message: 'add scenic drives',
+        message: 'scenic drive options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       new FourWheelDrivingRequestedConversationStateExtractor().extract({
-        message: 'add four-wheel driving',
+        message: '4wd tracks',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       new KayakingRequestedConversationStateExtractor().extract({
-        message: 'add kayaking',
+        message: 'kayaking spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
-        message: 'add camping',
+        message: 'camping spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
       new BeachesRequestedConversationStateExtractor().extract({
-        message: 'show me beaches',
+        message: 'beach options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
@@ -884,7 +954,7 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
-    const fishingOnlyMessage = 'add fishing';
+    const fishingOnlyMessage = 'fishing options';
     expect(
       extractors[21]?.extract({
         message: fishingOnlyMessage,
@@ -907,5 +977,31 @@ describe('phase 7W — DivingSnorkellingRequestedConversationStateExtractor acti
         `extractor ${index} on fishing message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    const divingOnlyMessage = 'diving options';
+    expect(
+      extractors[22]?.extract({
+        message: divingOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractors[21]?.extract({
+        message: divingOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[20]?.extract({
+        message: divingOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[19]?.extract({
+        message: divingOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
   });
 });
