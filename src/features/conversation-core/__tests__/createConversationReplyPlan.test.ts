@@ -292,7 +292,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     const plan = planFor(previous, state);
     expect(plan.acknowledgements).toEqual([]);
     expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(plan.messageInterpreted).toBe(false);
+    expect(plan.messageInterpreted).toBe(true);
   });
 
   it('plans a capability removal acknowledgement', () => {

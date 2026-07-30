@@ -86,6 +86,10 @@ const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
  * Phase 11F — true → null and false → null still classify as updated, but do
  * not contribute to hasAnyChange, so the generic Perfect. acknowledgement is
  * suppressed when those clears are the only travel-field changes.
+ * Phase 11G — hasInterpretedChange is true for any travel-field difference
+ * (including interpretation-only request-flag clears to null). hasAnyChange
+ * remains acknowledgement-eligible only, so Perfect. stays suppressed when
+ * the sole change is interpretation-only.
  */
 export type ConversationStateChangeClassification = {
   /** Fields that moved from null to a non-null value (excluding newly-enabled true flags and null → false disables). */
@@ -104,6 +108,12 @@ export type ConversationStateChangeClassification = {
    * false → null) are recorded in updated but do not set this flag alone.
    */
   hasAnyChange: boolean;
+  /**
+   * True when any canonical travel field differs between previous and final
+   * state, including acknowledgement-inert request-flag clears to null.
+   * Drives messageInterpreted; does not alone select Perfect.
+   */
+  hasInterpretedChange: boolean;
 };
 
 /**
@@ -154,19 +164,28 @@ export function classifyConversationStateChange(
     updated.push(key);
   }
 
+  const hasAnyChange =
+    newlyPopulated.length > 0 ||
+    newlyEnabledRequestFlags.length > 0 ||
+    newlyDisabledRequestFlags.length > 0 ||
+    // Request-flag entries in updated are only true→null / false→null clears
+    // (Phase 11F/11G) — acknowledgement-inert on their own.
+    updated.some((key) => !REQUEST_FLAG_KEYS.has(key));
+
+  const hasInterpretedChange =
+    newlyPopulated.length > 0 ||
+    newlyEnabledRequestFlags.length > 0 ||
+    newlyDisabledRequestFlags.length > 0 ||
+    updated.length > 0;
+
   return {
     newlyPopulated,
     updated,
     unchanged,
     newlyEnabledRequestFlags,
     newlyDisabledRequestFlags,
-    hasAnyChange:
-      newlyPopulated.length > 0 ||
-      newlyEnabledRequestFlags.length > 0 ||
-      newlyDisabledRequestFlags.length > 0 ||
-      // Request-flag entries in updated are only true→null / false→null clears
-      // (Phase 11F) — acknowledgement-inert on their own.
-      updated.some((key) => !REQUEST_FLAG_KEYS.has(key)),
+    hasAnyChange,
+    hasInterpretedChange,
   };
 }
 

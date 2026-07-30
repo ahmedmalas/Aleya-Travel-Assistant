@@ -105,6 +105,7 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
     expect(selectorSource).toContain('Phase 10J');
+    expect(selectorSource).toContain('Phase 11G');
     expect(selectorSource).toMatch(
       /export function selectConversationMessageInterpreted/,
     );
@@ -114,6 +115,12 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
     expect(componentsSource).toMatch(/selectConversationMessageInterpreted\(/);
     expect(planSource).not.toMatch(
       /const messageInterpreted = classification\.hasAnyChange/,
+    );
+    expect(selectorSource).toMatch(
+      /return classification\.hasInterpretedChange/,
+    );
+    expect(selectorSource).not.toMatch(
+      /return classification\.hasAnyChange/,
     );
     expect(index).not.toMatch(/selectConversationMessageInterpreted/);
     expect(processTurn).not.toMatch(/selectConversationMessageInterpreted/);
@@ -163,6 +170,28 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
     ).toBe(false);
   });
 
+  it('returns true for acknowledgement-inert request-flag clears to null', () => {
+    expect(
+      interpretedFor(
+        completeCore({ flightsRequested: true }),
+        completeCore({ flightsRequested: null }),
+      ),
+    ).toBe(true);
+    expect(
+      interpretedFor(
+        completeCore({ flightsRequested: false }),
+        completeCore({ flightsRequested: null }),
+      ),
+    ).toBe(true);
+
+    const classification = classifyConversationStateChange(
+      completeCore({ flightsRequested: true }),
+      completeCore({ flightsRequested: null }),
+    );
+    expect(classification.hasInterpretedChange).toBe(true);
+    expect(classification.hasAnyChange).toBe(false);
+  });
+
   it('keeps reply-plan output, rendered replies, and messageInterpreted identical', () => {
     const cases: Array<{
       message: string;
@@ -210,7 +239,9 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
       const plan = planFor(entry.state, result.state);
 
       expect(plan.messageInterpreted).toBe(messageInterpreted);
-      expect(plan.messageInterpreted).toBe(classification.hasAnyChange);
+      expect(plan.messageInterpreted).toBe(
+        classification.hasInterpretedChange,
+      );
       expect(plan.messageInterpreted, entry.message).toBe(
         result.trace.messageInterpreted,
       );

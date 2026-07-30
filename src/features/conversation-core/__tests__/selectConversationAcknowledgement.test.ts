@@ -966,7 +966,9 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         acknowledgement === null ? [] : [acknowledgement],
       );
       expect(plan.acknowledgements.length).toBeLessThanOrEqual(1);
-      expect(plan.messageInterpreted).toBe(classification.hasAnyChange);
+      expect(plan.messageInterpreted).toBe(
+        classification.hasInterpretedChange,
+      );
       expect(renderConversationReplyPlan(plan), entry.message).toBe(
         result.reply,
       );
@@ -984,6 +986,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
 
       if (!classification.hasAnyChange) {
         expect(acknowledgement).toBeNull();
+      }
+      if (!classification.hasInterpretedChange) {
         expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
       }
     }
@@ -2121,7 +2125,110 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       expect(result.state.flightsRequested).toBeNull();
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.reply).not.toMatch(/I've removed flights/);
-      expect(result.trace.messageInterpreted).toBe(false);
+      expect(result.trace.messageInterpreted).toBe(true);
+    });
+  });
+
+  describe('phase 11G — suppress generic acknowledgement for interpretation-only changes', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('produces no acknowledgement when only interpretation-only changes occur', () => {
+      const previous = filled({ flightsRequested: true });
+      const next = filled({ flightsRequested: null });
+      const classification = classifyConversationStateChange(previous, next);
+
+      expect(classification.hasInterpretedChange).toBe(true);
+      expect(classification.hasAnyChange).toBe(false);
+      expect(acknowledgementFor(previous, next)).toBeNull();
+      expect(planFor(previous, next).acknowledgements).toEqual([]);
+      expect(planFor(previous, next).messageInterpreted).toBe(true);
+    });
+
+    it('lets destination beat an interpretation-only clear', () => {
+      expect(
+        acknowledgementFor(
+          filled({ destination: 'Brisbane', flightsRequested: true }),
+          filled({ destination: 'Hobart', flightsRequested: null }),
+        ),
+      ).toBe('Great — Hobart.');
+    });
+
+    it('lets newly enabled capability beat an interpretation-only clear', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true, toursRequested: null }),
+          filled({ flightsRequested: null, toursRequested: true }),
+        ),
+      ).toBe("I've added tours to your trip requirements.");
+    });
+
+    it('lets removal beat an interpretation-only clear', () => {
+      expect(
+        acknowledgementFor(
+          filled({
+            flightsRequested: true,
+            accommodationRequested: true,
+          }),
+          filled({
+            flightsRequested: null,
+            accommodationRequested: false,
+          }),
+        ),
+      ).toBe("I've removed accommodation from your trip requirements.");
+    });
+
+    it('keeps generic acknowledgement for genuine travel-field clears', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ destination: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: null, adultCount: null }),
+        ),
+      ).toBe('Perfect.');
+    });
+
+    it('returns at most one acknowledgement when interpretation-only co-occurs', () => {
+      const acknowledgement = acknowledgementFor(
+        filled({
+          flightsRequested: true,
+          toursRequested: null,
+          destination: 'Brisbane',
+        }),
+        filled({
+          flightsRequested: null,
+          toursRequested: true,
+          destination: 'Hobart',
+          adultCount: 4,
+        }),
+      );
+      expect(acknowledgement).toBe(
+        "I've added tours to your trip requirements.",
+      );
+      expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+
+    it('reaches interpretation-only suppression through processConversationTurn', () => {
+      const previous = filled({ flightsRequested: true, adultCount: 2 });
+      const result = turn('hello', previous, { flightsRequested: null });
+      expect(result.state.flightsRequested).toBeNull();
+      expect(result.trace.messageInterpreted).toBe(true);
+      expect(result.reply).not.toMatch(/Perfect\./);
+      expect(result.reply).not.toMatch(/I've removed flights/);
+      expect(result.reply).not.toMatch(/I've added /);
     });
   });
 });

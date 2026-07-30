@@ -50,7 +50,8 @@ export function hasSupportedTravelFieldChange(
   previousState: ConversationCoreState,
   state: ConversationCoreState,
 ): boolean {
-  return classifyConversationStateChange(previousState, state).hasAnyChange;
+  return classifyConversationStateChange(previousState, state)
+    .hasInterpretedChange;
 }
 
 /** Render a reply plan into the deterministic assistant reply string. */

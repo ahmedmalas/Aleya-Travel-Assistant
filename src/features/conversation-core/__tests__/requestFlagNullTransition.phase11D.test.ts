@@ -174,6 +174,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(classification.updated).toContain('flightsRequested');
     expect(classification.newlyDisabledRequestFlags).toEqual([]);
     expect(classification.hasAnyChange).toBe(false);
+    expect(classification.hasInterpretedChange).toBe(true);
     expect(result.reply).not.toMatch(/I've removed flights/);
     expect(result.reply).not.toMatch(/Perfect\./);
   });

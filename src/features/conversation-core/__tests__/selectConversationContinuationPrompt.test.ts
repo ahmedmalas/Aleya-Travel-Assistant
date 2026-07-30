@@ -189,7 +189,7 @@ describe('phase 10L — deterministic continuation prompt boundary', () => {
         entry.state,
         result.state,
       );
-      const followUpQuestion = classification.hasAnyChange
+      const followUpQuestion = classification.hasInterpretedChange
         ? selectConversationFollowUpQuestion(result.state)
         : null;
       const continuationPrompt = selectConversationContinuationPrompt({

@@ -83,7 +83,9 @@ describe('phase 10F — deterministic change classification', () => {
     expect(classifySource).toContain('Phase 11C');
     expect(classifySource).toContain('Phase 11E');
     expect(classifySource).toContain('Phase 11F');
+    expect(classifySource).toContain('Phase 11G');
     expect(classifySource).toMatch(/newlyDisabledRequestFlags/);
+    expect(classifySource).toMatch(/hasInterpretedChange/);
     expect(classifySource).toMatch(/export function classifyConversationStateChange/);
     expect(replySource).toContain('Phase 10F');
     expect(replySource).toMatch(/classifyConversationStateChange\(/);
@@ -171,6 +173,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(trueToNull.newlyDisabledRequestFlags).toEqual([]);
     expect(trueToNull.updated).toContain('flightsRequested');
     expect(trueToNull.hasAnyChange).toBe(false);
+    expect(trueToNull.hasInterpretedChange).toBe(true);
 
     const nullToFalse = classifyConversationStateChange(
       createState({ flightsRequested: null }),
@@ -187,6 +190,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(falseToNull.newlyDisabledRequestFlags).toEqual([]);
     expect(falseToNull.updated).toContain('flightsRequested');
     expect(falseToNull.hasAnyChange).toBe(false);
+    expect(falseToNull.hasInterpretedChange).toBe(true);
 
     const falseUnchanged = classifyConversationStateChange(
       createState({ flightsRequested: false }),
