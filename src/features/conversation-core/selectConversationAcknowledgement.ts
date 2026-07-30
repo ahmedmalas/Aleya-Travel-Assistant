@@ -72,6 +72,12 @@ const CAPABILITY_LABELS = [
  * newly enabled capabilities → newly disabled capabilities → destination →
  * origin → departure date → return date → adult count → child count →
  * infant count → other travel-field change → null when unchanged.
+ * Phase 11J — destination removal (stored → null) uses the destination
+ * priority slot after destination set/changed:
+ * newly enabled capabilities → newly disabled capabilities →
+ * destination set or changed → destination removed → origin →
+ * departure date → return date → adult count → child count →
+ * infant count → other travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -104,6 +110,15 @@ export function selectConversationAcknowledgement(
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination(
       state.destination,
     );
+  }
+
+  // Stored destination → null: final value is null and destination is in
+  // updated (not newlyPopulated). No new classification field required.
+  if (
+    state.destination === null &&
+    classification.updated.includes('destination')
+  ) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.destinationRemoved;
   }
 
   if (state.origin !== null && fieldValueChanged(classification, 'origin')) {

@@ -67,8 +67,10 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10X');
     expect(catalogueSource).toContain('Phase 10Y');
     expect(catalogueSource).toContain('Phase 11C');
+    expect(catalogueSource).toContain('Phase 11J');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
+    expect(catalogueSource).toContain("destinationRemoved: 'Destination removed.'");
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
     expect(catalogueSource).toContain('Perfect — departing from ${origin}.');
     expect(catalogueSource).not.toContain(
@@ -153,6 +155,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination('Brisbane'),
     ).toBe('Great — Brisbane.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.destinationRemoved,
+    ).toBe('Destination removed.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin('Sydney'),
     ).toBe('Perfect — departing from Sydney.');

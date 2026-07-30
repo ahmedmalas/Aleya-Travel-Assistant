@@ -92,7 +92,7 @@ function characterizeClear(
 
 describe('phase 11I — non-capability clear-transition audit characterisation', () => {
   it.each(NON_CAPABILITY_CLEARS)(
-    '$field: stored value → null is updated, interpreted, acknowledgement-eligible, and Perfect.',
+    '$field: stored value → null is updated, interpreted, and acknowledgement-eligible',
     ({ field, stored }) => {
       const {
         classification,
@@ -107,11 +107,14 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       expect(classification.hasInterpretedChange).toBe(true);
       expect(classification.hasAcknowledgementEligibleChange).toBe(true);
       expect(messageInterpreted).toBe(true);
-      expect(acknowledgement).toBe('Perfect.');
+      // Phase 11J — destination clear uses dedicated removal wording.
+      expect(acknowledgement).toBe(
+        field === 'destination' ? 'Destination removed.' : 'Perfect.',
+      );
     },
   );
 
-  it('each non-capability clear reaches Perfect. through processConversationTurn', () => {
+  it('each non-capability clear reaches its acknowledgement through processConversationTurn', () => {
     for (const [index, { field }] of NON_CAPABILITY_CLEARS.entries()) {
       const previous = createState();
       const result = turn('hello', previous, index, {
@@ -119,12 +122,17 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       } as ConversationStateUpdate);
 
       expect(result.state[field]).toBeNull();
-      expect(result.reply).toMatch(/Perfect\./);
-      expect(result.reply.match(/Perfect\./g)?.length).toBe(1);
+      if (field === 'destination') {
+        expect(result.reply).toContain('Destination removed.');
+        expect(result.reply).not.toMatch(/Perfect\./);
+      } else {
+        expect(result.reply).toMatch(/Perfect\./);
+        expect(result.reply.match(/Perfect\./g)?.length).toBe(1);
+      }
     }
   });
 
-  it('multiple non-capability clears yield one generic acknowledgement only', () => {
+  it('multiple non-capability clears yield one acknowledgement only (destination removal wins)', () => {
     const previous = createState();
     const next = createState({
       destination: null,
@@ -152,7 +160,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.hasAcknowledgementEligibleChange).toBe(true);
     expect(selectConversationMessageInterpreted(classification)).toBe(true);
     expect(selectConversationAcknowledgement(next, classification)).toBe(
-      'Perfect.',
+      'Destination removed.',
     );
 
     const result = turn('hello', previous, 0, {
@@ -164,7 +172,9 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       childCount: null,
       infantCount: null,
     });
-    expect(result.reply.match(/Perfect\./g)?.length).toBe(1);
+    expect(result.reply).toContain('Destination removed.');
+    expect(result.reply.match(/Destination removed\./g)?.length).toBe(1);
+    expect(result.reply).not.toMatch(/Perfect\./);
     expect(result.reply).not.toMatch(/I've added /);
     expect(result.reply).not.toMatch(/I've removed /);
     expect(result.reply).not.toMatch(/I've noted /);

@@ -28,6 +28,8 @@
  * "Perfect — 1 infant travelling."
  * Phase 11C — capability-removal acknowledgement:
  * "I've removed {capability list} from your trip requirements."
+ * Phase 11J — destination-removal acknowledgement:
+ * "Destination removed."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -36,6 +38,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     removedCapabilities: (labelList: string) =>
       `I've removed ${labelList} from your trip requirements.`,
     destination: (destination: string) => `Great — ${destination}.`,
+    destinationRemoved: 'Destination removed.',
     origin: (origin: string) => `Perfect — departing from ${origin}.`,
     departureDate: (departureDate: string) =>
       `Perfect — departing on ${departureDate}.`,
