@@ -34,7 +34,7 @@ const CONVERSATION_ID = 'conversation-core-phase-12v-catalogue-ref-001';
 const CREATED_AT = new Date('2026-07-30T00:00:00.000Z');
 
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
-const CATALOGUE_FOLLOW_UP_VALUES = Object.values(FOLLOW_UPS);
+const CATALOGUE_FOLLOW_UP_VALUES: readonly string[] = Object.values(FOLLOW_UPS);
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
@@ -154,11 +154,9 @@ describe('phase 12V — follow-up catalogue-reference characterisation', () => {
   it('returns only catalogue-owned follow-up values from selectConversationFollowUpQuestion', () => {
     for (const entry of FOLLOW_UP_CASES) {
       const selected = selectConversationFollowUpQuestion(entry.state);
-      expect(selected === null || CATALOGUE_FOLLOW_UP_VALUES.includes(selected!)).toBe(
-        true,
-      );
       expect(selected).not.toBeNull();
       expect(typeof selected).toBe('string');
+      expect(CATALOGUE_FOLLOW_UP_VALUES.includes(selected as string)).toBe(true);
     }
   });
 
