@@ -1013,13 +1013,16 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'show me kayaking', currentState }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
-      extractor.extract({ message: 'show me kayaking', currentState }),
+      extractor.extract({ message: 'find kayak tours', currentState }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       extractor.extract({ message: 'no kayaking', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'hire a kayak', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'kayak gear', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 

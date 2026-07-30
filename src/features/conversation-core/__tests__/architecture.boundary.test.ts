@@ -807,6 +807,8 @@ describe('conversation-core architectural boundary', () => {
     expect(kayakingRequestedExtractor).toMatch(
       /export class KayakingRequestedConversationStateExtractor/,
     );
+    expect(kayakingRequestedExtractor).toContain('Phase 7P');
+    expect(kayakingRequestedExtractor).toContain('Phase 8S');
     expect(kayakingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

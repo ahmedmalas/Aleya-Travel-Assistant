@@ -90,7 +90,7 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     const first = turn('Hello', initial, 0, { kayakingRequested: true });
     expect(first.state.kayakingRequested).toBe(true);
 
-    const second = turn('kayak canoe paddle', first.state, 1);
+    const second = turn('canoe paddle rafting', first.state, 1);
     expect(second.state.kayakingRequested).toBe(true);
   });
 
@@ -102,16 +102,27 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     const first = turn('Hello', initial, 0, { kayakingRequested: false });
     expect(first.state.kayakingRequested).toBe(false);
 
-    const second = turn('kayak canoe paddle', first.state, 1);
+    const second = turn('canoe paddle rafting', first.state, 1);
     expect(second.state.kayakingRequested).toBe(false);
   });
 
-  it('user message text cannot set kayakingRequested', () => {
+  it('unsupported kayaking-adjacent wording cannot set kayakingRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
-    const phrases = ['kayak', 'canoe', 'paddle', 'paddling', 'rafting'];
+    const phrases = [
+      'canoe',
+      'paddle',
+      'paddling',
+      'rafting',
+      'kayak gear',
+      'kayaking weather',
+      'hire a kayak',
+      'Noosa Kayak Tours',
+      'kayaking?',
+      'I like kayaking',
+    ];
 
     let state = initial;
     phrases.forEach((message, index) => {
@@ -121,7 +132,80 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('explicit kayaking cue in the message sets kayakingRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('show me kayaking', initial, 0);
+    expect(result.state.kayakingRequested).toBe(true);
+  });
+
+  it('phase 8S clear kayaking-discovery cues set kayakingRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('kayaking', initial, 0);
+    expect(bare.state.kayakingRequested).toBe(true);
+    expect(bare.state.beachesRequested).toBeNull();
+    expect(bare.state.campingRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.activitiesRequested).toBeNull();
+
+    const tours = turn('find kayak tours', initial, 1);
+    expect(tours.state.kayakingRequested).toBe(true);
+
+    const options = turn('kayaking options', initial, 2);
+    expect(options.state.kayakingRequested).toBe(true);
+
+    const places = turn('places to kayak', initial, 3);
+    expect(places.state.kayakingRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me kayaking near Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      4,
+    );
+    expect(inRequest.state.kayakingRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 5, {
+      kayakingRequested: false,
+    });
+    const negated = turn('no kayaking', seeded.state, 6);
+    expect(negated.state.kayakingRequested).toBe(false);
+    const gear = turn('kayak gear', seeded.state, 7);
+    expect(gear.state.kayakingRequested).toBe(false);
+    const hire = turn('hire a kayak', seeded.state, 8);
+    expect(hire.state.kayakingRequested).toBe(false);
+    const weather = turn('kayaking weather', seeded.state, 9);
+    expect(weather.state.kayakingRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.kayakingRequested overrides an extracted kayaking request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('show me kayaking', initial, 0, {
+      kayakingRequested: false,
+    });
+    expect(overriddenFalse.state.kayakingRequested).toBe(false);
+
+    const overriddenTrue = turn('no kayaking', initial, 1, {
+      kayakingRequested: true,
+    });
+    expect(overriddenTrue.state.kayakingRequested).toBe(true);
+
+    const nullOverride = turn('show me kayaking', initial, 2, {
+      kayakingRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.kayakingRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing kayakingRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -129,19 +213,15 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     const withTrue = turn('Hello', initial, 0, { kayakingRequested: true });
     expect(withTrue.state.kayakingRequested).toBe(true);
 
-    const afterKayakWords = turn(
-      'kayak kayaking canoe paddle',
-      withTrue.state,
-      1,
-    );
-    expect(afterKayakWords.state.kayakingRequested).toBe(true);
+    const afterWords = turn('canoe paddle rafting', withTrue.state, 1);
+    expect(afterWords.state.kayakingRequested).toBe(true);
 
-    const withFalse = turn('change', afterKayakWords.state, 2, {
+    const withFalse = turn('change', afterWords.state, 2, {
       kayakingRequested: false,
     });
     expect(withFalse.state.kayakingRequested).toBe(false);
 
-    const afterMoreWords = turn('paddling canoe kayak', withFalse.state, 3);
+    const afterMoreWords = turn('paddling canoe hire a kayak', withFalse.state, 3);
     expect(afterMoreWords.state.kayakingRequested).toBe(false);
   });
 
@@ -234,7 +314,7 @@ describe('phase 3P — explicit kayakingRequested only', () => {
     expect(first.state.transcript[1]?.message).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(first.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
 
-    const second = turn('kayak kayaking canoe', first.state, 1);
+    const second = turn('canoe paddle rafting', first.state, 1);
     expect(second.state.kayakingRequested).toBe(true);
     expect(second.state.transcript).toHaveLength(4);
     expect(second.state.transcript[0]).toEqual(first.state.transcript[0]);

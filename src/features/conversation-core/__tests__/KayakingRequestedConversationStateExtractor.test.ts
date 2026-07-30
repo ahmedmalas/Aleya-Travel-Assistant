@@ -30,11 +30,21 @@ import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDis
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const KAYAKING_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/KayakingRequestedConversationStateExtractor.ts',
+);
+const HIKING_WALKING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/HikingWalkingRequestedConversationStateExtractor.ts',
+);
+const NATIONAL_PARKS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
 );
 const CAMPING_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -102,7 +112,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7p',
+      conversationId: 'conversation-8s',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -165,7 +175,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7P — KayakingRequestedConversationStateExtractor activation', () => {
+describe('phase 8S — KayakingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit kayakingRequested true contract', () => {
     expectTypeOf<KayakingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<KayakingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -176,7 +186,7 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
     const extractor = new KayakingRequestedConversationStateExtractor();
     expect(
       extractor.extract({
-        message: 'add kayaking',
+        message: 'show me kayaking',
         currentState: createState({ kayakingRequested: null }),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
@@ -186,52 +196,150 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
     const extractor = new KayakingRequestedConversationStateExtractor();
     const cases = [
       'kayaking',
-      'show kayaking',
-      'show me kayaking',
+      'kayak',
+      'kayaks',
+      'kayak trips',
+      'kayak tours',
+      'kayaking tours',
+      'kayak experiences',
+      'kayaking activities',
       'find kayaking',
-      'I need kayaking',
+      'find kayak tours',
+      'search kayaking',
+      'show me kayaking',
+      'show me kayak tours',
+      'recommend kayaking',
+      'recommend kayak tours',
+      'kayaking recommendations',
+      'kayaking options',
+      'best kayaking',
+      'best kayak tours',
+      'nearby kayaking',
+      'kayaking near me',
+      'kayak tours near me',
+      'places to kayak',
+      'where can I kayak',
       'include kayaking',
       'add kayaking',
-      'need kayaking',
+      'I want kayaking',
+      'go kayaking',
       'book kayaking',
+      'show me kayaking near Brisbane',
+      'find kayak tours near Byron Bay',
+      'I want kayaking and beaches',
+      'include kayaking on this trip',
+      'recommend family-friendly kayaking',
+      'find places to kayak near the national park',
+      'kayaking in national parks',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ kayakingRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { kayakingRequested: true } });
+        currentState: createState({ kayakingRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { kayakingRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nationalParksRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for kayak/canoe/paddle wording, typed kayaking, negation, remove/forget, and keep wording', () => {
+  it('emits only kayakingRequested from nearby-kayaking and kayaking-and-beaches wording', () => {
+    const extractor = new KayakingRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'nearby kayaking',
+        currentState: createState({ kayakingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'kayaking near me',
+        currentState: createState({ kayakingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'I want kayaking and beaches',
+        currentState: createState({ kayakingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'kayaking in national parks',
+        currentState: createState({ kayakingRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { kayakingRequested: true } });
+  });
+
+  it('returns empty for equipment, weather, named operators, historical, negation, and ambiguous wording', () => {
     const extractor = new KayakingRequestedConversationStateExtractor();
     const unsupported = [
-      'find kayak tours',
+      'kayak shop',
+      'kayak store',
+      'kayak equipment',
+      'kayaking equipment',
+      'kayak gear',
+      'kayaking gear',
+      'kayak paddle',
+      'kayak paddles',
+      'kayak roof rack',
+      'kayak trailer',
+      'kayak hire price',
+      'kayak permit',
+      'kayaking rules',
+      'kayaking regulations',
+      'kayaking weather',
+      'kayaking conditions',
+      'kayaking warning',
+      'kayaking closure',
+      'water conditions for kayaking',
       'hire a kayak',
+      'we went kayaking',
+      'we kayaked there',
+      'I like kayaking',
+      'kayaking?',
+      'what is kayaking',
+      'Noosa Kayak Tours',
+      'Sea Kayak Adventures',
       'show me paddling activities',
       'show me SUP activities',
       'I want a canoe',
       'rafting nearby',
-      'kayaking on a river',
-      'kayaking on a lake',
-      'kayaking in the bay',
       'harbour kayaking',
       'ocean kayaking',
-      'kayak through an estuary',
       'mangrove kayaking',
       'white-water kayaking',
       'guided kayak tours',
       'beginner-friendly kayaking',
       'family-friendly kayaking',
-      'kayaking near the hotel',
       'calm-water kayaking',
-      'do not include kayaking',
       'no kayaking',
+      'do not include kayaking',
+      "don't include kayaking",
+      'without kayaking',
       'remove kayaking',
+      'cancel kayaking',
+      'cancel the kayaking plans',
+      "I don't want kayaking",
+      'avoid kayaking',
+      'skip kayaking',
+      'no kayak tours',
       'forget kayaking',
       'keep the kayaking',
       'keep camping but remove kayaking',
@@ -324,6 +432,8 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7P');
+    expect(source).toContain('Phase 8S');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -380,28 +490,86 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
     expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8P');
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7AA',
+    );
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Q',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7U',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8R',
+    );
 
+    expect(
+      new HikingWalkingRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      new HikingWalkingRequestedConversationStateExtractor().extract({
+        message: 'show me kayaking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me kayaking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
         message: 'add camping',
@@ -409,11 +577,11 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
-      new BeachesRequestedConversationStateExtractor().extract({
-        message: 'show me beaches',
+      new CampingRequestedConversationStateExtractor().extract({
+        message: 'show me kayaking',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    ).toEqual({ stateUpdate: {} });
     expect(
       new NearbyDiscoveryRequestedConversationStateExtractor().extract({
         message: 'what is nearby',
@@ -421,17 +589,35 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
-      new RestaurantsRequestedConversationStateExtractor().extract({
-        message: 'find restaurants',
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'show me kayaking',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    ).toEqual({ stateUpdate: {} });
     expect(
       new ActivitiesRequestedConversationStateExtractor().extract({
         message: 'book activities',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me kayaking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new BeachesRequestedConversationStateExtractor().extract({
+        message: 'show me beaches',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { beachesRequested: true } });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -509,18 +695,18 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add kayaking',
+      message: 'show me kayaking',
       state: currentState,
-      userEntryId: 'user-7p-a',
-      assistantEntryId: 'assistant-7p-a',
+      userEntryId: 'user-8s-a',
+      assistantEntryId: 'assistant-8s-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no kayaking',
       state: currentState,
-      userEntryId: 'user-7p-b',
-      assistantEntryId: 'assistant-7p-b',
+      userEntryId: 'user-8s-b',
+      assistantEntryId: 'assistant-8s-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { kayakingRequested: true },
@@ -528,8 +714,8 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
     const overriddenFalse = processConversationTurn({
       message: 'add kayaking',
       state: currentState,
-      userEntryId: 'user-7p-c',
-      assistantEntryId: 'assistant-7p-c',
+      userEntryId: 'user-8s-c',
+      assistantEntryId: 'assistant-8s-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { kayakingRequested: false },
@@ -537,22 +723,23 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
     const nullOverride = processConversationTurn({
       message: 'add kayaking',
       state: currentState,
-      userEntryId: 'user-7p-d',
-      assistantEntryId: 'assistant-7p-d',
+      userEntryId: 'user-8s-d',
+      assistantEntryId: 'assistant-8s-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { kayakingRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'hire a kayak',
+      message: 'kayaking weather',
       state: currentState,
-      userEntryId: 'user-7p-e',
-      assistantEntryId: 'assistant-7p-e',
+      userEntryId: 'user-8s-e',
+      assistantEntryId: 'assistant-8s-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add kayaking. Fly from Sydney to Cairns',
+      message:
+        'show me kayaking. show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -566,13 +753,14 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
         campingRequested: null,
         kayakingRequested: null,
       }),
-      userEntryId: 'user-7p-f',
-      assistantEntryId: 'assistant-7p-f',
+      userEntryId: 'user-8s-f',
+      assistantEntryId: 'assistant-8s-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'add kayaking. Fly from Sydney to Cairns',
+      message:
+        'show me kayaking. show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -586,8 +774,8 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
         campingRequested: null,
         kayakingRequested: null,
       }),
-      userEntryId: 'user-7p-g',
-      assistantEntryId: 'assistant-7p-g',
+      userEntryId: 'user-8s-g',
+      assistantEntryId: 'assistant-8s-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -596,9 +784,34 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
         kayakingRequested: false,
       },
     });
+    const bestKayaking = processConversationTurn({
+      message: 'best kayaking',
+      state: currentState,
+      userEntryId: 'user-8s-h',
+      assistantEntryId: 'assistant-8s-h',
+      userMessageAt: new Date('2026-07-29T00:00:24.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:25.000Z'),
+    });
+    const placesToKayak = processConversationTurn({
+      message: 'places to kayak',
+      state: currentState,
+      userEntryId: 'user-8s-i',
+      assistantEntryId: 'assistant-8s-i',
+      userMessageAt: new Date('2026-07-29T00:00:26.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:27.000Z'),
+    });
+    const equipmentPreserved = processConversationTurn({
+      message: 'kayak gear',
+      state: currentState,
+      userEntryId: 'user-8s-j',
+      assistantEntryId: 'assistant-8s-j',
+      userMessageAt: new Date('2026-07-29T00:00:28.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:29.000Z'),
+    });
 
     expect(extracted.state.kayakingRequested).toBe(true);
     expect(extracted.state.campingRequested).toBe(true);
+    expect(extracted.state.beachesRequested).toBe(true);
     expect(extracted.state.flightsRequested).toBe(true);
     expect(extracted.state.origin).toBe('Melbourne');
     expect(overriddenTrue.state.kayakingRequested).toBe(true);
@@ -606,11 +819,19 @@ describe('phase 7P — KayakingRequestedConversationStateExtractor activation', 
     expect(nullOverride.state.kayakingRequested).toBeNull();
     expect(preserved.state.kayakingRequested).toBe(false);
     expect(composed.state.kayakingRequested).toBe(true);
+    expect(composed.state.hikingWalkingRequested).toBe(true);
+    expect(composed.state.nationalParksRequested).toBe(true);
+    expect(composed.state.campingRequested).toBe(true);
+    expect(composed.state.beachesRequested).toBe(true);
+    expect(composed.state.nearbyDiscoveryRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.kayakingRequested).toBe(false);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    expect(bestKayaking.state.kayakingRequested).toBe(true);
+    expect(placesToKayak.state.kayakingRequested).toBe(true);
+    expect(equipmentPreserved.state.kayakingRequested).toBe(false);
     expect(extracted.reply).toBe(ENGINE_NOT_ASSEMBLED_REPLY);
     expect(Object.keys(extracted).sort()).toEqual(['reply', 'state', 'trace']);
     expect(
