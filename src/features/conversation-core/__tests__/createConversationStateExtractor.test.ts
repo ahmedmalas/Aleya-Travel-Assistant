@@ -1231,6 +1231,18 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'food trails', currentState }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
     expect(
+      extractor.extract({ message: 'winery options', currentState }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractor.extract({ message: 'nearby wineries', currentState }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractor.extract({ message: 'places to explore local food', currentState }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractor.extract({ message: 'vineyards', currentState }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
       extractor.extract({ message: 'no wineries', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(

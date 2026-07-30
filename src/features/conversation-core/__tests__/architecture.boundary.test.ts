@@ -996,6 +996,8 @@ describe('conversation-core architectural boundary', () => {
     expect(wineriesFoodTrailsRequestedExtractor).toMatch(
       /export class WineriesFoodTrailsRequestedConversationStateExtractor/,
     );
+    expect(wineriesFoodTrailsRequestedExtractor).toContain('Phase 7X');
+    expect(wineriesFoodTrailsRequestedExtractor).toContain('Phase 9A');
     expect(wineriesFoodTrailsRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

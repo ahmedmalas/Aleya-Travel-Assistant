@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction activation', () => {
+describe('phase 3X/7X/9A — explicit wineriesFoodTrailsRequested with extraction activation', () => {
   it('initial wineriesFoodTrailsRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -130,10 +130,14 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       'wine',
       'food',
       'restaurants',
-      'vineyards',
       'cellar doors',
       'wine tours',
       'food tours',
+      'buy wine',
+      'bottle shop',
+      'winery accommodation',
+      'Penfolds',
+      'what is a food trail',
     ];
 
     let state = initial;
@@ -141,6 +145,30 @@ describe('phase 3X/7X — explicit wineriesFoodTrailsRequested with extraction a
       const result = turn(message, state, index);
       expect(result.state.wineriesFoodTrailsRequested).toBeNull();
       state = result.state;
+    });
+  });
+
+  it('user message text sets wineriesFoodTrailsRequested from clear winery/food-trail discovery wording', () => {
+    const phrases = [
+      'show me wineries',
+      'nearby food trails',
+      'winery options',
+      'places to visit wineries',
+      'places to explore local food',
+      'vineyards',
+      'wine regions',
+    ];
+
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.wineriesFoodTrailsRequested, message).toBe(true);
     });
   });
 

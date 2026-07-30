@@ -216,7 +216,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor activation', () => {
+describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit wineriesFoodTrailsRequested true contract', () => {
     expectTypeOf<WineriesFoodTrailsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<WineriesFoodTrailsRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -257,45 +257,96 @@ describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor act
       'need food trails',
       'book wineries',
       'book food trails',
+      'vineyards',
+      'wine regions',
+      'wine trails',
+      'gourmet trails',
+      'culinary trails',
+      'winery locations',
+      'winery options',
+      'food-trail locations',
+      'nearby wineries',
+      'nearby food trails',
+      'places to visit wineries',
+      'places to explore local food',
+      'search vineyards',
+      'recommend wine regions',
+      'try food trails',
+      'visit wineries',
+      'explore culinary trails',
+      'wineries near the hotel',
+      'food trails in Hunter Valley',
+      'wineries in Margaret River',
+      'show me wineries and restaurants',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ wineriesFoodTrailsRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+        currentState: createState({ wineriesFoodTrailsRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { wineriesFoodTrailsRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'divingSnorkellingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('fishingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'snowActivitiesRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('attractionsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'restaurantsRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('returns empty for wine/food/restaurants/vineyards/tours, named places, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+  it('returns empty for purchases, restaurants alone, tours, accommodation, named-alone, historical, informational, and negation wording', () => {
     const extractor = new WineriesFoodTrailsRequestedConversationStateExtractor();
     const unsupported = [
       'wine',
       'food',
       'restaurants',
-      'vineyards',
       'cellar doors',
       'markets',
       'food tours',
       'wine tours',
+      'show me wine tours',
       'Penfolds',
       'Barossa Valley',
-      'boutique wineries',
-      'organic winery',
-      'guided food trails',
-      'wineries near the hotel',
-      'nearby wineries',
-      'food trails in Hunter Valley',
-      'wineries in Margaret River',
+      'buy wine',
+      'bottle shop',
+      'liquor store',
+      'italian cuisine',
+      'recipe ideas',
+      'winery accommodation',
+      'wine shipping',
+      'winemaking equipment',
+      'winery for sale',
+      'wine licence',
+      'we visited a winery yesterday',
+      'what is a food trail',
+      'wineries?',
       'do not include wineries',
       'no wineries',
       'no food trails',
       "don't add wineries",
       'without wineries',
       'remove wineries',
+      'cancel food trails',
+      'avoid wineries',
+      'skip food trails',
       'forget food trails',
       'keep wineries',
       'actually show me wineries',
@@ -389,6 +440,8 @@ describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor act
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7X');
+    expect(source).toContain('Phase 9A');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -481,65 +534,80 @@ describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor act
     );
 
     expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7V');
-    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7W');
+    expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8Y');
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7W',
+    );
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Z',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8X',
+    );
+    expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8W',
+    );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8V',
+    );
     expect(
       new DivingSnorkellingRequestedConversationStateExtractor().extract({
-        message: 'add diving',
+        message: 'diving options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
       new FishingRequestedConversationStateExtractor().extract({
-        message: 'add fishing',
+        message: 'fishing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
 
     expect(
       new HikingWalkingRequestedConversationStateExtractor().extract({
-        message: 'add hiking',
+        message: 'walking track options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
       new SnowActivitiesRequestedConversationStateExtractor().extract({
-        message: 'add snow activities',
+        message: 'skiing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
       new AttractionsRequestedConversationStateExtractor().extract({
-        message: 'add attractions',
+        message: 'attraction options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
       new ScenicDrivesRequestedConversationStateExtractor().extract({
-        message: 'add scenic drives',
+        message: 'scenic drive options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       new FourWheelDrivingRequestedConversationStateExtractor().extract({
-        message: 'add four-wheel driving',
+        message: '4wd tracks',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       new KayakingRequestedConversationStateExtractor().extract({
-        message: 'add kayaking',
+        message: 'kayaking spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
-        message: 'add camping',
+        message: 'camping spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
       new BeachesRequestedConversationStateExtractor().extract({
-        message: 'show me beaches',
+        message: 'beach options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
@@ -893,7 +961,7 @@ describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor act
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
-    const divingOnlyMessage = 'add diving';
+    const divingOnlyMessage = 'diving options';
     expect(
       extractors[22]?.extract({
         message: divingOnlyMessage,
@@ -916,5 +984,31 @@ describe('phase 7X — WineriesFoodTrailsRequestedConversationStateExtractor act
         `extractor ${index} on diving message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    const wineriesOnlyMessage = 'winery options';
+    expect(
+      extractors[23]?.extract({
+        message: wineriesOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractors[22]?.extract({
+        message: wineriesOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[21]?.extract({
+        message: wineriesOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[20]?.extract({
+        message: wineriesOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
   });
 });
