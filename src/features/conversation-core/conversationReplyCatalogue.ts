@@ -12,6 +12,8 @@
  * Phase 10Q — generic acknowledgement wording refined to "Perfect."
  * Phase 10R — departure-date acknowledgement:
  * "Perfect — departing on {departureDate}."
+ * Phase 10S — return-date acknowledgement:
+ * "Perfect — returning on {returnDate}."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -21,6 +23,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     origin: (origin: string) => `Perfect — departing from ${origin}.`,
     departureDate: (departureDate: string) =>
       `Perfect — departing on ${departureDate}.`,
+    returnDate: (returnDate: string) =>
+      `Perfect — returning on ${returnDate}.`,
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

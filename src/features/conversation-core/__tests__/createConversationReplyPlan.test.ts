@@ -178,7 +178,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     expect(plan.messageInterpreted).toBe(true);
   });
 
-  it('plans Perfect for other changed travel fields', () => {
+  it('plans a return-date acknowledgement with neutral follow-up', () => {
     const previous = createState({
       destination: 'Cairns',
       origin: 'Sydney',
@@ -189,6 +189,28 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       origin: 'Sydney',
       departureDate: '2026-08-28',
       returnDate: '2026-09-05',
+    });
+    const plan = planFor(previous, state);
+    expect(plan.acknowledgements).toEqual([
+      'Perfect — returning on 2026-09-05.',
+    ]);
+    expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(plan.messageInterpreted).toBe(true);
+  });
+
+  it('plans Perfect for other changed travel fields', () => {
+    const previous = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+    });
+    const state = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+      adultCount: 2,
     });
     const plan = planFor(previous, state);
     expect(plan.acknowledgements).toEqual(['Perfect.']);
