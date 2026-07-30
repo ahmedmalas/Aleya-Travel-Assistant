@@ -2,17 +2,16 @@ import {
   fieldValueChanged,
   type ConversationStateChangeClassification,
 } from './classifyConversationStateChange';
+import {
+  NEUTRAL_TRIP_FALLBACK_REPLY,
+  selectConversationFollowUpQuestion,
+} from './selectConversationFollowUpQuestion';
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
 } from './types';
 
-/**
- * Neutral continuation when no supported travel-field change occurred, or when
- * core requirements and capability-specific follow-ups are already satisfied.
- */
-export const NEUTRAL_TRIP_FALLBACK_REPLY =
-  'What else should I know about your trip?';
+export { NEUTRAL_TRIP_FALLBACK_REPLY };
 
 /**
  * Stable capability-label order for multi-capability acknowledgements.
@@ -48,55 +47,11 @@ const CAPABILITY_LABELS = [
 >;
 
 /**
- * Fixed progression priority for the next missing core travel requirement.
- * Phase 10C — deterministic; derived only from final canonical state.
- */
-const PROGRESSION_QUESTIONS = [
-  ['destination', 'Where would you like to travel?'],
-  ['origin', 'Where will you be travelling from?'],
-  ['departureDate', 'When would you like to depart?'],
-  ['returnDate', 'When would you like to return?'],
-] as const satisfies ReadonlyArray<
-  readonly [keyof ConversationCoreState, string]
->;
-
-/**
- * Fixed contextual follow-up priority after core fields are complete.
- * Phase 10D/10E — deterministic; derived only from final canonical state.
- *
- * Phase 10E suppression: skip any contextual question whose required
- * information already exists, then continue to the next eligible question.
- * Traveller/guest counts share adultCount. Activity/dining interest has no
- * dedicated state field yet, so those questions remain eligible while the
- * capability stays requested.
- */
-const CONTEXTUAL_QUESTIONS = [
-  {
-    applies: (state: ConversationCoreState) =>
-      state.flightsRequested === true && state.adultCount === null,
-    question: 'How many adults will be travelling?',
-  },
-  {
-    applies: (state: ConversationCoreState) =>
-      state.accommodationRequested === true && state.adultCount === null,
-    question: 'How many guests will be staying?',
-  },
-  {
-    applies: (state: ConversationCoreState) => state.activitiesRequested === true,
-    question: 'What kinds of activities are you interested in?',
-  },
-  {
-    applies: (state: ConversationCoreState) =>
-      state.restaurantsRequested === true,
-    question: 'What type of dining are you looking for?',
-  },
-] as const;
-
-/**
  * Internal deterministic reply plan produced before reply text is rendered.
  *
  * Phase 10G — consumed only by generateConversationReply. Contains at most
- * one acknowledgement string and at most one follow-up question.
+ * one acknowledgement string and at most one follow-up question. Phase 10H:
+ * follow-up selection is delegated to selectConversationFollowUpQuestion.
  */
 export type ConversationReplyPlan = {
   acknowledgements: readonly string[];
@@ -111,8 +66,8 @@ export type CreateConversationReplyPlanInput = {
 
 /**
  * Build a structured reply plan from final canonical state and the turn's
- * change classification. Preserves Phase 10B–10E acknowledgement, progression,
- * contextual, and suppression behaviour exactly.
+ * change classification. Preserves Phase 10B–10E acknowledgement behaviour;
+ * follow-up selection is owned by selectConversationFollowUpQuestion.
  */
 export function createConversationReplyPlan(
   input: CreateConversationReplyPlanInput,
@@ -129,7 +84,7 @@ export function createConversationReplyPlan(
       acknowledgements: [
         `I've added ${formatLabelList(newlyRequestedLabels)} to your trip requirements.`,
       ],
-      followUpQuestion: nextMissingRequirementQuestion(state),
+      followUpQuestion: selectConversationFollowUpQuestion(state),
       messageInterpreted,
     };
   }
@@ -140,7 +95,7 @@ export function createConversationReplyPlan(
   ) {
     return {
       acknowledgements: [`Sounds good — ${state.destination}.`],
-      followUpQuestion: nextMissingRequirementQuestion(state),
+      followUpQuestion: selectConversationFollowUpQuestion(state),
       messageInterpreted,
     };
   }
@@ -148,7 +103,7 @@ export function createConversationReplyPlan(
   if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
     return {
       acknowledgements: [`Got it — travelling from ${state.origin}.`],
-      followUpQuestion: nextMissingRequirementQuestion(state),
+      followUpQuestion: selectConversationFollowUpQuestion(state),
       messageInterpreted,
     };
   }
@@ -156,7 +111,7 @@ export function createConversationReplyPlan(
   if (classification.hasAnyChange) {
     return {
       acknowledgements: ['Got it.'],
-      followUpQuestion: nextMissingRequirementQuestion(state),
+      followUpQuestion: selectConversationFollowUpQuestion(state),
       messageInterpreted,
     };
   }
@@ -166,22 +121,6 @@ export function createConversationReplyPlan(
     followUpQuestion: NEUTRAL_TRIP_FALLBACK_REPLY,
     messageInterpreted: false,
   };
-}
-
-function nextMissingRequirementQuestion(state: ConversationCoreState): string {
-  for (const [field, question] of PROGRESSION_QUESTIONS) {
-    if (state[field] === null) {
-      return question;
-    }
-  }
-  // Phase 10E: walk contextual candidates in priority order; skip any whose
-  // required information is already present in the final canonical state.
-  for (const entry of CONTEXTUAL_QUESTIONS) {
-    if (entry.applies(state)) {
-      return entry.question;
-    }
-  }
-  return NEUTRAL_TRIP_FALLBACK_REPLY;
 }
 
 function formatLabelList(labels: readonly string[]): string {
