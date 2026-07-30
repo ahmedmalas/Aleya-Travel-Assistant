@@ -113,17 +113,21 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     expect(second.state.attractionsRequested).toBe(false);
   });
 
-  it('user message text cannot set attractionsRequested', () => {
+  it('unsupported attractions-adjacent wording cannot set attractionsRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'tourist attractions',
       'landmarks',
       'museums',
-      'places to visit',
       'sightseeing',
+      'attraction tickets',
+      'attraction opening hours',
+      'Sydney Opera House',
+      'attraction weather',
+      'attractions?',
+      'I liked the attraction',
     ];
 
     let state = initial;
@@ -134,7 +138,84 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('explicit attractions cue in the message sets attractionsRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('attraction options', initial, 0);
+    expect(result.state.attractionsRequested).toBe(true);
+  });
+
+  it('phase 8V clear attractions-discovery cues set attractionsRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const options = turn('attraction options', initial, 0);
+    expect(options.state.attractionsRequested).toBe(true);
+    expect(options.state.activitiesRequested).toBeNull();
+    expect(options.state.restaurantsRequested).toBeNull();
+    expect(options.state.nearbyDiscoveryRequested).toBeNull();
+    expect(options.state.scenicDrivesRequested).toBeNull();
+
+    const tourist = turn('tourist attractions', initial, 1);
+    expect(tourist.state.attractionsRequested).toBe(true);
+    expect(tourist.state.activitiesRequested).toBeNull();
+
+    const things = turn('things to see', initial, 2);
+    expect(things.state.attractionsRequested).toBe(true);
+
+    const places = turn('places to visit', initial, 3);
+    expect(places.state.attractionsRequested).toBe(true);
+
+    const see = turn('what should I see', initial, 4);
+    expect(see.state.attractionsRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me tourist attractions in Brisbane. Fly from Sydney to Brisbane',
+      initial,
+      5,
+    );
+    expect(inRequest.state.attractionsRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Brisbane');
+
+    const seeded = turn('Hello', initial, 6, {
+      attractionsRequested: false,
+    });
+    const negated = turn('no attractions', seeded.state, 7);
+    expect(negated.state.attractionsRequested).toBe(false);
+    const tickets = turn('attraction tickets', seeded.state, 8);
+    expect(tickets.state.attractionsRequested).toBe(false);
+    const named = turn('Sydney Opera House', seeded.state, 9);
+    expect(named.state.attractionsRequested).toBe(false);
+    const weather = turn('attraction weather', seeded.state, 10);
+    expect(weather.state.attractionsRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.attractionsRequested overrides an extracted attractions request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('attraction options', initial, 0, {
+      attractionsRequested: false,
+    });
+    expect(overriddenFalse.state.attractionsRequested).toBe(false);
+
+    const overriddenTrue = turn('no attractions', initial, 1, {
+      attractionsRequested: true,
+    });
+    expect(overriddenTrue.state.attractionsRequested).toBe(true);
+
+    const nullOverride = turn('attraction options', initial, 2, {
+      attractionsRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.attractionsRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing attractionsRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -144,11 +225,7 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     });
     expect(withTrue.state.attractionsRequested).toBe(true);
 
-    const afterWords = turn(
-      'attractions tourist attractions landmarks',
-      withTrue.state,
-      1,
-    );
+    const afterWords = turn('sightseeing landmarks museums', withTrue.state, 1);
     expect(afterWords.state.attractionsRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
@@ -157,7 +234,7 @@ describe('phase 3S — explicit attractionsRequested only', () => {
     expect(withFalse.state.attractionsRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'places to visit sightseeing landmarks',
+      'attraction tickets attraction weather',
       withFalse.state,
       3,
     );

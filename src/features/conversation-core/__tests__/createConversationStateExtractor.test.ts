@@ -1087,13 +1087,11 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       },
     });
     expect(
-      extractor.extract({ message: 'show me attractions', currentState }),
-    ).toEqual({
-      stateUpdate: {
-        activitiesRequested: true,
-        attractionsRequested: true,
-      },
-    });
+      extractor.extract({ message: 'attraction options', currentState }),
+    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    expect(
+      extractor.extract({ message: 'tourist attractions', currentState }),
+    ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
       extractor.extract({ message: 'no attractions', currentState }),
     ).toEqual({ stateUpdate: {} });
@@ -1101,7 +1099,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'sightseeing', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'tourist attractions', currentState }),
+      extractor.extract({ message: 'Sydney Opera House', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
