@@ -111,10 +111,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toContain('Phase 11B');
     expect(selectorSource).toContain('Phase 11C');
     expect(selectorSource).toContain('Phase 11J');
+    expect(selectorSource).toContain('Phase 11K');
     expect(selectorSource).toMatch(
       /export function selectConversationAcknowledgement/,
     );
     expect(selectorSource).toMatch(/destinationRemoved/);
+    expect(selectorSource).toMatch(/originRemoved/);
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
     expect(selectorSource).toMatch(/\['toursRequested', 'tours'\]/);
     expect(selectorSource).toMatch(/\['eventsRequested', 'events'\]/);
@@ -1334,7 +1336,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       }
     });
 
-    it('characterises destination clear as Destination removed.; origin/date clears as Perfect.', () => {
+    it('characterises destination/origin clears with removal wording; date clears as Perfect.', () => {
       const previous = filled();
 
       const destinationCleared = filled({ destination: null });
@@ -1347,7 +1349,9 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
 
       const originCleared = filled({ origin: null });
-      expect(acknowledgementFor(previous, originCleared)).toBe('Perfect.');
+      expect(acknowledgementFor(previous, originCleared)).toBe(
+        'Departure location removed.',
+      );
 
       const departureCleared = filled({ departureDate: null });
       expect(acknowledgementFor(previous, departureCleared)).toBe('Perfect.');
@@ -2289,9 +2293,9 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBeNull();
     });
 
-    it('preserves Perfect. for non-destination clears alone', () => {
+    it('preserves Perfect. for non-destination/non-origin clears alone', () => {
       expect(acknowledgementFor(filled(), filled({ origin: null }))).toBe(
-        'Perfect.',
+        'Departure location removed.',
       );
       expect(
         acknowledgementFor(filled(), filled({ departureDate: null })),
@@ -2410,6 +2414,195 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       expect(result.state.destination).toBeNull();
       expect(result.reply).toContain('Destination removed.');
       expect(result.reply.match(/Destination removed\./g)?.length).toBe(1);
+      expect(result.reply).not.toMatch(/Perfect\./);
+      expect(result.trace.messageInterpreted).toBe(true);
+    });
+  });
+
+  describe('phase 11K — origin-removal acknowledgement', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('acknowledges stored origin → null as Departure location removed.', () => {
+      expect(acknowledgementFor(filled(), filled({ origin: null }))).toBe(
+        'Departure location removed.',
+      );
+    });
+
+    it('acknowledges null → stored origin with set wording', () => {
+      expect(
+        acknowledgementFor(
+          createState({ origin: null, destination: 'Cairns' }),
+          createState({ origin: 'Sydney', destination: 'Cairns' }),
+        ),
+      ).toBe('Perfect — departing from Sydney.');
+    });
+
+    it('acknowledges origin replacement with set wording', () => {
+      expect(
+        acknowledgementFor(
+          filled({ origin: 'Sydney' }),
+          filled({ origin: 'Melbourne' }),
+        ),
+      ).toBe('Perfect — departing from Melbourne.');
+    });
+
+    it('produces no origin acknowledgement when origin is unchanged', () => {
+      expect(
+        acknowledgementFor(
+          filled({ origin: 'Sydney', adultCount: 2 }),
+          filled({ origin: 'Sydney', adultCount: 3 }),
+        ),
+      ).toBe('Perfect — 3 adults travelling.');
+      expect(acknowledgementFor(filled(), filled())).toBeNull();
+    });
+
+    it('preserves destination removal and Perfect. for remaining clears', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ destination: null })),
+      ).toBe('Destination removed.');
+      expect(
+        acknowledgementFor(filled(), filled({ departureDate: null })),
+      ).toBe('Perfect.');
+      expect(acknowledgementFor(filled(), filled({ returnDate: null }))).toBe(
+        'Perfect.',
+      );
+      expect(acknowledgementFor(filled(), filled({ adultCount: null }))).toBe(
+        'Perfect.',
+      );
+      expect(acknowledgementFor(filled(), filled({ childCount: null }))).toBe(
+        'Perfect.',
+      );
+      expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
+        'Perfect.',
+      );
+    });
+
+    it('lets newly enabled capability beat origin removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: null }),
+          filled({ origin: null, flightsRequested: true }),
+        ),
+      ).toBe("I've added flights to your trip requirements.");
+    });
+
+    it('lets newly disabled capability beat origin removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ origin: null, flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+    });
+
+    it('lets destination set/changed beat origin removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ destination: 'Brisbane' }),
+          filled({ destination: 'Hobart', origin: null }),
+        ),
+      ).toBe('Great — Hobart.');
+    });
+
+    it('lets destination removal beat origin removal', () => {
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ destination: null, origin: null }),
+        ),
+      ).toBe('Destination removed.');
+    });
+
+    it('lets origin removal beat dates, passenger counts, and generic clears', () => {
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, departureDate: '2026-10-01' }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, returnDate: '2026-10-10' }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, adultCount: 4 }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, childCount: 3 }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, infantCount: 2 }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, adultCount: null, childCount: null }),
+        ),
+      ).toBe('Departure location removed.');
+    });
+
+    it('keeps origin set/changed wording when origin is non-null', () => {
+      expect(
+        acknowledgementFor(
+          filled({ origin: 'Sydney' }),
+          filled({ origin: 'Melbourne', adultCount: null }),
+        ),
+      ).toBe('Perfect — departing from Melbourne.');
+    });
+
+    it('keeps messageInterpreted true for origin removal', () => {
+      const previous = filled();
+      const next = filled({ origin: null });
+      const plan = planFor(previous, next);
+      expect(plan.messageInterpreted).toBe(true);
+      expect(plan.acknowledgements).toEqual(['Departure location removed.']);
+    });
+
+    it('returns at most one acknowledgement for origin removal with other changes', () => {
+      const acknowledgement = acknowledgementFor(
+        filled({ flightsRequested: true }),
+        filled({
+          origin: null,
+          departureDate: '2026-10-01',
+          adultCount: 4,
+          flightsRequested: null,
+        }),
+      );
+      expect(acknowledgement).toBe('Departure location removed.');
+      expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+
+    it('reaches origin removal through processConversationTurn', () => {
+      const previous = filled();
+      const result = turn('hello', previous, { origin: null });
+      expect(result.state.origin).toBeNull();
+      expect(result.reply).toContain('Departure location removed.');
+      expect(result.reply.match(/Departure location removed\./g)?.length).toBe(
+        1,
+      );
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });

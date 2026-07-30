@@ -107,10 +107,14 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       expect(classification.hasInterpretedChange).toBe(true);
       expect(classification.hasAcknowledgementEligibleChange).toBe(true);
       expect(messageInterpreted).toBe(true);
-      // Phase 11J — destination clear uses dedicated removal wording.
-      expect(acknowledgement).toBe(
-        field === 'destination' ? 'Destination removed.' : 'Perfect.',
-      );
+      // Phase 11J/11K — destination/origin clears use dedicated removal wording.
+      const expectedAcknowledgement =
+        field === 'destination'
+          ? 'Destination removed.'
+          : field === 'origin'
+            ? 'Departure location removed.'
+            : 'Perfect.';
+      expect(acknowledgement).toBe(expectedAcknowledgement);
     },
   );
 
@@ -124,6 +128,9 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       expect(result.state[field]).toBeNull();
       if (field === 'destination') {
         expect(result.reply).toContain('Destination removed.');
+        expect(result.reply).not.toMatch(/Perfect\./);
+      } else if (field === 'origin') {
+        expect(result.reply).toContain('Departure location removed.');
         expect(result.reply).not.toMatch(/Perfect\./);
       } else {
         expect(result.reply).toMatch(/Perfect\./);
