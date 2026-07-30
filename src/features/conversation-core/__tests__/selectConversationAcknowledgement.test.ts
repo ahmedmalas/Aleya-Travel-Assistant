@@ -972,4 +972,275 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       }
     }
   });
+
+  describe('phase 10Z — passenger acknowledgement consolidation', () => {
+    const passengerBase = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        ...overrides,
+      });
+
+    it('proves final singular and plural passenger acknowledgement wording', () => {
+      expect(
+        acknowledgementFor(passengerBase(), passengerBase({ adultCount: 1 })),
+      ).toBe('Perfect — 1 adult travelling.');
+      expect(
+        acknowledgementFor(passengerBase(), passengerBase({ adultCount: 2 })),
+      ).toBe('Perfect — 2 adults travelling.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2 }),
+          passengerBase({ adultCount: 2, childCount: 1 }),
+        ),
+      ).toBe('Perfect — 1 child travelling.');
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2 }),
+          passengerBase({ adultCount: 2, childCount: 2 }),
+        ),
+      ).toBe('Perfect — 2 children travelling.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1 }),
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+        ),
+      ).toBe('Perfect — 1 infant travelling.');
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1 }),
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 2 }),
+        ),
+      ).toBe('Perfect — 2 infants travelling.');
+    });
+
+    it('proves adult beats child and infant; child beats infant', () => {
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1 }),
+          passengerBase({ adultCount: 3, childCount: 2 }),
+        ),
+      ).toBe('Perfect — 3 adults travelling.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, infantCount: 1 }),
+          passengerBase({ adultCount: 3, infantCount: 2 }),
+        ),
+      ).toBe('Perfect — 3 adults travelling.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+          passengerBase({ adultCount: 2, childCount: 2, infantCount: 2 }),
+        ),
+      ).toBe('Perfect — 2 children travelling.');
+    });
+
+    it('proves capability, destination, origin, and dates beat all passenger counts', () => {
+      expect(
+        acknowledgementFor(
+          passengerBase(),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+            flightsRequested: true,
+            accommodationRequested: true,
+          }),
+        ),
+      ).toBe(
+        "I've added flights and accommodation to your trip requirements.",
+      );
+
+      expect(
+        acknowledgementFor(
+          passengerBase({
+            destination: 'Brisbane',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+          passengerBase({
+            destination: 'Hobart',
+            adultCount: 3,
+            childCount: 2,
+            infantCount: 2,
+          }),
+        ),
+      ).toBe('Great — Hobart.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({
+            origin: 'Sydney',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+          passengerBase({
+            origin: 'Melbourne',
+            adultCount: 3,
+            childCount: 2,
+            infantCount: 2,
+          }),
+        ),
+      ).toBe('Perfect — departing from Melbourne.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({
+            departureDate: '2026-08-01',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+          passengerBase({
+            departureDate: '2026-08-28',
+            adultCount: 3,
+            childCount: 2,
+            infantCount: 2,
+          }),
+        ),
+      ).toBe('Perfect — departing on 2026-08-28.');
+
+      expect(
+        acknowledgementFor(
+          passengerBase({
+            returnDate: '2026-09-01',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+          passengerBase({
+            returnDate: '2026-09-05',
+            adultCount: 3,
+            childCount: 2,
+            infantCount: 2,
+          }),
+        ),
+      ).toBe('Perfect — returning on 2026-09-05.');
+    });
+
+    it('enforces at most one acknowledgement across multi-passenger changes', () => {
+      const samples = [
+        acknowledgementFor(
+          passengerBase(),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+        ),
+        acknowledgementFor(
+          passengerBase({ adultCount: 2 }),
+          passengerBase({
+            adultCount: 3,
+            childCount: 1,
+            infantCount: 1,
+          }),
+        ),
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1 }),
+          passengerBase({
+            adultCount: 2,
+            childCount: 2,
+            infantCount: 1,
+          }),
+        ),
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 2,
+            toursRequested: true,
+          }),
+        ),
+      ];
+
+      expect(samples).toEqual([
+        'Perfect — 2 adults travelling.',
+        'Perfect — 3 adults travelling.',
+        'Perfect — 2 children travelling.',
+        'Perfect — 2 infants travelling.',
+      ]);
+      for (const acknowledgement of samples) {
+        expect(acknowledgement).not.toBeNull();
+        expect(typeof acknowledgement).toBe('string');
+        expect(acknowledgement!.includes('\n')).toBe(false);
+      }
+    });
+
+    it('does not acknowledge unchanged passenger counts', () => {
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+        ),
+      ).toBeNull();
+
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2 }),
+          passengerBase({ adultCount: 2, toursRequested: true }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1 }),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            toursRequested: true,
+          }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(
+          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+            toursRequested: true,
+          }),
+        ),
+      ).toBe('Perfect.');
+    });
+
+    it('preserves traveller and guest follow-up suppression when passenger counts change', () => {
+      const previous = completeCore({
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        flightsRequested: true,
+        accommodationRequested: true,
+        restaurantsRequested: true,
+      });
+      const state = completeCore({
+        adultCount: 3,
+        childCount: 2,
+        infantCount: 2,
+        flightsRequested: true,
+        accommodationRequested: true,
+        restaurantsRequested: true,
+      });
+      const plan = planFor(previous, state);
+
+      expect(plan.acknowledgements).toEqual(['Perfect — 3 adults travelling.']);
+      expect(plan.acknowledgements).toHaveLength(1);
+      expect(plan.followUpQuestion).toBe(
+        'What type of dining are you looking for?',
+      );
+      expect(plan.followUpQuestion).not.toMatch(/adults will be travelling/i);
+      expect(plan.followUpQuestion).not.toMatch(/guests will be staying/i);
+    });
+  });
 });
