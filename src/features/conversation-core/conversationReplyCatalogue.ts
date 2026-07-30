@@ -18,6 +18,8 @@
  * "Perfect — {adultCount} adults travelling."
  * Phase 10U — child-count acknowledgement:
  * "Perfect — {childCount} children travelling."
+ * Phase 10V — infant-count acknowledgement:
+ * "Perfect — {infantCount} infants travelling."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -33,6 +35,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
       `Perfect — ${adultCount} adults travelling.`,
     childCount: (childCount: number) =>
       `Perfect — ${childCount} children travelling.`,
+    infantCount: (infantCount: number) =>
+      `Perfect — ${infantCount} infants travelling.`,
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

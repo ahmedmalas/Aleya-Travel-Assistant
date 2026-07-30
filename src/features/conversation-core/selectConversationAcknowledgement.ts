@@ -55,10 +55,11 @@ const CAPABILITY_LABELS = [
  * Phase 10R — departure-date acknowledgement inserted after origin.
  * Phase 10S — return-date acknowledgement inserted after departure date.
  * Phase 10T — adult-count acknowledgement inserted after return date.
- * Phase 10U — child-count acknowledgement inserted after adult count:
+ * Phase 10U — child-count acknowledgement inserted after adult count.
+ * Phase 10V — infant-count acknowledgement inserted after child count:
  * newly enabled capabilities → destination → origin → departure date →
- * return date → adult count → child count → other travel-field change →
- * null when unchanged.
+ * return date → adult count → child count → infant count → other
+ * travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -120,6 +121,15 @@ export function selectConversationAcknowledgement(
   ) {
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(
       state.childCount,
+    );
+  }
+
+  if (
+    state.infantCount !== null &&
+    fieldValueChanged(classification, 'infantCount')
+  ) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(
+      state.infantCount,
     );
   }
 
