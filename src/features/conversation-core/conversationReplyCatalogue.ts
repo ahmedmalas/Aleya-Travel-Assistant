@@ -34,6 +34,8 @@
  * "Departure location removed."
  * Phase 11L — departure-date removal acknowledgement:
  * "Departure date removed."
+ * Phase 11M — return-date removal acknowledgement:
+ * "Return date removed."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -50,6 +52,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     departureDateRemoved: 'Departure date removed.',
     returnDate: (returnDate: string) =>
       `Perfect — returning on ${returnDate}.`,
+    returnDateRemoved: 'Return date removed.',
     adultCount: (adultCount: number) =>
       adultCount === 1
         ? `Perfect — ${adultCount} adult travelling.`

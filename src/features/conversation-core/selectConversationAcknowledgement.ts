@@ -93,6 +93,15 @@ const CAPABILITY_LABELS = [
  * departure date set or changed → departure date removed →
  * return date → adult count → child count → infant count →
  * other travel-field change → null when unchanged.
+ * Phase 11M — return-date removal (stored → null) uses the
+ * return-date priority slot after return date set/changed:
+ * newly enabled capabilities → newly disabled capabilities →
+ * destination set or changed → destination removed →
+ * origin set or changed → origin removed →
+ * departure date set or changed → departure date removed →
+ * return date set or changed → return date removed →
+ * adult count → child count → infant count →
+ * other travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -171,6 +180,15 @@ export function selectConversationAcknowledgement(
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDate(
       state.returnDate,
     );
+  }
+
+  // Stored returnDate → null: final value is null and returnDate is in
+  // updated (not newlyPopulated). No new classification field required.
+  if (
+    state.returnDate === null &&
+    classification.updated.includes('returnDate')
+  ) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDateRemoved;
   }
 
   if (
