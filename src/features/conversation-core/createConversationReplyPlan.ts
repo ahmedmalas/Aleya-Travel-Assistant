@@ -3,13 +3,8 @@ import {
   type ConversationReplyPlan,
 } from './assembleConversationReplyPlan';
 import type { ConversationStateChangeClassification } from './classifyConversationStateChange';
-import { selectConversationAcknowledgement } from './selectConversationAcknowledgement';
-import { selectConversationContinuationPrompt } from './selectConversationContinuationPrompt';
-import {
-  NEUTRAL_TRIP_FALLBACK_REPLY,
-  selectConversationFollowUpQuestion,
-} from './selectConversationFollowUpQuestion';
-import { selectConversationMessageInterpreted } from './selectConversationMessageInterpreted';
+import { NEUTRAL_TRIP_FALLBACK_REPLY } from './selectConversationFollowUpQuestion';
+import { selectConversationReplyComponents } from './selectConversationReplyComponents';
 import type { ConversationCoreState } from './types';
 
 export { NEUTRAL_TRIP_FALLBACK_REPLY };
@@ -31,28 +26,11 @@ export type CreateConversationReplyPlanInput = {
  * Phase 10K: reply wording comes from CONVERSATION_REPLY_CATALOGUE.
  * Phase 10L: continuation fallback uses selectConversationContinuationPrompt.
  * Phase 10M: final object construction uses assembleConversationReplyPlan.
+ * Phase 10N: selector coordination uses selectConversationReplyComponents.
  */
 export function createConversationReplyPlan(
   input: CreateConversationReplyPlanInput,
 ): ConversationReplyPlan {
-  const { state, classification } = input;
-  const messageInterpreted =
-    selectConversationMessageInterpreted(classification);
-  const acknowledgement = selectConversationAcknowledgement(
-    state,
-    classification,
-  );
-  const followUpQuestion = messageInterpreted
-    ? selectConversationFollowUpQuestion(state)
-    : null;
-  const continuationPrompt = selectConversationContinuationPrompt({
-    followUpQuestion,
-  });
-
-  return assembleConversationReplyPlan({
-    acknowledgement,
-    followUpQuestion,
-    continuationPrompt,
-    messageInterpreted,
-  });
+  const components = selectConversationReplyComponents(input);
+  return assembleConversationReplyPlan(components);
 }

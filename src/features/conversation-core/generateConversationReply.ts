@@ -29,9 +29,10 @@ export type GenerateConversationReplyInput = {
  * Phase 10K: acknowledgement and follow-up wording come from
  * CONVERSATION_REPLY_CATALOGUE. Phase 10L: continuation fallback uses
  * selectConversationContinuationPrompt. Phase 10M: reply-plan object
- * assembly uses assembleConversationReplyPlan. This function only renders
- * the planned reply text. Invoked solely by processConversationTurn after
- * extraction and explicit stateUpdate precedence. Does not re-extract,
+ * assembly uses assembleConversationReplyPlan. Phase 10N: selector
+ * coordination uses selectConversationReplyComponents. This function only
+ * renders the planned reply text. Invoked solely by processConversationTurn
+ * after extraction and explicit stateUpdate precedence. Does not re-extract,
  * inspect message text, call search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(

@@ -27,6 +27,10 @@ const PLAN_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/createConversationReplyPlan.ts',
 );
+const COMPONENTS_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/selectConversationReplyComponents.ts',
+);
 const INDEX_SOURCE = resolve(ROOT, 'src/features/conversation-core/index.ts');
 const PROCESS_TURN_SOURCE = resolve(
   ROOT,
@@ -96,8 +100,10 @@ describe('phase 10L — deterministic continuation prompt boundary', () => {
     expect(selectorSource).toMatch(
       /export function selectConversationContinuationPrompt/,
     );
+    const componentsSource = readFileSync(COMPONENTS_SOURCE, 'utf8');
     expect(planSource).toContain('Phase 10L');
-    expect(planSource).toMatch(/selectConversationContinuationPrompt\(/);
+    expect(planSource).toMatch(/selectConversationReplyComponents\(/);
+    expect(componentsSource).toMatch(/selectConversationContinuationPrompt\(/);
     expect(planSource).not.toMatch(
       /followUpQuestion: NEUTRAL_TRIP_FALLBACK_REPLY/,
     );

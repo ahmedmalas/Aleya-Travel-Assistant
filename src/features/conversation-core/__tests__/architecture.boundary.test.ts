@@ -1214,6 +1214,9 @@ describe('conversation-core architectural boundary', () => {
     const continuation = readSrc(
       'src/features/conversation-core/selectConversationContinuationPrompt.ts',
     );
+    const components = readSrc(
+      'src/features/conversation-core/selectConversationReplyComponents.ts',
+    );
     const plan = readSrc(
       'src/features/conversation-core/createConversationReplyPlan.ts',
     );
@@ -1227,7 +1230,8 @@ describe('conversation-core architectural boundary', () => {
     expect(continuation).toMatch(/NEUTRAL_TRIP_FALLBACK_REPLY/);
     expect(continuation.includes('ConversationCoreState')).toBe(false);
     expect(continuation.includes('Math.random')).toBe(false);
-    expect(plan).toMatch(/selectConversationContinuationPrompt\(/);
+    expect(components).toMatch(/selectConversationContinuationPrompt\(/);
+    expect(plan).toMatch(/selectConversationReplyComponents\(/);
     expect(plan.includes('followUpQuestion: NEUTRAL_TRIP_FALLBACK_REPLY')).toBe(
       false,
     );
@@ -1257,6 +1261,35 @@ describe('conversation-core architectural boundary', () => {
     expect(plan).toMatch(/assembleConversationReplyPlan\(/);
     expect(index.includes('assembleConversationReplyPlan')).toBe(false);
     expect(processTurn.includes('assembleConversationReplyPlan')).toBe(false);
+  });
+
+  it('keeps the Phase 10N reply-component selector internal', () => {
+    const components = readSrc(
+      'src/features/conversation-core/selectConversationReplyComponents.ts',
+    );
+    const plan = readSrc(
+      'src/features/conversation-core/createConversationReplyPlan.ts',
+    );
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
+
+    expect(components).toContain('Phase 10N');
+    expect(components).toMatch(
+      /export function selectConversationReplyComponents/,
+    );
+    expect(components).toMatch(/selectConversationAcknowledgement\(/);
+    expect(components).toMatch(/selectConversationFollowUpQuestion\(/);
+    expect(components).toMatch(/selectConversationContinuationPrompt\(/);
+    expect(components).toMatch(/selectConversationMessageInterpreted\(/);
+    expect(components.includes('assembleConversationReplyPlan(')).toBe(false);
+    expect(components.includes('Math.random')).toBe(false);
+    expect(plan).toContain('Phase 10N');
+    expect(plan).toMatch(/selectConversationReplyComponents\(/);
+    expect(plan.includes('selectConversationAcknowledgement(')).toBe(false);
+    expect(index.includes('selectConversationReplyComponents')).toBe(false);
+    expect(processTurn.includes('selectConversationReplyComponents')).toBe(
+      false,
+    );
   });
 
   it('rejected conversation package is absent under src/features', () => {

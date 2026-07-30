@@ -26,6 +26,10 @@ const PLAN_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/createConversationReplyPlan.ts',
 );
+const COMPONENTS_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/selectConversationReplyComponents.ts',
+);
 const INDEX_SOURCE = resolve(ROOT, 'src/features/conversation-core/index.ts');
 const PROCESS_TURN_SOURCE = resolve(
   ROOT,
@@ -98,6 +102,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
   it('keeps the acknowledgement selector internal and consumed by the reply plan', () => {
     const selectorSource = readFileSync(SELECTOR_SOURCE, 'utf8');
     const planSource = readFileSync(PLAN_SOURCE, 'utf8');
+    const componentsSource = readFileSync(COMPONENTS_SOURCE, 'utf8');
     const index = readFileSync(INDEX_SOURCE, 'utf8');
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
@@ -111,7 +116,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).not.toMatch(/I've added \$\{/);
     expect(selectorSource).not.toMatch(/Sounds good — \$\{/);
     expect(planSource).toContain('Phase 10I');
-    expect(planSource).toMatch(/selectConversationAcknowledgement\(/);
+    expect(planSource).toMatch(/selectConversationReplyComponents\(/);
+    expect(componentsSource).toMatch(/selectConversationAcknowledgement\(/);
     expect(planSource).not.toMatch(/CAPABILITY_LABELS|formatLabelList/);
     expect(planSource).not.toMatch(/I've added \$\{/);
     expect(planSource).not.toMatch(/Sounds good —/);

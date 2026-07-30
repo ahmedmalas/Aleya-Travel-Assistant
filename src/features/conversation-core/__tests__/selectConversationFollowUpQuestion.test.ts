@@ -26,6 +26,10 @@ const PLAN_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/createConversationReplyPlan.ts',
 );
+const COMPONENTS_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/selectConversationReplyComponents.ts',
+);
 const INDEX_SOURCE = resolve(ROOT, 'src/features/conversation-core/index.ts');
 const PROCESS_TURN_SOURCE = resolve(
   ROOT,
@@ -88,6 +92,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
   it('keeps the follow-up selector internal and consumed by the reply plan', () => {
     const selectorSource = readFileSync(SELECTOR_SOURCE, 'utf8');
     const planSource = readFileSync(PLAN_SOURCE, 'utf8');
+    const componentsSource = readFileSync(COMPONENTS_SOURCE, 'utf8');
     const index = readFileSync(INDEX_SOURCE, 'utf8');
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
@@ -101,7 +106,8 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
       /Where would you like to travel\?/,
     );
     expect(planSource).toContain('Phase 10H');
-    expect(planSource).toMatch(/selectConversationFollowUpQuestion\(/);
+    expect(planSource).toMatch(/selectConversationReplyComponents\(/);
+    expect(componentsSource).toMatch(/selectConversationFollowUpQuestion\(/);
     expect(planSource).not.toMatch(/PROGRESSION_QUESTIONS|CONTEXTUAL_QUESTIONS/);
     expect(index).not.toMatch(/selectConversationFollowUpQuestion/);
     expect(processTurn).not.toMatch(/selectConversationFollowUpQuestion/);
