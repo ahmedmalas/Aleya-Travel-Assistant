@@ -316,7 +316,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     ).toBe('Perfect — 3 adults travelling.');
   });
 
-  it('selects Perfect for other changed travel fields', () => {
+  it('selects a child-count acknowledgement', () => {
     expect(
       acknowledgementFor(
         createState({
@@ -333,6 +333,53 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           returnDate: '2026-09-05',
           adultCount: 2,
           childCount: 1,
+        }),
+      ),
+    ).toBe('Perfect — 1 children travelling.');
+  });
+
+  it('selects an updated child-count acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 2,
+        }),
+      ),
+    ).toBe('Perfect — 2 children travelling.');
+  });
+
+  it('selects Perfect for other changed travel fields', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+          infantCount: 1,
         }),
       ),
     ).toBe('Perfect.');
@@ -357,7 +404,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           childCount: 1,
         }),
       ),
-    ).toBe('Perfect.');
+    ).toBe('Perfect — 1 children travelling.');
     expect(
       acknowledgementFor(
         createState({
@@ -373,6 +420,50 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('does not select child-count acknowledgement when childCount is unchanged', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+          infantCount: 1,
+        }),
+      ),
+    ).toBe('Perfect.');
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
         }),
       ),
     ).toBeNull();
@@ -388,7 +479,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
   });
 
   it('applies deterministic priority when multiple change categories occur', () => {
-    // capabilities beat destination + origin + dates + adult count
+    // capabilities beat destination + origin + dates + adult/child count
     expect(
       acknowledgementFor(
         createState(),
@@ -398,6 +489,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+          childCount: 1,
           flightsRequested: true,
           accommodationRequested: true,
         }),
@@ -406,7 +498,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       "I've added flights and accommodation to your trip requirements.",
     );
 
-    // destination beats origin / dates / adult count without new capabilities
+    // destination beats origin / dates / adult/child count without new capabilities
     expect(
       acknowledgementFor(
         createState({
@@ -415,6 +507,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-01',
           returnDate: '2026-09-01',
           adultCount: 2,
+          childCount: 1,
         }),
         createState({
           destination: 'Hobart',
@@ -422,11 +515,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 3,
+          childCount: 2,
         }),
       ),
     ).toBe('Great — Hobart.');
 
-    // origin beats departure/return dates / adult count and other changes
+    // origin beats departure/return dates / adult/child count and other changes
     expect(
       acknowledgementFor(
         createState({
@@ -435,6 +529,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-01',
           returnDate: '2026-09-01',
           adultCount: 2,
+          childCount: 1,
         }),
         createState({
           destination: 'Cairns',
@@ -442,11 +537,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 3,
+          childCount: 2,
         }),
       ),
     ).toBe('Perfect — departing from Melbourne.');
 
-    // departure date beats return date / adult count and generic changes
+    // departure date beats return date / adult/child count and generic changes
     expect(
       acknowledgementFor(
         createState({
@@ -460,11 +556,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+          childCount: 1,
         }),
       ),
     ).toBe('Perfect — departing on 2026-08-28.');
 
-    // return date beats adult count and generic travel-field changes
+    // return date beats adult/child count and generic travel-field changes
     expect(
       acknowledgementFor(
         createState({
@@ -479,11 +576,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+          childCount: 1,
         }),
       ),
     ).toBe('Perfect — returning on 2026-09-05.');
 
-    // adult count beats generic travel-field changes
+    // adult count beats child count and generic travel-field changes
     expect(
       acknowledgementFor(
         createState({
@@ -503,6 +601,29 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         }),
       ),
     ).toBe('Perfect — 3 adults travelling.');
+
+    // child count beats generic travel-field changes
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 2,
+          infantCount: 1,
+        }),
+      ),
+    ).toBe('Perfect — 2 children travelling.');
   });
 
   it('returns at most one acknowledgement string', () => {
@@ -533,6 +654,19 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           destination: 'Cairns',
           origin: 'Sydney',
           adultCount: 2,
+        }),
+      ),
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          adultCount: 2,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          adultCount: 2,
+          childCount: 1,
         }),
       ),
     ];
