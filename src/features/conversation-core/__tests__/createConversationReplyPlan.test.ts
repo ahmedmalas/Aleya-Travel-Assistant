@@ -277,6 +277,33 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       adultCount: 2,
       childCount: 1,
       infantCount: 1,
+      flightsRequested: true,
+    });
+    const state = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+      adultCount: 2,
+      childCount: 1,
+      infantCount: 1,
+      flightsRequested: false,
+    });
+    const plan = planFor(previous, state);
+    expect(plan.acknowledgements).toEqual(['Perfect.']);
+    expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(plan.messageInterpreted).toBe(true);
+  });
+
+  it('plans a formerly orphaned capability acknowledgement', () => {
+    const previous = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+      adultCount: 2,
+      childCount: 1,
+      infantCount: 1,
     });
     const state = createState({
       destination: 'Cairns',
@@ -289,7 +316,9 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       toursRequested: true,
     });
     const plan = planFor(previous, state);
-    expect(plan.acknowledgements).toEqual(['Perfect.']);
+    expect(plan.acknowledgements).toEqual([
+      "I've added tours to your trip requirements.",
+    ]);
     expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
     expect(plan.messageInterpreted).toBe(true);
   });

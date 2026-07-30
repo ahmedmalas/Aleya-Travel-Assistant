@@ -108,10 +108,23 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
 
     expect(selectorSource).toContain('Phase 10I');
     expect(selectorSource).toContain('Phase 10K');
+    expect(selectorSource).toContain('Phase 11B');
     expect(selectorSource).toMatch(
       /export function selectConversationAcknowledgement/,
     );
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
+    expect(selectorSource).toMatch(/\['toursRequested', 'tours'\]/);
+    expect(selectorSource).toMatch(/\['eventsRequested', 'events'\]/);
+    expect(selectorSource).toMatch(/\['nightlifeRequested', 'nightlife'\]/);
+    expect(selectorSource).toMatch(/\['shoppingRequested', 'shopping'\]/);
+    expect(selectorSource).toMatch(/\['wellnessRequested', 'wellness'\]/);
+    expect(selectorSource).toMatch(
+      /\['familyActivitiesRequested', 'family activities'\]/,
+    );
+    expect(selectorSource).toMatch(/\['flightsRequested', 'flights'\]/);
+    expect(selectorSource).toMatch(
+      /\['nationalParksRequested', 'national parks'\]/,
+    );
     expect(selectorSource).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
     expect(selectorSource).not.toMatch(/I've added \$\{/);
     expect(selectorSource).not.toMatch(/Great — \$\{/);
@@ -489,6 +502,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 1,
+          flightsRequested: true,
         }),
         createState({
           destination: 'Cairns',
@@ -498,7 +512,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 1,
-          toursRequested: true,
+          flightsRequested: false,
         }),
       ),
     ).toBe('Perfect.');
@@ -611,7 +625,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           toursRequested: true,
         }),
       ),
-    ).toBe('Perfect.');
+    ).toBe("I've added tours to your trip requirements.");
     expect(
       acknowledgementFor(
         createState({
@@ -811,6 +825,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 1,
+          flightsRequested: true,
         }),
         createState({
           destination: 'Cairns',
@@ -820,7 +835,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 2,
-          toursRequested: true,
+          flightsRequested: false,
         }),
       ),
     ).toBe('Perfect — 2 infants travelling.');
@@ -1155,12 +1170,17 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           }),
         ),
         acknowledgementFor(
-          passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
+          passengerBase({
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+            flightsRequested: true,
+          }),
           passengerBase({
             adultCount: 2,
             childCount: 1,
             infantCount: 2,
-            toursRequested: true,
+            flightsRequested: false,
           }),
         ),
       ];
@@ -1191,7 +1211,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           passengerBase({ adultCount: 2 }),
           passengerBase({ adultCount: 2, toursRequested: true }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've added tours to your trip requirements.");
       expect(
         acknowledgementFor(
           passengerBase({ adultCount: 2, childCount: 1 }),
@@ -1201,7 +1221,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
             toursRequested: true,
           }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've added tours to your trip requirements.");
       expect(
         acknowledgementFor(
           passengerBase({ adultCount: 2, childCount: 1, infantCount: 1 }),
@@ -1212,7 +1232,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
             toursRequested: true,
           }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've added tours to your trip requirements.");
     });
 
     it('preserves traveller and guest follow-up suppression when passenger counts change', () => {
@@ -1281,20 +1301,22 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       expect(acknowledgementFor(previous, clearedFlag)).toBe('Perfect.');
     });
 
-    it('characterises unlabeled capability enable as generic Perfect.', () => {
+    it('characterises formerly unlabeled capability enables as labelled acknowledgements', () => {
       const previous = filled();
-      for (const field of [
-        'toursRequested',
-        'eventsRequested',
-        'nightlifeRequested',
-        'shoppingRequested',
-        'wellnessRequested',
-        'familyActivitiesRequested',
-      ] as const) {
+      const expected: Record<string, string> = {
+        toursRequested: "I've added tours to your trip requirements.",
+        eventsRequested: "I've added events to your trip requirements.",
+        nightlifeRequested: "I've added nightlife to your trip requirements.",
+        shoppingRequested: "I've added shopping to your trip requirements.",
+        wellnessRequested: "I've added wellness to your trip requirements.",
+        familyActivitiesRequested:
+          "I've added family activities to your trip requirements.",
+      };
+      for (const [field, acknowledgement] of Object.entries(expected)) {
         const next = filled({ [field]: true });
         const classification = classify(previous, next);
         expect(classification.newlyEnabledRequestFlags).toContain(field);
-        expect(acknowledgementFor(previous, next)).toBe('Perfect.');
+        expect(acknowledgementFor(previous, next)).toBe(acknowledgement);
       }
     });
 
@@ -1381,7 +1403,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         ),
       ).toBe("I've added beaches to your trip requirements.");
 
-      // unlabeled capability enable with destination clear still generic
+      // formerly unlabeled capability enable with destination clear is now labelled
       expect(
         acknowledgementFor(
           previous,
@@ -1390,7 +1412,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
             toursRequested: true,
           }),
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've added tours to your trip requirements.");
     });
 
     it('characterises unchanged null values as no acknowledgement', () => {
@@ -1456,6 +1478,145 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           { ...previous, kayakingRequested: false },
         ),
       ).toBe('Perfect.');
+    });
+  });
+
+  describe('phase 11B — complete capability acknowledgement labels', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('acknowledges each formerly orphaned capability enable independently', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ toursRequested: true })),
+      ).toBe("I've added tours to your trip requirements.");
+      expect(
+        acknowledgementFor(filled(), filled({ eventsRequested: true })),
+      ).toBe("I've added events to your trip requirements.");
+      expect(
+        acknowledgementFor(filled(), filled({ nightlifeRequested: true })),
+      ).toBe("I've added nightlife to your trip requirements.");
+      expect(
+        acknowledgementFor(filled(), filled({ shoppingRequested: true })),
+      ).toBe("I've added shopping to your trip requirements.");
+      expect(
+        acknowledgementFor(filled(), filled({ wellnessRequested: true })),
+      ).toBe("I've added wellness to your trip requirements.");
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ familyActivitiesRequested: true }),
+        ),
+      ).toBe("I've added family activities to your trip requirements.");
+    });
+
+    it('combines multiple newly enabled orphaned capabilities into one acknowledgement', () => {
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({
+            toursRequested: true,
+            eventsRequested: true,
+            nightlifeRequested: true,
+            shoppingRequested: true,
+            wellnessRequested: true,
+            familyActivitiesRequested: true,
+          }),
+        ),
+      ).toBe(
+        "I've added tours, events, nightlife, shopping, wellness and family activities to your trip requirements.",
+      );
+    });
+
+    it('lets newly labelled capabilities beat destination, origin, dates, and passengers', () => {
+      expect(
+        acknowledgementFor(
+          filled({ destination: 'Brisbane' }),
+          filled({
+            destination: 'Hobart',
+            toursRequested: true,
+            adultCount: 3,
+          }),
+        ),
+      ).toBe("I've added tours to your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ origin: 'Sydney' }),
+          filled({
+            origin: 'Melbourne',
+            eventsRequested: true,
+            childCount: 2,
+          }),
+        ),
+      ).toBe("I've added events to your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ departureDate: '2026-08-01', returnDate: '2026-09-01' }),
+          filled({
+            departureDate: '2026-08-28',
+            returnDate: '2026-09-05',
+            nightlifeRequested: true,
+            infantCount: 2,
+          }),
+        ),
+      ).toBe("I've added nightlife to your trip requirements.");
+    });
+
+    it('preserves existing labelled capability acknowledgements', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ flightsRequested: true })),
+      ).toBe("I've added flights to your trip requirements.");
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ beachesRequested: true, nationalParksRequested: true }),
+        ),
+      ).toBe(
+        "I've added beaches and national parks to your trip requirements.",
+      );
+    });
+
+    it('keeps capability disable and null→false on the generic Perfect. path', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: false }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(
+          filled({ accommodationRequested: null }),
+          filled({ accommodationRequested: false }),
+        ),
+      ).toBe('Perfect.');
+    });
+
+    it('still returns at most one acknowledgement for labelled orphan enables', () => {
+      const acknowledgement = acknowledgementFor(
+        filled(),
+        filled({
+          toursRequested: true,
+          shoppingRequested: true,
+          destination: 'Hobart',
+          adultCount: 4,
+        }),
+      );
+      expect(acknowledgement).toBe(
+        "I've added tours and shopping to your trip requirements.",
+      );
+      expect(acknowledgement!.includes('\n')).toBe(false);
     });
   });
 });

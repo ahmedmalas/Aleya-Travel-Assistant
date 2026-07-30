@@ -40,6 +40,12 @@ const CAPABILITY_LABELS = [
   ['eventsFestivalsRequested', 'events and festivals'],
   ['wildlifeRequested', 'wildlife'],
   ['nationalParksRequested', 'national parks'],
+  ['toursRequested', 'tours'],
+  ['eventsRequested', 'events'],
+  ['nightlifeRequested', 'nightlife'],
+  ['shoppingRequested', 'shopping'],
+  ['wellnessRequested', 'wellness'],
+  ['familyActivitiesRequested', 'family activities'],
 ] as const satisfies ReadonlyArray<
   readonly [keyof ConversationStateUpdate, string]
 >;
@@ -60,6 +66,8 @@ const CAPABILITY_LABELS = [
  * newly enabled capabilities → destination → origin → departure date →
  * return date → adult count → child count → infant count → other
  * travel-field change → null when unchanged.
+ * Phase 11B — capability labels completed for tours, events, nightlife,
+ * shopping, wellness, and family activities.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
