@@ -109,6 +109,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toContain('Phase 10I');
     expect(selectorSource).toContain('Phase 10K');
     expect(selectorSource).toContain('Phase 11B');
+    expect(selectorSource).toContain('Phase 11C');
     expect(selectorSource).toMatch(
       /export function selectConversationAcknowledgement/,
     );
@@ -512,7 +513,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 1,
-          flightsRequested: false,
+          flightsRequested: null,
         }),
       ),
     ).toBe('Perfect.');
@@ -835,7 +836,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           adultCount: 2,
           childCount: 1,
           infantCount: 2,
-          flightsRequested: false,
+          flightsRequested: null,
         }),
       ),
     ).toBe('Perfect — 2 infants travelling.');
@@ -1180,7 +1181,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
             adultCount: 2,
             childCount: 1,
             infantCount: 2,
-            flightsRequested: false,
+            flightsRequested: null,
           }),
         ),
       ];
@@ -1287,17 +1288,24 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       return classifyConversationStateChange(previousState, state);
     }
 
-    it('characterises service/capability disable as generic Perfect.', () => {
+    it('characterises service/capability true→false as removal acknowledgement', () => {
       const previous = filled();
       const disabled = filled({ flightsRequested: false });
       const classification = classify(previous, disabled);
 
       expect(classification.newlyEnabledRequestFlags).toEqual([]);
-      expect(classification.updated).toContain('flightsRequested');
-      expect(fieldValueChanged(classification, 'flightsRequested')).toBe(true);
-      expect(acknowledgementFor(previous, disabled)).toBe('Perfect.');
+      expect(classification.newlyDisabledRequestFlags).toEqual([
+        'flightsRequested',
+      ]);
+      expect(classification.updated).not.toContain('flightsRequested');
+      expect(acknowledgementFor(previous, disabled)).toBe(
+        "I've removed flights from your trip requirements.",
+      );
 
       const clearedFlag = filled({ flightsRequested: null });
+      expect(
+        classify(previous, clearedFlag).newlyDisabledRequestFlags,
+      ).toEqual([]);
       expect(acknowledgementFor(previous, clearedFlag)).toBe('Perfect.');
     });
 
@@ -1364,11 +1372,11 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         adultCount: null,
         childCount: null,
         infantCount: null,
-        flightsRequested: false,
       });
       const classification = classify(previous, next);
 
       expect(classification.hasAnyChange).toBe(true);
+      expect(classification.newlyDisabledRequestFlags).toEqual([]);
       expect(acknowledgementFor(previous, next)).toBe('Perfect.');
       expect(planFor(previous, next).acknowledgements).toEqual(['Perfect.']);
     });
@@ -1477,7 +1485,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           { ...previous, kayakingRequested: true },
           { ...previous, kayakingRequested: false },
         ),
-      ).toBe('Perfect.');
+      ).toBe("I've removed kayaking from your trip requirements.");
     });
   });
 
@@ -1588,11 +1596,11 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
     });
 
-    it('keeps capability disable and null→false on the generic Perfect. path', () => {
+    it('keeps capability true→null and null→false on the generic Perfect. path', () => {
       expect(
         acknowledgementFor(
           filled({ flightsRequested: true }),
-          filled({ flightsRequested: false }),
+          filled({ flightsRequested: null }),
         ),
       ).toBe('Perfect.');
       expect(
@@ -1601,6 +1609,15 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           filled({ accommodationRequested: false }),
         ),
       ).toBe('Perfect.');
+    });
+
+    it('acknowledges capability true→false as removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
     });
 
     it('still returns at most one acknowledgement for labelled orphan enables', () => {
@@ -1615,6 +1632,208 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
       expect(acknowledgement).toBe(
         "I've added tours and shopping to your trip requirements.",
+      );
+      expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+  });
+
+  describe('phase 11C — capability removal acknowledgement', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('classifies only true→false into newlyDisabledRequestFlags', () => {
+      const trueToFalse = classifyConversationStateChange(
+        filled({ flightsRequested: true }),
+        filled({ flightsRequested: false }),
+      );
+      expect(trueToFalse.newlyDisabledRequestFlags).toEqual([
+        'flightsRequested',
+      ]);
+      expect(trueToFalse.updated).not.toContain('flightsRequested');
+      expect(trueToFalse.newlyEnabledRequestFlags).toEqual([]);
+
+      const trueToNull = classifyConversationStateChange(
+        filled({ flightsRequested: true }),
+        filled({ flightsRequested: null }),
+      );
+      expect(trueToNull.newlyDisabledRequestFlags).toEqual([]);
+      expect(trueToNull.updated).toContain('flightsRequested');
+
+      const nullToFalse = classifyConversationStateChange(
+        filled({ flightsRequested: null }),
+        filled({ flightsRequested: false }),
+      );
+      expect(nullToFalse.newlyDisabledRequestFlags).toEqual([]);
+      expect(nullToFalse.newlyPopulated).toContain('flightsRequested');
+
+      const falseToFalse = classifyConversationStateChange(
+        filled({ flightsRequested: false }),
+        filled({ flightsRequested: false }),
+      );
+      expect(falseToFalse.newlyDisabledRequestFlags).toEqual([]);
+      expect(falseToFalse.unchanged).toContain('flightsRequested');
+
+      const falseToTrue = classifyConversationStateChange(
+        filled({ flightsRequested: false }),
+        filled({ flightsRequested: true }),
+      );
+      expect(falseToTrue.newlyEnabledRequestFlags).toEqual([
+        'flightsRequested',
+      ]);
+      expect(falseToTrue.newlyDisabledRequestFlags).toEqual([]);
+    });
+
+    it('acknowledges single and multi capability removals', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ toursRequested: true }),
+          filled({ toursRequested: false }),
+        ),
+      ).toBe("I've removed tours from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            flightsRequested: true,
+            accommodationRequested: true,
+            carHireRequested: true,
+          }),
+          filled({
+            flightsRequested: false,
+            accommodationRequested: false,
+            carHireRequested: false,
+          }),
+        ),
+      ).toBe(
+        "I've removed flights, accommodation and car hire from your trip requirements.",
+      );
+    });
+
+    it('lets enable beat disable; disable beat lower acknowledgement branches', () => {
+      expect(
+        acknowledgementFor(
+          filled({ accommodationRequested: true }),
+          filled({
+            accommodationRequested: false,
+            toursRequested: true,
+          }),
+        ),
+      ).toBe("I've added tours to your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            destination: 'Brisbane',
+            flightsRequested: true,
+          }),
+          filled({
+            destination: 'Hobart',
+            flightsRequested: false,
+            adultCount: 3,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            origin: 'Sydney',
+            flightsRequested: true,
+          }),
+          filled({
+            origin: 'Melbourne',
+            flightsRequested: false,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({
+            departureDate: '2026-08-01',
+            returnDate: '2026-09-01',
+            flightsRequested: true,
+          }),
+          filled({
+            departureDate: '2026-08-28',
+            returnDate: '2026-09-05',
+            flightsRequested: false,
+          }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true, adultCount: 2 }),
+          filled({ flightsRequested: false, adultCount: 3 }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+    });
+
+    it('preserves true→null, null→false, non-capability clears, and addition wording', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ flightsRequested: null }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(
+          filled({ accommodationRequested: null }),
+          filled({ accommodationRequested: false }),
+        ),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(filled(), filled({ destination: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(filled(), filled({ adultCount: null })),
+      ).toBe('Perfect.');
+      expect(
+        acknowledgementFor(filled(), filled({ flightsRequested: true })),
+      ).toBe("I've added flights to your trip requirements.");
+    });
+
+    it('returns at most one acknowledgement when capabilities are disabled', () => {
+      const acknowledgement = acknowledgementFor(
+        filled({
+          flightsRequested: true,
+          toursRequested: true,
+        }),
+        filled({
+          flightsRequested: false,
+          toursRequested: false,
+          destination: 'Hobart',
+          adultCount: 4,
+        }),
+      );
+      expect(acknowledgement).toBe(
+        "I've removed flights and tours from your trip requirements.",
       );
       expect(acknowledgement!.includes('\n')).toBe(false);
     });

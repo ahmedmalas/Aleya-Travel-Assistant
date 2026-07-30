@@ -287,10 +287,35 @@ describe('phase 10G — deterministic reply planning boundary', () => {
       adultCount: 2,
       childCount: 1,
       infantCount: 1,
-      flightsRequested: false,
+      flightsRequested: null,
     });
     const plan = planFor(previous, state);
     expect(plan.acknowledgements).toEqual(['Perfect.']);
+    expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(plan.messageInterpreted).toBe(true);
+  });
+
+  it('plans a capability removal acknowledgement', () => {
+    const previous = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+      adultCount: 2,
+      flightsRequested: true,
+    });
+    const state = createState({
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      returnDate: '2026-09-05',
+      adultCount: 2,
+      flightsRequested: false,
+    });
+    const plan = planFor(previous, state);
+    expect(plan.acknowledgements).toEqual([
+      "I've removed flights from your trip requirements.",
+    ]);
     expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
     expect(plan.messageInterpreted).toBe(true);
   });

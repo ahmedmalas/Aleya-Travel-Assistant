@@ -68,6 +68,10 @@ const CAPABILITY_LABELS = [
  * travel-field change → null when unchanged.
  * Phase 11B — capability labels completed for tours, events, nightlife,
  * shopping, wellness, and family activities.
+ * Phase 11C — newly disabled capabilities inserted after newly enabled:
+ * newly enabled capabilities → newly disabled capabilities → destination →
+ * origin → departure date → return date → adult count → child count →
+ * infant count → other travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -80,6 +84,16 @@ export function selectConversationAcknowledgement(
   if (newlyRequestedLabels.length > 0) {
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.addedCapabilities(
       formatLabelList(newlyRequestedLabels),
+    );
+  }
+
+  const newlyDisabledLabels = CAPABILITY_LABELS.filter(([field]) =>
+    classification.newlyDisabledRequestFlags.includes(field),
+  ).map(([, label]) => label);
+
+  if (newlyDisabledLabels.length > 0) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
+      formatLabelList(newlyDisabledLabels),
     );
   }
 

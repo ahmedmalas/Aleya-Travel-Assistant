@@ -79,6 +79,8 @@ const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
  *
  * Phase 10F — consumed only by the reply boundary. Does not inspect message
  * text, re-extract, or alter state.
+ * Phase 11C — newlyDisabledRequestFlags for request flags transitioning
+ * exactly true → false.
  */
 export type ConversationStateChangeClassification = {
   /** Fields that moved from null to a non-null value (excluding newly-enabled true flags). */
@@ -89,6 +91,8 @@ export type ConversationStateChangeClassification = {
   unchanged: readonly TravelCompareKey[];
   /** Boolean request flags that became true this turn. */
   newlyEnabledRequestFlags: readonly TravelCompareKey[];
+  /** Boolean request flags that transitioned exactly true → false this turn. */
+  newlyDisabledRequestFlags: readonly TravelCompareKey[];
   /** True when any travel field differs between previous and final state. */
   hasAnyChange: boolean;
 };
@@ -104,6 +108,7 @@ export function classifyConversationStateChange(
   const updated: TravelCompareKey[] = [];
   const unchanged: TravelCompareKey[] = [];
   const newlyEnabledRequestFlags: TravelCompareKey[] = [];
+  const newlyDisabledRequestFlags: TravelCompareKey[] = [];
 
   for (const key of TRAVEL_COMPARE_KEYS) {
     const previousValue = previousState[key];
@@ -123,6 +128,15 @@ export function classifyConversationStateChange(
       continue;
     }
 
+    if (
+      REQUEST_FLAG_KEYS.has(key) &&
+      previousValue === true &&
+      nextValue === false
+    ) {
+      newlyDisabledRequestFlags.push(key);
+      continue;
+    }
+
     if (previousValue === null && nextValue !== null) {
       newlyPopulated.push(key);
       continue;
@@ -136,10 +150,12 @@ export function classifyConversationStateChange(
     updated,
     unchanged,
     newlyEnabledRequestFlags,
+    newlyDisabledRequestFlags,
     hasAnyChange:
       newlyPopulated.length > 0 ||
       updated.length > 0 ||
-      newlyEnabledRequestFlags.length > 0,
+      newlyEnabledRequestFlags.length > 0 ||
+      newlyDisabledRequestFlags.length > 0,
   };
 }
 

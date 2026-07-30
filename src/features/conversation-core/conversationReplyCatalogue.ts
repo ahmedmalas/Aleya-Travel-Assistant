@@ -26,11 +26,15 @@
  * "Perfect — {infantCount} infants travelling."
  * Phase 10Y — infant-count singular grammar when infantCount === 1:
  * "Perfect — 1 infant travelling."
+ * Phase 11C — capability-removal acknowledgement:
+ * "I've removed {capability list} from your trip requirements."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
     addedCapabilities: (labelList: string) =>
       `I've added ${labelList} to your trip requirements.`,
+    removedCapabilities: (labelList: string) =>
+      `I've removed ${labelList} from your trip requirements.`,
     destination: (destination: string) => `Great — ${destination}.`,
     origin: (origin: string) => `Perfect — departing from ${origin}.`,
     departureDate: (departureDate: string) =>

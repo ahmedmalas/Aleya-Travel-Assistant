@@ -66,6 +66,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10W');
     expect(catalogueSource).toContain('Phase 10X');
     expect(catalogueSource).toContain('Phase 10Y');
+    expect(catalogueSource).toContain('Phase 11C');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
@@ -94,6 +95,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     );
     expect(catalogueSource).toContain(
       'Perfect — ${infantCount} infants travelling.',
+    );
+    expect(catalogueSource).toContain(
+      "I've removed ${labelList} from your trip requirements.",
     );
     expect(catalogueSource).toContain("genericTravelFieldChange: 'Perfect.'");
     expect(catalogueSource).not.toContain(
@@ -126,6 +130,25 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
       ),
     ).toBe(
       "I've added flights, accommodation and activities to your trip requirements.",
+    );
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
+        'flights',
+      ),
+    ).toBe("I've removed flights from your trip requirements.");
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
+        'flights and accommodation',
+      ),
+    ).toBe(
+      "I've removed flights and accommodation from your trip requirements.",
+    );
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
+        'flights, accommodation and car hire',
+      ),
+    ).toBe(
+      "I've removed flights, accommodation and car hire from your trip requirements.",
     );
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination('Brisbane'),
@@ -212,6 +235,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(ackSource).toMatch(/CAPABILITY_LABELS/);
     expect(ackSource).toMatch(/fieldValueChanged/);
     expect(ackSource).toMatch(/newlyEnabledRequestFlags/);
+    expect(ackSource).toMatch(/newlyDisabledRequestFlags/);
     expect(followUpSource).toMatch(/PROGRESSION_QUESTIONS|CONTEXTUAL_QUESTIONS/);
     expect(followUpSource).toMatch(/adultCount === null/);
     expect(catalogueSource).not.toMatch(/CAPABILITY_LABELS/);
@@ -221,6 +245,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).not.toMatch(/childCount\s*===\s*null/);
     expect(catalogueSource).not.toMatch(/infantCount\s*===\s*null/);
     expect(catalogueSource).not.toMatch(/newlyEnabledRequestFlags/);
+    expect(catalogueSource).not.toMatch(/newlyDisabledRequestFlags/);
   });
 
   it('keeps selector output byte-for-byte identical to catalogue wording', () => {

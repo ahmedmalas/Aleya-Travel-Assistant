@@ -80,6 +80,8 @@ describe('phase 10F — deterministic change classification', () => {
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
     expect(classifySource).toContain('Phase 10F');
+    expect(classifySource).toContain('Phase 11C');
+    expect(classifySource).toMatch(/newlyDisabledRequestFlags/);
     expect(classifySource).toMatch(/export function classifyConversationStateChange/);
     expect(replySource).toContain('Phase 10F');
     expect(replySource).toMatch(/classifyConversationStateChange\(/);
@@ -137,6 +139,7 @@ describe('phase 10F — deterministic change classification', () => {
     );
     expect(fromNull.newlyEnabledRequestFlags).toEqual(['flightsRequested']);
     expect(fromNull.newlyPopulated).not.toContain('flightsRequested');
+    expect(fromNull.newlyDisabledRequestFlags).toEqual([]);
 
     const fromFalse = classifyConversationStateChange(
       createState({ accommodationRequested: false }),
@@ -146,6 +149,39 @@ describe('phase 10F — deterministic change classification', () => {
       'accommodationRequested',
     ]);
     expect(fromFalse.updated).not.toContain('accommodationRequested');
+    expect(fromFalse.newlyDisabledRequestFlags).toEqual([]);
+  });
+
+  it('classifies newly disabled boolean request flags for true→false only', () => {
+    const trueToFalse = classifyConversationStateChange(
+      createState({ flightsRequested: true }),
+      createState({ flightsRequested: false }),
+    );
+    expect(trueToFalse.newlyDisabledRequestFlags).toEqual(['flightsRequested']);
+    expect(trueToFalse.updated).not.toContain('flightsRequested');
+    expect(trueToFalse.newlyEnabledRequestFlags).toEqual([]);
+    expect(trueToFalse.hasAnyChange).toBe(true);
+
+    const trueToNull = classifyConversationStateChange(
+      createState({ flightsRequested: true }),
+      createState({ flightsRequested: null }),
+    );
+    expect(trueToNull.newlyDisabledRequestFlags).toEqual([]);
+    expect(trueToNull.updated).toContain('flightsRequested');
+
+    const nullToFalse = classifyConversationStateChange(
+      createState({ flightsRequested: null }),
+      createState({ flightsRequested: false }),
+    );
+    expect(nullToFalse.newlyDisabledRequestFlags).toEqual([]);
+    expect(nullToFalse.newlyPopulated).toContain('flightsRequested');
+
+    const falseUnchanged = classifyConversationStateChange(
+      createState({ flightsRequested: false }),
+      createState({ flightsRequested: false }),
+    );
+    expect(falseUnchanged.newlyDisabledRequestFlags).toEqual([]);
+    expect(falseUnchanged.unchanged).toContain('flightsRequested');
   });
 
   it('preserves existing acknowledgement, progression and suppression behaviour', () => {
