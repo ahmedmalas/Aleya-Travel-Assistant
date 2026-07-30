@@ -52,6 +52,9 @@ const CAPABILITY_LABELS = [
  * acknowledgements. Priority: newly enabled capabilities → destination →
  * origin → other travel-field change → null when unchanged.
  * Phase 10K — selects catalogue entries; does not own literal wording.
+ * Phase 10R — departure-date acknowledgement inserted after origin:
+ * newly enabled capabilities → destination → origin → departure date →
+ * other travel-field change → null when unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -78,6 +81,15 @@ export function selectConversationAcknowledgement(
 
   if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
     return CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin(state.origin);
+  }
+
+  if (
+    state.departureDate !== null &&
+    fieldValueChanged(classification, 'departureDate')
+  ) {
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDate(
+      state.departureDate,
+    );
   }
 
   if (classification.hasAnyChange) {

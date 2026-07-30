@@ -205,7 +205,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     );
   });
 
-  it('selects Got it for other changed travel fields', () => {
+  it('selects a new departure-date acknowledgement', () => {
     expect(
       acknowledgementFor(
         createState({
@@ -218,7 +218,74 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
         }),
       ),
+    ).toBe('Perfect — departing on 2026-08-28.');
+  });
+
+  it('selects an updated departure-date acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-01',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+      ),
+    ).toBe('Perfect — departing on 2026-08-28.');
+  });
+
+  it('selects Perfect for other changed travel fields', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+        }),
+      ),
     ).toBe('Perfect.');
+  });
+
+  it('does not select departure-date acknowledgement when departureDate is unchanged', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          adultCount: 2,
+        }),
+      ),
+    ).toBe('Perfect.');
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('returns null for an unchanged state', () => {
@@ -231,13 +298,14 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
   });
 
   it('applies deterministic priority when multiple change categories occur', () => {
-    // capabilities beat destination + origin
+    // capabilities beat destination + origin + departure date
     expect(
       acknowledgementFor(
         createState(),
         createState({
           destination: 'Cairns',
           origin: 'Sydney',
+          departureDate: '2026-08-28',
           flightsRequested: true,
           accommodationRequested: true,
         }),
@@ -246,15 +314,23 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       "I've added flights and accommodation to your trip requirements.",
     );
 
-    // destination beats origin when both change without new capabilities
+    // destination beats origin / departure date when both change without new capabilities
     expect(
       acknowledgementFor(
-        createState({ destination: 'Brisbane', origin: 'Sydney' }),
-        createState({ destination: 'Hobart', origin: 'Melbourne' }),
+        createState({
+          destination: 'Brisbane',
+          origin: 'Sydney',
+          departureDate: '2026-08-01',
+        }),
+        createState({
+          destination: 'Hobart',
+          origin: 'Melbourne',
+          departureDate: '2026-08-28',
+        }),
       ),
     ).toBe('Great — Hobart.');
 
-    // origin beats other travel-field changes
+    // origin beats departure date and other travel-field changes
     expect(
       acknowledgementFor(
         createState({
@@ -269,6 +345,24 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         }),
       ),
     ).toBe('Perfect — departing from Melbourne.');
+
+    // departure date beats generic travel-field changes
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-01',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+        }),
+      ),
+    ).toBe('Perfect — departing on 2026-08-28.');
   });
 
   it('returns at most one acknowledgement string', () => {

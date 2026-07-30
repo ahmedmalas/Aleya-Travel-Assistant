@@ -58,12 +58,16 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10O');
     expect(catalogueSource).toContain('Phase 10P');
     expect(catalogueSource).toContain('Phase 10Q');
+    expect(catalogueSource).toContain('Phase 10R');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
     expect(catalogueSource).toContain('Perfect — departing from ${origin}.');
     expect(catalogueSource).not.toContain(
       'Got it — travelling from ${origin}.',
+    );
+    expect(catalogueSource).toContain(
+      'Perfect — departing on ${departureDate}.',
     );
     expect(catalogueSource).toContain("genericTravelFieldChange: 'Perfect.'");
     expect(catalogueSource).not.toContain(
@@ -103,6 +107,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin('Sydney'),
     ).toBe('Perfect — departing from Sydney.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDate('2026-08-28'),
+    ).toBe('Perfect — departing on 2026-08-28.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
     ).toBe('Perfect.');
