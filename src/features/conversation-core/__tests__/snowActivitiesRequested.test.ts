@@ -110,23 +110,25 @@ describe('phase 3T/7T — explicit snowActivitiesRequested with extraction activ
     });
     expect(first.state.snowActivitiesRequested).toBe(false);
 
-    const second = turn('skiing snowboarding snow resorts', first.state, 1);
+    const second = turn('snow winter alpine Thredbo', first.state, 1);
     expect(second.state.snowActivitiesRequested).toBe(false);
   });
 
-  it('user message text cannot set snowActivitiesRequested from unsupported wording', () => {
+  it('unsupported snow-adjacent wording cannot set snowActivitiesRequested', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
       'snow',
-      'skiing',
-      'snowboarding',
-      'tobogganing',
-      'sledding',
-      'snow resorts',
-      'snow fields',
+      'winter',
+      'alpine',
+      'Thredbo',
+      'ski hire',
+      'snow forecast',
+      'ski conditions',
+      'lift pass prices',
+      'what is skiing',
     ];
 
     let state = initial;
@@ -137,7 +139,82 @@ describe('phase 3T/7T — explicit snowActivitiesRequested with extraction activ
     });
   });
 
-  it('user message text cannot clear or change an existing value via unsupported wording', () => {
+  it('explicit snow-activity cue in the message sets snowActivitiesRequested true', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const result = turn('skiing options', initial, 0);
+    expect(result.state.snowActivitiesRequested).toBe(true);
+  });
+
+  it('phase 8W clear snow-activity-discovery cues set snowActivitiesRequested true without unrelated fields', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const bare = turn('snow activities', initial, 0);
+    expect(bare.state.snowActivitiesRequested).toBe(true);
+    expect(bare.state.activitiesRequested).toBeNull();
+    expect(bare.state.nearbyDiscoveryRequested).toBeNull();
+    expect(bare.state.attractionsRequested).toBeNull();
+
+    const skiing = turn('skiing', initial, 1);
+    expect(skiing.state.snowActivitiesRequested).toBe(true);
+
+    const resorts = turn('snow resorts', initial, 2);
+    expect(resorts.state.snowActivitiesRequested).toBe(true);
+
+    const question = turn('where can I go skiing?', initial, 3);
+    expect(question.state.snowActivitiesRequested).toBe(true);
+
+    const recommend = turn('can you recommend snow activities?', initial, 4);
+    expect(recommend.state.snowActivitiesRequested).toBe(true);
+
+    const inRequest = turn(
+      'show me snow activities in Thredbo. Fly from Sydney to Canberra',
+      initial,
+      5,
+    );
+    expect(inRequest.state.snowActivitiesRequested).toBe(true);
+    expect(inRequest.state.origin).toBe('Sydney');
+    expect(inRequest.state.destination).toBe('Canberra');
+
+    const seeded = turn('Hello', initial, 6, {
+      snowActivitiesRequested: false,
+    });
+    const negated = turn('no snow activities', seeded.state, 7);
+    expect(negated.state.snowActivitiesRequested).toBe(false);
+    const hire = turn('ski hire', seeded.state, 8);
+    expect(hire.state.snowActivitiesRequested).toBe(false);
+    const named = turn('Thredbo', seeded.state, 9);
+    expect(named.state.snowActivitiesRequested).toBe(false);
+    const conditions = turn('ski conditions', seeded.state, 10);
+    expect(conditions.state.snowActivitiesRequested).toBe(false);
+  });
+
+  it('trusted explicit stateUpdate.snowActivitiesRequested overrides an extracted snow-activity request', () => {
+    const initial = createInitialConversationCoreState({
+      conversationId: CONVERSATION_ID,
+      now: CREATED_AT,
+    });
+    const overriddenFalse = turn('skiing options', initial, 0, {
+      snowActivitiesRequested: false,
+    });
+    expect(overriddenFalse.state.snowActivitiesRequested).toBe(false);
+
+    const overriddenTrue = turn('no snow activities', initial, 1, {
+      snowActivitiesRequested: true,
+    });
+    expect(overriddenTrue.state.snowActivitiesRequested).toBe(true);
+
+    const nullOverride = turn('skiing options', initial, 2, {
+      snowActivitiesRequested: null as unknown as boolean,
+    });
+    expect(nullOverride.state.snowActivitiesRequested).toBeNull();
+  });
+
+  it('unsupported wording preserves an existing snowActivitiesRequested value', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -147,11 +224,7 @@ describe('phase 3T/7T — explicit snowActivitiesRequested with extraction activ
     });
     expect(withTrue.state.snowActivitiesRequested).toBe(true);
 
-    const afterWords = turn(
-      'snow activities skiing snowboarding',
-      withTrue.state,
-      1,
-    );
+    const afterWords = turn('snow winter alpine Thredbo', withTrue.state, 1);
     expect(afterWords.state.snowActivitiesRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
@@ -159,11 +232,7 @@ describe('phase 3T/7T — explicit snowActivitiesRequested with extraction activ
     });
     expect(withFalse.state.snowActivitiesRequested).toBe(false);
 
-    const afterMoreWords = turn(
-      'skiing snowboarding snow resorts',
-      withFalse.state,
-      3,
-    );
+    const afterMoreWords = turn('ski hire snow forecast', withFalse.state, 3);
     expect(afterMoreWords.state.snowActivitiesRequested).toBe(false);
   });
 

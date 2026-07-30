@@ -903,6 +903,8 @@ describe('conversation-core architectural boundary', () => {
     expect(snowActivitiesRequestedExtractor).toMatch(
       /export class SnowActivitiesRequestedConversationStateExtractor/,
     );
+    expect(snowActivitiesRequestedExtractor).toContain('Phase 7T');
+    expect(snowActivitiesRequestedExtractor).toContain('Phase 8W');
     expect(snowActivitiesRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

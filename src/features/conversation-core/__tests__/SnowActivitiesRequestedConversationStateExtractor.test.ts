@@ -34,6 +34,8 @@ import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRe
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
+import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const SNOW_ACTIVITIES_REQUESTED_SOURCE = resolve(
@@ -55,6 +57,14 @@ const FOUR_WHEEL_DRIVING_REQUESTED_SOURCE = resolve(
 const KAYAKING_REQUESTED_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/KayakingRequestedConversationStateExtractor.ts',
+);
+const HIKING_WALKING_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/HikingWalkingRequestedConversationStateExtractor.ts',
+);
+const NATIONAL_PARKS_REQUESTED_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
 );
 const CAMPING_REQUESTED_SOURCE = resolve(
   ROOT,
@@ -122,7 +132,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-7t',
+      conversationId: 'conversation-8w',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -147,13 +157,6 @@ function createState(
     scenicDrivesRequested: true,
     attractionsRequested: true,
     snowActivitiesRequested: false,
-    hikingWalkingRequested: false,
-    fishingRequested: false,
-    divingSnorkellingRequested: false,
-    wineriesFoodTrailsRequested: false,
-    eventsFestivalsRequested: false,
-    wildlifeRequested: false,
-    nationalParksRequested: false,
     transcript: [
       {
         id: 'user-0',
@@ -196,7 +199,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activation', () => {
+describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit snowActivitiesRequested true contract', () => {
     expectTypeOf<SnowActivitiesRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<SnowActivitiesRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -213,59 +216,121 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
   });
 
-  it('extracts supported explicit snow-activities-request forms as true', () => {
+  it('extracts supported explicit snow-activity-request forms as true', () => {
     const extractor = new SnowActivitiesRequestedConversationStateExtractor();
     const cases = [
       'snow activities',
-      'snow activity',
-      'show snow activities',
       'show me snow activities',
-      'find snow activities',
-      'I need snow activities',
-      'include snow activities',
-      'add snow activities',
-      'need snow activity',
-      'book snow activities',
-    ];
-
-    for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ snowActivitiesRequested: null }),
-        }),
-        message,
-      ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
-    }
-  });
-
-  it('returns empty for snow/skiing/snowboarding alone, resorts/fields, named destinations, typed variants, nearby, negation, remove/forget, and keep wording', () => {
-    const extractor = new SnowActivitiesRequestedConversationStateExtractor();
-    const unsupported = [
-      'snow',
+      'find nearby snow activities',
+      'family-friendly snow activities',
+      'snow activities in Thredbo',
+      'show me skiing options',
+      'where can I go skiing',
+      'where can I go skiing?',
+      'I want to go skiing',
+      'recommend somewhere to snowboard',
+      'find tobogganing near me',
+      'where can we go sledding',
+      'recommend ski resorts',
+      'show me nearby snow fields',
       'skiing',
       'snowboarding',
       'tobogganing',
       'sledding',
+      'snow play',
       'snow resorts',
       'snow fields',
-      'Perisher',
+      'what snow activities can I do?',
+      'can you recommend snow activities?',
+      'I want skiing and restaurants',
+      'show me snow activities and attractions',
+      'include snowboarding on this trip',
+    ];
+
+    for (const message of cases) {
+      const result = extractor.extract({
+        message,
+        currentState: createState({ snowActivitiesRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { snowActivitiesRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('restaurantsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('attractionsRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'scenicDrivesRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'fourWheelDriveRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('beachesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('campingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nationalParksRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('kayakingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
+    }
+  });
+
+  it('emits only snowActivitiesRequested from combined skiing-and-restaurants wording', () => {
+    const extractor = new SnowActivitiesRequestedConversationStateExtractor();
+    expect(
+      extractor.extract({
+        message: 'I want skiing and restaurants',
+        currentState: createState({ snowActivitiesRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'show me snow activities and attractions',
+        currentState: createState({ snowActivitiesRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractor.extract({
+        message: 'include snowboarding on this trip',
+        currentState: createState({ snowActivitiesRequested: null }),
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+  });
+
+  it('returns empty for bare snow/winter, named resorts, hire, conditions, historical, and negation wording', () => {
+    const extractor = new SnowActivitiesRequestedConversationStateExtractor();
+    const unsupported = [
+      'snow',
+      'winter',
+      'alpine',
       'Thredbo',
+      'Perisher',
       'Falls Creek',
-      'family snow activities',
-      'family-friendly snow activities',
-      'guided snow activities',
-      'alpine snow activities',
-      'beginner-friendly snow activities',
-      'snow activities near the hotel',
-      'nearby snow activities',
-      'snow activities in Perisher',
-      'do not include snow activities',
+      'we went skiing yesterday',
+      'what is skiing',
+      'snow forecast',
+      'ski conditions',
+      'lift pass prices',
+      'ski hire',
+      'snow chains',
+      'ski lesson prices',
+      'ski resort map',
+      'hotel near a ski resort',
       'no snow activities',
-      "don't add snow activity",
+      'do not include skiing',
       'without snow activities',
       'remove snow activities',
-      'forget snow activities',
+      'cancel the ski plans',
+      "I don't want to ski",
+      'avoid ski resorts',
+      'skip snow activities',
+      'forget snowboarding',
       'keep snow activities',
       'actually show me snow activities',
       'instead snow activities',
@@ -307,13 +372,6 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     const extractor = new SnowActivitiesRequestedConversationStateExtractor();
     const currentState = createState({
       snowActivitiesRequested: false,
-      hikingWalkingRequested: false,
-      fishingRequested: false,
-      divingSnorkellingRequested: false,
-      wineriesFoodTrailsRequested: false,
-      eventsFestivalsRequested: false,
-      wildlifeRequested: false,
-      nationalParksRequested: false,
       transcript: [
         {
           id: 'user-0',
@@ -356,7 +414,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     expect(other.retained).toBeUndefined();
     expect(
       other.extract({
-        message: 'snow activity',
+        message: 'skiing',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
@@ -365,6 +423,8 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7T');
+    expect(source).toContain('Phase 8W');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -407,14 +467,6 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
 
     for (const file of srcFiles) {
       const src = readFileSync(file, 'utf8');
-      // Activities boundary allowlist may mention the class name as a string.
-      if (file.endsWith('ActivitiesRequestedConversationStateExtractor.ts')) {
-        expect(
-          src.includes('new SnowActivitiesRequestedConversationStateExtractor'),
-          file,
-        ).toBe(false);
-        continue;
-      }
       expect(
         src.includes('new SnowActivitiesRequestedConversationStateExtractor'),
         file,
@@ -429,62 +481,154 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
   it('proves existing active extractors remain unchanged', () => {
     expect(readFileSync(DESTINATION_SOURCE, 'utf8')).toContain('Phase 7A');
     expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 7B');
+    expect(readFileSync(ORIGIN_SOURCE, 'utf8')).toContain('Phase 8B');
     expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 7C');
+    expect(readFileSync(DEPARTURE_DATE_SOURCE, 'utf8')).toContain('Phase 8C');
     expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 7D');
+    expect(readFileSync(RETURN_DATE_SOURCE, 'utf8')).toContain('Phase 8D');
     expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 7E');
+    expect(readFileSync(ADULT_COUNT_SOURCE, 'utf8')).toContain('Phase 8E');
     expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 7F');
+    expect(readFileSync(CHILD_COUNT_SOURCE, 'utf8')).toContain('Phase 8F');
     expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 7G');
+    expect(readFileSync(INFANT_COUNT_SOURCE, 'utf8')).toContain('Phase 8G');
     expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7H');
+    expect(readFileSync(FLIGHTS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8H');
     expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7I',
     );
+    expect(readFileSync(ACCOMMODATION_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8I',
+    );
     expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7J');
+    expect(readFileSync(CAR_HIRE_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8J');
     expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7K',
+    );
+    expect(readFileSync(ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8K',
     );
     expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7L',
     );
+    expect(readFileSync(RESTAURANTS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8L',
+    );
     expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7M',
     );
+    expect(readFileSync(NEARBY_DISCOVERY_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8M',
+    );
     expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7N');
+    expect(readFileSync(BEACHES_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8N');
     expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7O');
+    expect(readFileSync(CAMPING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8P');
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7AA',
+    );
+    expect(readFileSync(NATIONAL_PARKS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Q',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7U',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8R',
+    );
     expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
+    expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8S');
     expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7Q',
+    );
+    expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8T',
     );
     expect(readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7R',
     );
+    expect(readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8U',
+    );
     expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7S',
+    );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8V',
     );
 
     expect(
       new AttractionsRequestedConversationStateExtractor().extract({
-        message: 'add attractions',
+        message: 'attraction options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
+      new AttractionsRequestedConversationStateExtractor().extract({
+        message: 'skiing options',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new ScenicDrivesRequestedConversationStateExtractor().extract({
-        message: 'add scenic drives',
+        message: 'show me scenic drives',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       new FourWheelDrivingRequestedConversationStateExtractor().extract({
-        message: 'add four-wheel driving',
+        message: 'show me 4wd tracks',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       new KayakingRequestedConversationStateExtractor().extract({
-        message: 'add kayaking',
+        message: 'show me kayaking',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'what is nearby',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
+    expect(
+      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
+        message: 'skiing options',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'book activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { activitiesRequested: true } });
+    expect(
+      new ActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me snow activities',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      new RestaurantsRequestedConversationStateExtractor().extract({
+        message: 'find restaurants',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
+    expect(
+      new HikingWalkingRequestedConversationStateExtractor().extract({
+        message: 'show me hiking',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      new NationalParksRequestedConversationStateExtractor().extract({
+        message: 'show me national parks',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: { nationalParksRequested: true } });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
         message: 'add camping',
@@ -497,24 +641,6 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
-    expect(
-      new NearbyDiscoveryRequestedConversationStateExtractor().extract({
-        message: 'what is nearby',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
-    expect(
-      new RestaurantsRequestedConversationStateExtractor().extract({
-        message: 'find restaurants',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { restaurantsRequested: true } });
-    expect(
-      new ActivitiesRequestedConversationStateExtractor().extract({
-        message: 'book activities',
-        currentState: createState(),
-      }),
-    ).toEqual({ stateUpdate: { activitiesRequested: true } });
     expect(
       new CarHireRequestedConversationStateExtractor().extract({
         message: 'book car hire',
@@ -592,29 +718,22 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       scenicDrivesRequested: true,
       attractionsRequested: true,
       snowActivitiesRequested: false,
-      hikingWalkingRequested: false,
-      fishingRequested: false,
-      divingSnorkellingRequested: false,
-      wineriesFoodTrailsRequested: false,
-      eventsFestivalsRequested: false,
-      wildlifeRequested: false,
-      nationalParksRequested: false,
       origin: 'Melbourne',
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add snow activities',
+      message: 'skiing options',
       state: currentState,
-      userEntryId: 'user-7t-a',
-      assistantEntryId: 'assistant-7t-a',
+      userEntryId: 'user-8w-a',
+      assistantEntryId: 'assistant-8w-a',
       userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
     });
     const overriddenTrue = processConversationTurn({
       message: 'no snow activities',
       state: currentState,
-      userEntryId: 'user-7t-b',
-      assistantEntryId: 'assistant-7t-b',
+      userEntryId: 'user-8w-b',
+      assistantEntryId: 'assistant-8w-b',
       userMessageAt: new Date('2026-07-29T00:00:12.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:13.000Z'),
       stateUpdate: { snowActivitiesRequested: true },
@@ -622,8 +741,8 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     const overriddenFalse = processConversationTurn({
       message: 'add snow activities',
       state: currentState,
-      userEntryId: 'user-7t-c',
-      assistantEntryId: 'assistant-7t-c',
+      userEntryId: 'user-8w-c',
+      assistantEntryId: 'assistant-8w-c',
       userMessageAt: new Date('2026-07-29T00:00:14.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:15.000Z'),
       stateUpdate: { snowActivitiesRequested: false },
@@ -631,22 +750,23 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     const nullOverride = processConversationTurn({
       message: 'add snow activities',
       state: currentState,
-      userEntryId: 'user-7t-d',
-      assistantEntryId: 'assistant-7t-d',
+      userEntryId: 'user-8w-d',
+      assistantEntryId: 'assistant-8w-d',
       userMessageAt: new Date('2026-07-29T00:00:16.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:17.000Z'),
       stateUpdate: { snowActivitiesRequested: null },
     });
     const preserved = processConversationTurn({
-      message: 'skiing',
+      message: 'ski hire',
       state: currentState,
-      userEntryId: 'user-7t-e',
-      assistantEntryId: 'assistant-7t-e',
+      userEntryId: 'user-8w-e',
+      assistantEntryId: 'assistant-8w-e',
       userMessageAt: new Date('2026-07-29T00:00:18.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add snow activities. Fly from Sydney to Cairns',
+      message:
+        'skiing options. attraction options. show me scenic drives. show me 4wd tracks. show me kayaking. show me hiking. show me national parks. show me camping. show me beaches. find nearby. find restaurants. book car hire. book a hotel. book flights. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -663,16 +783,9 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         scenicDrivesRequested: null,
         attractionsRequested: null,
         snowActivitiesRequested: null,
-        hikingWalkingRequested: null,
-        fishingRequested: null,
-        divingSnorkellingRequested: null,
-        wineriesFoodTrailsRequested: null,
-        eventsFestivalsRequested: null,
-        wildlifeRequested: null,
-        nationalParksRequested: null,
       }),
-      userEntryId: 'user-7t-f',
-      assistantEntryId: 'assistant-7t-f',
+      userEntryId: 'user-8w-f',
+      assistantEntryId: 'assistant-8w-f',
       userMessageAt: new Date('2026-07-29T00:00:20.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
@@ -694,16 +807,9 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
         scenicDrivesRequested: null,
         attractionsRequested: null,
         snowActivitiesRequested: null,
-        hikingWalkingRequested: null,
-        fishingRequested: null,
-        divingSnorkellingRequested: null,
-        wineriesFoodTrailsRequested: null,
-        eventsFestivalsRequested: null,
-        wildlifeRequested: null,
-        nationalParksRequested: null,
       }),
-      userEntryId: 'user-7t-g',
-      assistantEntryId: 'assistant-7t-g',
+      userEntryId: 'user-8w-g',
+      assistantEntryId: 'assistant-8w-g',
       userMessageAt: new Date('2026-07-29T00:00:22.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:23.000Z'),
       stateUpdate: {
@@ -723,6 +829,7 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
     expect(nullOverride.state.snowActivitiesRequested).toBeNull();
     expect(preserved.state.snowActivitiesRequested).toBe(false);
     expect(composed.state.snowActivitiesRequested).toBe(true);
+    expect(composed.state.attractionsRequested).toBe(true);
     expect(composed.state.origin).toBe('Sydney');
     expect(composed.state.destination).toBe('Cairns');
     expect(independentOverride.state.snowActivitiesRequested).toBe(false);
@@ -798,13 +905,6 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       scenicDrivesRequested: false,
       attractionsRequested: false,
       snowActivitiesRequested: false,
-      hikingWalkingRequested: false,
-      fishingRequested: false,
-      divingSnorkellingRequested: false,
-      wineriesFoodTrailsRequested: false,
-      eventsFestivalsRequested: false,
-      wildlifeRequested: false,
-      nationalParksRequested: false,
     });
 
     // ActivitiesRequested intentionally ignores messages that also mention snow
@@ -877,27 +977,30 @@ describe('phase 7T — SnowActivitiesRequestedConversationStateExtractor activat
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
 
-    const attractionsOnlyMessage = 'add attractions';
-    expect(
-      extractors[18]?.extract({
-        message: attractionsOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    const snowOnlyMessage = 'skiing options';
     expect(
       extractors[19]?.extract({
-        message: attractionsOnlyMessage,
+        message: snowOnlyMessage,
         currentState,
       }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      createConversationStateExtractor().extract({
+        message: snowOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
-    for (let index = 20; index < extractors.length; index += 1) {
+    for (let index = 0; index < extractors.length; index += 1) {
+      if (index === 19) {
+        continue;
+      }
       expect(
         extractors[index]?.extract({
-          message: attractionsOnlyMessage,
+          message: snowOnlyMessage,
           currentState,
         }),
-        `extractor ${index} on attractions message`,
+        `extractor ${index} on snow-only message`,
       ).toEqual({ stateUpdate: {} });
     }
   });

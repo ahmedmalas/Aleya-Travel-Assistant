@@ -1111,16 +1111,19 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'show me snow activities', currentState }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
-      extractor.extract({ message: 'show me snow activities', currentState }),
+      extractor.extract({ message: 'skiing options', currentState }),
+    ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
+    expect(
+      extractor.extract({ message: 'snow resorts', currentState }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
       extractor.extract({ message: 'no snow activities', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'skiing', currentState }),
+      extractor.extract({ message: 'Thredbo', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'snow resorts', currentState }),
+      extractor.extract({ message: 'ski hire', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
