@@ -425,7 +425,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           infantCount: 1,
         }),
       ),
-    ).toBe('Perfect — 1 infants travelling.');
+    ).toBe('Perfect — 1 infant travelling.');
   });
 
   it('selects an updated infant-count acknowledgement', () => {
@@ -451,6 +451,31 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         }),
       ),
     ).toBe('Perfect — 2 infants travelling.');
+  });
+
+  it('selects plural infant-count acknowledgement for three infants', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+          infantCount: 2,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+          childCount: 1,
+          infantCount: 3,
+        }),
+      ),
+    ).toBe('Perfect — 3 infants travelling.');
   });
 
   it('selects Perfect for other changed travel fields', () => {
@@ -540,7 +565,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           infantCount: 1,
         }),
       ),
-    ).toBe('Perfect — 1 infants travelling.');
+    ).toBe('Perfect — 1 infant travelling.');
     expect(
       acknowledgementFor(
         createState({

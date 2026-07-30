@@ -24,6 +24,8 @@
  * "Perfect — 1 child travelling."
  * Phase 10V — infant-count acknowledgement:
  * "Perfect — {infantCount} infants travelling."
+ * Phase 10Y — infant-count singular grammar when infantCount === 1:
+ * "Perfect — 1 infant travelling."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -44,7 +46,9 @@ export const CONVERSATION_REPLY_CATALOGUE = {
         ? `Perfect — ${childCount} child travelling.`
         : `Perfect — ${childCount} children travelling.`,
     infantCount: (infantCount: number) =>
-      `Perfect — ${infantCount} infants travelling.`,
+      infantCount === 1
+        ? `Perfect — ${infantCount} infant travelling.`
+        : `Perfect — ${infantCount} infants travelling.`,
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

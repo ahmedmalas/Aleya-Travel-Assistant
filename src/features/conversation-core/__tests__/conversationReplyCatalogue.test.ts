@@ -65,6 +65,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10V');
     expect(catalogueSource).toContain('Phase 10W');
     expect(catalogueSource).toContain('Phase 10X');
+    expect(catalogueSource).toContain('Phase 10Y');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
@@ -87,6 +88,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     );
     expect(catalogueSource).toContain(
       'Perfect — ${childCount} children travelling.',
+    );
+    expect(catalogueSource).toContain(
+      'Perfect — ${infantCount} infant travelling.',
     );
     expect(catalogueSource).toContain(
       'Perfect — ${infantCount} infants travelling.',
@@ -155,7 +159,13 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     ).toBe('Perfect — 3 children travelling.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(1),
-    ).toBe('Perfect — 1 infants travelling.');
+    ).toBe('Perfect — 1 infant travelling.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(2),
+    ).toBe('Perfect — 2 infants travelling.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(3),
+    ).toBe('Perfect — 3 infants travelling.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
     ).toBe('Perfect.');
@@ -209,6 +219,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).not.toMatch(/CONTEXTUAL_QUESTIONS/);
     expect(catalogueSource).not.toMatch(/adultCount\s*===\s*null/);
     expect(catalogueSource).not.toMatch(/childCount\s*===\s*null/);
+    expect(catalogueSource).not.toMatch(/infantCount\s*===\s*null/);
     expect(catalogueSource).not.toMatch(/newlyEnabledRequestFlags/);
   });
 

@@ -1202,6 +1202,7 @@ describe('conversation-core architectural boundary', () => {
     expect(catalogue).toContain('Phase 10V');
     expect(catalogue).toContain('Phase 10W');
     expect(catalogue).toContain('Phase 10X');
+    expect(catalogue).toContain('Phase 10Y');
     expect(catalogue).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogue).toContain("I've added ${labelList} to your trip requirements.");
     expect(catalogue).toContain('Great — ${destination}.');
@@ -1214,6 +1215,7 @@ describe('conversation-core architectural boundary', () => {
     expect(catalogue).toContain('Perfect — ${adultCount} adults travelling.');
     expect(catalogue).toContain('Perfect — ${childCount} child travelling.');
     expect(catalogue).toContain('Perfect — ${childCount} children travelling.');
+    expect(catalogue).toContain('Perfect — ${infantCount} infant travelling.');
     expect(catalogue).toContain('Perfect — ${infantCount} infants travelling.');
     expect(catalogue).toContain("'Perfect.'");
     expect(catalogue).not.toContain("'Got it.'");
