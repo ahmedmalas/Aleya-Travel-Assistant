@@ -928,6 +928,7 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(hikingWalkingRequestedExtractor).toContain('Phase 7U');
     expect(hikingWalkingRequestedExtractor).toContain('Phase 8R');
+    expect(hikingWalkingRequestedExtractor).toContain('Phase 8X');
     expect(hikingWalkingRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

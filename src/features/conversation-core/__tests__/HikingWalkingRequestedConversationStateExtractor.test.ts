@@ -132,7 +132,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-8r',
+      conversationId: 'conversation-8x',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -206,7 +206,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activation', () => {
+describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit hikingWalkingRequested true contract', () => {
     expectTypeOf<HikingWalkingRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<HikingWalkingRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -229,19 +229,27 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
       'hiking',
       'hike',
       'hikes',
+      'bushwalking',
+      'trekking',
       'walking trails',
       'hiking trails',
       'hiking routes',
+      'walking tracks',
+      'nature walks',
+      'coastal walks',
       'find hiking',
       'find hikes',
       'find hiking trails',
+      'find nearby walks',
       'search hiking',
       'show me hiking',
       'show me hiking trails',
       'recommend hiking',
       'recommend hikes',
+      'recommend a coastal walk',
       'hiking recommendations',
       'hiking options',
+      'walking track options',
       'best hikes',
       'best hiking trails',
       'nearby hiking',
@@ -250,13 +258,23 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
       'trails near me',
       'places to hike',
       'where can I hike',
+      'where can I go hiking',
+      'where can I go hiking?',
+      'where can I go trekking',
+      'what hikes can I do',
+      'what walks can I do nearby?',
+      'can you recommend a hiking trail?',
       'include hiking',
+      'include bushwalking',
       'add hiking',
       'I want hiking',
+      'I want to go hiking',
       'go hiking',
       'walking',
       'show me walking',
       'hiking and walking',
+      'find family-friendly walks',
+      'show me hiking trails near the hotel',
       'show me hiking trails near Brisbane',
       'find the best hikes near Cairns',
       'I want hiking and camping',
@@ -336,38 +354,43 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
       'hiking conditions',
       'hiking warning',
       'hiking closure',
+      'trail map',
       'trail closure',
       'trail conditions',
       'trail difficulty',
+      'walking track closed',
+      'national park permit',
+      'guide phone number',
+      'hotel near the trail',
       'we went hiking',
+      'we went hiking yesterday',
       'we hiked there',
       'I like hiking',
       'hiking?',
       'what is hiking',
+      'what is trekking',
+      'is hiking healthy',
+      'Bondi to Coogee',
       'Bondi to Coogee Walk',
       'Overland Track',
       'Larapinta Trail',
       'Three Capes Track',
       'trek',
-      'trekking',
-      'bushwalking',
       'walking directions',
       'walking distance',
       'walkable',
       'go for a walk',
       'easy hiking',
       'guided walking',
-      'coastal walking',
-      'family-friendly hiking',
       'no hiking',
-      'do not include hiking',
+      'do not include walking',
       "don't include hiking",
-      'without hiking',
+      'without bushwalking',
       'remove hiking',
-      'cancel the hiking plans',
-      "I don't want hiking",
-      'avoid hiking',
-      'skip hiking',
+      'cancel the walk',
+      "I don't want to hike",
+      'avoid trekking',
+      'skip walking trails',
       'no hiking trails',
       'forget hiking',
       'keep walking',
@@ -470,6 +493,7 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
 
     expect(source).toContain('Phase 7U');
     expect(source).toContain('Phase 8R');
+    expect(source).toContain('Phase 8X');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -576,17 +600,30 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
       'Phase 8Q',
     );
     expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7P');
+    expect(readFileSync(KAYAKING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8S');
     expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7Q',
+    );
+    expect(readFileSync(FOUR_WHEEL_DRIVING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8T',
     );
     expect(readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7R',
     );
+    expect(readFileSync(SCENIC_DRIVES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8U',
+    );
     expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7S',
     );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8V',
+    );
     expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
       'Phase 7T',
+    );
+    expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8W',
     );
 
     expect(
@@ -639,16 +676,28 @@ describe('phase 8R — HikingWalkingRequestedConversationStateExtractor activati
     ).toEqual({ stateUpdate: {} });
     expect(
       new SnowActivitiesRequestedConversationStateExtractor().extract({
-        message: 'add snow activities',
+        message: 'skiing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
+      new SnowActivitiesRequestedConversationStateExtractor().extract({
+        message: 'show me hiking trails',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
       new AttractionsRequestedConversationStateExtractor().extract({
-        message: 'add attractions',
+        message: 'attraction options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
+    expect(
+      new AttractionsRequestedConversationStateExtractor().extract({
+        message: 'show me hiking trails',
+        currentState: createState(),
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       new ScenicDrivesRequestedConversationStateExtractor().extract({
         message: 'add scenic drives',

@@ -111,7 +111,7 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     });
     expect(first.state.hikingWalkingRequested).toBe(false);
 
-    const second = turn('trekking bushwalking walkable', first.state, 1);
+    const second = turn('walkable walking directions Overland Track', first.state, 1);
     expect(second.state.hikingWalkingRequested).toBe(false);
   });
 
@@ -121,16 +121,17 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
       now: CREATED_AT,
     });
     const phrases = [
-      'trekking',
-      'bushwalking',
       'walking directions',
       'walking distance',
       'walkable',
       'go for a walk',
       'hiking gear',
       'hiking weather',
+      'trail map',
       'Overland Track',
+      'Bondi to Coogee',
       'hiking?',
+      'what is trekking',
       'I like hiking',
     ];
 
@@ -151,7 +152,7 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     expect(result.state.hikingWalkingRequested).toBe(true);
   });
 
-  it('phase 8R clear hiking-discovery cues set hikingWalkingRequested true without unrelated fields', () => {
+  it('phase 8X clear hiking-discovery cues set hikingWalkingRequested true without unrelated fields', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -163,34 +164,40 @@ describe('phase 3U/7U — explicit hikingWalkingRequested with extraction activa
     expect(bare.state.nearbyDiscoveryRequested).toBeNull();
     expect(bare.state.activitiesRequested).toBeNull();
 
-    const hikes = turn('best hikes', initial, 1);
-    expect(hikes.state.hikingWalkingRequested).toBe(true);
+    const bushwalking = turn('bushwalking', initial, 1);
+    expect(bushwalking.state.hikingWalkingRequested).toBe(true);
 
-    const trails = turn('show me hiking trails', initial, 2);
-    expect(trails.state.hikingWalkingRequested).toBe(true);
+    const trekking = turn('trekking', initial, 2);
+    expect(trekking.state.hikingWalkingRequested).toBe(true);
 
-    const places = turn('places to hike', initial, 3);
-    expect(places.state.hikingWalkingRequested).toBe(true);
+    const coastal = turn('recommend a coastal walk', initial, 3);
+    expect(coastal.state.hikingWalkingRequested).toBe(true);
+
+    const question = turn('where can I go hiking?', initial, 4);
+    expect(question.state.hikingWalkingRequested).toBe(true);
+
+    const walks = turn('what walks can I do nearby?', initial, 5);
+    expect(walks.state.hikingWalkingRequested).toBe(true);
 
     const inRequest = turn(
       'show me hiking trails near Brisbane. Fly from Sydney to Brisbane',
       initial,
-      4,
+      6,
     );
     expect(inRequest.state.hikingWalkingRequested).toBe(true);
     expect(inRequest.state.origin).toBe('Sydney');
     expect(inRequest.state.destination).toBe('Brisbane');
 
-    const seeded = turn('Hello', initial, 5, {
+    const seeded = turn('Hello', initial, 7, {
       hikingWalkingRequested: false,
     });
-    const negated = turn('no hiking', seeded.state, 6);
+    const negated = turn('no hiking', seeded.state, 8);
     expect(negated.state.hikingWalkingRequested).toBe(false);
-    const gear = turn('hiking gear', seeded.state, 7);
+    const gear = turn('hiking gear', seeded.state, 9);
     expect(gear.state.hikingWalkingRequested).toBe(false);
-    const named = turn('Overland Track', seeded.state, 8);
+    const named = turn('Bondi to Coogee', seeded.state, 10);
     expect(named.state.hikingWalkingRequested).toBe(false);
-    const weather = turn('hiking weather', seeded.state, 9);
+    const weather = turn('hiking weather', seeded.state, 11);
     expect(weather.state.hikingWalkingRequested).toBe(false);
   });
 

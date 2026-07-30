@@ -1135,10 +1135,13 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'show me hiking', currentState }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractor.extract({ message: 'show me walking', currentState }),
+      extractor.extract({ message: 'walking track options', currentState }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractor.extract({ message: 'show me hiking trails', currentState }),
+      extractor.extract({ message: 'bushwalking', currentState }),
+    ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
+    expect(
+      extractor.extract({ message: 'where can I go hiking?', currentState }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
       extractor.extract({ message: 'no hiking', currentState }),
@@ -1150,7 +1153,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'walking directions', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'Overland Track', currentState }),
+      extractor.extract({ message: 'Bondi to Coogee', currentState }),
     ).toEqual({ stateUpdate: {} });
   });
 
