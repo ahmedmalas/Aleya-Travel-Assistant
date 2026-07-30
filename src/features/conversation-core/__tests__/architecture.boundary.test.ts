@@ -1023,6 +1023,8 @@ describe('conversation-core architectural boundary', () => {
     expect(eventsFestivalsRequestedExtractor).toMatch(
       /export class EventsFestivalsRequestedConversationStateExtractor/,
     );
+    expect(eventsFestivalsRequestedExtractor).toContain('Phase 7Y');
+    expect(eventsFestivalsRequestedExtractor).toContain('Phase 9B');
     expect(eventsFestivalsRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

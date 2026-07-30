@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3Y/7Y — explicit eventsFestivalsRequested with extraction activation', () => {
+describe('phase 3Y/7Y/9B — explicit eventsFestivalsRequested with extraction activation', () => {
   it('initial eventsFestivalsRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -133,7 +133,11 @@ describe('phase 3Y/7Y — explicit eventsFestivalsRequested with extraction acti
       'exhibitions',
       'sporting events',
       'nightlife',
-      'what is on',
+      'Sydney Festival',
+      'Vivid Sydney',
+      'event tickets',
+      'event venue',
+      'what is a festival',
       'Sydney',
       'Melbourne',
       'Brisbane',
@@ -144,6 +148,31 @@ describe('phase 3Y/7Y — explicit eventsFestivalsRequested with extraction acti
       const result = turn(message, state, index);
       expect(result.state.eventsFestivalsRequested).toBeNull();
       state = result.state;
+    });
+  });
+
+  it('user message text sets eventsFestivalsRequested from clear event/festival discovery wording', () => {
+    const phrases = [
+      'show me festivals',
+      'local events',
+      'music festivals',
+      'festival options',
+      'what is on',
+      'things happening nearby',
+      'events near me',
+      'show me Sydney Festival',
+    ];
+
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.eventsFestivalsRequested, message).toBe(true);
     });
   });
 

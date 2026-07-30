@@ -1264,16 +1264,25 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'events', currentState }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
-      extractor.extract({ message: 'Sydney Festival', currentState }),
+      extractor.extract({ message: 'local events', currentState }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
-      extractor.extract({ message: 'Vivid Sydney', currentState }),
+      extractor.extract({ message: 'festival options', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'what is on', currentState }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractor.extract({ message: 'show me Sydney Festival', currentState }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
       extractor.extract({ message: 'no festivals', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractor.extract({ message: 'local events', currentState }),
+      extractor.extract({ message: 'Sydney Festival', currentState }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractor.extract({ message: 'Vivid Sydney', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'concerts', currentState }),

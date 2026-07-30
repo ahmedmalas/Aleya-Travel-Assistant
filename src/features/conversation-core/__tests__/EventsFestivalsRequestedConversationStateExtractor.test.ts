@@ -221,7 +221,7 @@ function readExtractors(
   ).extractors;
 }
 
-describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activation', () => {
+describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activation', () => {
   it('implements ConversationStateExtractor with explicit eventsFestivalsRequested true contract', () => {
     expectTypeOf<EventsFestivalsRequestedConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
     expectTypeOf<EventsFestivalsRequestedConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
@@ -262,34 +262,75 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
       'need festivals',
       'book events',
       'book festivals',
+      'local events',
+      'upcoming events',
+      'music festivals',
+      'food festivals',
+      'cultural festivals',
+      'community festivals',
+      'events near me',
+      'festival options',
+      'event listings',
+      'things happening nearby',
+      'what is on',
+      "what's on",
+      'places hosting events',
+      'places hosting festivals',
+      'search festivals',
+      'recommend local events',
+      'attend festivals',
+      'visit events',
+      'explore festivals',
+      'discover events',
+      'nearby events',
+      'nearby festivals',
+      'festivals in Melbourne',
+      'events in Sydney',
+      'show me events and restaurants',
     ];
 
     for (const message of cases) {
-      expect(
-        extractor.extract({
-          message,
-          currentState: createState({ eventsFestivalsRequested: null }),
-        }),
+      const result = extractor.extract({
         message,
-      ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+        currentState: createState({ eventsFestivalsRequested: null }),
+      });
+      expect(result, message).toEqual({
+        stateUpdate: { eventsFestivalsRequested: true },
+      });
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'wineriesFoodTrailsRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'divingSnorkellingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('fishingRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'hikingWalkingRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'restaurantsRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty(
+        'nearbyDiscoveryRequested',
+      );
+      expect(result.stateUpdate, message).not.toHaveProperty('activitiesRequested');
+      expect(result.stateUpdate, message).not.toHaveProperty('origin');
+      expect(result.stateUpdate, message).not.toHaveProperty('destination');
     }
   });
 
-  it('extracts clear named events and festivals as true without storing the name', () => {
+  it('extracts named events only with a clear discovery request and never stores the name', () => {
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
-    const named = [
-      'Sydney Festival',
-      'Vivid Sydney',
-      'Adelaide Fringe',
-      'Melbourne Food and Wine Festival',
-      'Splendour in the Grass',
-      'Tamworth Country Music Festival',
+    const namedWithDiscovery = [
       'show me Sydney Festival',
       'I need Vivid Sydney',
       'add Adelaide Fringe',
+      'find Melbourne Food and Wine Festival',
+      'recommend Splendour in the Grass',
+      'attend Tamworth Country Music Festival',
     ];
 
-    for (const message of named) {
+    for (const message of namedWithDiscovery) {
       const result = extractor.extract({
         message,
         currentState: createState({ eventsFestivalsRequested: null }),
@@ -304,7 +345,7 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
     }
   });
 
-  it('returns empty for ordinary places, concerts/shows/markets/nightlife without event identity, typed variants, nearby, negation, remove/forget, and keep wording', () => {
+  it('returns empty for tickets, venues, named-alone, sporting, historical, informational, and negation wording', () => {
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const unsupported = [
       'Sydney',
@@ -318,22 +359,34 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
       'exhibitions',
       'sporting events',
       'nightlife',
-      'what is on',
-      'things happening',
-      'music festivals',
-      'food festivals',
-      'local events',
-      'events near the hotel',
-      'nearby events',
-      'nearby festivals',
-      'festivals in Melbourne',
-      'events in Sydney',
+      'Sydney Festival',
+      'Vivid Sydney',
+      'Adelaide Fringe',
+      'Melbourne Food and Wine Festival',
+      'Splendour in the Grass',
+      'Tamworth Country Music Festival',
+      'event tickets',
+      'buy tickets',
+      'event venue',
+      'wedding',
+      'conference',
+      'event planning',
+      'festival merchandise',
+      'vendor application',
+      'festival accommodation',
+      'event permit',
+      'we went to a festival yesterday',
+      'what is a festival',
+      'events?',
       'do not include events',
       'no events',
       'no festivals',
       "don't add festivals",
       'without events',
       'remove events',
+      'cancel festivals',
+      'avoid events',
+      'skip festivals',
       'forget festivals',
       'keep events',
       'actually show me festivals',
@@ -430,6 +483,8 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
   it('contains no trim/toLowerCase/includes, currentState inspection, or provider imports', () => {
     const source = readFileSync(EVENTS_FESTIVALS_REQUESTED_SOURCE, 'utf8');
 
+    expect(source).toContain('Phase 7Y');
+    expect(source).toContain('Phase 9B');
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
     expect(source).not.toMatch(/input\.currentState/);
@@ -522,72 +577,92 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
     );
 
     expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7V');
-    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7W');
-    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain('Phase 7X');
+    expect(readFileSync(FISHING_REQUESTED_SOURCE, 'utf8')).toContain('Phase 8Y');
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7W',
+    );
+    expect(readFileSync(DIVING_SNORKELLING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8Z',
+    );
+    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 7X',
+    );
+    expect(readFileSync(WINERIES_FOOD_TRAILS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 9A',
+    );
+    expect(readFileSync(HIKING_WALKING_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8X',
+    );
+    expect(readFileSync(SNOW_ACTIVITIES_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8W',
+    );
+    expect(readFileSync(ATTRACTIONS_REQUESTED_SOURCE, 'utf8')).toContain(
+      'Phase 8V',
+    );
     expect(
       new WineriesFoodTrailsRequestedConversationStateExtractor().extract({
-        message: 'add wineries',
+        message: 'winery options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
     expect(
       new DivingSnorkellingRequestedConversationStateExtractor().extract({
-        message: 'add diving',
+        message: 'diving options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
       new FishingRequestedConversationStateExtractor().extract({
-        message: 'add fishing',
+        message: 'fishing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
 
     expect(
       new HikingWalkingRequestedConversationStateExtractor().extract({
-        message: 'add hiking',
+        message: 'walking track options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
       new SnowActivitiesRequestedConversationStateExtractor().extract({
-        message: 'add snow activities',
+        message: 'skiing options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
       new AttractionsRequestedConversationStateExtractor().extract({
-        message: 'add attractions',
+        message: 'attraction options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
       new ScenicDrivesRequestedConversationStateExtractor().extract({
-        message: 'add scenic drives',
+        message: 'scenic drive options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
       new FourWheelDrivingRequestedConversationStateExtractor().extract({
-        message: 'add four-wheel driving',
+        message: '4wd tracks',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
       new KayakingRequestedConversationStateExtractor().extract({
-        message: 'add kayaking',
+        message: 'kayaking spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
       new CampingRequestedConversationStateExtractor().extract({
-        message: 'add camping',
+        message: 'camping spots',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
       new BeachesRequestedConversationStateExtractor().extract({
-        message: 'show me beaches',
+        message: 'beach options',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
@@ -950,7 +1025,7 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
-    const wineriesOnlyMessage = 'add wineries';
+    const wineriesOnlyMessage = 'winery options';
     expect(
       extractors[23]?.extract({
         message: wineriesOnlyMessage,
@@ -973,5 +1048,31 @@ describe('phase 7Y — EventsFestivalsRequestedConversationStateExtractor activa
         `extractor ${index} on wineries message`,
       ).toEqual({ stateUpdate: {} });
     }
+
+    const eventsOnlyMessage = 'festival options';
+    expect(
+      extractors[24]?.extract({
+        message: eventsOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    expect(
+      extractors[23]?.extract({
+        message: eventsOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[22]?.extract({
+        message: eventsOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[21]?.extract({
+        message: eventsOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
   });
 });
