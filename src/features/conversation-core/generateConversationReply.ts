@@ -95,11 +95,13 @@ const PROGRESSION_QUESTIONS = [
 
 /**
  * Fixed contextual follow-up priority after core fields are complete.
- * Phase 10D — deterministic; derived only from final canonical state.
+ * Phase 10D/10E — deterministic; derived only from final canonical state.
  *
+ * Phase 10E suppression: skip any contextual question whose required
+ * information already exists, then continue to the next eligible question.
  * Traveller/guest counts share adultCount. Activity/dining interest has no
- * dedicated state field yet, so those questions apply while the capability
- * remains requested.
+ * dedicated state field yet, so those questions remain eligible while the
+ * capability stays requested.
  */
 const CONTEXTUAL_QUESTIONS = [
   {
@@ -139,10 +141,11 @@ export type GenerateConversationReplyInput = {
  * exactly one follow-up for the first missing core requirement
  * (destination → origin → departureDate → returnDate). Phase 10D: when those
  * four are present, append exactly one capability-specific contextual
- * follow-up, otherwise the neutral continuation. Invoked solely by
- * processConversationTurn after extraction and explicit stateUpdate
- * precedence. Does not re-extract, inspect message text, call
- * search/itinerary, or use an AI provider.
+ * follow-up. Phase 10E: suppress contextual questions whose answers already
+ * exist in final state and fall through to the next eligible question, or the
+ * neutral continuation. Invoked solely by processConversationTurn after
+ * extraction and explicit stateUpdate precedence. Does not re-extract,
+ * inspect message text, call search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,
@@ -208,6 +211,8 @@ function nextMissingRequirementQuestion(state: ConversationCoreState): string {
       return question;
     }
   }
+  // Phase 10E: walk contextual candidates in priority order; skip any whose
+  // required information is already present in the final canonical state.
   for (const entry of CONTEXTUAL_QUESTIONS) {
     if (entry.applies(state)) {
       return entry.question;
