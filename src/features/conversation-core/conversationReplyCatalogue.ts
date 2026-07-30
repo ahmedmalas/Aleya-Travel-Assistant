@@ -40,6 +40,8 @@
  * "Adult count removed."
  * Phase 11O — child-count removal acknowledgement:
  * "Child count removed."
+ * Phase 11P — infant-count removal acknowledgement:
+ * "Infant count removed."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -71,6 +73,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
       infantCount === 1
         ? `Perfect — ${infantCount} infant travelling.`
         : `Perfect — ${infantCount} infants travelling.`,
+    infantCountRemoved: 'Infant count removed.',
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

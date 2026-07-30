@@ -116,6 +116,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toContain('Phase 11M');
     expect(selectorSource).toContain('Phase 11N');
     expect(selectorSource).toContain('Phase 11O');
+    expect(selectorSource).toContain('Phase 11P');
     expect(selectorSource).toMatch(
       /export function selectConversationAcknowledgement/,
     );
@@ -125,6 +126,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toMatch(/returnDateRemoved/);
     expect(selectorSource).toMatch(/adultCountRemoved/);
     expect(selectorSource).toMatch(/childCountRemoved/);
+    expect(selectorSource).toMatch(/infantCountRemoved/);
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
     expect(selectorSource).toMatch(/\['toursRequested', 'tours'\]/);
     expect(selectorSource).toMatch(/\['eventsRequested', 'events'\]/);
@@ -1372,7 +1374,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       );
     });
 
-    it('characterises adult/child clears with removal wording; infant clear as Perfect.', () => {
+    it('characterises adult/child/infant clears with dedicated removal wording', () => {
       const previous = filled();
 
       expect(
@@ -1383,7 +1385,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBe('Child count removed.');
       expect(
         acknowledgementFor(previous, filled({ infantCount: null })),
-      ).toBe('Perfect.');
+      ).toBe('Infant count removed.');
     });
 
     it('characterises multiple removals including destination as Destination removed.', () => {
@@ -2323,7 +2325,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         'Child count removed.',
       );
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -2498,7 +2500,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         'Child count removed.',
       );
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -2695,7 +2697,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         'Child count removed.',
       );
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -2985,7 +2987,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBe('Return date removed.');
     });
 
-    it('preserves adult/child removal and Perfect. for infant clear alone', () => {
+    it('preserves adult/child/infant removal wording for passenger clears alone', () => {
       expect(acknowledgementFor(filled(), filled({ adultCount: null }))).toBe(
         'Adult count removed.',
       );
@@ -2993,7 +2995,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         'Child count removed.',
       );
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -3186,12 +3188,12 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBe('Adult count removed.');
     });
 
-    it('preserves child-count removal and Perfect. for infant-count clear alone', () => {
+    it('preserves child-count and infant-count removal wording for clears alone', () => {
       expect(acknowledgementFor(filled(), filled({ childCount: null }))).toBe(
         'Child count removed.',
       );
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -3388,9 +3390,9 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ).toBe('Child count removed.');
     });
 
-    it('preserves Perfect. for infant-count clear alone', () => {
+    it('preserves infant-count removal wording for infant clear alone', () => {
       expect(acknowledgementFor(filled(), filled({ infantCount: null }))).toBe(
-        'Perfect.',
+        'Infant count removed.',
       );
     });
 
@@ -3421,6 +3423,206 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       expect(result.state.childCount).toBeNull();
       expect(result.reply).toContain('Child count removed.');
       expect(result.reply.match(/Child count removed\./g)?.length).toBe(1);
+      expect(result.reply).not.toMatch(/Perfect\./);
+      expect(result.trace.messageInterpreted).toBe(true);
+    });
+  });
+
+  describe('phase 11P — infant-count removal acknowledgement', () => {
+    const filled = (
+      overrides: Partial<ConversationCoreState> = {},
+    ): ConversationCoreState =>
+      createState({
+        destination: 'Cairns',
+        origin: 'Sydney',
+        departureDate: '2026-08-28',
+        returnDate: '2026-09-05',
+        adultCount: 2,
+        childCount: 1,
+        infantCount: 1,
+        ...overrides,
+      });
+
+    it('acknowledges stored infantCount → null as Infant count removed.', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ infantCount: null })),
+      ).toBe('Infant count removed.');
+    });
+
+    it('does not acknowledge an unchanged null infantCount as removed', () => {
+      expect(
+        acknowledgementFor(
+          filled({ infantCount: null, childCount: 1 }),
+          filled({ infantCount: null, childCount: 2 }),
+        ),
+      ).toBe('Perfect — 2 children travelling.');
+      expect(
+        acknowledgementFor(
+          filled({ infantCount: null }),
+          filled({ infantCount: null }),
+        ),
+      ).toBeNull();
+    });
+
+    it('acknowledges null → stored infantCount with set wording', () => {
+      expect(
+        acknowledgementFor(
+          createState({
+            destination: 'Cairns',
+            origin: 'Sydney',
+            departureDate: '2026-08-28',
+            returnDate: '2026-09-05',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: null,
+          }),
+          createState({
+            destination: 'Cairns',
+            origin: 'Sydney',
+            departureDate: '2026-08-28',
+            returnDate: '2026-09-05',
+            adultCount: 2,
+            childCount: 1,
+            infantCount: 1,
+          }),
+        ),
+      ).toBe('Perfect — 1 infant travelling.');
+    });
+
+    it('acknowledges infantCount replacement with set wording', () => {
+      expect(
+        acknowledgementFor(
+          filled({ infantCount: 1 }),
+          filled({ infantCount: 3 }),
+        ),
+      ).toBe('Perfect — 3 infants travelling.');
+    });
+
+    it('lets child-count set/change and removal beat infant-count removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ childCount: 1 }),
+          filled({ childCount: 3, infantCount: null }),
+        ),
+      ).toBe('Perfect — 3 children travelling.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ childCount: null, infantCount: null }),
+        ),
+      ).toBe('Child count removed.');
+    });
+
+    it('lets higher-priority acknowledgements beat infant-count removal', () => {
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: null }),
+          filled({ infantCount: null, flightsRequested: true }),
+        ),
+      ).toBe("I've added flights to your trip requirements.");
+      expect(
+        acknowledgementFor(
+          filled({ flightsRequested: true }),
+          filled({ infantCount: null, flightsRequested: false }),
+        ),
+      ).toBe("I've removed flights from your trip requirements.");
+      expect(
+        acknowledgementFor(
+          filled({ destination: 'Brisbane' }),
+          filled({ destination: 'Hobart', infantCount: null }),
+        ),
+      ).toBe('Great — Hobart.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ destination: null, infantCount: null }),
+        ),
+      ).toBe('Destination removed.');
+      expect(
+        acknowledgementFor(
+          filled({ origin: 'Sydney' }),
+          filled({ origin: 'Melbourne', infantCount: null }),
+        ),
+      ).toBe('Perfect — departing from Melbourne.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ origin: null, infantCount: null }),
+        ),
+      ).toBe('Departure location removed.');
+      expect(
+        acknowledgementFor(
+          filled({ departureDate: '2026-08-28' }),
+          filled({ departureDate: '2026-10-01', infantCount: null }),
+        ),
+      ).toBe('Perfect — departing on 2026-10-01.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ departureDate: null, infantCount: null }),
+        ),
+      ).toBe('Departure date removed.');
+      expect(
+        acknowledgementFor(
+          filled({ returnDate: '2026-09-05' }),
+          filled({ returnDate: '2026-10-10', infantCount: null }),
+        ),
+      ).toBe('Perfect — returning on 2026-10-10.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ returnDate: null, infantCount: null }),
+        ),
+      ).toBe('Return date removed.');
+      expect(
+        acknowledgementFor(
+          filled({ adultCount: 2 }),
+          filled({ adultCount: 4, infantCount: null }),
+        ),
+      ).toBe('Perfect — 4 adults travelling.');
+      expect(
+        acknowledgementFor(
+          filled(),
+          filled({ adultCount: null, infantCount: null }),
+        ),
+      ).toBe('Adult count removed.');
+    });
+
+    it('lets infant-count removal beat residual generic acknowledgement path', () => {
+      expect(
+        acknowledgementFor(filled(), filled({ infantCount: null })),
+      ).toBe('Infant count removed.');
+      expect(
+        acknowledgementFor(filled(), filled({ infantCount: null })),
+      ).not.toBe('Perfect.');
+    });
+
+    it('keeps messageInterpreted true for infant-count removal', () => {
+      const previous = filled();
+      const next = filled({ infantCount: null });
+      const plan = planFor(previous, next);
+      expect(plan.messageInterpreted).toBe(true);
+      expect(plan.acknowledgements).toEqual(['Infant count removed.']);
+    });
+
+    it('returns at most one acknowledgement for infant-count removal with other changes', () => {
+      const acknowledgement = acknowledgementFor(
+        filled({ flightsRequested: true }),
+        filled({
+          infantCount: null,
+          flightsRequested: null,
+        }),
+      );
+      expect(acknowledgement).toBe('Infant count removed.');
+      expect(acknowledgement!.includes('\n')).toBe(false);
+    });
+
+    it('reaches infant-count removal through processConversationTurn', () => {
+      const previous = filled();
+      const result = turn('hello', previous, { infantCount: null });
+      expect(result.state.infantCount).toBeNull();
+      expect(result.reply).toContain('Infant count removed.');
+      expect(result.reply.match(/Infant count removed\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });

@@ -107,7 +107,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       expect(classification.hasInterpretedChange).toBe(true);
       expect(classification.hasAcknowledgementEligibleChange).toBe(true);
       expect(messageInterpreted).toBe(true);
-      // Phase 11J–11O — destination/origin/date/adult/child clears use dedicated removal wording.
+      // Phase 11J–11P — all audited non-capability clears use dedicated removal wording.
       const expectedAcknowledgement =
         field === 'destination'
           ? 'Destination removed.'
@@ -121,12 +121,22 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
                   ? 'Adult count removed.'
                   : field === 'childCount'
                     ? 'Child count removed.'
-                    : 'Perfect.';
+                    : 'Infant count removed.';
       expect(acknowledgement).toBe(expectedAcknowledgement);
     },
   );
 
   it('each non-capability clear reaches its acknowledgement through processConversationTurn', () => {
+    const expectedReplyByField: Record<string, string> = {
+      destination: 'Destination removed.',
+      origin: 'Departure location removed.',
+      departureDate: 'Departure date removed.',
+      returnDate: 'Return date removed.',
+      adultCount: 'Adult count removed.',
+      childCount: 'Child count removed.',
+      infantCount: 'Infant count removed.',
+    };
+
     for (const [index, { field }] of NON_CAPABILITY_CLEARS.entries()) {
       const previous = createState();
       const result = turn('hello', previous, index, {
@@ -134,28 +144,10 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       } as ConversationStateUpdate);
 
       expect(result.state[field]).toBeNull();
-      if (field === 'destination') {
-        expect(result.reply).toContain('Destination removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else if (field === 'origin') {
-        expect(result.reply).toContain('Departure location removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else if (field === 'departureDate') {
-        expect(result.reply).toContain('Departure date removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else if (field === 'returnDate') {
-        expect(result.reply).toContain('Return date removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else if (field === 'adultCount') {
-        expect(result.reply).toContain('Adult count removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else if (field === 'childCount') {
-        expect(result.reply).toContain('Child count removed.');
-        expect(result.reply).not.toMatch(/Perfect\./);
-      } else {
-        expect(result.reply).toMatch(/Perfect\./);
-        expect(result.reply.match(/Perfect\./g)?.length).toBe(1);
-      }
+      const expected = expectedReplyByField[field]!;
+      expect(result.reply).toContain(expected);
+      expect(result.reply).not.toMatch(/Perfect\./);
+      expect(result.reply.split(expected).length - 1).toBe(1);
     }
   });
 
