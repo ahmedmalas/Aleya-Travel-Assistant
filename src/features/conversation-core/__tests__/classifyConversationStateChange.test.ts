@@ -156,7 +156,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(
       turn('from Sydney', createState({ destination: 'Brisbane' })).reply,
     ).toBe(
-      'Got it — travelling from Sydney.\nWhen would you like to depart?',
+      'Perfect — departing from Sydney.\nWhen would you like to depart?',
     );
 
     expect(turn('book flights', completeCore()).reply).toBe(

@@ -146,7 +146,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         createState({ destination: 'Brisbane' }),
         createState({ destination: 'Brisbane', origin: 'Sydney' }),
       ),
-    ).toBe('Got it — travelling from Sydney.');
+    ).toBe('Perfect — departing from Sydney.');
   });
 
   it('selects an updated origin acknowledgement', () => {
@@ -155,7 +155,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         createState({ destination: 'Brisbane', origin: 'Sydney' }),
         createState({ destination: 'Brisbane', origin: 'Melbourne' }),
       ),
-    ).toBe('Got it — travelling from Melbourne.');
+    ).toBe('Perfect — departing from Melbourne.');
   });
 
   it('selects one newly enabled capability acknowledgement', () => {
@@ -268,7 +268,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
         }),
       ),
-    ).toBe('Got it — travelling from Melbourne.');
+    ).toBe('Perfect — departing from Melbourne.');
   });
 
   it('returns at most one acknowledgement string', () => {

@@ -7,13 +7,15 @@
  * priority, suppression, state mutation, AI, or randomness.
  * Phase 10O — destination acknowledgement wording refined to
  * "Great — {destination}."
+ * Phase 10P — origin acknowledgement wording refined to
+ * "Perfect — departing from {origin}."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
     addedCapabilities: (labelList: string) =>
       `I've added ${labelList} to your trip requirements.`,
     destination: (destination: string) => `Great — ${destination}.`,
-    origin: (origin: string) => `Got it — travelling from ${origin}.`,
+    origin: (origin: string) => `Perfect — departing from ${origin}.`,
     genericTravelFieldChange: 'Got it.',
   },
   followUps: {

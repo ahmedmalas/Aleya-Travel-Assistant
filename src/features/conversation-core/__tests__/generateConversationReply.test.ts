@@ -119,7 +119,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     const result = turn('from Sydney', createState({ destination: 'Cairns' }));
     expect(result.state.origin).toBe('Sydney');
     expect(result.reply).toBe(
-      'Got it — travelling from Sydney.\nWhen would you like to depart?',
+      'Perfect — departing from Sydney.\nWhen would you like to depart?',
     );
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);

@@ -60,7 +60,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.origin).toBe('Sydney');
     expect(result.reply).toBe(
-      'Got it — travelling from Sydney.\nWhen would you like to depart?',
+      'Perfect — departing from Sydney.\nWhen would you like to depart?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });
