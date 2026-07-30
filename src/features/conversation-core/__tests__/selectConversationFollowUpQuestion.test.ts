@@ -92,8 +92,13 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
     expect(selectorSource).toContain('Phase 10H');
+    expect(selectorSource).toContain('Phase 10K');
     expect(selectorSource).toMatch(
       /export function selectConversationFollowUpQuestion/,
+    );
+    expect(selectorSource).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
+    expect(selectorSource).not.toMatch(
+      /Where would you like to travel\?/,
     );
     expect(planSource).toContain('Phase 10H');
     expect(planSource).toMatch(/selectConversationFollowUpQuestion\(/);

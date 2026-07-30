@@ -1178,6 +1178,38 @@ describe('conversation-core architectural boundary', () => {
     expect(types.includes('new Date()')).toBe(false);
   });
 
+  it('keeps the Phase 10K reply catalogue internal and wording-only', () => {
+    const catalogue = readSrc(
+      'src/features/conversation-core/conversationReplyCatalogue.ts',
+    );
+    const ackSelector = readSrc(
+      'src/features/conversation-core/selectConversationAcknowledgement.ts',
+    );
+    const followUpSelector = readSrc(
+      'src/features/conversation-core/selectConversationFollowUpQuestion.ts',
+    );
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
+
+    expect(catalogue).toContain('Phase 10K');
+    expect(catalogue).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
+    expect(catalogue).toContain("I've added ${labelList} to your trip requirements.");
+    expect(catalogue).toContain('Sounds good — ${destination}.');
+    expect(catalogue).toContain('Got it — travelling from ${origin}.');
+    expect(catalogue).toContain("'Got it.'");
+    expect(catalogue).toContain('Where would you like to travel?');
+    expect(catalogue).toContain('What else should I know about your trip?');
+    expect(catalogue.includes('ConversationCoreState')).toBe(false);
+    expect(catalogue.includes('newlyEnabledRequestFlags')).toBe(false);
+    expect(catalogue.includes('adultCount')).toBe(false);
+    expect(catalogue.includes('Math.random')).toBe(false);
+    expect(ackSelector).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
+    expect(followUpSelector).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
+    expect(index.includes('conversationReplyCatalogue')).toBe(false);
+    expect(index.includes('CONVERSATION_REPLY_CATALOGUE')).toBe(false);
+    expect(processTurn.includes('conversationReplyCatalogue')).toBe(false);
+  });
+
   it('rejected conversation package is absent under src/features', () => {
     const features = resolve(ROOT, 'src/features');
     const names = readdirSync(features);

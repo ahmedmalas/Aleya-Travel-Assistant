@@ -16,6 +16,10 @@ const FOLLOW_UP_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/selectConversationFollowUpQuestion.ts',
 );
+const CATALOGUE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/conversationReplyCatalogue.ts',
+);
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
@@ -66,14 +70,17 @@ function questionCount(reply: string): number {
 describe('phase 10D — deterministic requirement-aware questions', () => {
   it('documents Phase 10D contextual follow-ups in the reply boundary', () => {
     const source = readFileSync(FOLLOW_UP_SOURCE, 'utf8');
+    const catalogue = readFileSync(CATALOGUE_SOURCE, 'utf8');
     expect(source).toContain('Phase 10D');
-    expect(source).toContain('How many adults will be travelling?');
-    expect(source).toContain('How many guests will be staying?');
-    expect(source).toContain(
+    expect(source).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
+    expect(catalogue).toContain('How many adults will be travelling?');
+    expect(catalogue).toContain('How many guests will be staying?');
+    expect(catalogue).toContain(
       'What kinds of activities are you interested in?',
     );
-    expect(source).toContain('What type of dining are you looking for?');
+    expect(catalogue).toContain('What type of dining are you looking for?');
     expect(source).not.toMatch(/replySource|nextRequiredField/);
+    expect(catalogue).not.toMatch(/replySource|nextRequiredField/);
   });
 
   it('asks for traveller count when flights are requested and adultCount is missing', () => {

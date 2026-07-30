@@ -1,21 +1,21 @@
+import {
+  CONVERSATION_REPLY_CATALOGUE,
+  NEUTRAL_TRIP_FALLBACK_REPLY,
+} from './conversationReplyCatalogue';
 import type { ConversationCoreState } from './types';
 
-/**
- * Neutral continuation when no more specific follow-up applies.
- * Shared by the follow-up selector and reply planner.
- */
-export const NEUTRAL_TRIP_FALLBACK_REPLY =
-  'What else should I know about your trip?';
+export { NEUTRAL_TRIP_FALLBACK_REPLY };
 
 /**
  * Fixed progression priority for the next missing core travel requirement.
  * Phase 10C — deterministic; derived only from final canonical state.
+ * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
 const PROGRESSION_QUESTIONS = [
-  ['destination', 'Where would you like to travel?'],
-  ['origin', 'Where will you be travelling from?'],
-  ['departureDate', 'When would you like to depart?'],
-  ['returnDate', 'When would you like to return?'],
+  ['destination', CONVERSATION_REPLY_CATALOGUE.followUps.destination],
+  ['origin', CONVERSATION_REPLY_CATALOGUE.followUps.origin],
+  ['departureDate', CONVERSATION_REPLY_CATALOGUE.followUps.departureDate],
+  ['returnDate', CONVERSATION_REPLY_CATALOGUE.followUps.returnDate],
 ] as const satisfies ReadonlyArray<
   readonly [keyof ConversationCoreState, string]
 >;
@@ -29,26 +29,28 @@ const PROGRESSION_QUESTIONS = [
  * Traveller/guest counts share adultCount. Activity/dining interest has no
  * dedicated state field yet, so those questions remain eligible while the
  * capability stays requested.
+ *
+ * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
 const CONTEXTUAL_QUESTIONS = [
   {
     applies: (state: ConversationCoreState) =>
       state.flightsRequested === true && state.adultCount === null,
-    question: 'How many adults will be travelling?',
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.flightsAdultCount,
   },
   {
     applies: (state: ConversationCoreState) =>
       state.accommodationRequested === true && state.adultCount === null,
-    question: 'How many guests will be staying?',
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.accommodationGuestCount,
   },
   {
     applies: (state: ConversationCoreState) => state.activitiesRequested === true,
-    question: 'What kinds of activities are you interested in?',
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.activities,
   },
   {
     applies: (state: ConversationCoreState) =>
       state.restaurantsRequested === true,
-    question: 'What type of dining are you looking for?',
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.restaurants,
   },
 ] as const;
 
@@ -59,6 +61,7 @@ const CONTEXTUAL_QUESTIONS = [
  * suppression, and the neutral continuation. Returns a question string, or
  * null only when no follow-up should be emitted (unused by current planners,
  * which treat the neutral continuation as the terminal selection).
+ * Phase 10K — selects catalogue entries; does not own literal wording.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,

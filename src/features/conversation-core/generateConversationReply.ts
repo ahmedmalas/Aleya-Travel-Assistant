@@ -26,10 +26,11 @@ export type GenerateConversationReplyInput = {
  * selection uses selectConversationFollowUpQuestion. Phase 10I:
  * acknowledgement selection uses selectConversationAcknowledgement.
  * Phase 10J: messageInterpreted uses selectConversationMessageInterpreted.
- * This function only renders the planned reply text. Invoked solely by
- * processConversationTurn after extraction and explicit stateUpdate
- * precedence. Does not re-extract, inspect message text, call
- * search/itinerary, or use an AI provider.
+ * Phase 10K: acknowledgement and follow-up wording come from
+ * CONVERSATION_REPLY_CATALOGUE. This function only renders the planned reply
+ * text. Invoked solely by processConversationTurn after extraction and
+ * explicit stateUpdate precedence. Does not re-extract, inspect message text,
+ * call search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,

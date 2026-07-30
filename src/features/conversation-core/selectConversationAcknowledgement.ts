@@ -2,6 +2,7 @@ import {
   fieldValueChanged,
   type ConversationStateChangeClassification,
 } from './classifyConversationStateChange';
+import { CONVERSATION_REPLY_CATALOGUE } from './conversationReplyCatalogue';
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
@@ -13,6 +14,9 @@ import type {
  * Matches the activated behavioural/service request order used by the
  * extractor factory, with accessible travel inserted after nearby discovery
  * (explicit-only field; no extractor).
+ *
+ * Phase 10K — ordering and eligibility remain selector-owned; acknowledgement
+ * sentence wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
 const CAPABILITY_LABELS = [
   ['flightsRequested', 'flights'],
@@ -47,6 +51,7 @@ const CAPABILITY_LABELS = [
  * Phase 10I — owns capability, destination, origin, and generic travel-field
  * acknowledgements. Priority: newly enabled capabilities → destination →
  * origin → other travel-field change → null when unchanged.
+ * Phase 10K — selects catalogue entries; does not own literal wording.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
@@ -57,22 +62,27 @@ export function selectConversationAcknowledgement(
   ).map(([, label]) => label);
 
   if (newlyRequestedLabels.length > 0) {
-    return `I've added ${formatLabelList(newlyRequestedLabels)} to your trip requirements.`;
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.addedCapabilities(
+      formatLabelList(newlyRequestedLabels),
+    );
   }
 
   if (
     state.destination !== null &&
     fieldValueChanged(classification, 'destination')
   ) {
-    return `Sounds good — ${state.destination}.`;
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination(
+      state.destination,
+    );
   }
 
   if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
-    return `Got it — travelling from ${state.origin}.`;
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin(state.origin);
   }
 
   if (classification.hasAnyChange) {
-    return 'Got it.';
+    return CONVERSATION_REPLY_CATALOGUE.acknowledgements
+      .genericTravelFieldChange;
   }
 
   return null;

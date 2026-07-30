@@ -17,7 +17,8 @@ export { NEUTRAL_TRIP_FALLBACK_REPLY };
  * follow-up selection is delegated to selectConversationFollowUpQuestion.
  * Phase 10I: acknowledgement selection is delegated to
  * selectConversationAcknowledgement. Phase 10J: messageInterpreted is
- * delegated to selectConversationMessageInterpreted.
+ * delegated to selectConversationMessageInterpreted. Phase 10K: selected
+ * reply wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
 export type ConversationReplyPlan = {
   acknowledgements: readonly string[];

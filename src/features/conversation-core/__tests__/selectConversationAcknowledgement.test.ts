@@ -102,10 +102,14 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     const processTurn = readFileSync(PROCESS_TURN_SOURCE, 'utf8');
 
     expect(selectorSource).toContain('Phase 10I');
+    expect(selectorSource).toContain('Phase 10K');
     expect(selectorSource).toMatch(
       /export function selectConversationAcknowledgement/,
     );
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
+    expect(selectorSource).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
+    expect(selectorSource).not.toMatch(/I've added \$\{/);
+    expect(selectorSource).not.toMatch(/Sounds good — \$\{/);
     expect(planSource).toContain('Phase 10I');
     expect(planSource).toMatch(/selectConversationAcknowledgement\(/);
     expect(planSource).not.toMatch(/CAPABILITY_LABELS|formatLabelList/);
