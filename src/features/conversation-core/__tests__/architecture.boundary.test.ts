@@ -1048,6 +1048,8 @@ describe('conversation-core architectural boundary', () => {
     expect(wildlifeRequestedExtractor).toMatch(
       /export class WildlifeRequestedConversationStateExtractor/,
     );
+    expect(wildlifeRequestedExtractor).toContain('Phase 7Z');
+    expect(wildlifeRequestedExtractor).toContain('Phase 9C');
     expect(wildlifeRequestedExtractor).toMatch(
       /input: ConversationStateExtractionInput/,
     );

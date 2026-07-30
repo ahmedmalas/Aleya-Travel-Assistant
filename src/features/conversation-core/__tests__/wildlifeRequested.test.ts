@@ -56,7 +56,7 @@ function turn(
   });
 }
 
-describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation', () => {
+describe('phase 3Z/7Z/9C — explicit wildlifeRequested with extraction activation', () => {
   it('initial wildlifeRequested is null', () => {
     const state = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
@@ -117,7 +117,7 @@ describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation'
     });
     expect(first.state.wildlifeRequested).toBe(false);
 
-    const second = turn('wildlife parks marine wildlife', first.state, 1);
+    const second = turn('wildlife parks kangaroo', first.state, 1);
     expect(second.state.wildlifeRequested).toBe(false);
   });
 
@@ -134,6 +134,11 @@ describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation'
       'aquarium',
       'sanctuary',
       'wildlife parks',
+      'Lone Pine',
+      'pet shop',
+      'hunting',
+      'wildlife tours',
+      'what is wildlife watching',
     ];
 
     let state = initial;
@@ -141,6 +146,30 @@ describe('phase 3Z/7Z — explicit wildlifeRequested with extraction activation'
       const result = turn(message, state, index);
       expect(result.state.wildlifeRequested).toBeNull();
       state = result.state;
+    });
+  });
+
+  it('user message text sets wildlifeRequested from clear wildlife discovery wording', () => {
+    const phrases = [
+      'show me wildlife',
+      'wildlife options',
+      'birdwatching',
+      'marine wildlife',
+      'nearby wildlife',
+      'places to see wildlife',
+      'animal spotting',
+    ];
+
+    phrases.forEach((message, index) => {
+      const result = turn(
+        message,
+        createInitialConversationCoreState({
+          conversationId: `${CONVERSATION_ID}-${index}`,
+          now: CREATED_AT,
+        }),
+        index,
+      );
+      expect(result.state.wildlifeRequested, message).toBe(true);
     });
   });
 

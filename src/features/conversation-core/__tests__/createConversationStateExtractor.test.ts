@@ -1303,6 +1303,18 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       extractor.extract({ message: 'wildlife', currentState }),
     ).toEqual({ stateUpdate: { wildlifeRequested: true } });
     expect(
+      extractor.extract({ message: 'wildlife options', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
+      extractor.extract({ message: 'birdwatching', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
+      extractor.extract({ message: 'nearby wildlife', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
+      extractor.extract({ message: 'places to see wildlife', currentState }),
+    ).toEqual({ stateUpdate: { wildlifeRequested: true } });
+    expect(
       extractor.extract({ message: 'no wildlife', currentState }),
     ).toEqual({ stateUpdate: {} });
     expect(
