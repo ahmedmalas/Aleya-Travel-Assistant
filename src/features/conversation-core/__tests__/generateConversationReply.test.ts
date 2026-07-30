@@ -72,9 +72,11 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     expect(replySource).toContain('Phase 10I');
     expect(replySource).toContain('Phase 10J');
     expect(replySource).toContain('Phase 10K');
+    expect(replySource).toContain('Phase 10L');
     expect(replySource).toMatch(/selectConversationFollowUpQuestion/);
     expect(replySource).toMatch(/selectConversationAcknowledgement/);
     expect(replySource).toMatch(/selectConversationMessageInterpreted/);
+    expect(replySource).toMatch(/selectConversationContinuationPrompt/);
     expect(replySource).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
     expect(replySource).toMatch(/classifyConversationStateChange\(/);
     expect(replySource).toMatch(/createConversationReplyPlan\(/);

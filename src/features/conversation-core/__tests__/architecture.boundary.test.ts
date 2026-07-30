@@ -1210,6 +1210,33 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn.includes('conversationReplyCatalogue')).toBe(false);
   });
 
+  it('keeps the Phase 10L continuation selector internal', () => {
+    const continuation = readSrc(
+      'src/features/conversation-core/selectConversationContinuationPrompt.ts',
+    );
+    const plan = readSrc(
+      'src/features/conversation-core/createConversationReplyPlan.ts',
+    );
+    const index = readSrc('src/features/conversation-core/index.ts');
+    const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
+
+    expect(continuation).toContain('Phase 10L');
+    expect(continuation).toMatch(
+      /export function selectConversationContinuationPrompt/,
+    );
+    expect(continuation).toMatch(/NEUTRAL_TRIP_FALLBACK_REPLY/);
+    expect(continuation.includes('ConversationCoreState')).toBe(false);
+    expect(continuation.includes('Math.random')).toBe(false);
+    expect(plan).toMatch(/selectConversationContinuationPrompt\(/);
+    expect(plan.includes('followUpQuestion: NEUTRAL_TRIP_FALLBACK_REPLY')).toBe(
+      false,
+    );
+    expect(index.includes('selectConversationContinuationPrompt')).toBe(false);
+    expect(processTurn.includes('selectConversationContinuationPrompt')).toBe(
+      false,
+    );
+  });
+
   it('rejected conversation package is absent under src/features', () => {
     const features = resolve(ROOT, 'src/features');
     const names = readdirSync(features);

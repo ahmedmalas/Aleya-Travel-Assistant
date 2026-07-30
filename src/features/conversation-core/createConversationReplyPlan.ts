@@ -1,5 +1,6 @@
 import type { ConversationStateChangeClassification } from './classifyConversationStateChange';
 import { selectConversationAcknowledgement } from './selectConversationAcknowledgement';
+import { selectConversationContinuationPrompt } from './selectConversationContinuationPrompt';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   selectConversationFollowUpQuestion,
@@ -18,7 +19,8 @@ export { NEUTRAL_TRIP_FALLBACK_REPLY };
  * Phase 10I: acknowledgement selection is delegated to
  * selectConversationAcknowledgement. Phase 10J: messageInterpreted is
  * delegated to selectConversationMessageInterpreted. Phase 10K: selected
- * reply wording comes from CONVERSATION_REPLY_CATALOGUE.
+ * reply wording comes from CONVERSATION_REPLY_CATALOGUE. Phase 10L:
+ * continuation fallback is delegated to selectConversationContinuationPrompt.
  */
 export type ConversationReplyPlan = {
   acknowledgements: readonly string[];
@@ -36,7 +38,8 @@ export type CreateConversationReplyPlanInput = {
  * change classification. Acknowledgement selection is owned by
  * selectConversationAcknowledgement; follow-up selection is owned by
  * selectConversationFollowUpQuestion; messageInterpreted is owned by
- * selectConversationMessageInterpreted.
+ * selectConversationMessageInterpreted; continuation fallback is owned by
+ * selectConversationContinuationPrompt.
  */
 export function createConversationReplyPlan(
   input: CreateConversationReplyPlanInput,
@@ -48,18 +51,24 @@ export function createConversationReplyPlan(
     state,
     classification,
   );
+  const followUpQuestion = messageInterpreted
+    ? selectConversationFollowUpQuestion(state)
+    : null;
+  const continuationPrompt = selectConversationContinuationPrompt({
+    followUpQuestion,
+  });
 
   if (!messageInterpreted) {
     return {
       acknowledgements: [],
-      followUpQuestion: NEUTRAL_TRIP_FALLBACK_REPLY,
+      followUpQuestion: continuationPrompt,
       messageInterpreted: false,
     };
   }
 
   return {
     acknowledgements: acknowledgement === null ? [] : [acknowledgement],
-    followUpQuestion: selectConversationFollowUpQuestion(state),
+    followUpQuestion: followUpQuestion ?? continuationPrompt,
     messageInterpreted: true,
   };
 }
