@@ -275,6 +275,47 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     ).toBe('Perfect — returning on 2026-09-05.');
   });
 
+  it('selects a new adult-count acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+        }),
+      ),
+    ).toBe('Perfect — 2 adults travelling.');
+  });
+
+  it('selects an updated adult-count acknowledgement', () => {
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 3,
+        }),
+      ),
+    ).toBe('Perfect — 3 adults travelling.');
+  });
+
   it('selects Perfect for other changed travel fields', () => {
     expect(
       acknowledgementFor(
@@ -283,6 +324,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 2,
         }),
         createState({
           destination: 'Cairns',
@@ -290,12 +332,13 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+          childCount: 1,
         }),
       ),
     ).toBe('Perfect.');
   });
 
-  it('does not select date acknowledgements when dates are unchanged', () => {
+  it('does not select adult-count acknowledgement when adultCount is unchanged', () => {
     expect(
       acknowledgementFor(
         createState({
@@ -303,6 +346,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 2,
         }),
         createState({
           destination: 'Cairns',
@@ -310,6 +354,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
           adultCount: 2,
+          childCount: 1,
         }),
       ),
     ).toBe('Perfect.');
@@ -320,12 +365,14 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 2,
         }),
         createState({
           destination: 'Cairns',
           origin: 'Sydney',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 2,
         }),
       ),
     ).toBeNull();
@@ -341,7 +388,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
   });
 
   it('applies deterministic priority when multiple change categories occur', () => {
-    // capabilities beat destination + origin + dates
+    // capabilities beat destination + origin + dates + adult count
     expect(
       acknowledgementFor(
         createState(),
@@ -350,6 +397,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 2,
           flightsRequested: true,
           accommodationRequested: true,
         }),
@@ -358,7 +406,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       "I've added flights and accommodation to your trip requirements.",
     );
 
-    // destination beats origin / dates when both change without new capabilities
+    // destination beats origin / dates / adult count without new capabilities
     expect(
       acknowledgementFor(
         createState({
@@ -366,17 +414,19 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-01',
           returnDate: '2026-09-01',
+          adultCount: 2,
         }),
         createState({
           destination: 'Hobart',
           origin: 'Melbourne',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 3,
         }),
       ),
     ).toBe('Great — Hobart.');
 
-    // origin beats departure/return dates and other travel-field changes
+    // origin beats departure/return dates / adult count and other changes
     expect(
       acknowledgementFor(
         createState({
@@ -384,17 +434,19 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           origin: 'Sydney',
           departureDate: '2026-08-01',
           returnDate: '2026-09-01',
+          adultCount: 2,
         }),
         createState({
           destination: 'Cairns',
           origin: 'Melbourne',
           departureDate: '2026-08-28',
           returnDate: '2026-09-05',
+          adultCount: 3,
         }),
       ),
     ).toBe('Perfect — departing from Melbourne.');
 
-    // departure date beats return date and generic travel-field changes
+    // departure date beats return date / adult count and generic changes
     expect(
       acknowledgementFor(
         createState({
@@ -412,7 +464,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       ),
     ).toBe('Perfect — departing on 2026-08-28.');
 
-    // return date beats generic travel-field changes
+    // return date beats adult count and generic travel-field changes
     expect(
       acknowledgementFor(
         createState({
@@ -430,6 +482,27 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         }),
       ),
     ).toBe('Perfect — returning on 2026-09-05.');
+
+    // adult count beats generic travel-field changes
+    expect(
+      acknowledgementFor(
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 2,
+        }),
+        createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          departureDate: '2026-08-28',
+          returnDate: '2026-09-05',
+          adultCount: 3,
+          childCount: 1,
+        }),
+      ),
+    ).toBe('Perfect — 3 adults travelling.');
   });
 
   it('returns at most one acknowledgement string', () => {

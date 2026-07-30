@@ -1197,6 +1197,7 @@ describe('conversation-core architectural boundary', () => {
     expect(catalogue).toContain('Phase 10Q');
     expect(catalogue).toContain('Phase 10R');
     expect(catalogue).toContain('Phase 10S');
+    expect(catalogue).toContain('Phase 10T');
     expect(catalogue).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogue).toContain("I've added ${labelList} to your trip requirements.");
     expect(catalogue).toContain('Great — ${destination}.');
@@ -1205,13 +1206,14 @@ describe('conversation-core architectural boundary', () => {
     expect(catalogue).not.toContain('Got it — travelling from ${origin}.');
     expect(catalogue).toContain('Perfect — departing on ${departureDate}.');
     expect(catalogue).toContain('Perfect — returning on ${returnDate}.');
+    expect(catalogue).toContain('Perfect — ${adultCount} adults travelling.');
     expect(catalogue).toContain("'Perfect.'");
     expect(catalogue).not.toContain("'Got it.'");
     expect(catalogue).toContain('Where would you like to travel?');
     expect(catalogue).toContain('What else should I know about your trip?');
     expect(catalogue.includes('ConversationCoreState')).toBe(false);
     expect(catalogue.includes('newlyEnabledRequestFlags')).toBe(false);
-    expect(catalogue.includes('adultCount')).toBe(false);
+    expect(catalogue.includes('adultCount === null')).toBe(false);
     expect(catalogue.includes('Math.random')).toBe(false);
     expect(ackSelector).toMatch(/CONVERSATION_REPLY_CATALOGUE/);
     expect(followUpSelector).toMatch(/CONVERSATION_REPLY_CATALOGUE/);

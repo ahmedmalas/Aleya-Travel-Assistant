@@ -14,6 +14,8 @@
  * "Perfect — departing on {departureDate}."
  * Phase 10S — return-date acknowledgement:
  * "Perfect — returning on {returnDate}."
+ * Phase 10T — adult-count acknowledgement:
+ * "Perfect — {adultCount} adults travelling."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -25,6 +27,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
       `Perfect — departing on ${departureDate}.`,
     returnDate: (returnDate: string) =>
       `Perfect — returning on ${returnDate}.`,
+    adultCount: (adultCount: number) =>
+      `Perfect — ${adultCount} adults travelling.`,
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

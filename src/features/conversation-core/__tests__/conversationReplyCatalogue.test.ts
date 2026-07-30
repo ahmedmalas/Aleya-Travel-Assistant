@@ -60,6 +60,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain('Phase 10Q');
     expect(catalogueSource).toContain('Phase 10R');
     expect(catalogueSource).toContain('Phase 10S');
+    expect(catalogueSource).toContain('Phase 10T');
     expect(catalogueSource).toMatch(/export const CONVERSATION_REPLY_CATALOGUE/);
     expect(catalogueSource).toContain('Great — ${destination}.');
     expect(catalogueSource).not.toContain('Sounds good — ${destination}.');
@@ -71,6 +72,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
       'Perfect — departing on ${departureDate}.',
     );
     expect(catalogueSource).toContain('Perfect — returning on ${returnDate}.');
+    expect(catalogueSource).toContain(
+      'Perfect — ${adultCount} adults travelling.',
+    );
     expect(catalogueSource).toContain("genericTravelFieldChange: 'Perfect.'");
     expect(catalogueSource).not.toContain(
       "genericTravelFieldChange: 'Got it.'",
@@ -115,6 +119,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDate('2026-09-05'),
     ).toBe('Perfect — returning on 2026-09-05.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.adultCount(2),
+    ).toBe('Perfect — 2 adults travelling.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
     ).toBe('Perfect.');
@@ -166,7 +173,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).not.toMatch(/CAPABILITY_LABELS/);
     expect(catalogueSource).not.toMatch(/PROGRESSION_QUESTIONS/);
     expect(catalogueSource).not.toMatch(/CONTEXTUAL_QUESTIONS/);
-    expect(catalogueSource).not.toMatch(/adultCount/);
+    expect(catalogueSource).not.toMatch(/adultCount\s*===/);
     expect(catalogueSource).not.toMatch(/newlyEnabledRequestFlags/);
   });
 
