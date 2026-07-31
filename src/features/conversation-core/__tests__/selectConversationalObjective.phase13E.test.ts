@@ -33,6 +33,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -97,6 +98,7 @@ describe('phase 13E — selectConversationalObjective', () => {
       selectConversationalObjective(
         plan({
           acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -150,16 +152,19 @@ describe('phase 13E — selectConversationalObjective', () => {
     const baselines = [
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: false,
       }),
       plan({
         acknowledgements: ["I've added flights to your trip requirements."],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: true,
       }),
       plan({
         acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: false,
       }),
@@ -177,6 +182,7 @@ describe('phase 13E — selectConversationalObjective', () => {
     const frozen = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),

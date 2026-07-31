@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { assembleConversationReplyPlan } from '../assembleConversationReplyPlan';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
+import type { ConversationAcknowledgementEvent } from '../conversationAcknowledgementEvent';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { createConversationReplyPlan } from '../createConversationReplyPlan';
 import * as baselineModule from '../generateBaselineConversationalReply';
@@ -132,9 +133,11 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
     const continuation = readFileSync(CONTINUATION_SOURCE, 'utf8');
     const layer = readFileSync(LAYER_SOURCE, 'utf8');
 
-    // Acknowledgement selection cardinality: string | null → assembled 0..1.
+    // Acknowledgement selection cardinality: selected pair | null → assembled 0..1.
     expect(ackSource).toMatch(/export function selectConversationAcknowledgement/);
-    expect(ackSource).toMatch(/: string \| null/);
+    expect(ackSource).toMatch(
+      /: SelectedConversationAcknowledgement \| null/,
+    );
     expect(ackSource).toMatch(/return null;/);
     expect(assembly).toMatch(
       /acknowledgements:\s*input\.acknowledgement === null \? \[\] : \[input\.acknowledgement\]/,
@@ -214,7 +217,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       const selected = selectConversationAcknowledgement(
         result.state,
         classification,
-      );
+      )?.text ?? null;
 
       expect(selected, scenario.label).toBe(components.acknowledgement);
       expect(
@@ -377,6 +380,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
     // Assembly contract alone forces the coalescing behaviour.
     const assembledFromAckOnlyComponents = assembleConversationReplyPlan({
       acknowledgement: ACKS.destination('Cairns'),
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
       messageInterpreted: true,
@@ -472,6 +476,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
     let captured:
       | {
           acknowledgements: string[];
+          acknowledgementEvent: ConversationAcknowledgementEvent;
           followUpQuestion: string | null;
           messageInterpreted: boolean;
         }
@@ -483,6 +488,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
     ).mockImplementation((receivedPlan) => {
       captured = {
         acknowledgements: [...receivedPlan.acknowledgements],
+        acknowledgementEvent: receivedPlan.acknowledgementEvent,
         followUpQuestion: receivedPlan.followUpQuestion,
         messageInterpreted: receivedPlan.messageInterpreted,
       };
@@ -494,6 +500,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
 
     expect(captured).toEqual({
       acknowledgements: [...plan.acknowledgements],
+      acknowledgementEvent: plan.acknowledgementEvent,
       followUpQuestion: plan.followUpQuestion,
       messageInterpreted: plan.messageInterpreted,
     });
@@ -516,6 +523,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
 
     const multiAckDeterministic = renderConversationReplyPlan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });
@@ -525,6 +533,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
 
     const emptyDeterministic = renderConversationReplyPlan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     });

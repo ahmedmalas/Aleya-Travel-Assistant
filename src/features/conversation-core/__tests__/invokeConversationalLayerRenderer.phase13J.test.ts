@@ -44,6 +44,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -134,6 +135,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
   it('supports nullable objective and optional style profiles without inspecting them', () => {
     const replyPlan = plan({
       acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     });
@@ -175,6 +177,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.activities,
         messageInterpreted: true,
       }),
@@ -219,6 +222,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
     const input = buildConversationalLayerInput(
       plan({
         acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.destination,
         messageInterpreted: true,
       }),

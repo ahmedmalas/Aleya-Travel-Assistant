@@ -1,4 +1,5 @@
 import type { ConversationStateChangeClassification } from './classifyConversationStateChange';
+import type { ConversationAcknowledgementEvent } from './conversationAcknowledgementEvent';
 import { selectConversationAcknowledgement } from './selectConversationAcknowledgement';
 import { selectConversationContinuationPrompt } from './selectConversationContinuationPrompt';
 import { selectConversationFollowUpQuestion } from './selectConversationFollowUpQuestion';
@@ -10,9 +11,12 @@ import type { ConversationCoreState } from './types';
  *
  * Phase 10N — produced only by selectConversationReplyComponents and
  * consumed by the reply planner when constructing the final plan object.
+ * Phase 16I — acknowledgementEvent paired with acknowledgement text from
+ * the same selector decision.
  */
 export type ConversationReplyComponents = {
   acknowledgement: string | null;
+  acknowledgementEvent: ConversationAcknowledgementEvent;
   followUpQuestion: string | null;
   continuationPrompt: string | null;
   messageInterpreted: boolean;
@@ -38,10 +42,9 @@ export function selectConversationReplyComponents(
   const { state, classification } = input;
   const messageInterpreted =
     selectConversationMessageInterpreted(classification);
-  const acknowledgement = selectConversationAcknowledgement(
-    state,
-    classification,
-  );
+  const selected = selectConversationAcknowledgement(state, classification);
+  const acknowledgement = selected?.text ?? null;
+  const acknowledgementEvent = selected?.event ?? null;
   const followUpQuestion = messageInterpreted
     ? selectConversationFollowUpQuestion(state)
     : null;
@@ -51,6 +54,7 @@ export function selectConversationReplyComponents(
 
   return {
     acknowledgement,
+    acknowledgementEvent,
     followUpQuestion,
     continuationPrompt,
     messageInterpreted,

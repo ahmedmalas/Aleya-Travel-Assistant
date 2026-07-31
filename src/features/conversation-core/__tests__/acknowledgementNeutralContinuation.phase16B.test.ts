@@ -100,6 +100,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -224,6 +225,7 @@ describe('phase 16B — acknowledgement-plus-neutral continuation', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [acknowledgement],
+      acknowledgementEvent: null,
         followUpQuestion,
         messageInterpreted: true,
       }),
@@ -251,6 +253,7 @@ describe('phase 16B — acknowledgement-plus-neutral continuation', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [acknowledgement],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -265,6 +268,7 @@ describe('phase 16B — acknowledgement-plus-neutral continuation', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: false,
       }),
@@ -284,6 +288,7 @@ describe('phase 16B — acknowledgement-plus-neutral continuation', () => {
       const replyPlan = freezePlan(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion,
           messageInterpreted: true,
         }),
@@ -311,6 +316,7 @@ describe('phase 16B — acknowledgement-plus-neutral continuation', () => {
     const empty = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: false,
       }),

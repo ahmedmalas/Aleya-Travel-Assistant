@@ -50,6 +50,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -140,6 +141,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + origin follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -148,6 +150,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + departure-date follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.departureDate('12 March')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.departureDate,
           messageInterpreted: true,
         }),
@@ -156,6 +159,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + return-date follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.returnDate('20 March')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.returnDate,
           messageInterpreted: true,
         }),
@@ -164,6 +168,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + adult-count follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.adultCount(2)],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -172,6 +177,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + accommodation guest-count follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.accommodationGuestCount,
           messageInterpreted: true,
         }),
@@ -210,6 +216,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement only',
         replyPlan: plan({
           acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -218,6 +225,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'message-interpreted only',
         replyPlan: plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -226,6 +234,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
         label: 'acknowledgement + message-interpreted + follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Melbourne')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -244,6 +253,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
   it('matches deterministic wording when the conversational objective is null', () => {
     const nullObjectivePlan = plan({
       acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     });
@@ -260,6 +270,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
   it('preserves catalogue punctuation and spacing exactly across styled and unstyled paths', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -290,6 +301,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.origin('Sydney')]),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

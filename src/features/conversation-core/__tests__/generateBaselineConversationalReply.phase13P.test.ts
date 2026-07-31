@@ -49,6 +49,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -150,6 +151,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
       expectWording(
         plan({
           acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -162,6 +164,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
   it('supports null derived objective and style profiles without behavioural effect', () => {
     const emptyObjectivePlan = plan({
       acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     });
@@ -173,6 +176,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
 
     const replyPlan = plan({
       acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
@@ -193,6 +197,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),

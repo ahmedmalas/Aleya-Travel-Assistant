@@ -92,6 +92,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -217,6 +218,7 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -264,6 +266,7 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
     const failurePlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.origin('Sydney')]),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),
@@ -323,6 +326,7 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
       renderIntegratedConversationReplyPlan({
         plan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),

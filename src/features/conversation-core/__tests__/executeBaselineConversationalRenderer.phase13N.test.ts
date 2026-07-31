@@ -48,6 +48,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -140,6 +141,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
       expectBaseline(
         plan({
           acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -154,6 +156,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
   it('supports null objective and reference style profiles without behavioural effect', () => {
     const replyPlan = plan({
       acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
@@ -178,6 +181,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.destination,
         messageInterpreted: true,
       }),

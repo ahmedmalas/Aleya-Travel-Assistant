@@ -101,6 +101,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('puts a present acknowledgement into a one-item array', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: 'Great — Brisbane.',
+      acknowledgementEvent: null,
       followUpQuestion: 'Where will you be travelling from?',
       continuationPrompt: null,
       messageInterpreted: true,
@@ -112,6 +113,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('uses an empty acknowledgements array when acknowledgement is absent', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: NEUTRAL_TRIP_FALLBACK_REPLY,
       messageInterpreted: false,
@@ -122,6 +124,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('prefers follow-up over continuation prompt', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: 'Perfect.',
+      acknowledgementEvent: null,
       followUpQuestion: 'When would you like to depart?',
       continuationPrompt: NEUTRAL_TRIP_FALLBACK_REPLY,
       messageInterpreted: true,
@@ -133,6 +136,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('uses continuation prompt when follow-up is null', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: NEUTRAL_TRIP_FALLBACK_REPLY,
       messageInterpreted: false,
@@ -143,6 +147,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('preserves messageInterpreted true unchanged', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: "I've added flights to your trip requirements.",
+      acknowledgementEvent: null,
       followUpQuestion: 'How many adults will be travelling?',
       continuationPrompt: null,
       messageInterpreted: true,
@@ -153,6 +158,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
   it('preserves messageInterpreted false unchanged', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: NEUTRAL_TRIP_FALLBACK_REPLY,
       messageInterpreted: false,
@@ -199,10 +205,12 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
       );
       const messageInterpreted =
         selectConversationMessageInterpreted(classification);
-      const acknowledgement = selectConversationAcknowledgement(
+      const selected = selectConversationAcknowledgement(
         result.state,
         classification,
       );
+      const acknowledgement = selected?.text ?? null;
+      const acknowledgementEvent = selected?.event ?? null;
       const followUpQuestion = messageInterpreted
         ? selectConversationFollowUpQuestion(result.state)
         : null;
@@ -211,6 +219,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
       });
       const assembled = assembleConversationReplyPlan({
         acknowledgement,
+        acknowledgementEvent,
         followUpQuestion,
         continuationPrompt,
         messageInterpreted,

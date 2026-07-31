@@ -156,6 +156,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
     expect(disableFlights.reply).toBe(
       expectedActivatedBaselineReply({
         acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),

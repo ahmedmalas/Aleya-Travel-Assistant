@@ -52,6 +52,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -125,6 +126,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     const wording = expectWordingMatchesBaseline(
       plan({
         acknowledgements: ['Perfect — departing from Sydney.'],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -172,6 +174,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     const wording = expectWordingMatchesBaseline(
       plan({
         acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -187,6 +190,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   it('allows a null objective and still renders from the plan', () => {
     const replyPlan = plan({
       acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     });
@@ -203,6 +207,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   it('ignores professional, warm, and luxury style profiles', () => {
     const replyPlan = plan({
       acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -224,6 +229,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   it('never lets objective metadata override the plan, including malformed metadata', () => {
     const replyPlan = plan({
       acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
@@ -258,6 +264,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),

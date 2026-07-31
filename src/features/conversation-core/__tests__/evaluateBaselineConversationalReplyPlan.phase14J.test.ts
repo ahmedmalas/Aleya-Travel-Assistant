@@ -66,6 +66,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -173,6 +174,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'acknowledgement',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -188,6 +190,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'acknowledgement + follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -203,6 +206,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -211,6 +215,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'capability disable',
         replyPlan: plan({
           acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
@@ -274,6 +279,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'acknowledgement + follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -289,6 +295,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -346,6 +353,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
   it('keeps production output parity-identical after baseline activation', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });

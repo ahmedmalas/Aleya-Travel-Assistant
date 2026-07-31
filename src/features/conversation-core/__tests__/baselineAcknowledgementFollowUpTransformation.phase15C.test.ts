@@ -54,6 +54,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -223,6 +224,7 @@ describe('phase 15C — baseline acknowledgement follow-up transformation', () =
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -321,6 +323,7 @@ describe('phase 15C — baseline acknowledgement follow-up transformation', () =
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

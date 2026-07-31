@@ -20,9 +20,11 @@ import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledg
 
 /**
  * Phase 16H — characterize where set-versus-changed semantics exist and
- * where they are lost on the production path.
+ * where they are lost on the production path for *rendered wording*.
  *
- * Audit only. Does not implement acknowledgementEvent metadata.
+ * Phase 16I later propagates acknowledgementEvent through the plan/input
+ * path without changing rendered output. These tests keep the 16H wording
+ * facts: catalogue/transform strings still do not encode set vs changed.
  */
 
 const ROOT = process.cwd();
@@ -164,33 +166,28 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(opener(set.rendered!)).toBe('Great,');
   });
 
-  it('reply-plan acknowledgement is currently only a string array with no event field', () => {
+  it('reply-plan acknowledgements remain string catalogue text (event is separate)', () => {
     const planSource = readCore('assembleConversationReplyPlan.ts');
     expect(planSource).toMatch(
       /export type ConversationReplyPlan = \{[\s\S]*acknowledgements: readonly string\[];/,
     );
-    expect(planSource).not.toMatch(/acknowledgementEvent/);
 
     let state = createState();
     const set = runTurn(state, 'go to Cairns', 0);
     expect(set.plan.acknowledgements).toEqual([ACKS.destination('Cairns')]);
-    expect(set.plan).not.toHaveProperty('acknowledgementEvent');
     expect(typeof set.plan.acknowledgements[0]).toBe('string');
 
     const componentsSource = readCore('selectConversationReplyComponents.ts');
-    expect(componentsSource).toMatch(
-      /acknowledgement: string \| null;/,
-    );
-    expect(componentsSource).not.toMatch(/acknowledgementEvent/);
+    expect(componentsSource).toMatch(/acknowledgement: string \| null;/);
   });
 
-  it('conversational input receives no set-versus-changed event', () => {
+  it('rendered acknowledgement strings still omit set-versus-changed markers', () => {
+    // Phase 16I may carry acknowledgementEvent on the layer input, but
+    // catalogue/transform wording still does not encode the distinction.
     const contracts = readCore('conversationalLayerContracts.ts');
     expect(contracts).toMatch(
       /export type ConversationalLayerInput = \{[\s\S]*readonly plan: ConversationReplyPlan;/,
     );
-    expect(contracts).not.toMatch(/acknowledgementEvent/);
-    expect(contracts).not.toMatch(/field-set/);
     expect(contracts).not.toMatch(/newlyPopulated/);
 
     let state = createState();
@@ -198,10 +195,9 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(set.layerInput.plan.acknowledgements).toEqual([
       ACKS.destination('Cairns'),
     ]);
-    expect(set.layerInput).not.toHaveProperty('acknowledgementEvent');
-    expect(Object.keys(set.layerInput).sort()).toEqual(
-      ['objective', 'plan'].sort(),
-    );
+    expect(set.acknowledgement).toBe(ACKS.destination('Cairns'));
+    expect(set.acknowledgement?.includes('field-set')).toBe(false);
+    expect(set.acknowledgement?.includes('field-changed')).toBe(false);
   });
 
   it('transformBaselineAcknowledgement receives only the acknowledgement string', () => {
@@ -256,12 +252,9 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(opener(childChange.rendered!)).toBe("I've noted");
   });
 
-  it('selector collapses newlyPopulated and updated through fieldValueChanged', () => {
+  it('selected acknowledgement text still uses one catalogue family for set and change', () => {
     const selectorSource = readCore('selectConversationAcknowledgement.ts');
     expect(selectorSource).toMatch(/fieldValueChanged\(classification,/);
-    expect(selectorSource).toMatch(
-      /export function selectConversationAcknowledgement\([\s\S]*\): string \| null/,
-    );
 
     const previousEmpty = createState();
     const withCairns = { ...previousEmpty, destination: 'Cairns' };
@@ -278,28 +271,28 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     );
     expect(changeClassification.updated).toContain('destination');
 
-    expect(selectConversationAcknowledgement(withCairns, setClassification)).toBe(
+    expect(selectConversationAcknowledgement(withCairns, setClassification)?.text).toBe(
       ACKS.destination('Cairns'),
     );
     expect(
-      selectConversationAcknowledgement(withHobart, changeClassification),
+      selectConversationAcknowledgement(withHobart, changeClassification)?.text,
     ).toBe(ACKS.destination('Hobart'));
 
     // Same family template; distinction not present in selected strings.
     expect(
-      selectConversationAcknowledgement(withCairns, setClassification)?.replace(
+      selectConversationAcknowledgement(withCairns, setClassification)?.text.replace(
         'Cairns',
         '',
       ),
     ).toBe(
-      selectConversationAcknowledgement(withHobart, changeClassification)?.replace(
+      selectConversationAcknowledgement(withHobart, changeClassification)?.text.replace(
         'Hobart',
         '',
       ),
     );
   });
 
-  it('documents that Phase 16H is audit-only and does not alter production modules', () => {
+  it('documents that Phase 16H audit conclusions remain about wording, not event absence', () => {
     const auditDoc = readFileSync(
       resolve(
         ROOT,
@@ -313,15 +306,9 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(auditDoc).toMatch(/TWO PHASES/);
     expect(auditDoc).toMatch(/Parsing acknowledgement text for set-versus-changed: \*\*not acceptable\*\*/);
 
-    // Production selector/transform signatures remain string-only.
-    expect(readCore('selectConversationAcknowledgement.ts')).toMatch(
-      /\): string \| null/,
-    );
+    // Transform remains string-driven (Phase 16I does not adopt event wording).
     expect(readCore('transformBaselineAcknowledgement.ts')).toMatch(
       /acknowledgement: string/,
-    );
-    expect(readCore('assembleConversationReplyPlan.ts')).not.toMatch(
-      /acknowledgementEvent/,
     );
   });
 });

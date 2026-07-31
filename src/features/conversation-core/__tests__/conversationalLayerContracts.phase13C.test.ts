@@ -49,6 +49,7 @@ function samplePlan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
     followUpQuestion: FOLLOW_UPS.origin,
     messageInterpreted: true,
     ...overrides,
@@ -92,9 +93,11 @@ describe('phase 13C — conversational layer contracts', () => {
     expect(input.plan).toBe(plan);
     expect(input.plan).toEqual({
       acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
+    expect(input.acknowledgementEvent).toBe(plan.acknowledgementEvent);
     expectTypeOf<ConversationalLayerInput['plan']>().toEqualTypeOf<ConversationReplyPlan>();
     expectTypeOf(input.plan).toMatchTypeOf<ConversationReplyPlan>();
     expectTypeOf<ConversationalLayerInput['objective']>().toEqualTypeOf<
@@ -159,6 +162,7 @@ describe('phase 13C — conversational layer contracts', () => {
       {
         plan: samplePlan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
         }),
         id: 'origin',
@@ -261,6 +265,7 @@ describe('phase 13C — conversational layer contracts', () => {
   it('builds layer input from an assembled plan without changing the plan', () => {
     const plan = assembleConversationReplyPlan({
       acknowledgement: 'Great — Brisbane.',
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       continuationPrompt: null,
       messageInterpreted: true,
@@ -319,6 +324,7 @@ describe('phase 13C — conversational layer contracts', () => {
 
     const emptyPlan = samplePlan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     });

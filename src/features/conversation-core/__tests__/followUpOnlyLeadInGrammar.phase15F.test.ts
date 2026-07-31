@@ -85,6 +85,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -155,6 +156,7 @@ describe('phase 15F — follow-up-only lead-in grammar', () => {
         freezePlan(
           plan({
             acknowledgements: [],
+      acknowledgementEvent: null,
             followUpQuestion: unknown,
             messageInterpreted: true,
           }),
@@ -165,6 +167,7 @@ describe('phase 15F — follow-up-only lead-in grammar', () => {
     const neutralPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -179,6 +182,7 @@ describe('phase 15F — follow-up-only lead-in grammar', () => {
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -190,6 +194,7 @@ describe('phase 15F — follow-up-only lead-in grammar', () => {
     const acknowledgementPlusFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

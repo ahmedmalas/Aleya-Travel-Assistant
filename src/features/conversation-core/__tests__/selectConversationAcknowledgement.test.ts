@@ -67,9 +67,11 @@ function acknowledgementFor(
   previousState: ConversationCoreState,
   state: ConversationCoreState,
 ) {
-  return selectConversationAcknowledgement(
-    state,
-    classifyConversationStateChange(previousState, state),
+  return (
+    selectConversationAcknowledgement(
+      state,
+      classifyConversationStateChange(previousState, state),
+    )?.text ?? null
   );
 }
 
@@ -974,7 +976,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const acknowledgement = selectConversationAcknowledgement(
         result.state,
         classification,
-      );
+      )?.text ?? null;
       const plan = planFor(entry.state, result.state);
 
       expect(plan.acknowledgements).toEqual(

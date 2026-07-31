@@ -97,6 +97,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -201,6 +202,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     const unknownPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: unknown,
         messageInterpreted: true,
       }),
@@ -217,6 +219,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     const neutralPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -234,6 +237,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -245,6 +249,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     const acknowledgementPlusFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -259,6 +264,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     const multipleAcknowledgements = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

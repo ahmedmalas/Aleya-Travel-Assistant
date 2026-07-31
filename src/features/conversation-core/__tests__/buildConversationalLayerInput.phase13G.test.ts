@@ -42,6 +42,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -189,16 +190,19 @@ describe('phase 13G — buildConversationalLayerInput', () => {
     const baselines = [
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: false,
       }),
       plan({
         acknowledgements: ['Great — Brisbane.'],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: true,
       }),
       plan({
         acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
         followUpQuestion: wording,
         messageInterpreted: false,
       }),
@@ -216,6 +220,7 @@ describe('phase 13G — buildConversationalLayerInput', () => {
     const frozenPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),

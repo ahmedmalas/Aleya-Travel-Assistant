@@ -63,6 +63,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -170,6 +171,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         label: 'acknowledgement + follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -185,6 +187,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -193,6 +196,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         label: 'capability disable',
         replyPlan: plan({
           acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
@@ -268,6 +272,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
   it('reports parity after baseline failure falls back to deterministic output', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Hobart')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -296,6 +301,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
   it('reports matchesDeterministic false for a controlled baseline difference without throwing', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });
@@ -336,6 +342,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
   it('keeps evaluation helpers off the activated production path', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });

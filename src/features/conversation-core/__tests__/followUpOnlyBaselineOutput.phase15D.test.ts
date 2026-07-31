@@ -65,6 +65,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -164,6 +165,7 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     const neutralPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -184,6 +186,7 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -198,6 +201,7 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     const acknowledgementPlusFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -217,6 +221,7 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     const multipleAcknowledgements = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

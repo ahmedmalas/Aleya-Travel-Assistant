@@ -68,6 +68,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -140,6 +141,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     );
     expect(neutralPlan).toEqual({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: CANONICAL_NEUTRAL,
       messageInterpreted: true,
     });
@@ -153,6 +155,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const interpretedNeutral = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: CANONICAL_NEUTRAL,
         messageInterpreted: true,
       }),
@@ -160,6 +163,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const uninterpretedNeutral = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: CANONICAL_NEUTRAL,
         messageInterpreted: false,
       }),
@@ -251,12 +255,14 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     ).toBe(CANONICAL_NEUTRAL);
     const assembledFromContinuation = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: CANONICAL_NEUTRAL,
       messageInterpreted: false,
     });
     expect(assembledFromContinuation).toEqual({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: CANONICAL_NEUTRAL,
       messageInterpreted: false,
     });
@@ -266,6 +272,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -277,6 +284,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const acknowledgementPlusFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -288,6 +296,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const followUpOnly = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.destination,
         messageInterpreted: true,
       }),
@@ -303,6 +312,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const unknownPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: unknown,
         messageInterpreted: true,
       }),
@@ -318,6 +328,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const uninterpreted = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: CANONICAL_NEUTRAL,
         messageInterpreted: false,
       }),

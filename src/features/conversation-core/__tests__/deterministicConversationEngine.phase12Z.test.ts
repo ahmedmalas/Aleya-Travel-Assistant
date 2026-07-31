@@ -294,7 +294,7 @@ describe('phase 12Z — deterministic conversation engine characterisation', () 
     const acknowledgement = selectConversationAcknowledgement(
       state,
       classification,
-    );
+    )?.text ?? null;
     const messageInterpreted =
       selectConversationMessageInterpreted(classification);
     const followUpQuestion = messageInterpreted

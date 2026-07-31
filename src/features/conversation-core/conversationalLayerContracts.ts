@@ -1,4 +1,5 @@
 import type { ConversationReplyPlan } from './assembleConversationReplyPlan';
+import type { ConversationAcknowledgementEvent } from './conversationAcknowledgementEvent';
 import { CONVERSATION_REPLY_CATALOGUE } from './conversationReplyCatalogue';
 
 /**
@@ -64,10 +65,13 @@ export type ConversationalStyleProfile = {
  * conversation state.
  *
  * Phase 13F — nullable objective correction.
+ * Phase 16I — acknowledgementEvent copied unchanged from the reply plan.
+ * Does not expose trip state, classification, prior replies, or turn metadata.
  */
 export type ConversationalLayerInput = {
   readonly plan: ConversationReplyPlan;
   readonly objective: ConversationalObjective | null;
+  readonly acknowledgementEvent: ConversationAcknowledgementEvent;
   readonly styleProfile?: ConversationalStyleProfile;
 };
 
@@ -133,9 +137,10 @@ export function createConversationalLayerInput(
   objective: ConversationalObjective | null,
   styleProfile?: ConversationalStyleProfile,
 ): ConversationalLayerInput {
+  const acknowledgementEvent = plan.acknowledgementEvent;
   const input: ConversationalLayerInput =
     styleProfile === undefined
-      ? { plan, objective }
-      : { plan, objective, styleProfile };
+      ? { plan, objective, acknowledgementEvent }
+      : { plan, objective, acknowledgementEvent, styleProfile };
   return Object.freeze(input);
 }

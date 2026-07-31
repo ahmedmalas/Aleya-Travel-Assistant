@@ -90,6 +90,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -167,6 +168,7 @@ const MATRIX: MatrixRow[] = [
     label: 'acknowledgement + specific follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -182,6 +184,7 @@ const MATRIX: MatrixRow[] = [
     label: 'acknowledgement + neutral follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -197,6 +200,7 @@ const MATRIX: MatrixRow[] = [
     label: 'acknowledgement + unknown follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destinationRemoved],
+      acknowledgementEvent: null,
       followUpQuestion: UNKNOWN_FOLLOW_UP,
       messageInterpreted: true,
     }),
@@ -212,6 +216,7 @@ const MATRIX: MatrixRow[] = [
     label: 'supported follow-up-only',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.activities,
       messageInterpreted: true,
     }),
@@ -226,6 +231,7 @@ const MATRIX: MatrixRow[] = [
     label: 'neutral continuation',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -238,6 +244,7 @@ const MATRIX: MatrixRow[] = [
     label: 'unknown follow-up-only',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: UNKNOWN_FOLLOW_UP,
       messageInterpreted: true,
     }),
@@ -250,6 +257,7 @@ const MATRIX: MatrixRow[] = [
     label: 'multiple acknowledgements without follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     }),
@@ -262,6 +270,7 @@ const MATRIX: MatrixRow[] = [
     label: 'multiple acknowledgements + specific follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -297,6 +306,7 @@ const MATRIX: MatrixRow[] = [
     label: 'uninterpreted empty plan',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     }),
@@ -419,6 +429,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     const shapes: ConversationReplyPlan[] = [
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
       }),
       plan({
@@ -484,6 +495,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     const ackOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -501,6 +513,7 @@ describe('phase 15K — final conversational output surface audit', () => {
       const replyPlan = freezePlan(
         plan({
           acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
           followUpQuestion: followUp,
           messageInterpreted: true,
         }),
@@ -518,6 +531,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     const ackNeutral = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -551,6 +565,7 @@ describe('phase 15K — final conversational output surface audit', () => {
       const replyPlan = freezePlan(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: followUp,
           messageInterpreted: true,
         }),
@@ -567,6 +582,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     const neutral = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
         messageInterpreted: true,
       }),
@@ -586,6 +602,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     const unknown = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: UNKNOWN_FOLLOW_UP,
         messageInterpreted: true,
       }),
@@ -599,6 +616,7 @@ describe('phase 15K — final conversational output surface audit', () => {
       freezePlan(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: false,
         }),

@@ -78,7 +78,7 @@ function characterizeClear(
   const acknowledgement = selectConversationAcknowledgement(
     next,
     classification,
-  );
+  )?.text ?? null;
   const messageInterpreted = selectConversationMessageInterpreted(classification);
 
   return {
@@ -178,7 +178,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.hasInterpretedChange).toBe(true);
     expect(classification.hasAcknowledgementEligibleChange).toBe(true);
     expect(selectConversationMessageInterpreted(classification)).toBe(true);
-    expect(selectConversationAcknowledgement(next, classification)).toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBe(
       'Destination removed.',
     );
 
@@ -211,10 +211,10 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.newlyEnabledRequestFlags).toEqual([
       'flightsRequested',
     ]);
-    expect(selectConversationAcknowledgement(next, classification)).toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBe(
       "I've added flights to your trip requirements.",
     );
-    expect(selectConversationAcknowledgement(next, classification)).not.toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).not.toBe(
       'Perfect.',
     );
 
@@ -240,10 +240,10 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.newlyDisabledRequestFlags).toEqual([
       'flightsRequested',
     ]);
-    expect(selectConversationAcknowledgement(next, classification)).toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBe(
       "I've removed flights from your trip requirements.",
     );
-    expect(selectConversationAcknowledgement(next, classification)).not.toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).not.toBe(
       'Perfect.',
     );
 
@@ -271,10 +271,10 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.updated).toEqual(
       expect.arrayContaining(['destination', 'adultCount']),
     );
-    expect(selectConversationAcknowledgement(next, classification)).toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBe(
       'Great — Hobart.',
     );
-    expect(selectConversationAcknowledgement(next, classification)).not.toBe(
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).not.toBe(
       'Perfect.',
     );
 
@@ -296,7 +296,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.hasInterpretedChange).toBe(true);
     expect(classification.hasAcknowledgementEligibleChange).toBe(false);
     expect(selectConversationMessageInterpreted(classification)).toBe(true);
-    expect(selectConversationAcknowledgement(next, classification)).toBeNull();
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBeNull();
 
     const result = turn('hello', previous, 0, { flightsRequested: null });
     expect(result.state.flightsRequested).toBeNull();
@@ -314,7 +314,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
     expect(classification.hasInterpretedChange).toBe(true);
     expect(classification.hasAcknowledgementEligibleChange).toBe(false);
     expect(selectConversationMessageInterpreted(classification)).toBe(true);
-    expect(selectConversationAcknowledgement(next, classification)).toBeNull();
+    expect((selectConversationAcknowledgement(next, classification)?.text ?? null)).toBeNull();
 
     const result = turn('hello', previous, 0, { flightsRequested: null });
     expect(result.state.flightsRequested).toBeNull();

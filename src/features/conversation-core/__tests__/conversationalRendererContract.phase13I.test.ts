@@ -52,6 +52,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -149,6 +150,7 @@ describe('phase 13I — conversational renderer contract', () => {
   it('supports nullable objective and optional styleProfile without behavioural effect', () => {
     const replyPlan = plan({
       acknowledgements: ['Perfect.'],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
@@ -184,6 +186,7 @@ describe('phase 13I — conversational renderer contract', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze(['Great — Brisbane.']),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),

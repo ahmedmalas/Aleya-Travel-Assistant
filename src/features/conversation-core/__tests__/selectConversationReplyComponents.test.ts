@@ -124,7 +124,10 @@ describe('phase 10N — deterministic reply-component selection boundary', () =>
     const components = componentsFor(previous, state);
 
     expect(components.acknowledgement).toBe(
-      selectConversationAcknowledgement(state, classification),
+      selectConversationAcknowledgement(state, classification)?.text ?? null,
+    );
+    expect(components.acknowledgementEvent).toEqual(
+      selectConversationAcknowledgement(state, classification)?.event ?? null,
     );
     expect(components.acknowledgement).toBe('Great — Brisbane.');
     expect(components.followUpQuestion).toBe(

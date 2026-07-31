@@ -95,6 +95,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -250,6 +251,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
         label: 'acknowledgement plus follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -265,6 +267,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -273,6 +276,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
         label: 'capability disable',
         replyPlan: plan({
           acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
@@ -328,6 +332,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
     const failurePlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.origin('Sydney')]),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

@@ -61,6 +61,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -181,6 +182,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
         label: 'acknowledgement only',
         replyPlan: plan({
           acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
           followUpQuestion: null,
           messageInterpreted: true,
         }),
@@ -189,6 +191,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
         label: 'capability enable',
         replyPlan: plan({
           acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.flightsAdultCount,
           messageInterpreted: true,
         }),
@@ -197,6 +200,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
         label: 'capability disable',
         replyPlan: plan({
           acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
@@ -265,6 +269,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       renderConversationReplyPlanByIntegrationMode({
         plan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -276,6 +281,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       renderConversationReplyPlanByIntegrationMode({
         plan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.origin,
           messageInterpreted: true,
         }),
@@ -298,6 +304,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.origin('Sydney')]),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

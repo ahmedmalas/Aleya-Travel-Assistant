@@ -53,6 +53,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -90,6 +91,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'follow-up only',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
@@ -101,6 +103,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'acknowledgement + follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
@@ -112,6 +115,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'neutral continuation',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -123,6 +127,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'capability enabled',
     replyPlan: plan({
       acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.flightsAdultCount,
       messageInterpreted: true,
     }),
@@ -134,6 +139,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'capability disabled',
     replyPlan: plan({
       acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -141,6 +147,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     expectedOutput: expectedActivatedBaselineReply(
       plan({
         acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -152,6 +159,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'field removed',
     replyPlan: plan({
       acknowledgements: [ACKS.destinationRemoved],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     }),
@@ -163,6 +171,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'generic acknowledgement',
     replyPlan: plan({
       acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     }),
@@ -174,6 +183,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'uninterpreted message',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: false,
     }),
@@ -185,6 +195,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'empty reply plan',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     }),
@@ -196,6 +207,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
     label: 'multi-component reply plan',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -295,6 +307,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Hobart')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -328,6 +341,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -335,6 +349,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const withFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.activities,
         messageInterpreted: true,
       }),
@@ -353,6 +368,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const destinationObjectivePlan = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Perth')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.destination,
         messageInterpreted: true,
       }),
@@ -360,6 +376,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const restaurantsObjectivePlan = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Perth')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.restaurants,
         messageInterpreted: true,
       }),
@@ -384,6 +401,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),
@@ -419,6 +437,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const single = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
         messageInterpreted: true,
       }),
     );
@@ -439,6 +458,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

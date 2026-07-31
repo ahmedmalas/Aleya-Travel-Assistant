@@ -569,6 +569,7 @@ describe('phase 15L — production runtime conversational output', () => {
       .mockImplementation((receivedPlan) => {
         capturedPlan = {
           acknowledgements: [...receivedPlan.acknowledgements],
+          acknowledgementEvent: receivedPlan.acknowledgementEvent,
           followUpQuestion: receivedPlan.followUpQuestion,
           messageInterpreted: receivedPlan.messageInterpreted,
         };

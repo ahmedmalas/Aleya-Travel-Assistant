@@ -98,6 +98,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -213,6 +214,7 @@ describe('phase 16D — refine stateless acknowledgement openers', () => {
       generateBaselineConversationalReply(
         plan({
           acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
           followUpQuestion: specific,
           messageInterpreted: true,
         }),
@@ -222,6 +224,7 @@ describe('phase 16D — refine stateless acknowledgement openers', () => {
       generateBaselineConversationalReply(
         plan({
           acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
           followUpQuestion: specific,
           messageInterpreted: true,
         }),
@@ -250,6 +253,7 @@ describe('phase 16D — refine stateless acknowledgement openers', () => {
       generateBaselineConversationalReply(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: false,
         }),
@@ -261,6 +265,7 @@ describe('phase 16D — refine stateless acknowledgement openers', () => {
       generateBaselineConversationalReply(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: FOLLOW_UPS.activities,
           messageInterpreted: true,
         }),
@@ -274,6 +279,7 @@ describe('phase 16D — refine stateless acknowledgement openers', () => {
     // Deterministic fallback unchanged for multi-ack
     const multi = plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });

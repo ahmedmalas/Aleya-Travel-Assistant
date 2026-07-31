@@ -103,6 +103,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -225,11 +226,13 @@ describe('phase 13T — conversational layer foundation completion', () => {
     const cases: ConversationReplyPlan[] = [
       plan({
         acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.destination,
         messageInterpreted: true,
       }),
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -243,6 +246,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
       }),
       plan({
         acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -261,6 +265,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
 
       const nullObjectivePlan = plan({
         acknowledgements: replyPlan.acknowledgements,
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: replyPlan.messageInterpreted,
       });
@@ -278,6 +283,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.destination('Melbourne')]),
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -474,6 +480,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
     // and acknowledgement+follow-up plans apply the activated baseline transform.
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });

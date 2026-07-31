@@ -55,6 +55,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -131,6 +132,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'acknowledgement + specific follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -141,6 +143,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'acknowledgement + neutral continuation',
     replyPlan: plan({
       acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -151,6 +154,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'acknowledgement + unknown follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destinationRemoved],
+      acknowledgementEvent: null,
       followUpQuestion: UNKNOWN_FOLLOW_UP,
       messageInterpreted: true,
     }),
@@ -161,6 +165,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'follow-up-only (supported / 15F)',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.activities,
       messageInterpreted: true,
     }),
@@ -171,6 +176,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'neutral continuation only',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -181,6 +187,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'unknown follow-up only',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: UNKNOWN_FOLLOW_UP,
       messageInterpreted: true,
     }),
@@ -198,6 +205,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'uninterpreted empty plan',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     }),
@@ -208,6 +216,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'uninterpreted neutral continuation',
     replyPlan: plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: false,
     }),
@@ -218,6 +227,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'multiple acknowledgements only',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: true,
     }),
@@ -228,6 +238,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'multiple acknowledgements + specific follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -251,6 +262,7 @@ const SURFACE_CASES: SurfaceCase[] = [
     label: 'multiple acknowledgements + unknown follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Hobart'), ACKS.originRemoved],
+      acknowledgementEvent: null,
       followUpQuestion: UNKNOWN_FOLLOW_UP,
       messageInterpreted: true,
     }),
@@ -360,6 +372,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     const shapes: ConversationReplyPlan[] = [
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
       }),
       plan({

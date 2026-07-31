@@ -302,7 +302,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
       selectConversationAcknowledgement(
         destinationState,
         classifyConversationStateChange(previous, destinationState),
-      ),
+      )?.text,
     ).toBe(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination('Brisbane'),
     );
@@ -316,7 +316,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
       selectConversationAcknowledgement(
         originState,
         classifyConversationStateChange(originPrevious, originState),
-      ),
+      )?.text,
     ).toBe(CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin('Sydney'));
 
     const capabilityPrevious = createState({
@@ -333,7 +333,7 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
       selectConversationAcknowledgement(
         capabilityState,
         classifyConversationStateChange(capabilityPrevious, capabilityState),
-      ),
+      )?.text,
     ).toBe(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.addedCapabilities('flights'),
     );

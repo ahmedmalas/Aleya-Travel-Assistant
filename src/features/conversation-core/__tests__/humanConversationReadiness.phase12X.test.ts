@@ -316,6 +316,7 @@ describe('phase 12X — human-conversation readiness characterisation', () => {
     // Hand-built plan proves rendering consumes structure only.
     const handBuilt = assembleConversationReplyPlan({
       acknowledgement: ACKS.destination('Brisbane'),
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       continuationPrompt: null,
       messageInterpreted: true,

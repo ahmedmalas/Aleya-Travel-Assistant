@@ -2,6 +2,11 @@ import {
   fieldValueChanged,
   type ConversationStateChangeClassification,
 } from './classifyConversationStateChange';
+import type {
+  AcknowledgementTravelField,
+  PresentConversationAcknowledgementEvent,
+  SelectedConversationAcknowledgement,
+} from './conversationAcknowledgementEvent';
 import { CONVERSATION_REPLY_CATALOGUE } from './conversationReplyCatalogue';
 import type {
   ConversationCoreState,
@@ -133,18 +138,27 @@ const CAPABILITY_LABELS = [
  * child count set or changed → child count removed →
  * infant count set or changed → infant count removed →
  * other travel-field change → null when unchanged.
+ * Phase 16I — returns catalogue text paired with acknowledgementEvent from
+ * the same priority decision. newlyPopulated → field-set; non-null update →
+ * field-changed; stored→null → field-removed. Wording unchanged.
  */
 export function selectConversationAcknowledgement(
   state: ConversationCoreState,
   classification: ConversationStateChangeClassification,
-): string | null {
+): SelectedConversationAcknowledgement | null {
   const newlyRequestedLabels = CAPABILITY_LABELS.filter(([field]) =>
     classification.newlyEnabledRequestFlags.includes(field),
   ).map(([, label]) => label);
 
   if (newlyRequestedLabels.length > 0) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.addedCapabilities(
-      formatLabelList(newlyRequestedLabels),
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.addedCapabilities(
+        formatLabelList(newlyRequestedLabels),
+      ),
+      {
+        kind: 'capability-enabled',
+        capabilities: newlyRequestedLabels,
+      },
     );
   }
 
@@ -153,18 +167,25 @@ export function selectConversationAcknowledgement(
   ).map(([, label]) => label);
 
   if (newlyDisabledLabels.length > 0) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
-      formatLabelList(newlyDisabledLabels),
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.removedCapabilities(
+        formatLabelList(newlyDisabledLabels),
+      ),
+      {
+        kind: 'capability-disabled',
+        capabilities: newlyDisabledLabels,
+      },
     );
   }
 
-  if (
-    state.destination !== null &&
-    fieldValueChanged(classification, 'destination')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination(
-      state.destination,
-    );
+  const destinationSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'destination',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.destination,
+  );
+  if (destinationSetOrChanged !== null) {
+    return destinationSetOrChanged;
   }
 
   // Stored destination → null: final value is null and destination is in
@@ -173,26 +194,39 @@ export function selectConversationAcknowledgement(
     state.destination === null &&
     classification.updated.includes('destination')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.destinationRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.destinationRemoved,
+      { kind: 'field-removed', field: 'destination' },
+    );
   }
 
-  if (state.origin !== null && fieldValueChanged(classification, 'origin')) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin(state.origin);
+  const originSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'origin',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.origin,
+  );
+  if (originSetOrChanged !== null) {
+    return originSetOrChanged;
   }
 
   // Stored origin → null: final value is null and origin is in updated
   // (not newlyPopulated). No new classification field required.
   if (state.origin === null && classification.updated.includes('origin')) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.originRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.originRemoved,
+      { kind: 'field-removed', field: 'origin' },
+    );
   }
 
-  if (
-    state.departureDate !== null &&
-    fieldValueChanged(classification, 'departureDate')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDate(
-      state.departureDate,
-    );
+  const departureSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'departureDate',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDate,
+  );
+  if (departureSetOrChanged !== null) {
+    return departureSetOrChanged;
   }
 
   // Stored departureDate → null: final value is null and departureDate is
@@ -201,16 +235,20 @@ export function selectConversationAcknowledgement(
     state.departureDate === null &&
     classification.updated.includes('departureDate')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDateRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.departureDateRemoved,
+      { kind: 'field-removed', field: 'departureDate' },
+    );
   }
 
-  if (
-    state.returnDate !== null &&
-    fieldValueChanged(classification, 'returnDate')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDate(
-      state.returnDate,
-    );
+  const returnSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'returnDate',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDate,
+  );
+  if (returnSetOrChanged !== null) {
+    return returnSetOrChanged;
   }
 
   // Stored returnDate → null: final value is null and returnDate is in
@@ -219,16 +257,20 @@ export function selectConversationAcknowledgement(
     state.returnDate === null &&
     classification.updated.includes('returnDate')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDateRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.returnDateRemoved,
+      { kind: 'field-removed', field: 'returnDate' },
+    );
   }
 
-  if (
-    state.adultCount !== null &&
-    fieldValueChanged(classification, 'adultCount')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.adultCount(
-      state.adultCount,
-    );
+  const adultSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'adultCount',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.adultCount,
+  );
+  if (adultSetOrChanged !== null) {
+    return adultSetOrChanged;
   }
 
   // Stored adultCount → null: final value is null and adultCount is in
@@ -237,16 +279,20 @@ export function selectConversationAcknowledgement(
     state.adultCount === null &&
     classification.updated.includes('adultCount')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.adultCountRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.adultCountRemoved,
+      { kind: 'field-removed', field: 'adultCount' },
+    );
   }
 
-  if (
-    state.childCount !== null &&
-    fieldValueChanged(classification, 'childCount')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount(
-      state.childCount,
-    );
+  const childSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'childCount',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCount,
+  );
+  if (childSetOrChanged !== null) {
+    return childSetOrChanged;
   }
 
   // Stored childCount → null: final value is null and childCount is in
@@ -255,16 +301,20 @@ export function selectConversationAcknowledgement(
     state.childCount === null &&
     classification.updated.includes('childCount')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCountRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.childCountRemoved,
+      { kind: 'field-removed', field: 'childCount' },
+    );
   }
 
-  if (
-    state.infantCount !== null &&
-    fieldValueChanged(classification, 'infantCount')
-  ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(
-      state.infantCount,
-    );
+  const infantSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'infantCount',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount,
+  );
+  if (infantSetOrChanged !== null) {
+    return infantSetOrChanged;
   }
 
   // Stored infantCount → null: final value is null and infantCount is in
@@ -273,15 +323,50 @@ export function selectConversationAcknowledgement(
     state.infantCount === null &&
     classification.updated.includes('infantCount')
   ) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCountRemoved;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCountRemoved,
+      { kind: 'field-removed', field: 'infantCount' },
+    );
   }
 
   if (classification.hasAcknowledgementEligibleChange) {
-    return CONVERSATION_REPLY_CATALOGUE.acknowledgements
-      .genericTravelFieldChange;
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
+      { kind: 'generic' },
+    );
   }
 
   return null;
+}
+
+function selected(
+  text: string,
+  event: PresentConversationAcknowledgementEvent,
+): SelectedConversationAcknowledgement {
+  return { text, event };
+}
+
+/**
+ * Shared set/changed decision for one travel field: same eligibility as
+ * fieldValueChanged with a non-null final value, event kind from
+ * newlyPopulated vs updated.
+ */
+function selectFieldSetOrChanged<Field extends AcknowledgementTravelField>(
+  state: ConversationCoreState,
+  classification: ConversationStateChangeClassification,
+  field: Field,
+  catalogue: (value: NonNullable<ConversationCoreState[Field]>) => string,
+): SelectedConversationAcknowledgement | null {
+  const value = state[field];
+  if (value === null || !fieldValueChanged(classification, field)) {
+    return null;
+  }
+
+  const kind = classification.newlyPopulated.includes(field)
+    ? 'field-set'
+    : 'field-changed';
+
+  return selected(catalogue(value), { kind, field });
 }
 
 function formatLabelList(labels: readonly string[]): string {

@@ -127,9 +127,11 @@ function acknowledgementFor(
   previousState: ConversationCoreState,
   state: ConversationCoreState,
 ) {
-  return selectConversationAcknowledgement(
-    state,
-    classifyConversationStateChange(previousState, state),
+  return (
+    selectConversationAcknowledgement(
+      state,
+      classifyConversationStateChange(previousState, state),
+    )?.text ?? null
   );
 }
 

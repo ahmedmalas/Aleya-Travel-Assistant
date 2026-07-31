@@ -59,6 +59,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -179,6 +180,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
       const replyPlan = freezePlan(
         plan({
           acknowledgements: [],
+      acknowledgementEvent: null,
           followUpQuestion: followUp,
           messageInterpreted: true,
         }),
@@ -194,6 +196,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const unknownPlan = freezePlan(
       plan({
         acknowledgements: [],
+      acknowledgementEvent: null,
         followUpQuestion: unknown,
         messageInterpreted: true,
       }),
@@ -206,6 +209,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -217,6 +221,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const acknowledgementPlusNeutral = freezePlan(
       plan({
         acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
@@ -237,6 +242,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const acknowledgementPlusSpecific = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),
@@ -251,6 +257,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const multiAck = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),
@@ -262,6 +269,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     const multiAckNeutral = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),

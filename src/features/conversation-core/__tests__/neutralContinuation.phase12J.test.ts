@@ -71,6 +71,7 @@ function assembleFromFollowUp(followUpQuestion: string | null) {
   });
   return assembleConversationReplyPlan({
     acknowledgement: null,
+      acknowledgementEvent: null,
     followUpQuestion,
     continuationPrompt,
     messageInterpreted: followUpQuestion !== null,
@@ -217,6 +218,7 @@ describe('phase 12J — neutral continuation boundary characterisation', () => {
 
     const plan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: specific,
       continuationPrompt,
       messageInterpreted: true,
@@ -244,6 +246,7 @@ describe('phase 12J — neutral continuation boundary characterisation', () => {
 
     const terminalPlan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: terminalFollowUp,
       continuationPrompt: terminalContinuation,
       messageInterpreted: true,
@@ -268,6 +271,7 @@ describe('phase 12J — neutral continuation boundary characterisation', () => {
 
     const specificPlan = assembleConversationReplyPlan({
       acknowledgement: "I've added activities and restaurants to your trip requirements.",
+      acknowledgementEvent: null,
       followUpQuestion: specificFollowUp,
       continuationPrompt: specificContinuation,
       messageInterpreted: true,
@@ -293,6 +297,7 @@ describe('phase 12J — neutral continuation boundary characterisation', () => {
 
     const uninterpretedPlan = assembleConversationReplyPlan({
       acknowledgement: null,
+      acknowledgementEvent: null,
       followUpQuestion: null,
       continuationPrompt: uninterpretedContinuation,
       messageInterpreted: false,

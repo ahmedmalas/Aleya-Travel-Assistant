@@ -17,6 +17,9 @@ import { selectConversationalObjective } from './selectConversationalObjective';
  * recalculate follow-up ordering or suppression rules, does not render wording,
  * and does not mutate the plan or style profile.
  *
+ * Phase 16I — acknowledgementEvent is copied from the plan by
+ * createConversationalLayerInput; this adapter does not invent or transform it.
+ *
  * Not wired into reply generation or turn processing.
  */
 export function buildConversationalLayerInput(

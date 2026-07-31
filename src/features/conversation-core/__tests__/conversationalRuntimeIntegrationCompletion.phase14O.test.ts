@@ -115,6 +115,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -169,6 +170,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement origin',
     replyPlan: plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -176,6 +178,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement departure date',
     replyPlan: plan({
       acknowledgements: [ACKS.departureDate('2026-08-01')],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -183,6 +186,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement return date',
     replyPlan: plan({
       acknowledgements: [ACKS.returnDate('2026-08-10')],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -190,6 +194,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement adult count singular',
     replyPlan: plan({
       acknowledgements: [ACKS.adultCount(1)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -197,6 +202,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement adult count plural',
     replyPlan: plan({
       acknowledgements: [ACKS.adultCount(2)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -204,6 +210,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement child count singular',
     replyPlan: plan({
       acknowledgements: [ACKS.childCount(1)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -211,6 +218,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement child count plural',
     replyPlan: plan({
       acknowledgements: [ACKS.childCount(2)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -218,6 +226,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement infant count singular',
     replyPlan: plan({
       acknowledgements: [ACKS.infantCount(1)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -225,6 +234,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement infant count plural',
     replyPlan: plan({
       acknowledgements: [ACKS.infantCount(2)],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -232,6 +242,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement generic',
     replyPlan: plan({
       acknowledgements: [ACKS.genericTravelFieldChange],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -239,6 +250,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement destination removed',
     replyPlan: plan({
       acknowledgements: [ACKS.destinationRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -246,6 +258,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement origin removed',
     replyPlan: plan({
       acknowledgements: [ACKS.originRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -253,6 +266,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement departure date removed',
     replyPlan: plan({
       acknowledgements: [ACKS.departureDateRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -260,6 +274,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement return date removed',
     replyPlan: plan({
       acknowledgements: [ACKS.returnDateRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -267,6 +282,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement adult count removed',
     replyPlan: plan({
       acknowledgements: [ACKS.adultCountRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -274,6 +290,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement child count removed',
     replyPlan: plan({
       acknowledgements: [ACKS.childCountRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -281,6 +298,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement infant count removed',
     replyPlan: plan({
       acknowledgements: [ACKS.infantCountRemoved],
+      acknowledgementEvent: null,
       messageInterpreted: true,
     }),
   },
@@ -288,6 +306,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'capability enable',
     replyPlan: plan({
       acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.flightsAdultCount,
       messageInterpreted: true,
     }),
@@ -296,6 +315,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'capability disable',
     replyPlan: plan({
       acknowledgements: [ACKS.removedCapabilities('flights')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
@@ -367,6 +387,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'acknowledgement plus follow-up',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Melbourne')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
@@ -375,6 +396,7 @@ const CATALOGUE_REPLY_CASES: Array<{
     label: 'multi-component reply',
     replyPlan: plan({
       acknowledgements: [ACKS.destination('Cairns'), ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     }),
@@ -506,6 +528,7 @@ describe('phase 14O — conversational runtime integration completion', () => {
     const receivedPlan = baselineSpy.mock.calls[0]?.[0] as ConversationReplyPlan;
     expect(receivedPlan).toEqual({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: { kind: 'field-set', field: 'destination' },
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -556,6 +579,7 @@ describe('phase 14O — conversational runtime integration completion', () => {
     const failurePlan = freezePlan(
       plan({
         acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.departureDate,
         messageInterpreted: true,
       }),

@@ -70,6 +70,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -157,6 +158,7 @@ describe('phase 14L — baseline comparison status', () => {
     // Empty plan remains deterministic fall-through (null-coalesce), so identical.
     const replyPlan = plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: null,
       messageInterpreted: false,
     });
@@ -179,6 +181,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('classifies successful neutral-continuation baseline divergence as different', () => {
     const replyPlan = plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     });
@@ -202,6 +205,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('classifies successful follow-up-only baseline divergence as different', () => {
     const replyPlan = plan({
       acknowledgements: [],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.activities,
       messageInterpreted: true,
     });
@@ -226,6 +230,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('classifies successful ack+follow-up baseline divergence as different', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -246,6 +251,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('classifies successful different baseline output as different without throwing', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.origin('Sydney')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });
@@ -283,6 +289,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('classifies forced baseline failure as fallback, not identical', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Hobart')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -313,6 +320,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('does not infer fallback from equal strings on successful baseline output', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.flightsAdultCount,
       messageInterpreted: true,
     });
@@ -341,6 +349,7 @@ describe('phase 14L — baseline comparison status', () => {
   it('keeps production output parity-identical after baseline activation', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Cairns')],
+      acknowledgementEvent: null,
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });

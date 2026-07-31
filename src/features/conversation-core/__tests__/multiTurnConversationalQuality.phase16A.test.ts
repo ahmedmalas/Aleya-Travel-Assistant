@@ -45,6 +45,7 @@ type CapturedTurn = {
   continuation: string | null;
   plan: {
     acknowledgements: readonly string[];
+    acknowledgementEvent: import('../conversationAcknowledgementEvent').ConversationAcknowledgementEvent;
     followUpQuestion: string | null;
     messageInterpreted: boolean;
   };
@@ -220,6 +221,7 @@ function runJourney(steps: TurnStep[]): CapturedTurn[] {
       continuation: components.continuationPrompt,
       plan: {
         acknowledgements: plan.acknowledgements,
+        acknowledgementEvent: plan.acknowledgementEvent,
         followUpQuestion: plan.followUpQuestion,
         messageInterpreted: plan.messageInterpreted,
       },

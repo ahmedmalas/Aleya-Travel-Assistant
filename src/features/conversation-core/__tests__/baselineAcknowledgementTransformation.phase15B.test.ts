@@ -56,6 +56,7 @@ function plan(
 ): ConversationReplyPlan {
   return {
     acknowledgements: [],
+    acknowledgementEvent: null,
     followUpQuestion: null,
     messageInterpreted: false,
     ...overrides,
@@ -255,6 +256,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
         freezePlan(
           plan({
             acknowledgements: [unknown],
+      acknowledgementEvent: null,
             followUpQuestion: null,
             messageInterpreted: true,
           }),
@@ -267,6 +269,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     const ackPlusFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.origin,
         messageInterpreted: true,
       }),
@@ -366,6 +369,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     const withFollowUp = freezePlan(
       plan({
         acknowledgements: [ACKS.addedCapabilities('flights')],
+      acknowledgementEvent: null,
         followUpQuestion: FOLLOW_UPS.flightsAdultCount,
         messageInterpreted: true,
       }),
@@ -383,6 +387,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Hobart')],
+      acknowledgementEvent: null,
         followUpQuestion: null,
         messageInterpreted: true,
       }),

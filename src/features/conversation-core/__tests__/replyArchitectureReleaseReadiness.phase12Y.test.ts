@@ -155,6 +155,7 @@ describe('phase 12Y — reply architecture release-readiness characterisation', 
     const plan = assembleConversationReplyPlan(components);
     expect(plan).toEqual({
       acknowledgements: [ACKS.destination('Brisbane')],
+      acknowledgementEvent: { kind: 'field-set', field: 'destination' },
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
@@ -174,6 +175,7 @@ ${FOLLOW_UPS.origin}`,
 
     expect(result.components).toEqual({
       acknowledgement: ACKS.destination('Hobart'),
+      acknowledgementEvent: { kind: 'field-set', field: 'destination' },
       followUpQuestion: FOLLOW_UPS.origin,
       continuationPrompt: null,
       messageInterpreted: true,
@@ -382,14 +384,16 @@ ${FOLLOW_UPS.origin}`,
     const state = createState({ destination: 'Brisbane' });
     const { components, plan } = pipeline(previous, state);
 
-    // Control surface remains structured slots + interpreted flag.
+    // Control surface remains structured slots + interpreted flag + event.
     expect(Object.keys(components).sort()).toEqual([
       'acknowledgement',
+      'acknowledgementEvent',
       'continuationPrompt',
       'followUpQuestion',
       'messageInterpreted',
     ]);
     expect(Object.keys(plan).sort()).toEqual([
+      'acknowledgementEvent',
       'acknowledgements',
       'followUpQuestion',
       'messageInterpreted',
@@ -397,6 +401,7 @@ ${FOLLOW_UPS.origin}`,
 
     const rephrased = {
       acknowledgements: ['Nice choice — Brisbane.'],
+      acknowledgementEvent: null,
       followUpQuestion: 'Where are you flying from?',
       messageInterpreted: plan.messageInterpreted,
     };
