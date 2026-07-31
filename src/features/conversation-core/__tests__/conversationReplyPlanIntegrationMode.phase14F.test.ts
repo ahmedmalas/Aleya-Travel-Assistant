@@ -12,12 +12,16 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
 /**
  * Phase 14F — explicit deterministic plan-rendering integration mode.
  *
- * Proves the plan-level seam declares only `'deterministic'`, delegates
- * through an exhaustive switch to renderConversationReplyPlan, and does not
- * expose any alternate mode selection path.
+ * Proves the production wrapper permanently selects `'deterministic'` and
+ * delegates to the extracted mode-driven renderer, without exposing any
+ * alternate production mode selection path.
  */
 
 const ROOT = process.cwd();
+const MODE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts',
+);
 const SEAM_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
@@ -65,20 +69,26 @@ function plan(
 }
 
 describe('phase 14F — conversation reply plan integration mode', () => {
-  it('declares only the deterministic mode and uses an exhaustive internal switch', () => {
+  it('keeps production selection deterministic and delegates to the extracted mode switch', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
+    const modeSource = readFileSync(MODE_SOURCE, 'utf8');
 
-    expect(source).toMatch(
-      /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
-    );
     expect(source).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
-    expect(source).toMatch(/switch \(mode\)/);
     expect(source).toMatch(
+      /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
+    );
+    expect(source.includes('switch (')).toBe(false);
+
+    expect(modeSource).toMatch(
+      /export type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
+    );
+    expect(modeSource).toMatch(/switch \(input\.mode\)/);
+    expect(modeSource).toMatch(
       /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
     );
-    expect(source).toMatch(
+    expect(modeSource).toMatch(
       /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
     );
 
@@ -107,15 +117,15 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     expect(source.includes('input.plan.kind')).toBe(false);
     expect(source.includes('if (')).toBe(false);
 
-    // Exactly two case arms; production selection remains deterministic.
-    expect(source.match(/case '/g)?.length).toBe(2);
-    expect(source.match(/case 'deterministic'/g)?.length).toBe(1);
-    expect(source.match(/case 'baseline-conversational'/g)?.length).toBe(1);
+    // Exactly two case arms live on the extracted mode-driven module.
+    expect(modeSource.match(/case '/g)?.length).toBe(2);
+    expect(modeSource.match(/case 'deterministic'/g)?.length).toBe(1);
+    expect(modeSource.match(/case 'baseline-conversational'/g)?.length).toBe(1);
     expect(source).not.toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
     );
 
-    // Mode type/constant not exported from the module or barrel.
+    // Mode type is not exported from the production wrapper or barrel.
     expect(source.includes('export type ConversationReplyPlanIntegrationMode')).toBe(
       false,
     );
@@ -128,6 +138,11 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     expect(
       readFileSync(INDEX_SOURCE, 'utf8').includes(
         'renderIntegratedConversationReplyPlan',
+      ),
+    ).toBe(false);
+    expect(
+      readFileSync(INDEX_SOURCE, 'utf8').includes(
+        'renderConversationReplyPlanByIntegrationMode',
       ),
     ).toBe(false);
     expect(
@@ -147,16 +162,15 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     ).toBe(false);
   });
 
-  it('allows only the unselected baseline entry import on the plan seam', () => {
+  it('keeps conversational-layer imports off the production wrapper', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
 
-    expect(source.includes('generateBaselineConversationalReply')).toBe(true);
+    expect(source.includes('generateBaselineConversationalReply')).toBe(false);
     expect(source).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
 
     for (const marker of CONVERSATIONAL_MARKERS) {
-      if (marker === 'generateBaselineConversationalReply') continue;
       expect(source.includes(marker), `must not reference ${marker}`).toBe(
         false,
       );

@@ -20,12 +20,16 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
 /**
  * Phase 14G — unselected baseline plan-rendering branch characterisation.
  *
- * Proves the plan-level seam declares both modes, keeps production selection
- * statically deterministic, and wires the unreachable baseline branch to
+ * Proves the mode contract includes both modes, production selection remains
+ * statically deterministic, and the unreachable baseline branch delegates to
  * generateBaselineConversationalReply(plan) without rebuilding the plan.
  */
 
 const ROOT = process.cwd();
+const MODE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts',
+);
 const SEAM_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
@@ -94,10 +98,11 @@ function turn(message: string, state: ConversationCoreState) {
 describe('phase 14G — baseline plan rendering branch', () => {
   it('declares both modes, keeps production selection deterministic, and wires the unselected branch', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
+    const modeSource = readFileSync(MODE_SOURCE, 'utf8');
     const baseline = readFileSync(BASELINE_SOURCE, 'utf8');
 
-    expect(source).toMatch(
-      /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
+    expect(modeSource).toMatch(
+      /export type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
     );
     expect(source).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
@@ -105,33 +110,37 @@ describe('phase 14G — baseline plan rendering branch', () => {
     expect(source).not.toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
     );
-    expect(source).toMatch(/switch \(mode\)/);
     expect(source).toMatch(
+      /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
+    );
+    expect(modeSource).toMatch(/switch \(input\.mode\)/);
+    expect(modeSource).toMatch(
       /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
     );
-    expect(source).toMatch(
+    expect(modeSource).toMatch(
       /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
     );
-    expect(source).toMatch(
+    expect(modeSource).toMatch(
       /from '\.\/generateBaselineConversationalReply'/,
     );
+    expect(source.includes('generateBaselineConversationalReply')).toBe(false);
 
     // Baseline entry consumes the plan directly — no duplicate assembly/input construction.
     expect(baseline).toMatch(
       /export function generateBaselineConversationalReply\(\s*plan: Readonly<ConversationReplyPlan>/,
     );
-    expect(source.includes('buildConversationalLayerInput')).toBe(false);
-    expect(source.includes('createConversationReplyPlan')).toBe(false);
-    expect(source.includes('assembleConversationReplyPlan(')).toBe(false);
-    expect(source.includes('selectConversationalObjective')).toBe(false);
-    expect(source.includes('renderBaselineConversationalReplyPlan')).toBe(
+    expect(modeSource.includes('buildConversationalLayerInput')).toBe(false);
+    expect(modeSource.includes('createConversationReplyPlan')).toBe(false);
+    expect(modeSource.includes('assembleConversationReplyPlan(')).toBe(false);
+    expect(modeSource.includes('selectConversationalObjective')).toBe(false);
+    expect(modeSource.includes('renderBaselineConversationalReplyPlan')).toBe(
       false,
     );
-    expect(source.includes('executeBaselineConversationalRenderer')).toBe(
+    expect(modeSource.includes('executeBaselineConversationalRenderer')).toBe(
       false,
     );
 
-    // Mode cannot be supplied through runtime input or environment.
+    // Mode cannot be supplied through the production wrapper or environment.
     expect(source.includes('mode?:')).toBe(false);
     expect(source.includes('input.mode')).toBe(false);
     expect(source.includes('integrationMode')).toBe(false);
@@ -147,12 +156,12 @@ describe('phase 14G — baseline plan rendering branch', () => {
     expect(source.includes('URLSearchParams')).toBe(false);
     expect(source.includes('if (')).toBe(false);
 
-    // Exhaustive switch: exactly two case arms.
-    expect(source.match(/case '/g)?.length).toBe(2);
-    expect(source.match(/case 'deterministic'/g)?.length).toBe(1);
-    expect(source.match(/case 'baseline-conversational'/g)?.length).toBe(1);
+    // Exhaustive switch: exactly two case arms on the extracted module.
+    expect(modeSource.match(/case '/g)?.length).toBe(2);
+    expect(modeSource.match(/case 'deterministic'/g)?.length).toBe(1);
+    expect(modeSource.match(/case 'baseline-conversational'/g)?.length).toBe(1);
 
-    // Public contract unchanged; mode not exported.
+    // Public production contract unchanged; mode not exported from barrel.
     expect(source).toMatch(
       /export type RenderIntegratedConversationReplyPlanInput = Readonly<\{\s*plan: Readonly<ConversationReplyPlan>;\s*\}>/,
     );
@@ -168,6 +177,11 @@ describe('phase 14G — baseline plan rendering branch', () => {
     expect(
       readFileSync(INDEX_SOURCE, 'utf8').includes(
         'generateBaselineConversationalReply',
+      ),
+    ).toBe(false);
+    expect(
+      readFileSync(INDEX_SOURCE, 'utf8').includes(
+        'renderConversationReplyPlanByIntegrationMode',
       ),
     ).toBe(false);
     expect(

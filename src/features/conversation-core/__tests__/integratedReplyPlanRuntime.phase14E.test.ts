@@ -122,18 +122,13 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(generate.match(/createConversationReplyPlan\(/g)?.length).toBe(1);
 
     expect(seam).toMatch(
-      /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
-    );
-    expect(seam).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
-    expect(seam).toMatch(/switch \(mode\)/);
     expect(seam).toMatch(
-      /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
+      /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
     );
-    expect(seam).toMatch(
-      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
-    );
+    expect(seam.includes('generateBaselineConversationalReply')).toBe(false);
+    expect(seam.includes('switch (')).toBe(false);
 
     // Final production rendering is owned by the plan seam, not processTurn
     // or the state-level integration entry.
@@ -157,12 +152,6 @@ describe('phase 14E — integrated reply plan runtime', () => {
       expect(generate.includes(marker), `generate must not reference ${marker}`).toBe(
         false,
       );
-      // Seam may statically import generateBaselineConversationalReply (Phase 14G)
-      // but must not import deeper conversational-layer modules.
-      if (marker === 'generateBaselineConversationalReply') {
-        expect(seam.includes(marker)).toBe(true);
-        continue;
-      }
       expect(seam.includes(marker), `seam must not reference ${marker}`).toBe(
         false,
       );
@@ -173,8 +162,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(seam.includes('featureFlag')).toBe(false);
     expect(seam.includes('process.env')).toBe(false);
     expect(seam.includes('if (')).toBe(false);
-    expect(seam.match(/case 'deterministic'/g)?.length).toBe(1);
-    expect(seam.match(/case 'baseline-conversational'/g)?.length).toBe(1);
+    expect(seam.includes('switch (')).toBe(false);
   });
 
   it('preserves acknowledgement, follow-up, continuation, and capability output exactly', () => {

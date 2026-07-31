@@ -68,6 +68,7 @@ const PHASE13_MODULES = [
 const PRODUCTION_PIPELINE = [
   'src/features/conversation-core/generateConversationReply.ts',
   'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
+  'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts',
   'src/features/conversation-core/processTurn.ts',
   'src/features/conversation-core/selectConversationReplyComponents.ts',
   'src/features/conversation-core/assembleConversationReplyPlan.ts',
@@ -317,12 +318,11 @@ describe('phase 13T — conversational layer foundation completion', () => {
       const source = readSrc(relativePath);
       if (
         relativePath ===
-        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+        'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts'
       ) {
-        // Phase 14G: unselected baseline import is allowed; selection stays deterministic.
-        expect(source).toMatch(
-          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
-        );
+        // Phase 14H: unselected baseline import is allowed on the mode-driven
+        // renderer; production wrapper selection stays deterministic.
+        expect(source).toMatch(/switch \(input\.mode\)/);
         expect(source.includes('generateBaselineConversationalReply')).toBe(
           true,
         );
@@ -353,6 +353,9 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(index.includes("from './referenceConversationalStyleProfiles'")).toBe(
       false,
     );
+    expect(
+      index.includes("from './renderConversationReplyPlanByIntegrationMode'"),
+    ).toBe(false);
   });
 
   it('proves the Phase 13 stack has no hidden AI/tool/API/memory/booking capability or automatic fallback wording', () => {

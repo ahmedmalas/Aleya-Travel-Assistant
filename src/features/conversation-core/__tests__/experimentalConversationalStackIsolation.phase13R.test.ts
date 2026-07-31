@@ -24,6 +24,7 @@ const PRODUCTION_PIPELINE_FILES = [
   'src/features/conversation-core/createConversationReplyPlan.ts',
   'src/features/conversation-core/generateConversationReply.ts',
   'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
+  'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts',
   'src/features/conversation-core/processTurn.ts',
 ] as const;
 
@@ -95,13 +96,11 @@ describe('phase 13R — experimental conversational stack isolation', () => {
       const source = readSrc(relativePath);
       if (
         relativePath ===
-        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+        'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts'
       ) {
-        // Phase 14G: seam statically imports the unselected baseline entry.
-        // Selected production mode remains deterministic.
-        expect(source).toMatch(
-          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
-        );
+        // Phase 14H: mode-driven renderer statically imports the unselected
+        // baseline entry. Production wrapper still selects deterministic only.
+        expect(source).toMatch(/switch \(input\.mode\)/);
         expect(source).toMatch(
           /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
         );
@@ -196,16 +195,14 @@ describe('phase 13R — experimental conversational stack isolation', () => {
 
   it('allows experimental → production while prohibiting production → experimental', () => {
     // Prohibited: production must not depend on experimental, except the
-    // plan-level seam's unselected baseline import (Phase 14G).
+    // mode-driven renderer's unselected baseline import (Phase 14H).
     for (const relativePath of PRODUCTION_PIPELINE_FILES) {
       const source = readSrc(relativePath);
       if (
         relativePath ===
-        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+        'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts'
       ) {
-        expect(source).toMatch(
-          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
-        );
+        expect(source).toMatch(/switch \(input\.mode\)/);
         expect(source.includes('generateBaselineConversationalReply')).toBe(
           true,
         );
@@ -278,6 +275,9 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     const seam = readSrc(
       'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
     );
+    const modeDriven = readSrc(
+      'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts',
+    );
 
     expect(generate.includes('generateBaselineConversationalReply')).toBe(false);
     expect(generate.includes('renderBaselineConversationalReplyPlan')).toBe(false);
@@ -295,14 +295,21 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(createPlan.includes('generateBaselineConversationalReply')).toBe(false);
     expect(createPlan.includes('buildConversationalLayerInput')).toBe(false);
 
-    // Seam may statically import the baseline entry, but selection stays deterministic.
+    // Production wrapper permanently selects deterministic and delegates.
     expect(seam).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
     expect(seam).not.toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
     );
-    expect(seam.includes('generateBaselineConversationalReply')).toBe(true);
+    expect(seam.includes('generateBaselineConversationalReply')).toBe(false);
+    expect(seam).toMatch(/renderConversationReplyPlanByIntegrationMode\(/);
+
+    // Mode-driven module may statically import the baseline entry.
+    expect(modeDriven.includes('generateBaselineConversationalReply')).toBe(true);
+    expect(modeDriven).toMatch(
+      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+    );
 
     // Production reply path reaches the plan seam, then the authoritative renderer.
     expect(generate).toMatch(/renderIntegratedConversationReplyPlan\(/);

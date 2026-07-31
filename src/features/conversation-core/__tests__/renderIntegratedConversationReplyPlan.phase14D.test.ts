@@ -55,40 +55,36 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
       /export function renderIntegratedConversationReplyPlan/,
     );
     expect(source).toMatch(
-      /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
-    );
-    expect(source).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
-    expect(source).toMatch(/switch \(mode\)/);
     expect(source).toMatch(
-      /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
-    );
-    expect(source).toMatch(
-      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+      /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
     );
     expect(source).toMatch(
       /export type RenderIntegratedConversationReplyPlanInput/,
+    );
+    expect(source).toMatch(
+      /from '\.\/renderConversationReplyPlanByIntegrationMode'/,
     );
 
     expect(source.includes('classifyConversationStateChange')).toBe(false);
     expect(source.includes('createConversationReplyPlan')).toBe(false);
     expect(source.includes('assembleConversationReplyPlan(')).toBe(false);
     expect(source.includes('selectConversationReplyComponents')).toBe(false);
-    expect(source.includes("from './generateConversationReply'")).toBe(true);
+    expect(source.includes("from './generateConversationReply'")).toBe(false);
     expect(source.includes("from './generateBaselineConversationalReply'")).toBe(
-      true,
+      false,
     );
     expect(source.includes('generateConversationReply(')).toBe(false);
     expect(source.includes('generateIntegratedConversationReply')).toBe(false);
+    expect(source.includes('generateBaselineConversationalReply')).toBe(false);
     expect(source.includes('buildConversationalLayerInput')).toBe(false);
     expect(source.includes('renderBaselineConversational')).toBe(false);
     expect(source.includes('ConversationalLayer')).toBe(false);
     expect(source.includes('featureFlag')).toBe(false);
     expect(source.includes('process.env')).toBe(false);
     expect(source.includes('if (')).toBe(false);
-    expect(source.match(/case 'deterministic'/g)?.length).toBe(1);
-    expect(source.match(/case 'baseline-conversational'/g)?.length).toBe(1);
+    expect(source.includes('switch (')).toBe(false);
 
     expect(
       readFileSync(INDEX_SOURCE, 'utf8').includes(
