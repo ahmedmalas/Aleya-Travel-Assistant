@@ -3,15 +3,18 @@ import { renderConversationReplyPlan } from './generateConversationReply';
 
 /**
  * Phase 14D/14E — plan-level reply rendering seam.
+ * Phase 14F — explicit deterministic plan-rendering integration mode.
  *
  * Shared internal contract boundary: ConversationReplyPlan → rendered reply.
- * Delegates entirely to renderConversationReplyPlan. Phase 14E wires the
- * authoritative generateConversationReply path through this seam while
- * remaining deterministic-only. Does not assemble plans, invoke the
- * conversational layer, or introduce mode selection.
+ * Selects the deterministic renderer via an explicit internal mode constant.
+ * Does not accept a mode argument, read environment variables, use feature
+ * flags, assemble plans, or invoke the conversational layer.
  *
  * Not exported from index.ts.
  */
+
+/** Internal plan-rendering mode contract. Phase 14F allows only deterministic. */
+type ConversationReplyPlanIntegrationMode = 'deterministic';
 
 export type RenderIntegratedConversationReplyPlanInput = Readonly<{
   plan: Readonly<ConversationReplyPlan>;
@@ -20,5 +23,9 @@ export type RenderIntegratedConversationReplyPlanInput = Readonly<{
 export function renderIntegratedConversationReplyPlan(
   input: RenderIntegratedConversationReplyPlanInput,
 ): string {
-  return renderConversationReplyPlan(input.plan);
+  const mode: ConversationReplyPlanIntegrationMode = 'deterministic';
+  switch (mode) {
+    case 'deterministic':
+      return renderConversationReplyPlan(input.plan);
+  }
 }

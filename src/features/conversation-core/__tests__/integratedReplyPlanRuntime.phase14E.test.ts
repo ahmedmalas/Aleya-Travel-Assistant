@@ -122,7 +122,14 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(generate.match(/createConversationReplyPlan\(/g)?.length).toBe(1);
 
     expect(seam).toMatch(
-      /return renderConversationReplyPlan\(input\.plan\)/,
+      /type ConversationReplyPlanIntegrationMode = 'deterministic'/,
+    );
+    expect(seam).toMatch(
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+    );
+    expect(seam).toMatch(/switch \(mode\)/);
+    expect(seam).toMatch(
+      /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
     );
 
     // Final production rendering is owned by the plan seam, not processTurn
@@ -157,7 +164,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(seam.includes('featureFlag')).toBe(false);
     expect(seam.includes('process.env')).toBe(false);
     expect(seam.includes('if (')).toBe(false);
-    expect(seam.includes('switch (')).toBe(false);
+    expect(seam.match(/case 'deterministic'/g)?.length).toBe(1);
   });
 
   it('preserves acknowledgement, follow-up, continuation, and capability output exactly', () => {
