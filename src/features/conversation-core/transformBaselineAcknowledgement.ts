@@ -1,6 +1,7 @@
 /**
  * Phase 15B — first controlled acknowledgement-only conversational transform.
  * Phase 16D — refine cross-field acknowledgement openers (stateless).
+ * Phase 16F — distinguish infant opener from child (`That includes`).
  *
  * Pure, deterministic mapping from a single completed-plan acknowledgement
  * string to a restrained conversational variant. Operates on wording only.
@@ -131,7 +132,7 @@ export function transformBaselineAcknowledgement(
     ' infant travelling.',
   );
   if (infantSingular !== null) {
-    return `I've noted ${infantSingular} infant.`;
+    return `That includes ${infantSingular} infant.`;
   }
 
   const infantPlural = extractBetween(
@@ -140,7 +141,7 @@ export function transformBaselineAcknowledgement(
     ' infants travelling.',
   );
   if (infantPlural !== null) {
-    return `I've noted ${infantPlural} infants.`;
+    return `That includes ${infantPlural} infants.`;
   }
 
   const addedCapabilities = extractBetween(

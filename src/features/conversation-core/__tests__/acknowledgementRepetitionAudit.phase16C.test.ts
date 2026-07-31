@@ -146,6 +146,7 @@ function openingPhrase(reply: string): string {
   if (reply.startsWith('Return is set')) return 'Return is set';
   if (reply.startsWith('Travelling with')) return 'Travelling with';
   if (reply.startsWith("I've noted")) return "I've noted";
+  if (reply.startsWith('That includes')) return 'That includes';
   if (reply.startsWith("There's just one more thing")) {
     return "There's just one more thing";
   }
@@ -295,9 +296,9 @@ const CATALOGUE_TRANSFORM_ROWS: Array<{
   {
     category: 'field set (infant count)',
     deterministic: ACKS.infantCount(1),
-    // Phase 16D supersedes prior Perfect, N infant travelling.
-    transformed: "I've noted 1 infant.",
-    openingPhrase: "I've noted",
+    // Phase 16F supersedes prior I've noted infant wording.
+    transformed: 'That includes 1 infant.',
+    openingPhrase: 'That includes',
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
@@ -412,19 +413,19 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       { message: '1 infant' },
       { message: '3 adults' },
     ]);
-    // Remaining same-family limitation: child/infant share I've noted;
-    // adult uses Travelling with. Historical 16C had Perfect,×4 here.
+    // Phase 16F: infant uses That includes; child keeps I've noted.
+    // Historical 16C had Perfect,×4; historical 16E had I've noted×2 for child→infant.
     expect(passengers.slice(5).map((turn) => turn.openingPhrase)).toEqual([
       'Travelling with',
       "I've noted",
-      "I've noted",
+      'That includes',
       'Travelling with',
     ]);
     expect(
       maxConsecutiveIdentical(
         passengers.slice(5).map((turn) => turn.openingPhrase),
       ),
-    ).toBe(2);
+    ).toBe(1);
 
     const destChange = runJourney([
       { message: 'go to Brisbane' },

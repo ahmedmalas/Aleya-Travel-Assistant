@@ -117,12 +117,13 @@ const ELIGIBLE_TRANSFORMATIONS: Array<{
   {
     label: 'field set/change — infant singular',
     acknowledgement: ACKS.infantCount(1),
-    transformed: "I've noted 1 infant.",
+    // Phase 16F supersedes prior I've noted infant wording.
+    transformed: 'That includes 1 infant.',
   },
   {
     label: 'field set/change — infant plural',
     acknowledgement: ACKS.infantCount(2),
-    transformed: "I've noted 2 infants.",
+    transformed: 'That includes 2 infants.',
   },
   {
     label: 'field removal — destination',

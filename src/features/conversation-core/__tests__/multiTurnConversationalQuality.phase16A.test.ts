@@ -357,7 +357,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       "Great, I've added flights to your trip. How many adults will be travelling?",
       fieldSetNeutral('Travelling with 2 adults.'),
       fieldSetNeutral("I've noted 1 child."),
-      fieldSetNeutral("I've noted 1 infant."),
+      fieldSetNeutral('That includes 1 infant.'),
       fieldSetNeutral('Travelling with 3 adults.'),
     ]);
     expect(turns[8]!.final).toMatchObject({

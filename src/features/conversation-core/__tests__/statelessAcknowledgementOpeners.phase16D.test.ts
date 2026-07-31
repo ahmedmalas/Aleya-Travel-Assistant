@@ -83,12 +83,13 @@ const EXACT_TRANSFORMS: Array<{
   {
     label: 'infant singular',
     acknowledgement: ACKS.infantCount(1),
-    expected: "I've noted 1 infant.",
+    // Phase 16F supersedes prior I've noted infant wording.
+    expected: 'That includes 1 infant.',
   },
   {
     label: 'infant plural',
     acknowledgement: ACKS.infantCount(2),
-    expected: "I've noted 2 infants.",
+    expected: 'That includes 2 infants.',
   },
 ];
 

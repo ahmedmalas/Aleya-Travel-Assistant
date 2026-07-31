@@ -128,6 +128,7 @@ function renderedOpener(renderedAcknowledgement: string | null): string {
   if (t.startsWith('Return is set')) return 'Return is set';
   if (t.startsWith('Travelling with')) return 'Travelling with';
   if (t.startsWith("I've noted")) return "I've noted";
+  if (t.startsWith('That includes')) return 'That includes';
   if (t.startsWith("No problem, I've removed") && t.endsWith(' from your trip.')) {
     return "No problem, I've removed (capability)";
   }
@@ -411,7 +412,7 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
     expect(infant[5]!.boundaryClass).toBe('A');
   });
 
-  it('captures child-to-infant opener repetition as cross-family and statelessly distinguishable', () => {
+  it('captures child-to-infant opener distinction after Phase 16F (supersedes shared I\'ve noted)', () => {
     const turns = runJourney([
       ...CORE_SETUP,
       { message: '1 child' },
@@ -420,17 +421,16 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
     expect(turns[4]!.family).toBe('childCount');
     expect(turns[5]!.family).toBe('infantCount');
     expect(turns[4]!.renderedOpener).toBe("I've noted");
-    expect(turns[5]!.renderedOpener).toBe("I've noted");
-    expect(turns[5]!.openerMatchesPrevious).toBe(true);
+    // Phase 16F supersedes prior shared I've noted opener for infants.
+    expect(turns[5]!.renderedOpener).toBe('That includes');
+    expect(turns[5]!.openerMatchesPrevious).toBe(false);
     expect(turns[5]!.completeAckMatchesPrevious).toBe(false);
     expect(turns[5]!.distinguishableByCurrentAck).toBe(true);
     expect(turns[4]!.deterministicAcknowledgement).toBe(ACKS.childCount(1));
     expect(turns[5]!.deterministicAcknowledgement).toBe(ACKS.infantCount(1));
     expect(turns[4]!.renderedAcknowledgement).toBe("I've noted 1 child.");
-    expect(turns[5]!.renderedAcknowledgement).toBe("I've noted 1 infant.");
-    // Distinct catalogue suffixes (child vs infant) are visible on the current
-    // acknowledgement string alone → class A, not history-dependent.
-    expect(turns[5]!.boundaryClass).toBe('A');
+    expect(turns[5]!.renderedAcknowledgement).toBe('That includes 1 infant.');
+    expect(turns[5]!.boundaryClass).toBe('n/a');
   });
 
   it('captures capability enable/disable and field-removal opener repetition', () => {
@@ -636,14 +636,14 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       repeatedOpenerTurns.every((turn) => !turn.completeAckMatchesPrevious),
     ).toBe(true);
 
-    // Cross-family: child → infant shares I've noted.
-    const crossFamily = repeatedOpenerTurns.filter(
+    // Phase 16F: child → infant no longer shares an opener; infant re-sets may
+    // still repeat That includes within the infant family (same-family Class A).
+    const infantOpenerRepeats = repeatedOpenerTurns.filter(
       (turn) => turn.family === 'infantCount',
     );
-    expect(crossFamily.length).toBeGreaterThan(0);
-    expect(crossFamily.every((turn) => turn.renderedOpener === "I've noted")).toBe(
-      true,
-    );
+    expect(
+      infantOpenerRepeats.every((turn) => turn.renderedOpener === 'That includes'),
+    ).toBe(true);
   });
 
   it('proves findings from production path without modifying production sources', () => {
@@ -657,10 +657,13 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       'utf8',
     );
     expect(transform).toContain('Phase 16D');
+    expect(transform).toContain('Phase 16F');
     expect(transform).not.toContain('Phase 16E');
     expect(transform).toContain("We'll start from ${origin}.");
     expect(transform).toContain("I've noted ${childSingular} child.");
-    expect(transform).toContain("I've noted ${infantSingular} infant.");
+    expect(transform).toContain(
+      'That includes ${infantSingular} infant.',
+    );
 
     const layer = readFileSync(
       resolve(CORE_SRC, 'renderBaselineConversationalLayer.ts'),
