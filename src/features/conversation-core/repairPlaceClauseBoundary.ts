@@ -19,6 +19,24 @@ const MONTH = String.raw`(?:January|February|March|April|May|June|July|August|Se
  */
 const SEPARATOR = String.raw`(?:[,;]|[—–-]|\s)`;
 
+/** Whole capture is already a following-field clause — not a place name. */
+const ENTIRE_SIBLING_CLAUSE: readonly RegExp[] = [
+  new RegExp(
+    String.raw`^(?:and\s+)?(?:leaving|departing)\s+from\b[\s\S]*$`,
+    'i',
+  ),
+  new RegExp(String.raw`^(?:and\s+)?from\b[\s\S]*$`, 'i'),
+  new RegExp(
+    String.raw`^(?:leaving|departing|depart|returning|return)\s+on\b[\s\S]*$`,
+    'i',
+  ),
+  new RegExp(String.raw`^departure\s+is\b[\s\S]*$`, 'i'),
+  new RegExp(
+    String.raw`^(?:with\s+)?${COUNT_TOKEN}\s+${PASSENGER_NOUN}\b[\s\S]*$`,
+    'i',
+  ),
+];
+
 const SIBLING_CLAUSE_BOUNDARIES: readonly RegExp[] = [
   new RegExp(
     String.raw`${SEPARATOR}\s*and\s+leaving\s+from\b[\s\S]*$`,
@@ -63,6 +81,11 @@ export function trimRepairPlaceCaptureAtSiblingClause(raw: string): string {
   if (value.length === 0) {
     return value;
   }
+  for (const entire of ENTIRE_SIBLING_CLAUSE) {
+    if (entire.test(value)) {
+      return '';
+    }
+  }
   for (const boundary of SIBLING_CLAUSE_BOUNDARIES) {
     value = value.replace(boundary, '');
     value = edgeTrim(value);
@@ -70,5 +93,13 @@ export function trimRepairPlaceCaptureAtSiblingClause(raw: string): string {
   // Drop trailing clause punctuation / dashes left by separators.
   value = value.replace(/[,;:!?—–-]+$/g, '');
   value = edgeTrim(value);
+  // Refuse verb residue left after calendar trimming ("returning", "leaving").
+  if (
+    /^(?:leaving|departing|depart|returning|return|from|with|and)$/i.test(
+      value,
+    )
+  ) {
+    return '';
+  }
   return value;
 }

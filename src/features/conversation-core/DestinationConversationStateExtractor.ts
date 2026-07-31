@@ -204,7 +204,11 @@ function isRejectedRepairDestinationCapture(value: string): boolean {
   ) {
     return true;
   }
-  if (/^(?:keep|forget|do|don't|return|depart|leaving|departing)\b/i.test(value)) {
+  if (
+    /^(?:keep|forget|do|don't|return(?:ing)?|depart(?:ing)?|leaving)\b/i.test(
+      value,
+    )
+  ) {
     return true;
   }
   // Bare date / month phrases must not become destinations via "I meant …".
