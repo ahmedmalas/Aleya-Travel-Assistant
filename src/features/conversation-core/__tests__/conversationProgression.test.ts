@@ -48,7 +48,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     const result = turn('go to Brisbane', createState());
     expect(result.state.destination).toBe('Brisbane');
     expect(result.reply).toBe(
-      'Great — Brisbane.\nWhere will you be travelling from?',
+      'Great, Brisbane it is. Where will you be travelling from?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -60,7 +60,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.origin).toBe('Sydney');
     expect(result.reply).toBe(
-      'Perfect — departing from Sydney.\nWhen would you like to depart?',
+      'Perfect, we\'ll start from Sydney. When would you like to depart?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -75,7 +75,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.departureDate).toBe('2026-08-28');
     expect(result.reply).toBe(
-      'Perfect — departing on 2026-08-28.\nWhen would you like to return?',
+      'Perfect, set to depart on 2026-08-28. When would you like to return?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -86,7 +86,7 @@ describe('phase 10C — deterministic conversation progression', () => {
       createState(),
     );
     expect(missingDestination.reply).toBe(
-      "I've added flights and accommodation to your trip requirements.\nWhere would you like to travel?",
+      "Great, I've added flights and accommodation to your trip. Where would you like to travel?",
     );
 
     const missingOrigin = turn(
@@ -97,7 +97,7 @@ describe('phase 10C — deterministic conversation progression', () => {
       }),
     );
     expect(missingOrigin.reply).toBe(
-      "I've added accommodation to your trip requirements.\nWhere will you be travelling from?",
+      "Great, I've added accommodation to your trip. Where will you be travelling from?",
     );
   });
 
@@ -111,7 +111,7 @@ describe('phase 10C — deterministic conversation progression', () => {
       }),
     );
     expect(result.reply).toBe(
-      "I've added flights to your trip requirements.\nWhen would you like to return?",
+      "Great, I've added flights to your trip. When would you like to return?",
     );
     expect(result.reply).not.toMatch(/Where would you like to travel/i);
     expect(result.reply).not.toMatch(/travelling from/i);
@@ -124,7 +124,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     });
     expect(forcedDestination.state.destination).toBe('Hobart');
     expect(forcedDestination.reply).toBe(
-      'Great — Hobart.\nWhere will you be travelling from?',
+      'Great, Hobart it is. Where will you be travelling from?',
     );
 
     const completeViaExplicit = turn(
@@ -140,7 +140,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(completeViaExplicit.state.returnDate).toBe('2026-09-08');
     expect(completeViaExplicit.reply).toBe(
-      `I've added wildlife to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added wildlife to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -159,7 +159,9 @@ describe('phase 10C — deterministic conversation progression', () => {
     ];
     for (const reply of replies) {
       expect(questionCount(reply), reply).toBe(1);
-      expect(reply.split('\n')).toHaveLength(2);
+      // Phase 15C joins acknowledgement + follow-up with a space (single line).
+      expect(reply.split('\n')).toHaveLength(1);
+      expect(reply.includes('?')).toBe(true);
     }
   });
 
@@ -172,7 +174,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     });
     const result = turn('add beaches', complete);
     expect(result.reply).toBe(
-      `I've added beaches to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
     expect(questionCount(result.reply)).toBe(1);
 
@@ -186,7 +188,7 @@ describe('phase 10C — deterministic conversation progression', () => {
         },
       }),
     ).toBe(
-      `I've added beaches to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 });

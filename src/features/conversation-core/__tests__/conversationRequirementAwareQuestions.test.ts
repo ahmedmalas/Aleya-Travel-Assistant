@@ -88,7 +88,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     expect(result.state.flightsRequested).toBe(true);
     expect(result.state.adultCount).toBeNull();
     expect(result.reply).toBe(
-      "I've added flights to your trip requirements.\nHow many adults will be travelling?",
+      "Great, I've added flights to your trip. How many adults will be travelling?",
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -97,7 +97,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     const result = turn('book a hotel', completeCore());
     expect(result.state.accommodationRequested).toBe(true);
     expect(result.reply).toBe(
-      "I've added accommodation to your trip requirements.\nHow many guests will be staying?",
+      "Great, I've added accommodation to your trip. How many guests will be staying?",
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -106,7 +106,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     const result = turn('book activities', completeCore({ adultCount: 2 }));
     expect(result.state.activitiesRequested).toBe(true);
     expect(result.reply).toBe(
-      "I've added activities to your trip requirements.\nWhat kinds of activities are you interested in?",
+      "Great, I've added activities to your trip. What kinds of activities are you interested in?",
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -115,7 +115,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     const result = turn('find restaurants', completeCore({ adultCount: 2 }));
     expect(result.state.restaurantsRequested).toBe(true);
     expect(result.reply).toBe(
-      "I've added restaurants to your trip requirements.\nWhat type of dining are you looking for?",
+      "Great, I've added restaurants to your trip. What type of dining are you looking for?",
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -126,7 +126,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       completeCore(),
     );
     expect(flightsOverAccommodation.reply).toBe(
-      "I've added flights and accommodation to your trip requirements.\nHow many adults will be travelling?",
+      "Great, I've added flights and accommodation to your trip. How many adults will be travelling?",
     );
 
     const accommodationOverActivities = turn(
@@ -134,7 +134,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       completeCore(),
     );
     expect(accommodationOverActivities.reply).toBe(
-      "I've added accommodation and activities to your trip requirements.\nHow many guests will be staying?",
+      "Great, I've added accommodation and activities to your trip. How many guests will be staying?",
     );
 
     const activitiesOverRestaurants = turn(
@@ -142,14 +142,14 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       completeCore({ adultCount: 2 }),
     );
     expect(activitiesOverRestaurants.reply).toBe(
-      "I've added activities and restaurants to your trip requirements.\nWhat kinds of activities are you interested in?",
+      "Great, I've added activities and restaurants to your trip. What kinds of activities are you interested in?",
     );
   });
 
   it('keeps required travel-field questions ahead of contextual questions', () => {
     const result = turn('book flights', createState());
     expect(result.reply).toBe(
-      "I've added flights to your trip requirements.\nWhere would you like to travel?",
+      "Great, I've added flights to your trip. Where would you like to travel?",
     );
     expect(result.reply).not.toMatch(/adults will be travelling/i);
 
@@ -162,7 +162,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       }),
     );
     expect(missingReturn.reply).toBe(
-      "I've added accommodation to your trip requirements.\nWhen would you like to return?",
+      "Great, I've added accommodation to your trip. When would you like to return?",
     );
     expect(missingReturn.reply).not.toMatch(/guests will be staying/i);
   });
@@ -179,14 +179,16 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     ];
     for (const reply of replies) {
       expect(questionCount(reply), reply).toBe(1);
-      expect(reply.split('\n')).toHaveLength(2);
+      // Phase 15C joins acknowledgement + follow-up with a space (single line).
+      expect(reply.split('\n')).toHaveLength(1);
+      expect(reply.includes('?')).toBe(true);
     }
   });
 
   it('retains the neutral continuation when no contextual question applies', () => {
     const beachesOnly = turn('show me beaches', completeCore({ adultCount: 2 }));
     expect(beachesOnly.reply).toBe(
-      `I've added beaches to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     const flightsWithAdults = turn(
@@ -194,7 +196,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       completeCore({ adultCount: 2 }),
     );
     expect(flightsWithAdults.reply).toBe(
-      `I've added flights to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     expect(
@@ -211,7 +213,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
         }),
       }),
     ).toBe(
-      `I've added wildlife to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added wildlife to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -220,7 +222,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       flightsRequested: true,
     });
     expect(forcedFlights.reply).toBe(
-      "I've added flights to your trip requirements.\nHow many adults will be travelling?",
+      "Great, I've added flights to your trip. How many adults will be travelling?",
     );
 
     const adultsSatisfied = turn('book flights', completeCore(), {
@@ -228,7 +230,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     });
     expect(adultsSatisfied.state.adultCount).toBe(3);
     expect(adultsSatisfied.reply).toBe(
-      `I've added flights to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     const forcedActivities = turn(
@@ -237,7 +239,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       { activitiesRequested: true },
     );
     expect(forcedActivities.reply).toBe(
-      "I've added activities to your trip requirements.\nWhat kinds of activities are you interested in?",
+      "Great, I've added activities to your trip. What kinds of activities are you interested in?",
     );
   });
 });

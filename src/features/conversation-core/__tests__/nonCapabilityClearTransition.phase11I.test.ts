@@ -128,13 +128,13 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
 
   it('each non-capability clear reaches its acknowledgement through processConversationTurn', () => {
     const expectedReplyByField: Record<string, string> = {
-      destination: 'Destination removed.',
-      origin: 'Departure location removed.',
-      departureDate: 'Departure date removed.',
-      returnDate: 'Return date removed.',
-      adultCount: 'Adult count removed.',
-      childCount: 'Child count removed.',
-      infantCount: 'Infant count removed.',
+      destination: "No problem, I've removed the destination.",
+      origin: "No problem, I've removed the departure location.",
+      departureDate: "No problem, I've removed the departure date.",
+      returnDate: "No problem, I've removed the return date.",
+      adultCount: "No problem, I've removed the adult count.",
+      childCount: "No problem, I've removed the child count.",
+      infantCount: "No problem, I've removed the infant count.",
     };
 
     for (const [index, { field }] of NON_CAPABILITY_CLEARS.entries()) {
@@ -191,11 +191,11 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       childCount: null,
       infantCount: null,
     });
-    expect(result.reply).toContain('Destination removed.');
-    expect(result.reply.match(/Destination removed\./g)?.length).toBe(1);
+    expect(result.reply).toContain("No problem, I've removed the destination.");
+    expect(result.reply.match(/No problem, I\'ve removed the destination\./g)?.length).toBe(1);
     expect(result.reply).not.toMatch(/Perfect\./);
     expect(result.reply).not.toMatch(/I've added /);
-    expect(result.reply).not.toMatch(/I've removed /);
+    expect(result.reply).not.toMatch(/from your trip requirements/);
     expect(result.reply).not.toMatch(/I've noted /);
   });
 
@@ -223,7 +223,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       flightsRequested: true,
     });
     expect(result.reply).toContain(
-      "I've added flights to your trip requirements.",
+      "Great, I've added flights to your trip.",
     );
     expect(result.reply).not.toMatch(/Perfect\./);
   });
@@ -252,7 +252,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       flightsRequested: false,
     });
     expect(result.reply).toContain(
-      "I've removed flights from your trip requirements.",
+      "No problem, I've removed flights from your trip.",
     );
     expect(result.reply).not.toMatch(/Perfect\./);
   });
@@ -282,7 +282,7 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       destination: 'Hobart',
       adultCount: null,
     });
-    expect(result.reply).toContain('Great — Hobart.');
+    expect(result.reply).toContain('Great, Hobart it is.');
     expect(result.reply).not.toMatch(/Perfect\./);
   });
 

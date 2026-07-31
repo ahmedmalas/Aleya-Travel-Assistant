@@ -17,6 +17,7 @@ import {
 } from '../generateConversationReply';
 import { selectConversationContinuationPrompt } from '../selectConversationContinuationPrompt';
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const SELECTOR_SOURCE = resolve(
@@ -200,7 +201,7 @@ describe('phase 10L — deterministic continuation prompt boundary', () => {
       expect(plan.followUpQuestion, entry.message).toBe(
         followUpQuestion ?? continuationPrompt,
       );
-      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,
       );
       expect(

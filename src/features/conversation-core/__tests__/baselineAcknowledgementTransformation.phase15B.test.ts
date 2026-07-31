@@ -257,20 +257,32 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
       ),
     ).toBe(unknown);
 
+    // Acknowledgement + follow-up is intentionally transformed by Phase 15C
+    // (acknowledgement mapping + space join); excluded from Phase 15B unchanged shapes.
+    const ackPlusFollowUp = freezePlan(
+      plan({
+        acknowledgements: [ACKS.destination('Brisbane')],
+        followUpQuestion: FOLLOW_UPS.origin,
+        messageInterpreted: true,
+      }),
+    );
+    const ackPlusFollowUpDeterministic =
+      renderConversationReplyPlan(ackPlusFollowUp);
+    const ackPlusFollowUpBaseline =
+      generateBaselineConversationalReply(ackPlusFollowUp);
+    expect(ackPlusFollowUpDeterministic).toBe(
+      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+    );
+    expect(ackPlusFollowUpBaseline).toBe(
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
+    );
+    expect(ackPlusFollowUpBaseline).not.toBe(ackPlusFollowUpDeterministic);
+
     const unchangedCases: Array<{
       label: string;
       replyPlan: ConversationReplyPlan;
       expected: string;
     }> = [
-      {
-        label: 'acknowledgement + follow-up',
-        replyPlan: plan({
-          acknowledgements: [ACKS.destination('Brisbane')],
-          followUpQuestion: FOLLOW_UPS.origin,
-          messageInterpreted: true,
-        }),
-        expected: `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
-      },
       {
         label: 'follow-up only',
         replyPlan: plan({
@@ -349,7 +361,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
       catalogueWording: FOLLOW_UPS.flightsAdultCount,
     });
     expect(generateBaselineConversationalReply(withFollowUp)).toBe(
-      `${ACKS.addedCapabilities('flights')}\n${FOLLOW_UPS.flightsAdultCount}`,
+      `${transformBaselineAcknowledgement(ACKS.addedCapabilities('flights'))} ${FOLLOW_UPS.flightsAdultCount}`,
     );
   });
 

@@ -16,6 +16,8 @@ import {
   type ConversationCoreState,
 } from '../index';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14G — unselected baseline plan-rendering branch characterisation.
@@ -246,9 +248,14 @@ describe('phase 14G — baseline plan rendering branch', () => {
       });
 
       // Production seam remains parity-identical via the baseline path.
-      expect(integrated, entry.label).toBe(deterministic);
-      // Baseline entry retains parity with deterministic wording.
-      expect(baseline, `${entry.label} / baseline parity`).toBe(deterministic);
+      const expected = expectedActivatedBaselineReply(entry.replyPlan);
+      expect(integrated, entry.label).toBe(expected);
+      expect(baseline, `${entry.label} / baseline`).toBe(expected);
+      if (entry.replyPlan.acknowledgements.length === 1) {
+        expect(expected, `${entry.label} / diverges`).not.toBe(deterministic);
+      } else {
+        expect(expected, `${entry.label} / parity`).toBe(deterministic);
+      }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 
@@ -260,7 +267,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(`${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`);
+    ).toBe(`${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`);
 
     expect(
       renderIntegratedConversationReplyPlan({
@@ -273,7 +280,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
 
     const viaProcessTurn = turn('go to Brisbane', createState());
     expect(viaProcessTurn.reply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
 
     const previous = createState();
@@ -282,7 +289,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
     const previousBefore = structuredClone(previous);
     const stateBefore = structuredClone(state);
     expect(generateConversationReply(input)).toBe(
-      `${ACKS.destination('Cairns')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Cairns'))} ${FOLLOW_UPS.origin}`,
     );
     expect(previous).toEqual(previousBefore);
     expect(state).toEqual(stateBefore);
@@ -297,7 +304,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
       }),
     );
     const before = structuredClone(replyPlan);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,

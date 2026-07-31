@@ -20,6 +20,7 @@ import { selectConversationAcknowledgement } from '../selectConversationAcknowle
 import { selectConversationContinuationPrompt } from '../selectConversationContinuationPrompt';
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
 import { selectConversationMessageInterpreted } from '../selectConversationMessageInterpreted';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const ASSEMBLER_SOURCE = resolve(
@@ -220,7 +221,7 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
       });
 
       expect(planned).toEqual(assembled);
-      expect(renderConversationReplyPlan(planned), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(planned), entry.message).toBe(
         result.reply,
       );
       expect(

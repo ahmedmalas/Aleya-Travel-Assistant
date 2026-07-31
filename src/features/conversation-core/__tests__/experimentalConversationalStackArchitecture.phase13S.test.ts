@@ -355,13 +355,16 @@ describe('phase 13S — experimental conversational stack architecture', () => {
     );
 
     // Wording is produced by the baseline renderer: acknowledgement-only
-    // transform when eligible, otherwise the authoritative deterministic renderer.
+    // transform (15B), acknowledgement+follow-up transition (15C), otherwise
+    // the authoritative deterministic renderer.
     const baselineRenderer = readSrc(BASELINE_RENDERER);
     expect(baselineRenderer).toMatch(/transformBaselineAcknowledgement/);
+    expect(baselineRenderer).toMatch(/renderBaselineAcknowledgementFollowUp/);
     expect(baselineRenderer).toMatch(
       /wording:\s*renderConversationReplyPlan\(plan\)/,
     );
     expect(baselineRenderer).toMatch(/acknowledgements\.length === 1/);
     expect(baselineRenderer).toMatch(/followUpQuestion === null/);
+    expect(baselineRenderer).toMatch(/followUpQuestion !== null/);
   });
 });

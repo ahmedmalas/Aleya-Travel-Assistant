@@ -31,7 +31,7 @@ import {
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13T — conversational layer foundation completion audit.
@@ -107,16 +107,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 13T — conversational layer foundation completion', () => {
@@ -203,7 +193,8 @@ describe('phase 13T — conversational layer foundation completion', () => {
 
     const wording = generateBaselineConversationalReply(replyPlan);
     expect(wording).toBe(viaBaselineExecute.wording);
-    expect(wording).toBe(renderConversationReplyPlan(replyPlan));
+    expect(wording).toBe(expectedActivatedBaselineReply(replyPlan));
+    expect(wording).not.toBe(renderConversationReplyPlan(replyPlan));
 
     // Layer ownership — each module owns one step; no bypass imports.
     expect(readSrc(PHASE13_MODULES[11]!)).toMatch(
@@ -259,7 +250,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
     ];
 
     for (const replyPlan of cases) {
-      const expected = expectedBaselineWording(replyPlan);
+      const expected = expectedActivatedBaselineReply(replyPlan);
       expect(generateBaselineConversationalReply(replyPlan)).toBe(expected);
 
       for (const style of STYLE_PROFILES) {
@@ -277,7 +268,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
         expect(selectConversationalObjective(nullObjectivePlan)).toBeNull();
         expect(buildConversationalLayerInput(nullObjectivePlan).objective).toBeNull();
         expect(generateBaselineConversationalReply(nullObjectivePlan)).toBe(
-          expectedBaselineWording(nullObjectivePlan),
+          expectedActivatedBaselineReply(nullObjectivePlan),
         );
       }
     }
@@ -307,7 +298,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
     const third = executeBaselineConversationalRenderer(input).wording;
     const fourth = renderBaselineConversationalReplyPlan(replyPlan, style).wording;
 
-    expect(first).toBe(renderConversationReplyPlan(replyPlan));
+    expect(first).toBe(expectedActivatedBaselineReply(replyPlan));
     expect(second).toBe(first);
     expect(third).toBe(first);
     expect(fourth).toBe(first);
@@ -480,14 +471,13 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(styleDoc).toMatch(/Wording \/ tone \| Profile-specific/);
 
     // Style/objective metadata never overrides the plan. Acknowledgement-only
-    // plans may apply transformBaselineAcknowledgement; all other shapes still
-    // equal the deterministic renderer.
+    // and acknowledgement+follow-up plans apply the activated baseline transform.
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
-    const deterministic = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
     const baselineSource = readSrc(
       'src/features/conversation-core/renderBaselineConversationalLayer.ts',
     );
@@ -507,8 +497,9 @@ describe('phase 13T — conversational layer foundation completion', () => {
         style === undefined
           ? generateBaselineConversationalReply(replyPlan)
           : generateBaselineConversationalReply(replyPlan, style);
-      expect(wording).toBe(deterministic);
-      expect(wording).toBe(`Great — Brisbane.\n${FOLLOW_UPS.origin}`);
+      expect(wording).toBe(expected);
+      expect(wording).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.origin}`);
+      expect(wording).not.toBe(renderConversationReplyPlan(replyPlan));
     }
   });
 });

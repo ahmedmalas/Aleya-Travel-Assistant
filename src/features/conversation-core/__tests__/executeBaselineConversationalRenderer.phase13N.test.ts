@@ -16,7 +16,7 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13N — baseline conversational renderer execution characterisation.
@@ -53,23 +53,13 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 function expectBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof buildConversationalLayerInput>[1],
 ) {
   const input = buildConversationalLayerInput(replyPlan, style);
   const output = executeBaselineConversationalRenderer(input);
-  const expected = expectedBaselineWording(replyPlan);
+  const expected = expectedActivatedBaselineReply(replyPlan);
   expect(output).toEqual({ wording: expected });
   expect(output).toEqual(renderBaselineConversationalLayer(input));
   return { input, output, expected };
@@ -123,7 +113,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
         messageInterpreted: true,
       }),
     );
-    expect(expected).toBe(`Great — Brisbane.\n${FOLLOW_UPS.origin}`);
+    expect(expected).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.origin}`);
   });
 
   it('renders specific follow-up only, neutral continuation, acknowledgement-only, and empty plans', () => {
@@ -166,7 +156,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const nullObjective = createConversationalLayerInput(replyPlan, null);
     expect(nullObjective.objective).toBeNull();
@@ -198,7 +188,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
       ),
     );
     const before = structuredClone(input);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const first = executeBaselineConversationalRenderer(input);
     const second = executeBaselineConversationalRenderer(input);

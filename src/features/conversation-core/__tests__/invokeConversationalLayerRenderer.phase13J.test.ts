@@ -13,6 +13,7 @@ import { renderConversationReplyPlan } from '../generateConversationReply';
 import { invokeConversationalLayerRenderer } from '../invokeConversationalLayerRenderer';
 import { REFERENCE_CONVERSATIONAL_STYLE_PROFESSIONAL } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13J — conversational renderer invocation boundary characterisation.
@@ -99,7 +100,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
     );
 
     expect(output).toEqual({
-      wording: renderConversationReplyPlan(replyPlan),
+      wording: expectedActivatedBaselineReply(replyPlan),
     });
     expect(output).toEqual(
       renderBaselineConversationalLayer(input),

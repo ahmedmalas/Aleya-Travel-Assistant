@@ -16,6 +16,8 @@ import {
 import { createConversationReplyPlan } from '../createConversationReplyPlan';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14E — route deterministic rendering through the plan-level seam.
@@ -168,7 +170,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
   it('preserves acknowledgement, follow-up, continuation, and capability output exactly', () => {
     const destination = turn('go to Brisbane', createState());
     expect(destination.reply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
 
     const origin = turn(
@@ -176,7 +178,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
       createState({ destination: 'Brisbane' }),
     );
     expect(origin.reply).toBe(
-      `${ACKS.origin('Sydney')}\n${FOLLOW_UPS.departureDate}`,
+      `${transformBaselineAcknowledgement(ACKS.origin('Sydney'))} ${FOLLOW_UPS.departureDate}`,
     );
 
     const core = createState({
@@ -188,7 +190,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
 
     const enableFlights = turn('I need flights', core);
     expect(enableFlights.reply).toBe(
-      `${ACKS.addedCapabilities('flights')}\n${FOLLOW_UPS.flightsAdultCount}`,
+      `${transformBaselineAcknowledgement(ACKS.addedCapabilities('flights'))} ${FOLLOW_UPS.flightsAdultCount}`,
     );
 
     const disableFlights = turn(
@@ -201,7 +203,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
       { flightsRequested: false },
     );
     expect(disableFlights.reply).toBe(
-      `${ACKS.removedCapabilities('flights')}\n${FOLLOW_UPS.neutralContinuation}`,
+      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
     );
 
     const continuation = turn('thanks', {
@@ -298,9 +300,15 @@ describe('phase 14E — integrated reply plan runtime', () => {
       );
       const viaSeam = renderIntegratedConversationReplyPlan({ plan });
       const viaDirect = renderConversationReplyPlan(plan);
+      const expected = expectedActivatedBaselineReply(plan);
 
-      expect(viaGenerator, entry.label).toBe(viaDirect);
-      expect(viaSeam, `${entry.label} / seam`).toBe(viaDirect);
+      expect(viaGenerator, entry.label).toBe(expected);
+      expect(viaSeam, `${entry.label} / seam`).toBe(expected);
+      if (plan.acknowledgements.length === 1) {
+        expect(expected, `${entry.label} / diverges`).not.toBe(viaDirect);
+      } else {
+        expect(expected, `${entry.label} / parity`).toBe(viaDirect);
+      }
       expect(entry.previousState, `${entry.label} / previous`).toEqual(
         previousBefore,
       );
@@ -323,7 +331,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     );
 
     expect(first).toBe(
-      `${ACKS.destination('Cairns')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Cairns'))} ${FOLLOW_UPS.origin}`,
     );
     expect(second).toBe(first);
     expect(previousState).toEqual(previousBefore);

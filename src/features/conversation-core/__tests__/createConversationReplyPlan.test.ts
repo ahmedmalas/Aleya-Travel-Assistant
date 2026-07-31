@@ -7,6 +7,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   createConversationReplyPlan,
@@ -506,7 +507,7 @@ describe('phase 10G — deterministic reply planning boundary', () => {
           result.state,
         ),
       });
-      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,
       );
       expect(plan.messageInterpreted, entry.message).toBe(

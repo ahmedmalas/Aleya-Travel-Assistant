@@ -16,6 +16,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const SELECTOR_SOURCE = resolve(
@@ -307,7 +308,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
           ? NEUTRAL_TRIP_FALLBACK_REPLY
           : selectConversationFollowUpQuestion(result.state),
       );
-      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,
       );
       expect(

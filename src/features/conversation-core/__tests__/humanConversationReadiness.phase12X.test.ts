@@ -13,6 +13,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationReplyComponents } from '../selectConversationReplyComponents';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 12X — human-conversation readiness characterisation.
@@ -320,13 +321,16 @@ describe('phase 12X — human-conversation readiness characterisation', () => {
       messageInterpreted: true,
     });
     expect(renderConversationReplyPlan(handBuilt)).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${ACKS.destination('Brisbane')}
+${FOLLOW_UPS.origin}`,
     );
     expect(generateConversationReply({
       message: 'unused by reply boundary',
       previousState: previous,
       state,
-    })).toBe(renderedOnce);
+    })).toBe(
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
+    );
   });
 
   it('keeps user-facing wording catalogue-owned so a future layer can vary tone without changing control', () => {

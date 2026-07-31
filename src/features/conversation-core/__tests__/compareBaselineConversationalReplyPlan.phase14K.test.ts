@@ -9,7 +9,7 @@ import * as baselineModule from '../generateBaselineConversationalReply';
 import { renderConversationReplyPlan } from '../generateConversationReply';
 import * as modeDrivenModule from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14K — structured baseline reply-plan comparison characterisation.
@@ -69,21 +69,8 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
-function isAcknowledgementOnly(replyPlan: ConversationReplyPlan): boolean {
-  return (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  );
+function isActivatedTransformPlan(replyPlan: ConversationReplyPlan): boolean {
+  return replyPlan.acknowledgements.length === 1;
 }
 
 describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
@@ -227,8 +214,10 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
       vi.restoreAllMocks();
       const before = structuredClone(entry.replyPlan);
       const deterministicExpected = renderConversationReplyPlan(entry.replyPlan);
-      const baselineExpected = expectedBaselineWording(entry.replyPlan);
-      const ackOnly = isAcknowledgementOnly(entry.replyPlan);
+      const baselineExpected = expectedActivatedBaselineReply(entry.replyPlan);
+      const diverges =
+        isActivatedTransformPlan(entry.replyPlan) &&
+        baselineExpected !== deterministicExpected;
 
       const modeSpy = vi.spyOn(
         modeDrivenModule,
@@ -247,9 +236,9 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         deterministicExpected,
       );
       expect(comparison.baselineReply, entry.label).toBe(baselineExpected);
-      expect(comparison.matchesDeterministic, entry.label).toBe(!ackOnly);
+      expect(comparison.matchesDeterministic, entry.label).toBe(!diverges);
       expect(comparison.status, entry.label).toBe(
-        ackOnly ? 'different' : 'identical',
+        diverges ? 'different' : 'identical',
       );
 
       expect(modeSpy, entry.label).toHaveBeenCalled();
@@ -346,7 +335,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const outcomeSpy = vi.spyOn(
       outcomeModule,

@@ -19,6 +19,7 @@ import { selectConversationContinuationPrompt } from '../selectConversationConti
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
 import { selectConversationMessageInterpreted } from '../selectConversationMessageInterpreted';
 import { selectConversationReplyComponents } from '../selectConversationReplyComponents';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 12Z — deterministic conversation engine final characterisation.
@@ -228,7 +229,16 @@ describe('phase 12Z — deterministic conversation engine characterisation', () 
       expect(first.rendered, scenario.name).toBe(second.rendered);
       expect(first.generated, scenario.name).toBe(second.generated);
       expect(first.plan, scenario.name).toEqual(first.assembled);
-      expect(first.generated, scenario.name).toBe(first.rendered);
+      expect(first.generated, scenario.name).toBe(
+        expectedActivatedBaselineReply(first.plan),
+      );
+      if (first.plan.acknowledgements.length === 1) {
+        expect(first.generated, `${scenario.name} / diverges`).not.toBe(
+          first.rendered,
+        );
+      } else {
+        expect(first.generated, `${scenario.name} / parity`).toBe(first.rendered);
+      }
 
       expect(first.components.followUpQuestion ?? first.components.continuationPrompt, scenario.name).toBe(
         scenario.expectedFollowUp,

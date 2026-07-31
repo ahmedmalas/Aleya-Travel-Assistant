@@ -13,6 +13,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13Q — baseline conversational generator parity audit.
@@ -55,19 +56,9 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 function assertExactParity(replyPlan: ConversationReplyPlan, label: string) {
   const before = structuredClone(replyPlan);
-  const expected = expectedBaselineWording(replyPlan);
+  const expected = expectedActivatedBaselineReply(replyPlan);
 
   const experimental = generateBaselineConversationalReply(replyPlan);
   expect(experimental, label).toBe(expected);
@@ -189,10 +180,13 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
 
     for (const entry of cases) {
       const wording = assertExactParity(entry.replyPlan, entry.label);
-      expect(wording.includes('\n')).toBe(true);
+      const deterministic = renderConversationReplyPlan(entry.replyPlan);
+      // Phase 15C: transformed acknowledgement + space-joined unchanged follow-up.
+      expect(wording.includes('\n')).toBe(false);
       expect(wording).toBe(
-        `${entry.replyPlan.acknowledgements[0]}\n${entry.replyPlan.followUpQuestion}`,
+        `${transformBaselineAcknowledgement(entry.replyPlan.acknowledgements[0]!)} ${entry.replyPlan.followUpQuestion}`,
       );
+      expect(wording).not.toBe(deterministic);
     }
   });
 
@@ -269,24 +263,25 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
-    const deterministic = assertExactParity(
+    const wording = assertExactParity(
       replyPlan,
       'punctuation and spacing preservation',
     );
 
-    expect(deterministic).toBe(
-      `Great — Brisbane.\n${FOLLOW_UPS.origin}`,
+    expect(wording).toBe(
+      `Great, Brisbane it is. ${FOLLOW_UPS.origin}`,
     );
-    expect(deterministic.includes('Great — Brisbane.')).toBe(true);
-    expect(deterministic.includes('Great - Brisbane.')).toBe(false);
-    expect(deterministic.includes('\n')).toBe(true);
-    expect(deterministic.startsWith(' ')).toBe(false);
-    expect(deterministic.endsWith(' ')).toBe(false);
-    expect(deterministic.includes('  ')).toBe(false);
+    expect(wording.includes('Great, Brisbane it is.')).toBe(true);
+    expect(wording.includes('Great — Brisbane.')).toBe(false);
+    expect(wording.includes('\n')).toBe(false);
+    expect(wording.startsWith(' ')).toBe(false);
+    expect(wording.endsWith(' ')).toBe(false);
+    expect(wording.includes('  ')).toBe(false);
+    expect(wording).not.toBe(renderConversationReplyPlan(replyPlan));
 
     for (const style of STYLE_PROFILES) {
       expect(generateBaselineConversationalReply(replyPlan, style)).toBe(
-        deterministic,
+        wording,
       );
     }
   });
@@ -300,12 +295,12 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
       }),
     );
     const before = structuredClone(replyPlan);
-    const deterministic = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
-    expect(generateBaselineConversationalReply(replyPlan)).toBe(deterministic);
+    expect(generateBaselineConversationalReply(replyPlan)).toBe(expected);
     for (const style of STYLE_PROFILES) {
       expect(generateBaselineConversationalReply(replyPlan, style)).toBe(
-        deterministic,
+        expected,
       );
     }
 

@@ -21,6 +21,7 @@ import { selectConversationContinuationPrompt } from '../selectConversationConti
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
 import { selectConversationMessageInterpreted } from '../selectConversationMessageInterpreted';
 import { selectConversationReplyComponents } from '../selectConversationReplyComponents';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const COMPONENTS_SOURCE = resolve(
@@ -251,7 +252,7 @@ describe('phase 10N — deterministic reply-component selection boundary', () =>
       });
 
       expect(planned).toEqual(assembled);
-      expect(renderConversationReplyPlan(planned), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(planned), entry.message).toBe(
         result.reply,
       );
       expect(

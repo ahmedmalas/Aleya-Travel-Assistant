@@ -11,7 +11,7 @@ import {
 } from '../generateConversationReply';
 import * as generateConversationReplyModule from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14J — isolated baseline conversational evaluation entry point.
@@ -69,16 +69,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
@@ -249,11 +239,10 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
 
       expect(result, entry.label).toBe(expected);
       expect(result, `${entry.label} / baseline expected`).toBe(
-        expectedBaselineWording(entry.replyPlan),
+        expectedActivatedBaselineReply(entry.replyPlan),
       );
       if (
-        entry.replyPlan.acknowledgements.length !== 1 ||
-        entry.replyPlan.followUpQuestion !== null
+        entry.replyPlan.acknowledgements.length !== 1
       ) {
         expect(result, `${entry.label} / deterministic parity`).toBe(
           renderConversationReplyPlan(entry.replyPlan),
@@ -357,7 +346,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const baselineSpy = vi.spyOn(
       baselineModule,

@@ -8,6 +8,7 @@ import {
 } from '../index';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { NEUTRAL_TRIP_FALLBACK_REPLY } from '../generateConversationReply';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14B — route production through the integration seam.
@@ -103,7 +104,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
   it('preserves acknowledgement + follow-up wording through the seam', () => {
     const destination = turn('go to Brisbane', createState());
     expect(destination.reply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
 
     const origin = turn(
@@ -111,7 +112,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
       createState({ destination: 'Brisbane' }),
     );
     expect(origin.reply).toBe(
-      `${ACKS.origin('Sydney')}\n${FOLLOW_UPS.departureDate}`,
+      `${transformBaselineAcknowledgement(ACKS.origin('Sydney'))} ${FOLLOW_UPS.departureDate}`,
     );
 
     const departure = turn(
@@ -122,7 +123,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
       }),
     );
     expect(departure.reply).toBe(
-      `${ACKS.departureDate('2026-08-28')}\n${FOLLOW_UPS.returnDate}`,
+      `${transformBaselineAcknowledgement(ACKS.departureDate('2026-08-28'))} ${FOLLOW_UPS.returnDate}`,
     );
   });
 
@@ -137,7 +138,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
     const enableFlights = turn('I need flights', core);
     expect(enableFlights.state.flightsRequested).toBe(true);
     expect(enableFlights.reply).toBe(
-      `${ACKS.addedCapabilities('flights')}\n${FOLLOW_UPS.flightsAdultCount}`,
+      `${transformBaselineAcknowledgement(ACKS.addedCapabilities('flights'))} ${FOLLOW_UPS.flightsAdultCount}`,
     );
 
     const disableFlights = turn(
@@ -151,7 +152,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
     );
     expect(disableFlights.state.flightsRequested).toBe(false);
     expect(disableFlights.reply).toBe(
-      `${ACKS.removedCapabilities('flights')}\n${FOLLOW_UPS.neutralContinuation}`,
+      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
     );
 
     const continuation = turn('thanks', {
@@ -173,7 +174,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
     expect(previous).toEqual(previousBefore);
     expect(first.reply).toBe(second.reply);
     expect(first.reply).toBe(
-      `${ACKS.origin('Melbourne')}\n${FOLLOW_UPS.departureDate}`,
+      `${transformBaselineAcknowledgement(ACKS.origin('Melbourne'))} ${FOLLOW_UPS.departureDate}`,
     );
     expect(first.state.origin).toBe('Melbourne');
     expect(second.state.origin).toBe('Melbourne');

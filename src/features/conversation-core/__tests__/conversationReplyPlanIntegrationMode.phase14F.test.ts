@@ -8,6 +8,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -69,16 +70,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedProductionWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14F — conversation reply plan integration mode', () => {
@@ -247,7 +238,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     for (const entry of cases) {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
-      const expected = expectedProductionWording(entry.replyPlan);
+      const expected = expectedActivatedBaselineReply(entry.replyPlan);
       const integrated = renderIntegratedConversationReplyPlan({
         plan: entry.replyPlan,
       });
@@ -258,8 +249,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
         `${entry.label} / repeat`,
       ).toBe(expected);
       if (
-        entry.replyPlan.acknowledgements.length !== 1 ||
-        entry.replyPlan.followUpQuestion !== null
+        entry.replyPlan.acknowledgements.length !== 1
       ) {
         expect(integrated, `${entry.label} / deterministic parity`).toBe(
           deterministic,
@@ -276,7 +266,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(`${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`);
+    ).toBe(`${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`);
 
     expect(
       renderIntegratedConversationReplyPlan({
@@ -297,7 +287,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
       }),
     );
     const before = structuredClone(replyPlan);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,

@@ -205,23 +205,23 @@ describe('phase 10F — deterministic change classification', () => {
 
   it('preserves existing acknowledgement, progression and suppression behaviour', () => {
     expect(turn('go to Brisbane', createState()).reply).toBe(
-      'Great — Brisbane.\nWhere will you be travelling from?',
+      'Great, Brisbane it is. Where will you be travelling from?',
     );
 
     expect(
       turn('from Sydney', createState({ destination: 'Brisbane' })).reply,
     ).toBe(
-      'Perfect — departing from Sydney.\nWhen would you like to depart?',
+      'Perfect, we\'ll start from Sydney. When would you like to depart?',
     );
 
     expect(turn('book flights', completeCore()).reply).toBe(
-      "I've added flights to your trip requirements.\nHow many adults will be travelling?",
+      "Great, I've added flights to your trip. How many adults will be travelling?",
     );
 
     expect(
       turn('book flights', completeCore({ adultCount: 2 })).reply,
     ).toBe(
-      `I've added flights to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     expect(
@@ -230,7 +230,7 @@ describe('phase 10F — deterministic change classification', () => {
         completeCore({ adultCount: 2 }),
       ).reply,
     ).toBe(
-      "I've added flights, accommodation and activities to your trip requirements.\nWhat kinds of activities are you interested in?",
+      "Great, I've added flights, accommodation and activities to your trip. What kinds of activities are you interested in?",
     );
 
     expect(turn('Hello there', createState({ destination: 'Cairns' })).reply).toBe(
@@ -247,7 +247,7 @@ describe('phase 10F — deterministic change classification', () => {
         }),
       }),
     ).toBe(
-      `I've added beaches to your trip requirements.\n${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 });

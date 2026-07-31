@@ -11,7 +11,7 @@ import {
 import * as generateConversationReplyModule from '../generateConversationReply';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14I — deterministic fallback for baseline rendering failure.
@@ -54,16 +54,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14I — baseline rendering fallback', () => {
@@ -196,11 +186,10 @@ describe('phase 14I — baseline rendering fallback', () => {
 
       expect(viaMode, entry.label).toBe(expected);
       expect(viaMode, `${entry.label} / baseline expected`).toBe(
-        expectedBaselineWording(entry.replyPlan),
+        expectedActivatedBaselineReply(entry.replyPlan),
       );
       if (
-        entry.replyPlan.acknowledgements.length !== 1 ||
-        entry.replyPlan.followUpQuestion !== null
+        entry.replyPlan.acknowledgements.length !== 1
       ) {
         expect(viaMode, `${entry.label} / deterministic parity`).toBe(
           renderConversationReplyPlan(entry.replyPlan),
@@ -316,7 +305,8 @@ describe('phase 14I — baseline rendering fallback', () => {
       followUpQuestion: FOLLOW_UPS.departureDate,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const deterministicExpected = renderConversationReplyPlan(replyPlan);
+    const baselineExpected = expectedActivatedBaselineReply(replyPlan);
 
     const baselineSpy = vi.spyOn(
       baselineModule,
@@ -332,7 +322,7 @@ describe('phase 14I — baseline rendering fallback', () => {
         plan: replyPlan,
         mode: 'deterministic',
       }),
-    ).toBe(expected);
+    ).toBe(deterministicExpected);
 
     expect(baselineSpy).not.toHaveBeenCalled();
     expect(deterministicSpy).toHaveBeenCalledTimes(1);
@@ -344,7 +334,7 @@ describe('phase 14I — baseline rendering fallback', () => {
     baselineSpy.mockClear();
     deterministicSpy.mockClear();
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
-      expected,
+      baselineExpected,
     );
     expect(baselineSpy).toHaveBeenCalledTimes(1);
     expect(baselineSpy.mock.calls[0]?.[0]).toBe(replyPlan);

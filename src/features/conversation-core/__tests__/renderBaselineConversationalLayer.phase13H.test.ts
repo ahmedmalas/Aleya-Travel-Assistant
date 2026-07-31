@@ -19,6 +19,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13H — deterministic conversational-layer baseline characterisation.
@@ -56,23 +57,13 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 function expectWordingMatchesBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof buildConversationalLayerInput>[1],
 ): string {
   const input = buildConversationalLayerInput(replyPlan, style);
   const output = renderBaselineConversationalLayer(input);
-  const expected = expectedBaselineWording(replyPlan);
+  const expected = expectedActivatedBaselineReply(replyPlan);
   expect(output).toEqual({ wording: expected });
   expect(Object.keys(output)).toEqual(['wording']);
   return output.wording;
@@ -124,7 +115,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
         messageInterpreted: true,
       }),
     );
-    expect(wording).toBe(`Great — Brisbane.\n${FOLLOW_UPS.destination}`);
+    expect(wording).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.destination}`);
   });
 
   it('renders acknowledgement + origin follow-up like the deterministic renderer', () => {
@@ -136,7 +127,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
       }),
     );
     expect(wording).toBe(
-      `Perfect — departing from Sydney.\n${FOLLOW_UPS.origin}`,
+      `Perfect, we'll start from Sydney. ${FOLLOW_UPS.origin}`,
     );
   });
 
@@ -209,7 +200,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
-    const baseline = renderConversationReplyPlan(replyPlan);
+    const baseline = expectedActivatedBaselineReply(replyPlan);
 
     for (const style of [
       REFERENCE_CONVERSATIONAL_STYLE_PROFESSIONAL,
@@ -230,7 +221,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const mismatched: ConversationalObjective = {
       id: 'origin',
@@ -252,7 +243,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
       expect(output.wording).toBe(expected);
       expect(output.wording.includes(FOLLOW_UPS.origin)).toBe(false);
       expect(output.wording).toBe(
-        `Great — Brisbane.\n${FOLLOW_UPS.destination}`,
+        `Great, Brisbane it is. ${FOLLOW_UPS.destination}`,
       );
     }
   });
@@ -278,7 +269,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     const third = renderBaselineConversationalLayer(structuredClone(input));
 
     expect(first).toEqual({
-      wording: renderConversationReplyPlan(replyPlan),
+      wording: expectedActivatedBaselineReply(replyPlan),
     });
     expect(second).toEqual(first);
     expect(third).toEqual(first);

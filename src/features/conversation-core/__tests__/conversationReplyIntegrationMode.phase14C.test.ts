@@ -12,6 +12,7 @@ import {
   type GenerateConversationReplyInput,
 } from '../generateConversationReply';
 import { generateIntegratedConversationReply } from '../generateIntegratedConversationReply';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14C — explicit deterministic integration-mode characterisation.
@@ -184,7 +185,7 @@ describe('phase 14C — conversation reply integration mode', () => {
 
     const viaProcessTurn = turn('go to Brisbane', createState());
     expect(viaProcessTurn.reply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
   });
 });

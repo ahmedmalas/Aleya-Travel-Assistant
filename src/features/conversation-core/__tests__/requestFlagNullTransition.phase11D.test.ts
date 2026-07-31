@@ -122,7 +122,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     const enabled = turn('hello', initial, 0, { flightsRequested: true });
     expect(enabled.state.flightsRequested).toBe(true);
     expect(enabled.reply).toContain(
-      "I've added flights to your trip requirements.",
+      "Great, I've added flights to your trip.",
     );
 
     const disabled = turn('hello', enabled.state, 1, {
@@ -131,7 +131,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(disabled.state.flightsRequested).toBe(false);
     expect(disabled.state.flightsRequested).not.toBeNull();
     expect(disabled.reply).toContain(
-      "I've removed flights from your trip requirements.",
+      "No problem, I've removed flights from your trip.",
     );
 
     const cleared = turn('hello', enabled.state, 2, {
@@ -157,7 +157,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(classification.newlyPopulated).not.toContain('flightsRequested');
     expect(classification.newlyEnabledRequestFlags).toEqual([]);
     expect(result.reply).toContain(
-      "I've removed flights from your trip requirements.",
+      "No problem, I've removed flights from your trip.",
     );
     expect(result.reply).not.toMatch(/I've added flights/);
   });
@@ -190,7 +190,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     const enabled = turn('I need flights', createState({ flightsRequested: null }), 0);
     expect(enabled.state.flightsRequested).toBe(true);
     expect(enabled.reply).toContain(
-      "I've added flights to your trip requirements.",
+      "Great, I've added flights to your trip.",
     );
 
     const alreadyTrue = createState({ flightsRequested: true });

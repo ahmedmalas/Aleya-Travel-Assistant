@@ -9,6 +9,7 @@ import { selectConversationalLayerRenderer } from '../conversationalRendererRegi
 import { executeConversationalLayerRenderer } from '../executeConversationalLayerRenderer';
 import { renderConversationReplyPlan } from '../generateConversationReply';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13M — baseline conversational renderer registry factory characterisation.
@@ -117,7 +118,7 @@ describe('phase 13M — createBaselineConversationalRendererRegistry', () => {
     );
 
     expect(output).toEqual({
-      wording: renderConversationReplyPlan(replyPlan),
+      wording: expectedActivatedBaselineReply(replyPlan),
     });
     expect(output).toEqual(renderBaselineConversationalLayer(input));
     expect(

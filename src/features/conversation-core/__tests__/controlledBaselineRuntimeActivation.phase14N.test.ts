@@ -15,6 +15,7 @@ import {
 } from '../index';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -98,16 +99,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 function createState(
@@ -219,7 +210,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
     const result = turn('go to Brisbane', createState());
 
     expect(result.reply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
     expect(baselineSpy).toHaveBeenCalledTimes(1);
     const receivedPlan = baselineSpy.mock.calls[0]?.[0] as ConversationReplyPlan;
@@ -310,7 +301,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
       });
       const before = structuredClone(frozen);
       const deterministic = renderConversationReplyPlan(frozen);
-      const expected = expectedBaselineWording(frozen);
+      const expected = expectedActivatedBaselineReply(frozen);
       const viaProduction = renderIntegratedConversationReplyPlan({
         plan: frozen,
       });
@@ -322,8 +313,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
       expect(viaProduction, entry.label).toBe(expected);
       expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(expected);
       if (
-        frozen.acknowledgements.length !== 1 ||
-        frozen.followUpQuestion !== null
+        frozen.acknowledgements.length !== 1
       ) {
         expect(viaProduction, `${entry.label} / deterministic parity`).toBe(
           deterministic,

@@ -16,7 +16,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13P — baseline conversational reply generator characterisation.
@@ -54,23 +54,13 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 function expectWording(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof generateBaselineConversationalReply>[1],
 ) {
   const wording = generateBaselineConversationalReply(replyPlan, style);
   const viaAdapter = renderBaselineConversationalReplyPlan(replyPlan, style);
-  const expected = expectedBaselineWording(replyPlan);
+  const expected = expectedActivatedBaselineReply(replyPlan);
 
   expect(typeof wording).toBe('string');
   expect(wording).toBe(viaAdapter.wording);
@@ -127,11 +117,12 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
       messageInterpreted: true,
     });
     const { wording, expected } = expectWording(replyPlan);
-    expect(wording).toBe(`Great — Brisbane.\n${FOLLOW_UPS.origin}`);
+    expect(wording).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.origin}`);
     expect(wording).toBe(expected);
     expect(wording.startsWith(' ')).toBe(false);
     expect(wording.endsWith(' ')).toBe(false);
-    expect(wording.includes('Great — Brisbane.')).toBe(true);
+    expect(wording.includes('Great, Brisbane it is.')).toBe(true);
+    expect(wording.includes('Great — Brisbane.')).toBe(false);
     expect(wording.includes(FOLLOW_UPS.origin)).toBe(true);
   });
 
@@ -185,7 +176,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
       messageInterpreted: true,
     });
     expect(generateBaselineConversationalReply(replyPlan)).toBe(
-      renderConversationReplyPlan(replyPlan),
+      expectedActivatedBaselineReply(replyPlan),
     );
 
     for (const style of [
@@ -208,7 +199,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
     const style = REFERENCE_CONVERSATIONAL_STYLE_LUXURY;
     const planBefore = structuredClone(replyPlan);
     const styleBefore = structuredClone(style);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const first = generateBaselineConversationalReply(replyPlan, style);
     const second = generateBaselineConversationalReply(replyPlan, style);

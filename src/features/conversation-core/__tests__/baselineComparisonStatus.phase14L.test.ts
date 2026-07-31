@@ -7,6 +7,7 @@ import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import * as baselineModule from '../generateBaselineConversationalReply';
 import { renderConversationReplyPlan } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14L — structured baseline comparison status characterisation.
@@ -153,9 +154,10 @@ describe('phase 14L — baseline comparison status', () => {
   });
 
   it('classifies successful matching baseline output as identical', () => {
+    // Unaffected shape (follow-up only) still matches deterministic parity.
     const replyPlan = plan({
-      acknowledgements: [ACKS.destination('Brisbane')],
-      followUpQuestion: FOLLOW_UPS.origin,
+      acknowledgements: [],
+      followUpQuestion: FOLLOW_UPS.activities,
       messageInterpreted: true,
     });
     const before = structuredClone(replyPlan);
@@ -171,6 +173,26 @@ describe('phase 14L — baseline comparison status', () => {
       matchesDeterministic: true,
       status: 'identical',
     });
+    expect(replyPlan).toEqual(before);
+  });
+
+  it('classifies successful ack+follow-up baseline divergence as different', () => {
+    const replyPlan = plan({
+      acknowledgements: [ACKS.destination('Brisbane')],
+      followUpQuestion: FOLLOW_UPS.origin,
+      messageInterpreted: true,
+    });
+    const before = structuredClone(replyPlan);
+    const deterministicExpected = renderConversationReplyPlan(replyPlan);
+
+    const comparison = compareBaselineConversationalReplyPlan({
+      plan: replyPlan,
+    });
+
+    expect(comparison.deterministicReply).toBe(deterministicExpected);
+    expect(comparison.baselineReply).not.toBe(deterministicExpected);
+    expect(comparison.matchesDeterministic).toBe(false);
+    expect(comparison.status).toBe('different');
     expect(replyPlan).toEqual(before);
   });
 
@@ -275,7 +297,7 @@ describe('phase 14L — baseline comparison status', () => {
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const baselineSpy = vi.spyOn(
       baselineModule,

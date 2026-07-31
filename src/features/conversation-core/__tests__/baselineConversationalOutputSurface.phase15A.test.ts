@@ -20,6 +20,7 @@ import { renderBaselineConversationalLayer } from '../renderBaselineConversation
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -64,16 +65,6 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
   });
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 type CharacterisedCase = {
   label: string;
   replyPlan: ConversationReplyPlan;
@@ -112,7 +103,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
-    expectedOutput: `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+    expectedOutput: `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     expectedObjectiveId: 'origin',
     expectedCatalogueWording: FOLLOW_UPS.origin,
   },
@@ -134,7 +125,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.flightsAdultCount,
       messageInterpreted: true,
     }),
-    expectedOutput: `${ACKS.addedCapabilities('flights')}\n${FOLLOW_UPS.flightsAdultCount}`,
+    expectedOutput: `${transformBaselineAcknowledgement(ACKS.addedCapabilities('flights'))} ${FOLLOW_UPS.flightsAdultCount}`,
     expectedObjectiveId: 'flightsAdultCount',
     expectedCatalogueWording: FOLLOW_UPS.flightsAdultCount,
   },
@@ -145,7 +136,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    expectedOutput: `${ACKS.removedCapabilities('flights')}\n${FOLLOW_UPS.neutralContinuation}`,
+    expectedOutput: `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
     expectedObjectiveId: 'neutralContinuation',
     expectedCatalogueWording: FOLLOW_UPS.neutralContinuation,
   },
@@ -156,7 +147,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     }),
-    expectedOutput: `${ACKS.destinationRemoved}\n${FOLLOW_UPS.destination}`,
+    expectedOutput: `${transformBaselineAcknowledgement(ACKS.destinationRemoved)} ${FOLLOW_UPS.destination}`,
     expectedObjectiveId: 'destination',
     expectedCatalogueWording: FOLLOW_UPS.destination,
   },
@@ -252,11 +243,13 @@ describe('phase 15A — baseline conversational output surface', () => {
       const objective = selectConversationalObjective(frozen);
       const layerOutput = renderBaselineConversationalLayer(layerInput);
 
-      if (
-        frozen.acknowledgements.length === 1 &&
-        frozen.followUpQuestion === null
-      ) {
-        expect(deterministic, entry.label).toBe(frozen.acknowledgements[0]);
+      if (frozen.acknowledgements.length === 1) {
+        expect(deterministic, entry.label).toBe(
+          renderConversationReplyPlan(frozen),
+        );
+        expect(deterministic, `${entry.label} / diverges`).not.toBe(
+          entry.expectedOutput,
+        );
       } else {
         expect(deterministic, entry.label).toBe(entry.expectedOutput);
       }
@@ -268,7 +261,7 @@ describe('phase 15A — baseline conversational output surface', () => {
         entry.expectedOutput,
       );
       expect(baseline, `${entry.label} / helper`).toBe(
-        expectedBaselineWording(frozen),
+        expectedActivatedBaselineReply(frozen),
       );
 
       if (entry.expectedObjectiveId === null) {
@@ -301,11 +294,14 @@ describe('phase 15A — baseline conversational output surface', () => {
         messageInterpreted: true,
       }),
     );
-    const expected = `${ACKS.destination('Hobart')}\n${FOLLOW_UPS.origin}`;
+    const expected = `${transformBaselineAcknowledgement(ACKS.destination('Hobart'))} ${FOLLOW_UPS.origin}`;
     const before = structuredClone(replyPlan);
 
     expect(generateBaselineConversationalReply(replyPlan)).toBe(expected);
-    expect(renderConversationReplyPlan(replyPlan)).toBe(expected);
+    expect(renderConversationReplyPlan(replyPlan)).not.toBe(expected);
+    expect(renderConversationReplyPlan(replyPlan)).toBe(
+      `${ACKS.destination('Hobart')}\n${FOLLOW_UPS.origin}`,
+    );
 
     for (const style of STYLE_PROFILES) {
       const styleBefore = structuredClone(style);
@@ -344,7 +340,7 @@ describe('phase 15A — baseline conversational output surface', () => {
       'Perfect, got it.',
     );
     expect(generateBaselineConversationalReply(withFollowUp)).toBe(
-      `${ACKS.genericTravelFieldChange}\n${FOLLOW_UPS.activities}`,
+      `${transformBaselineAcknowledgement(ACKS.genericTravelFieldChange)} ${FOLLOW_UPS.activities}`,
     );
 
     // Same acknowledgement text with different follow-up objectives still
@@ -370,10 +366,10 @@ describe('phase 15A — baseline conversational output surface', () => {
       'restaurants',
     );
     expect(generateBaselineConversationalReply(destinationObjectivePlan)).toBe(
-      `${ACKS.origin('Perth')}\n${FOLLOW_UPS.destination}`,
+      `${transformBaselineAcknowledgement(ACKS.origin('Perth'))} ${FOLLOW_UPS.destination}`,
     );
     expect(generateBaselineConversationalReply(restaurantsObjectivePlan)).toBe(
-      `${ACKS.origin('Perth')}\n${FOLLOW_UPS.restaurants}`,
+      `${transformBaselineAcknowledgement(ACKS.origin('Perth'))} ${FOLLOW_UPS.restaurants}`,
     );
 
     expect(replyPlan).toEqual(before);
@@ -442,7 +438,8 @@ describe('phase 15A — baseline conversational output surface', () => {
         messageInterpreted: true,
       }),
     );
-    const expected = `${ACKS.origin('Sydney')}\n${FOLLOW_UPS.departureDate}`;
+    const activated = `${transformBaselineAcknowledgement(ACKS.origin('Sydney'))} ${FOLLOW_UPS.departureDate}`;
+    const deterministic = renderConversationReplyPlan(replyPlan);
     const baselineSpy = vi.spyOn(
       baselineModule,
       'generateBaselineConversationalReply',
@@ -453,9 +450,9 @@ describe('phase 15A — baseline conversational output surface', () => {
         plan: replyPlan,
         mode: 'baseline-conversational',
       }),
-    ).toBe(expected);
+    ).toBe(activated);
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
-      expected,
+      activated,
     );
     expect(baselineSpy).toHaveBeenCalled();
     expect(baselineSpy.mock.results.every((result) => result.type === 'return')).toBe(
@@ -476,9 +473,9 @@ describe('phase 15A — baseline conversational output surface', () => {
         plan: replyPlan,
         mode: 'baseline-conversational',
       }),
-    ).toBe(expected);
+    ).toBe(deterministic);
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
-      expected,
+      deterministic,
     );
   });
 });

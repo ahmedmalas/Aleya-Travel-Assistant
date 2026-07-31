@@ -16,6 +16,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationMessageInterpreted } from '../selectConversationMessageInterpreted';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const SELECTOR_SOURCE = resolve(
@@ -251,7 +252,7 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
       expect(plan.messageInterpreted, entry.message).toBe(
         result.trace.messageInterpreted,
       );
-      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,
       );
       expect(

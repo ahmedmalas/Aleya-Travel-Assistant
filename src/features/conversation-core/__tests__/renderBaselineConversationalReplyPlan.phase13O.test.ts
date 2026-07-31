@@ -16,7 +16,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
-import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13O — baseline conversational reply-plan adapter characterisation.
@@ -53,16 +53,6 @@ function plan(
   };
 }
 
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
-}
-
 function expectBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof renderBaselineConversationalReplyPlan>[1],
@@ -70,7 +60,7 @@ function expectBaseline(
   const output = renderBaselineConversationalReplyPlan(replyPlan, style);
   const input = buildConversationalLayerInput(replyPlan, style);
   const viaExecution = executeBaselineConversationalRenderer(input);
-  const expected = expectedBaselineWording(replyPlan);
+  const expected = expectedActivatedBaselineReply(replyPlan);
 
   expect(output).toEqual({ wording: expected });
   expect(output).toEqual(viaExecution);
@@ -126,7 +116,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
         messageInterpreted: true,
       }),
     );
-    expect(expected).toBe(`Great — Brisbane.\n${FOLLOW_UPS.origin}`);
+    expect(expected).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.origin}`);
   });
 
   it('renders specific follow-up only, neutral continuation, acknowledgement-only, and empty plans', () => {
@@ -182,7 +172,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
     });
     expect(
       renderBaselineConversationalReplyPlan(replyPlan).wording,
-    ).toBe(renderConversationReplyPlan(replyPlan));
+    ).toBe(expectedActivatedBaselineReply(replyPlan));
 
     for (const style of [
       REFERENCE_CONVERSATIONAL_STYLE_PROFESSIONAL,
@@ -204,7 +194,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
     const style = REFERENCE_CONVERSATIONAL_STYLE_WARM;
     const planBefore = structuredClone(replyPlan);
     const styleBefore = structuredClone(style);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const first = renderBaselineConversationalReplyPlan(replyPlan, style);
     const second = renderBaselineConversationalReplyPlan(replyPlan, style);

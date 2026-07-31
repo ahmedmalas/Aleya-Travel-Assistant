@@ -17,6 +17,8 @@ import {
 } from '../index';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14M — controlled runtime activation readiness audit.
@@ -246,13 +248,15 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
         plan: frozen,
       });
 
-      expect(viaProduction, entry.label).toBe(deterministic);
-      expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(
-        deterministic,
+      const expected = expectedActivatedBaselineReply(frozen);
+      const diverges = expected !== deterministic;
+      expect(viaProduction, entry.label).toBe(expected);
+      expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(expected);
+      expect(viaEvaluate, `${entry.label} / evaluate`).toBe(expected);
+      expect(comparison.matchesDeterministic, entry.label).toBe(!diverges);
+      expect(comparison.status, entry.label).toBe(
+        diverges ? 'different' : 'identical',
       );
-      expect(viaEvaluate, `${entry.label} / evaluate`).toBe(deterministic);
-      expect(comparison.matchesDeterministic, entry.label).toBe(true);
-      expect(comparison.status, entry.label).toBe('identical');
       expect(frozen, `${entry.label} / unchanged`).toEqual(before);
       expect(Object.isFrozen(frozen), entry.label).toBe(true);
     }
@@ -313,7 +317,7 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
       state: createState({ destination: 'Brisbane' }),
     });
     expect(productionReply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
     );
     expect(
       renderIntegratedConversationReplyPlan({

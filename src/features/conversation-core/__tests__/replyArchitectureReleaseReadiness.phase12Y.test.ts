@@ -17,6 +17,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationReplyComponents } from '../selectConversationReplyComponents';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 12Y — reply architecture release-readiness characterisation.
@@ -160,7 +161,8 @@ describe('phase 12Y — reply architecture release-readiness characterisation', 
 
     const rendered = renderConversationReplyPlan(plan);
     expect(rendered).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${ACKS.destination('Brisbane')}
+${FOLLOW_UPS.origin}`,
     );
   });
 
@@ -303,9 +305,12 @@ describe('phase 12Y — reply architecture release-readiness characterisation', 
     expect(result.plan.acknowledgements).toHaveLength(1);
     expect(result.plan.followUpQuestion).toBe(FOLLOW_UPS.origin);
     expect(result.rendered).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+      `${ACKS.destination('Brisbane')}
+${FOLLOW_UPS.origin}`,
     );
-    expect(result.generated).toBe(result.rendered);
+    expect(result.generated).toBe(
+      `${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`,
+    );
     assertSinglePrompt(result.rendered, FOLLOW_UPS.origin, 'ack+objective');
     expect(result.plan.acknowledgements[0]!.includes('?')).toBe(false);
   });

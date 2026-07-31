@@ -13,6 +13,7 @@ import {
   type ConversationReplyPlanIntegrationMode,
 } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -63,16 +64,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
@@ -235,7 +226,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
       const baseline = generateBaselineConversationalReply(entry.replyPlan);
-      const expectedBaseline = expectedBaselineWording(entry.replyPlan);
+      const expectedBaseline = expectedActivatedBaselineReply(entry.replyPlan);
 
       const viaDeterministicMode = renderConversationReplyPlanByIntegrationMode({
         plan: entry.replyPlan,
@@ -258,8 +249,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
         expectedBaseline,
       );
       if (
-        entry.replyPlan.acknowledgements.length !== 1 ||
-        entry.replyPlan.followUpQuestion !== null
+        entry.replyPlan.acknowledgements.length !== 1
       ) {
         expect(baseline, `${entry.label} / deterministic parity`).toBe(
           deterministic,
@@ -282,6 +272,17 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
     expect(
       renderConversationReplyPlanByIntegrationMode({
         plan: plan({
+          acknowledgements: [ACKS.destination('Brisbane')],
+          followUpQuestion: FOLLOW_UPS.origin,
+          messageInterpreted: true,
+        }),
+        mode: 'baseline-conversational',
+      }),
+    ).toBe(`${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`);
+
+    expect(
+      renderConversationReplyPlanByIntegrationMode({
+        plan: plan({
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
@@ -299,22 +300,23 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       }),
     );
     const before = structuredClone(replyPlan);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const deterministicExpected = renderConversationReplyPlan(replyPlan);
+    const baselineExpected = expectedActivatedBaselineReply(replyPlan);
 
     expect(
       renderConversationReplyPlanByIntegrationMode({
         plan: replyPlan,
         mode: 'deterministic',
       }),
-    ).toBe(expected);
+    ).toBe(deterministicExpected);
     expect(
       renderConversationReplyPlanByIntegrationMode({
         plan: replyPlan,
         mode: 'baseline-conversational',
       }),
-    ).toBe(expected);
+    ).toBe(baselineExpected);
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
-      expected,
+      baselineExpected,
     );
     expect(replyPlan).toEqual(before);
     expect(Object.isFrozen(replyPlan)).toBe(true);

@@ -16,6 +16,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationAcknowledgement } from '../selectConversationAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
 const SELECTOR_SOURCE = resolve(
@@ -983,7 +984,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       expect(plan.messageInterpreted).toBe(
         classification.hasInterpretedChange,
       );
-      expect(renderConversationReplyPlan(plan), entry.message).toBe(
+      expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,
       );
       expect(plan.messageInterpreted, entry.message).toBe(
@@ -2037,7 +2038,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       });
       expect(result.state.flightsRequested).toBe(false);
       expect(result.reply).toContain(
-        "I've removed flights from your trip requirements.",
+        "No problem, I've removed flights from your trip.",
       );
       expect(result.reply).not.toMatch(/^Perfect\./);
     });
@@ -2427,8 +2428,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { destination: null });
       expect(result.state.destination).toBeNull();
-      expect(result.reply).toContain('Destination removed.');
-      expect(result.reply.match(/Destination removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the destination.");
+      expect(result.reply.match(/No problem, I\'ve removed the destination\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });
@@ -2614,8 +2615,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { origin: null });
       expect(result.state.origin).toBeNull();
-      expect(result.reply).toContain('Departure location removed.');
-      expect(result.reply.match(/Departure location removed\./g)?.length).toBe(
+      expect(result.reply).toContain("No problem, I've removed the departure location.");
+      expect(result.reply.match(/No problem, I\'ve removed the departure location\./g)?.length).toBe(
         1,
       );
       expect(result.reply).not.toMatch(/Perfect\./);
@@ -2827,8 +2828,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { departureDate: null });
       expect(result.state.departureDate).toBeNull();
-      expect(result.reply).toContain('Departure date removed.');
-      expect(result.reply.match(/Departure date removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the departure date.");
+      expect(result.reply.match(/No problem, I\'ve removed the departure date\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });
@@ -3024,8 +3025,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { returnDate: null });
       expect(result.state.returnDate).toBeNull();
-      expect(result.reply).toContain('Return date removed.');
-      expect(result.reply.match(/Return date removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the return date.");
+      expect(result.reply.match(/No problem, I\'ve removed the return date\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });
@@ -3222,8 +3223,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { adultCount: null });
       expect(result.state.adultCount).toBeNull();
-      expect(result.reply).toContain('Adult count removed.');
-      expect(result.reply.match(/Adult count removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the adult count.");
+      expect(result.reply.match(/No problem, I\'ve removed the adult count\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });
@@ -3421,8 +3422,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { childCount: null });
       expect(result.state.childCount).toBeNull();
-      expect(result.reply).toContain('Child count removed.');
-      expect(result.reply.match(/Child count removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the child count.");
+      expect(result.reply.match(/No problem, I\'ve removed the child count\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });
@@ -3621,8 +3622,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const result = turn('hello', previous, { infantCount: null });
       expect(result.state.infantCount).toBeNull();
-      expect(result.reply).toContain('Infant count removed.');
-      expect(result.reply.match(/Infant count removed\./g)?.length).toBe(1);
+      expect(result.reply).toContain("No problem, I've removed the infant count.");
+      expect(result.reply.match(/No problem, I\'ve removed the infant count\./g)?.length).toBe(1);
       expect(result.reply).not.toMatch(/Perfect\./);
       expect(result.trace.messageInterpreted).toBe(true);
     });

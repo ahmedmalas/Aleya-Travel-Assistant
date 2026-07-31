@@ -8,6 +8,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -46,16 +47,6 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
-}
-
-function expectedProductionWording(replyPlan: ConversationReplyPlan): string {
-  if (
-    replyPlan.acknowledgements.length === 1 &&
-    replyPlan.followUpQuestion === null
-  ) {
-    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
-  }
-  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
@@ -171,7 +162,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
     for (const entry of cases) {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
-      const expected = expectedProductionWording(entry.replyPlan);
+      const expected = expectedActivatedBaselineReply(entry.replyPlan);
       const integrated = renderIntegratedConversationReplyPlan({
         plan: entry.replyPlan,
       });
@@ -182,8 +173,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
         `${entry.label} / repeat`,
       ).toBe(expected);
       if (
-        entry.replyPlan.acknowledgements.length !== 1 ||
-        entry.replyPlan.followUpQuestion !== null
+        entry.replyPlan.acknowledgements.length !== 1
       ) {
         expect(integrated, `${entry.label} / deterministic parity`).toBe(
           deterministic,
@@ -200,7 +190,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(`${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`);
+    ).toBe(`${transformBaselineAcknowledgement(ACKS.destination('Brisbane'))} ${FOLLOW_UPS.origin}`);
 
     expect(
       renderIntegratedConversationReplyPlan({
@@ -220,7 +210,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
         }),
       }),
     ).toBe(
-      `${ACKS.addedCapabilities('flights')}\n${FOLLOW_UPS.flightsAdultCount}`,
+      `${transformBaselineAcknowledgement(ACKS.addedCapabilities('flights'))} ${FOLLOW_UPS.flightsAdultCount}`,
     );
 
     expect(
@@ -232,7 +222,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
         }),
       }),
     ).toBe(
-      `${ACKS.removedCapabilities('flights')}\n${FOLLOW_UPS.neutralContinuation}`,
+      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
     );
   });
 
@@ -245,7 +235,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
       }),
     );
     const before = structuredClone(replyPlan);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,

@@ -17,6 +17,7 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 13I — conversational renderer contract characterisation.
@@ -140,7 +141,7 @@ describe('phase 13I — conversational renderer contract', () => {
     });
     const output = asContract(buildConversationalLayerInput(replyPlan));
     expect(output).toEqual({
-      wording: renderConversationReplyPlan(replyPlan),
+      wording: expectedActivatedBaselineReply(replyPlan),
     });
     expect(Object.keys(output)).toEqual(['wording']);
   });
@@ -151,7 +152,7 @@ describe('phase 13I — conversational renderer contract', () => {
       followUpQuestion: FOLLOW_UPS.destination,
       messageInterpreted: true,
     });
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const withNullObjective = renderBaselineConversationalLayer(
       createConversationalLayerInput(replyPlan, null),
@@ -194,7 +195,7 @@ describe('phase 13I — conversational renderer contract', () => {
       ),
     );
     const before = structuredClone(input);
-    const expected = renderConversationReplyPlan(replyPlan);
+    const expected = expectedActivatedBaselineReply(replyPlan);
 
     const first = renderBaselineConversationalLayer(input);
     const second = renderBaselineConversationalLayer(input);
@@ -203,7 +204,7 @@ describe('phase 13I — conversational renderer contract', () => {
     expect(first).toEqual({ wording: expected });
     expect(second).toEqual(first);
     expect(third).toEqual(first);
-    expect(first.wording).toBe(`Great — Brisbane.\n${FOLLOW_UPS.origin}`);
+    expect(first.wording).toBe(`Great, Brisbane it is. ${FOLLOW_UPS.origin}`);
     expect(input).toEqual(before);
     expect(Object.isFrozen(input)).toBe(true);
     expect(Object.isFrozen(input.plan)).toBe(true);

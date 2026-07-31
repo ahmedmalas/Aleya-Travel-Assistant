@@ -203,10 +203,10 @@ acknowledgement string is rewritten at render time.
 
 Unknown acknowledgement strings remain unchanged.
 
-### Unchanged categories
+### Unchanged categories (as of Phase 15B)
 
 ```text
-acknowledgement + follow-up
+acknowledgement + follow-up   (later transformed in Phase 15C)
 follow-up only
 neutral continuation
 multiple acknowledgements
@@ -214,7 +214,9 @@ empty plans
 uninterpreted messages (neutral continuation shape)
 ```
 
-These continue to equal deterministic `renderConversationReplyPlan(plan)` output.
+At Phase 15B completion, those shapes still equalled deterministic
+`renderConversationReplyPlan(plan)` output. Phase 15C intentionally diverges
+acknowledgement-plus-follow-up only (see below).
 
 ### Fallback guarantee
 
@@ -242,3 +244,75 @@ Unchanged and still exclusively deterministic:
 - required follow-up selection
 - deterministic renderer (`renderConversationReplyPlan`)
 - production mode (`'baseline-conversational'`)
+
+---
+
+## Phase 15C record — acknowledgement-plus-follow-up transitions
+
+```text
+The conversational layer may transform the acknowledgement expression.
+The deterministic engine continues to own the exact follow-up question and its selection.
+```
+
+### Transformed category
+
+```text
+acknowledgement + follow-up plans
+```
+
+### Exact eligibility boundary
+
+```text
+plan.acknowledgements.length === 1
+AND plan.followUpQuestion !== null
+```
+
+Renderer branching order in `renderBaselineConversationalLayer`:
+
+1. single acknowledgement + no follow-up → Phase 15B acknowledgement-only transform
+2. single acknowledgement + follow-up → `renderBaselineAcknowledgementFollowUp`
+3. all other plan shapes → deterministic `renderConversationReplyPlan`
+
+Investigation note: the plan still exposes acknowledgement and follow-up as
+separate fields (`plan.acknowledgements[0]`, `plan.followUpQuestion`) before
+rendering. Deterministic rendered form remains
+`{acknowledgement}\n{followUpQuestion}`; activated conversational form uses a
+space transition after the transformed acknowledgement.
+
+### Acknowledgement transformation reuse
+
+`renderBaselineAcknowledgementFollowUp` reuses `transformBaselineAcknowledgement`
+and does not duplicate its mapping. Unknown acknowledgements remain unchanged.
+
+### Follow-up preservation guarantee
+
+The follow-up string is joined byte-for-byte identically. No filler phrases
+(`Now,` / `Next,` / `Also,`), no follow-up punctuation changes, and no
+follow-up selection changes.
+
+Approved structure:
+
+```text
+{transformed acknowledgement} {unchanged follow-up question}
+```
+
+### Unchanged categories
+
+```text
+acknowledgement-only (Phase 15B behaviour preserved)
+follow-up only
+neutral continuation
+multiple acknowledgements
+empty plans
+```
+
+### Fallback guarantee
+
+Phase 14I remains authoritative. No additional fallback layer.
+
+### Ownership guarantee
+
+Deterministic ownership remains exclusive for trip state, classification,
+priority, eligibility, reply-component selection, reply-plan assembly, required
+follow-up selection, and the deterministic renderer. Production mode remains
+`'baseline-conversational'`.
