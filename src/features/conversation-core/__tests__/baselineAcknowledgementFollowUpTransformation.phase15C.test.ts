@@ -233,19 +233,30 @@ describe('phase 15C — baseline acknowledgement follow-up transformation', () =
       ACKS.destination('Cairns'),
     );
 
+    // Follow-up-only is intentionally transformed by Phase 15E; excluded from
+    // Phase 15C unchanged shapes.
+    const followUpOnly = freezePlan(
+      plan({
+        followUpQuestion: FOLLOW_UPS.activities,
+        messageInterpreted: true,
+      }),
+    );
+    expect(renderConversationReplyPlan(followUpOnly)).toBe(FOLLOW_UPS.activities);
+    expect(generateBaselineConversationalReply(followUpOnly)).toBe(
+      expectedActivatedBaselineReply(followUpOnly),
+    );
+    expect(generateBaselineConversationalReply(followUpOnly)).toBe(
+      `For activities, ${FOLLOW_UPS.activities}`,
+    );
+    expect(generateBaselineConversationalReply(followUpOnly)).not.toBe(
+      FOLLOW_UPS.activities,
+    );
+
     const unchangedCases: Array<{
       label: string;
       replyPlan: ConversationReplyPlan;
       expected: string;
     }> = [
-      {
-        label: 'follow-up only',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.activities,
-          messageInterpreted: true,
-        }),
-        expected: FOLLOW_UPS.activities,
-      },
       {
         label: 'neutral continuation',
         replyPlan: plan({

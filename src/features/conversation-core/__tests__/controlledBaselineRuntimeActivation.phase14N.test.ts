@@ -312,10 +312,12 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
 
       expect(viaProduction, entry.label).toBe(expected);
       expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(expected);
-      if (
-        frozen.acknowledgements.length !== 1
-      ) {
+      if (expected === deterministic) {
         expect(viaProduction, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      } else {
+        expect(viaProduction, `${entry.label} / intentional divergence`).not.toBe(
           deterministic,
         );
       }

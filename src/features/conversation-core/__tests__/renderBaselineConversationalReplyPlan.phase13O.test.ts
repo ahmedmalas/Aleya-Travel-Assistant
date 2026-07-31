@@ -127,7 +127,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
           messageInterpreted: true,
         }),
       ).expected,
-    ).toBe(FOLLOW_UPS.activities);
+    ).toBe(`For activities, ${FOLLOW_UPS.activities}`);
 
     expect(
       expectBaseline(

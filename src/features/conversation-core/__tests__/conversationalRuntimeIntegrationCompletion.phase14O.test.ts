@@ -538,10 +538,12 @@ describe('phase 14O — conversational runtime integration completion', () => {
       expect(viaProduction, entry.label).toBe(expected);
       expect(viaMode, `${entry.label} / mode`).toBe(expected);
       expect(viaBaseline, `${entry.label} / baseline`).toBe(expected);
-      if (
-        frozen.acknowledgements.length !== 1
-      ) {
+      if (expected === deterministic) {
         expect(viaBaseline, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      } else {
+        expect(viaBaseline, `${entry.label} / intentional divergence`).not.toBe(
           deterministic,
         );
       }

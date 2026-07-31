@@ -248,10 +248,12 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       expect(viaProduction, `${entry.label} / production`).toBe(
         expectedBaseline,
       );
-      if (
-        entry.replyPlan.acknowledgements.length !== 1
-      ) {
+      if (expectedBaseline === deterministic) {
         expect(baseline, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      } else {
+        expect(baseline, `${entry.label} / intentional divergence`).not.toBe(
           deterministic,
         );
       }

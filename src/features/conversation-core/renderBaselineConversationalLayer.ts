@@ -1,6 +1,7 @@
 import type { ConversationalLayerRenderer } from './conversationalLayerContracts';
 import { renderConversationReplyPlan } from './generateConversationReply';
 import { renderBaselineAcknowledgementFollowUp } from './renderBaselineAcknowledgementFollowUp';
+import { renderBaselineFollowUpOnly } from './renderBaselineFollowUpOnly';
 import { transformBaselineAcknowledgement } from './transformBaselineAcknowledgement';
 
 /**
@@ -8,6 +9,7 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
  * Phase 13I — typed as ConversationalLayerRenderer.
  * Phase 15B — acknowledgement-only conversational transform when eligible.
  * Phase 15C — acknowledgement-plus-follow-up transition when eligible.
+ * Phase 15E — follow-up-only conversational lead-in when eligible.
  *
  * Consumes an existing ConversationalLayerInput and returns wording-only
  * ConversationalLayerOutput.
@@ -15,7 +17,8 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
  * Branching order:
  * 1. single acknowledgement + no follow-up → Phase 15B transform
  * 2. single acknowledgement + follow-up → Phase 15C transition renderer
- * 3. all other plan shapes → deterministic renderConversationReplyPlan
+ * 3. no acknowledgements + follow-up → Phase 15E follow-up-only renderer
+ * 4. all other plan shapes → deterministic renderConversationReplyPlan
  *
  * Ignores styleProfile. Allows objective to be null. Objective metadata never
  * overrides the plan. Does not inspect authoritative trip state or original
@@ -43,6 +46,16 @@ export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
     return {
       wording: renderBaselineAcknowledgementFollowUp({
         acknowledgement: plan.acknowledgements[0]!,
+        followUpQuestion: plan.followUpQuestion,
+      }),
+    };
+  }
+  if (
+    plan.acknowledgements.length === 0 &&
+    plan.followUpQuestion !== null
+  ) {
+    return {
+      wording: renderBaselineFollowUpOnly({
         followUpQuestion: plan.followUpQuestion,
       }),
     };

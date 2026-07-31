@@ -70,7 +70,11 @@ function plan(
 }
 
 function isActivatedTransformPlan(replyPlan: ConversationReplyPlan): boolean {
-  return replyPlan.acknowledgements.length === 1;
+  return (
+    replyPlan.acknowledgements.length === 1 ||
+    (replyPlan.acknowledgements.length === 0 &&
+      replyPlan.followUpQuestion !== null)
+  );
 }
 
 describe('phase 14K — compareBaselineConversationalReplyPlan', () => {

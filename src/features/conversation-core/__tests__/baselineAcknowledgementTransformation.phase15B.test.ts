@@ -278,19 +278,27 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     );
     expect(ackPlusFollowUpBaseline).not.toBe(ackPlusFollowUpDeterministic);
 
+    // Follow-up-only is intentionally transformed by Phase 15E; excluded from
+    // Phase 15B unchanged shapes.
+    const followUpOnly = freezePlan(
+      plan({
+        followUpQuestion: FOLLOW_UPS.activities,
+        messageInterpreted: true,
+      }),
+    );
+    const followUpOnlyDeterministic = renderConversationReplyPlan(followUpOnly);
+    const followUpOnlyBaseline = generateBaselineConversationalReply(followUpOnly);
+    expect(followUpOnlyDeterministic).toBe(FOLLOW_UPS.activities);
+    expect(followUpOnlyBaseline).toBe(
+      `For activities, ${FOLLOW_UPS.activities}`,
+    );
+    expect(followUpOnlyBaseline).not.toBe(followUpOnlyDeterministic);
+
     const unchangedCases: Array<{
       label: string;
       replyPlan: ConversationReplyPlan;
       expected: string;
     }> = [
-      {
-        label: 'follow-up only',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.activities,
-          messageInterpreted: true,
-        }),
-        expected: FOLLOW_UPS.activities,
-      },
       {
         label: 'neutral continuation',
         replyPlan: plan({

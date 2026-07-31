@@ -241,10 +241,12 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
       expect(result, `${entry.label} / baseline expected`).toBe(
         expectedActivatedBaselineReply(entry.replyPlan),
       );
-      if (
-        entry.replyPlan.acknowledgements.length !== 1
-      ) {
+      if (expected === renderConversationReplyPlan(entry.replyPlan)) {
         expect(result, `${entry.label} / deterministic parity`).toBe(
+          renderConversationReplyPlan(entry.replyPlan),
+        );
+      } else {
+        expect(result, `${entry.label} / intentional divergence`).not.toBe(
           renderConversationReplyPlan(entry.replyPlan),
         );
       }

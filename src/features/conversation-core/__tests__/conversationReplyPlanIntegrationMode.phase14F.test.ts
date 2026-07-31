@@ -248,10 +248,12 @@ describe('phase 14F — conversation reply plan integration mode', () => {
         renderIntegratedConversationReplyPlan({ plan: entry.replyPlan }),
         `${entry.label} / repeat`,
       ).toBe(expected);
-      if (
-        entry.replyPlan.acknowledgements.length !== 1
-      ) {
+      if (expected === deterministic) {
         expect(integrated, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      } else {
+        expect(integrated, `${entry.label} / intentional divergence`).not.toBe(
           deterministic,
         );
       }

@@ -18,9 +18,10 @@ import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply
 /**
  * Phase 15D — follow-up-only baseline output characterisation.
  *
- * Investigation-only. Proves plans with empty acknowledgements and a non-null
- * follow-up currently remain byte-identical to deterministic rendering.
- * Does not transform follow-up wording.
+ * Records the follow-up-only catalogue and ownership boundaries discovered
+ * before Phase 15E. After Phase 15E, supported follow-up-only plans receive a
+ * lead-in while preserving the question byte-for-byte; this file continues to
+ * prove catalogue coverage and cross-phase ownership.
  */
 
 const ROOT = process.cwd();
@@ -77,7 +78,7 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
 }
 
 describe('phase 15D — follow-up-only baseline output characterisation', () => {
-  it('traces the activated runtime path and eligibility branch order', () => {
+  it('traces the activated runtime path and follow-up-only branch ownership', () => {
     const seam = readFileSync(SEAM_SOURCE, 'utf8');
     const modeDriven = readFileSync(MODE_SOURCE, 'utf8');
     const renderer = readFileSync(RENDERER_SOURCE, 'utf8');
@@ -88,18 +89,14 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     );
     expect(renderer).toMatch(/transformBaselineAcknowledgement/);
     expect(renderer).toMatch(/renderBaselineAcknowledgementFollowUp/);
+    expect(renderer).toMatch(/renderBaselineFollowUpOnly/);
+    expect(renderer).toMatch(/acknowledgements\.length === 0/);
     expect(renderer).toMatch(
       /wording:\s*renderConversationReplyPlan\(plan\)/,
     );
-
-    // Follow-up-only (empty acknowledgements) falls through to deterministic.
-    expect(renderer.indexOf('acknowledgements.length === 1')).toBeGreaterThan(
-      -1,
-    );
-    expect(renderer.includes('acknowledgements.length === 0')).toBe(false);
   });
 
-  it('characterises every eligible follow-up-only catalogue plan as byte-identical', () => {
+  it('characterises every eligible follow-up-only catalogue plan and preserves the question', () => {
     expect(FOLLOW_UP_ONLY_CATALOGUE).toHaveLength(8);
 
     for (const entry of FOLLOW_UP_ONLY_CATALOGUE) {
@@ -120,26 +117,24 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
         buildConversationalLayerInput(replyPlan),
       );
       const objective = selectConversationalObjective(replyPlan);
+      const expected = expectedActivatedBaselineReply(replyPlan);
 
       expect(replyPlan.acknowledgements.length, entry.id).toBe(0);
       expect(replyPlan.followUpQuestion, entry.id).toBe(entry.wording);
       expect(deterministic, entry.id).toBe(entry.wording);
-      expect(baseline, `${entry.id} / baseline`).toBe(entry.wording);
-      expect(production, `${entry.id} / production`).toBe(entry.wording);
-      expect(layer.wording, `${entry.id} / layer`).toBe(entry.wording);
-      expect(baseline, `${entry.id} / byte-identical`).toBe(deterministic);
-      expect(production, `${entry.id} / production identical`).toBe(
-        deterministic,
-      );
+      expect(baseline, `${entry.id} / baseline`).toBe(expected);
+      expect(production, `${entry.id} / production`).toBe(expected);
+      expect(layer.wording, `${entry.id} / layer`).toBe(expected);
+      expect(baseline.endsWith(entry.wording), entry.id).toBe(true);
+      expect(
+        baseline.slice(baseline.length - entry.wording.length),
+        `${entry.id} / question identity`,
+      ).toBe(entry.wording);
 
-      // No acknowledgement or filler introduced.
+      // No acknowledgement introduced.
       expect(baseline.includes('Great,'), entry.id).toBe(false);
       expect(baseline.includes('Perfect,'), entry.id).toBe(false);
       expect(baseline.includes('No problem'), entry.id).toBe(false);
-      expect(baseline.includes('Now,'), entry.id).toBe(false);
-      expect(baseline.includes('Next,'), entry.id).toBe(false);
-      expect(baseline.includes('Also,'), entry.id).toBe(false);
-      expect(baseline.includes('\n'), entry.id).toBe(false);
 
       expect(objective, entry.id).toEqual({
         id: entry.id,

@@ -154,10 +154,10 @@ describe('phase 14L — baseline comparison status', () => {
   });
 
   it('classifies successful matching baseline output as identical', () => {
-    // Unaffected shape (follow-up only) still matches deterministic parity.
+    // Unaffected shape (neutral continuation) still matches deterministic parity.
     const replyPlan = plan({
       acknowledgements: [],
-      followUpQuestion: FOLLOW_UPS.activities,
+      followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     });
     const before = structuredClone(replyPlan);
@@ -173,6 +173,30 @@ describe('phase 14L — baseline comparison status', () => {
       matchesDeterministic: true,
       status: 'identical',
     });
+    expect(replyPlan).toEqual(before);
+  });
+
+  it('classifies successful follow-up-only baseline divergence as different', () => {
+    const replyPlan = plan({
+      acknowledgements: [],
+      followUpQuestion: FOLLOW_UPS.activities,
+      messageInterpreted: true,
+    });
+    const before = structuredClone(replyPlan);
+    const deterministicExpected = renderConversationReplyPlan(replyPlan);
+    const baselineExpected = expectedActivatedBaselineReply(replyPlan);
+
+    const comparison = compareBaselineConversationalReplyPlan({
+      plan: replyPlan,
+    });
+
+    expect(comparison.deterministicReply).toBe(deterministicExpected);
+    expect(comparison.baselineReply).toBe(baselineExpected);
+    expect(comparison.baselineReply).toBe(
+      `For activities, ${FOLLOW_UPS.activities}`,
+    );
+    expect(comparison.matchesDeterministic).toBe(false);
+    expect(comparison.status).toBe('different');
     expect(replyPlan).toEqual(before);
   });
 

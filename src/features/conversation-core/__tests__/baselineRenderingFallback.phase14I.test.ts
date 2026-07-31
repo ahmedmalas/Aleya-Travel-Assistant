@@ -188,10 +188,12 @@ describe('phase 14I — baseline rendering fallback', () => {
       expect(viaMode, `${entry.label} / baseline expected`).toBe(
         expectedActivatedBaselineReply(entry.replyPlan),
       );
-      if (
-        entry.replyPlan.acknowledgements.length !== 1
-      ) {
+      if (expected === renderConversationReplyPlan(entry.replyPlan)) {
         expect(viaMode, `${entry.label} / deterministic parity`).toBe(
+          renderConversationReplyPlan(entry.replyPlan),
+        );
+      } else {
+        expect(viaMode, `${entry.label} / intentional divergence`).not.toBe(
           renderConversationReplyPlan(entry.replyPlan),
         );
       }

@@ -86,6 +86,8 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     expect(source.includes("from './transformBaselineAcknowledgement'")).toBe(
       true,
     );
+    expect(source.includes('renderBaselineFollowUpOnly')).toBe(true);
+    expect(source.includes("from './renderBaselineFollowUpOnly'")).toBe(true);
     expect(source.includes('generateConversationReply(')).toBe(false);
     expect(source.includes('processConversationTurn')).toBe(false);
     expect(source.includes('styleProfile')).toBe(true);
@@ -131,14 +133,16 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     );
   });
 
-  it('renders a specific follow-up only like the deterministic renderer', () => {
+  it('renders a specific follow-up only with the approved conversational lead-in', () => {
     const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.activities,
         messageInterpreted: true,
       }),
     );
-    expect(wording).toBe(FOLLOW_UPS.activities);
+    expect(wording).toBe(`For activities, ${FOLLOW_UPS.activities}`);
+    expect(wording).not.toBe(FOLLOW_UPS.activities);
+    expect(wording.endsWith(FOLLOW_UPS.activities)).toBe(true);
   });
 
   it('renders neutral continuation like the deterministic renderer', () => {

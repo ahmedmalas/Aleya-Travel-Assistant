@@ -384,4 +384,62 @@ Multiple acknowledgements and empty plans remain unchanged / deterministic.
 
 ### Unchanged by this phase
 
-No production files were modified. No follow-up wording transform was added.
+No production files were modified in Phase 15D. No follow-up wording transform
+was added in Phase 15D. Phase 15E later adds lead-ins for the eight supported
+follow-up-only categories (see below).
+
+---
+
+## Phase 15E record — follow-up-only conversational expression
+
+### Exact eligibility boundary
+
+```text
+plan.acknowledgements.length === 0
+AND plan.followUpQuestion !== null
+```
+
+Neutral continuation is excluded from transformation (exact-string pass-through).
+
+### Branch ownership
+
+```text
+1. acknowledgement-only → Phase 15B
+2. acknowledgement + follow-up → Phase 15C
+3. follow-up-only → Phase 15E (renderBaselineFollowUpOnly)
+4. all other plans → deterministic renderConversationReplyPlan
+```
+
+### Exact transformed outputs
+
+| Follow-up | Activated output |
+| --- | --- |
+| destination | `Let's start with the destination. Where would you like to travel?` |
+| origin | `First, Where will you be travelling from?` |
+| departureDate | `And When would you like to depart?` |
+| returnDate | `And When would you like to return?` |
+| flightsAdultCount | `For flights, How many adults will be travelling?` |
+| accommodationGuestCount | `For the stay, How many guests will be staying?` |
+| activities | `For activities, What kinds of activities are you interested in?` |
+| restaurants | `For dining, What type of dining are you looking for?` |
+
+### Follow-up preservation proof
+
+Each original follow-up question remains a byte-identical trailing substring.
+Lead-ins are selected by exact catalogue-string match only. No question
+wording, punctuation, capitalization, or selection changes.
+
+### Unknown-string behaviour
+
+Unknown follow-up strings that satisfy the plan shape pass through unchanged
+(deterministic question only; no lead-in).
+
+### Unchanged categories
+
+```text
+neutral continuation (pass-through)
+acknowledgement-only (Phase 15B)
+acknowledgement + follow-up (Phase 15C)
+multiple acknowledgements
+empty plans
+```

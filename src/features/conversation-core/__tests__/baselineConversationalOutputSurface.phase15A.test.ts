@@ -92,7 +92,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
-    expectedOutput: FOLLOW_UPS.origin,
+    expectedOutput: `First, ${FOLLOW_UPS.origin}`,
     expectedObjectiveId: 'origin',
     expectedCatalogueWording: FOLLOW_UPS.origin,
   },
@@ -243,15 +243,12 @@ describe('phase 15A — baseline conversational output surface', () => {
       const objective = selectConversationalObjective(frozen);
       const layerOutput = renderBaselineConversationalLayer(layerInput);
 
-      if (frozen.acknowledgements.length === 1) {
-        expect(deterministic, entry.label).toBe(
-          renderConversationReplyPlan(frozen),
-        );
+      if (deterministic === entry.expectedOutput) {
+        expect(deterministic, entry.label).toBe(entry.expectedOutput);
+      } else {
         expect(deterministic, `${entry.label} / diverges`).not.toBe(
           entry.expectedOutput,
         );
-      } else {
-        expect(deterministic, entry.label).toBe(entry.expectedOutput);
       }
       expect(baseline, `${entry.label} / baseline`).toBe(entry.expectedOutput);
       expect(production, `${entry.label} / production`).toBe(

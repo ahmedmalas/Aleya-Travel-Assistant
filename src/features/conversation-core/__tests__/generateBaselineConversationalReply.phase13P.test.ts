@@ -134,7 +134,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
           messageInterpreted: true,
         }),
       ).wording,
-    ).toBe(FOLLOW_UPS.activities);
+    ).toBe(`For activities, ${FOLLOW_UPS.activities}`);
 
     expect(
       expectWording(
