@@ -361,3 +361,35 @@ alter extractor / repair behaviour
 | 6 | Acknowledgement nulls do not create the wrong prompt; the follow-up gate does. |
 | 7 | Single deterministic fix layer: **reply-component composition** (`selectConversationReplyComponents`). |
 | 8 | Supported interpreted paths (ack + specific follow-up / ack + neutral bridge) must remain unchanged. |
+
+## Phase 18B Resolution
+
+Implemented in Phase 18B without erasing the pre-fix characterization above.
+
+```text
+File:
+src/features/conversation-core/selectConversationReplyComponents.ts
+
+Change:
+followUpQuestion = selectConversationFollowUpQuestion(state)
+(no longer gated on messageInterpreted)
+
+Preserved:
+messageInterpreted semantics
+acknowledgement selection
+follow-up priority / wording
+continuation selector
+assembly / renderer
+```
+
+Post-18B behaviour for incomplete + unsupported:
+
+```text
+messageInterpreted = false
+acknowledgement = null
+followUpQuestion = required-field question
+continuation = null
+rendered reply = Phase 15E follow-up-only activation of that question
+```
+
+Complete + unsupported still terminates on the existing activated neutral continuation.

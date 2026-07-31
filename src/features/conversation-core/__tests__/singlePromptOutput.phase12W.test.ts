@@ -276,16 +276,16 @@ describe('phase 12W — single-prompt output characterisation', () => {
       }
     }
 
-    // Uninterpreted turn: messageInterpreted false → continuation supplies the
-    // single prompt; acknowledgement absent; no second question.
+    // Uninterpreted turn on complete state: Phase 18B selects neutral follow-up
+    // directly; continuation stays null; still one prompt.
     const previous = completeCore({ adultCount: 2 });
     const unchanged = completeCore({ adultCount: 2 });
     const { components, plan, rendered } = planPipeline(previous, unchanged);
 
     expect(components.messageInterpreted).toBe(false);
     expect(components.acknowledgement).toBeNull();
-    expect(components.followUpQuestion).toBeNull();
-    expect(components.continuationPrompt).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(components.followUpQuestion).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(components.continuationPrompt).toBeNull();
     expect(plan.acknowledgements).toEqual([]);
     expect(plan.followUpQuestion).toBe(FOLLOW_UPS.neutralContinuation);
     expect(countQuestionMarks(rendered)).toBe(1);

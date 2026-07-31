@@ -11,7 +11,10 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   generateConversationReply,
 } from '../generateConversationReply';
-import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
+import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
+
+const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
@@ -213,7 +216,10 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
 
   it('returns the neutral fallback and messageInterpreted false when nothing changes', () => {
     const result = turn('Hello there', createState({ destination: 'Cairns' }));
-    expect(result.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    // Phase 18B: uninterpreted incomplete trip keeps required-field follow-up.
+    expect(result.reply).toBe(
+      renderBaselineFollowUpOnly({ followUpQuestion: FOLLOW_UPS.origin }),
+    );
     expect(result.trace.messageInterpreted).toBe(false);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);
     expect(result.reply).not.toMatch(/assembled|unavailable/i);

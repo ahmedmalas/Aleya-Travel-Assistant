@@ -35,6 +35,10 @@ export type SelectConversationReplyComponentsInput = {
  * selectConversationFollowUpQuestion, and selectConversationContinuationPrompt.
  * Does not classify changes, own wording/priority/suppression, construct the
  * final reply-plan object, render text, or mutate state.
+ * Phase 18B — follow-up selection always inspects final trip state; it is not
+ * gated on messageInterpreted. Uninterpreted turns still receive the required
+ * missing-field question (or the existing terminal neutral when complete).
+ * Acknowledgement and messageInterpreted remain classification-driven.
  */
 export function selectConversationReplyComponents(
   input: SelectConversationReplyComponentsInput,
@@ -45,9 +49,7 @@ export function selectConversationReplyComponents(
   const selected = selectConversationAcknowledgement(state, classification);
   const acknowledgement = selected?.text ?? null;
   const acknowledgementEvent = selected?.event ?? null;
-  const followUpQuestion = messageInterpreted
-    ? selectConversationFollowUpQuestion(state)
-    : null;
+  const followUpQuestion = selectConversationFollowUpQuestion(state);
   const continuationPrompt = selectConversationContinuationPrompt({
     followUpQuestion,
   });

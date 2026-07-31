@@ -12,6 +12,7 @@ import {
   type ConversationCoreState,
   type ConversationStateUpdate,
 } from '../index';
+import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
 import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { selectConversationContinuationPrompt } from '../selectConversationContinuationPrompt';
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
@@ -20,8 +21,15 @@ import { selectConversationReplyComponents } from '../selectConversationReplyCom
 
 /**
  * Phase 18A — unsupported input selection audit.
- * Characterizes current behaviour, including the defective neutral
- * continuation when required fields are still missing. Production unchanged.
+ *
+ * Pre-18B observed defect (characterized here, fixed in 18B):
+ *   messageInterpreted === false gated follow-up to null, so incomplete trips
+ *   received activated neutral continuation instead of the required-field
+ *   question.
+ *
+ * Post-18B required behaviour (asserted below after the 18B fix):
+ *   follow-up selection always inspects final state; uninterpreted incomplete
+ *   turns keep the specific required-field follow-up and no acknowledgement.
  */
 
 const ROOT = process.cwd();
@@ -62,7 +70,7 @@ type AuditTrace = {
   acknowledgementEvent: unknown;
   /** Follow-up if selectConversationFollowUpQuestion(final) is called. */
   followUpIfCalled: string | null;
-  /** Follow-up after messageInterpreted gating in reply components. */
+  /** Follow-up selected by reply components. */
   followUpQuestion: string | null;
   continuation: string | null;
   assembledPlanFollowUp: string | null;
@@ -82,6 +90,10 @@ function createState(
     turnCount: 0,
     ...overrides,
   };
+}
+
+function activatedFollowUp(followUp: string): string {
+  return renderBaselineFollowUpOnly({ followUpQuestion: followUp });
 }
 
 function trace(
@@ -139,7 +151,11 @@ function trace(
   };
 }
 
-function assertUnsupportedNeutralDefect(t: AuditTrace, expectedFollowUp: string) {
+/** Post-18B: uninterpreted incomplete turns keep the required-field follow-up. */
+function assertUnsupportedKeepsRequiredFollowUp(
+  t: AuditTrace,
+  expectedFollowUp: string,
+) {
   expect(t.extractedPatch).toEqual({});
   expect(t.classificationUpdated).toEqual([]);
   expect(t.classificationNewlyPopulated).toEqual([]);
@@ -149,21 +165,28 @@ function assertUnsupportedNeutralDefect(t: AuditTrace, expectedFollowUp: string)
   expect(t.acknowledgement).toBeNull();
   expect(t.acknowledgementEvent).toBeNull();
   expect(t.followUpIfCalled).toBe(expectedFollowUp);
-  expect(t.followUpQuestion).toBeNull();
-  expect(t.continuation).toBe(NEUTRAL);
-  expect(t.assembledPlanFollowUp).toBe(NEUTRAL);
+  expect(t.followUpQuestion).toBe(expectedFollowUp);
+  expect(t.continuation).toBeNull();
+  expect(t.assembledPlanFollowUp).toBe(expectedFollowUp);
   expect(t.assembledPlanMessageInterpreted).toBe(false);
-  expect(t.exactFinalReply).toBe(ACTIVATED_NEUTRAL);
+  expect(t.exactFinalReply).toBe(activatedFollowUp(expectedFollowUp));
 }
 
 describe('Phase 18A — unsupported input selection audit', () => {
-  it('locks the messageInterpreted → follow-up gate in reply-component selection', () => {
+  it('records pre-18B root-cause evidence and post-18B gate removal', () => {
     const source = readFileSync(
       resolve(CORE_SRC, 'selectConversationReplyComponents.ts'),
       'utf8',
     );
-    expect(source).toMatch(
-      /const followUpQuestion = messageInterpreted\s*\? selectConversationFollowUpQuestion\(state\)\s*: null;/,
+    // Historical defect (pre-18B): follow-up was gated on messageInterpreted.
+    expect(source).toContain('Phase 18B');
+    expect(source).toMatch(/not\s*\n\s*\*\s*gated on messageInterpreted/);
+    // Post-18B required behaviour: always select follow-up from final state.
+    expect(source).toContain(
+      'const followUpQuestion = selectConversationFollowUpQuestion(state);',
+    );
+    expect(source).not.toMatch(
+      /const followUpQuestion = messageInterpreted\s*\?/,
     );
     expect(source).toContain('selectConversationContinuationPrompt');
 
@@ -192,7 +215,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
     };
     for (const message of UNSUPPORTED_FAMILIES) {
       const t = trace(message, seed);
-      assertUnsupportedNeutralDefect(t, FOLLOW_UPS.origin);
+      assertUnsupportedKeepsRequiredFollowUp(t, FOLLOW_UPS.origin);
       expect(t.final.destination, message).toBe('Cairns');
       expect(t.final.origin, message).toBeNull();
     }
@@ -300,7 +323,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
 
     for (const entry of cases) {
       const t = trace(message, entry.seed);
-      assertUnsupportedNeutralDefect(t, entry.expectedFollowUpIfCalled);
+      assertUnsupportedKeepsRequiredFollowUp(t, entry.expectedFollowUpIfCalled);
     }
   });
 
@@ -316,8 +339,8 @@ describe('Phase 18A — unsupported input selection audit', () => {
     });
     expect(complete.followUpIfCalled).toBe(NEUTRAL);
     expect(complete.messageInterpreted).toBe(false);
-    expect(complete.followUpQuestion).toBeNull();
-    expect(complete.continuation).toBe(NEUTRAL);
+    expect(complete.followUpQuestion).toBe(NEUTRAL);
+    expect(complete.continuation).toBeNull();
     expect(complete.assembledPlanFollowUp).toBe(NEUTRAL);
     expect(complete.exactFinalReply).toBe(ACTIVATED_NEUTRAL);
 
@@ -341,9 +364,9 @@ describe('Phase 18A — unsupported input selection audit', () => {
       messageInterpreted: false,
       acknowledgement: null,
       acknowledgementEvent: null,
-      followUpQuestion: null,
-      continuation: NEUTRAL,
-      assembledPlanFollowUp: NEUTRAL,
+      followUpQuestion: FOLLOW_UPS.origin,
+      continuation: null,
+      assembledPlanFollowUp: FOLLOW_UPS.origin,
     });
 
     const supported = trace('go to Cairns from Sydney', {});
@@ -374,19 +397,17 @@ describe('Phase 18A — unsupported input selection audit', () => {
       state: next,
       classification,
     });
-    expect(components.followUpQuestion).toBeNull();
-    expect(components.continuationPrompt).toBe(NEUTRAL);
+    // Post-18B: follow-up is retained; continuation suppressed.
+    expect(components.followUpQuestion).toBe(FOLLOW_UPS.origin);
+    expect(components.continuationPrompt).toBeNull();
     expect(
       selectConversationContinuationPrompt({
         followUpQuestion: followUpIfCalled,
       }),
     ).toBeNull();
-    expect(
-      selectConversationContinuationPrompt({ followUpQuestion: null }),
-    ).toBe(NEUTRAL);
 
     const plan = assembleConversationReplyPlan(components);
-    expect(plan.followUpQuestion).toBe(NEUTRAL);
+    expect(plan.followUpQuestion).toBe(FOLLOW_UPS.origin);
     expect(plan.messageInterpreted).toBe(false);
     expect(plan.acknowledgements).toEqual([]);
   });
@@ -395,17 +416,20 @@ describe('Phase 18A — unsupported input selection audit', () => {
     const matrix: Array<{
       label: string;
       seed: Partial<ConversationCoreState>;
-      expectedFollowUpIfCalled: string;
+      expectedFollowUp: string;
+      expectedReply: string;
     }> = [
       {
         label: 'Missing destination + unsupported input',
         seed: {},
-        expectedFollowUpIfCalled: FOLLOW_UPS.destination,
+        expectedFollowUp: FOLLOW_UPS.destination,
+        expectedReply: activatedFollowUp(FOLLOW_UPS.destination),
       },
       {
         label: 'Missing origin + unsupported input',
         seed: { destination: 'Cairns', flightsRequested: true },
-        expectedFollowUpIfCalled: FOLLOW_UPS.origin,
+        expectedFollowUp: FOLLOW_UPS.origin,
+        expectedReply: activatedFollowUp(FOLLOW_UPS.origin),
       },
       {
         label: 'Missing departure date + unsupported input',
@@ -414,7 +438,8 @@ describe('Phase 18A — unsupported input selection audit', () => {
           origin: 'Sydney',
           flightsRequested: true,
         },
-        expectedFollowUpIfCalled: FOLLOW_UPS.departureDate,
+        expectedFollowUp: FOLLOW_UPS.departureDate,
+        expectedReply: activatedFollowUp(FOLLOW_UPS.departureDate),
       },
       {
         label: 'Missing return date + unsupported input',
@@ -424,7 +449,8 @@ describe('Phase 18A — unsupported input selection audit', () => {
           departureDate: '2026-08-28',
           flightsRequested: true,
         },
-        expectedFollowUpIfCalled: FOLLOW_UPS.returnDate,
+        expectedFollowUp: FOLLOW_UPS.returnDate,
+        expectedReply: activatedFollowUp(FOLLOW_UPS.returnDate),
       },
       {
         label: 'Missing adult count + unsupported input',
@@ -435,7 +461,8 @@ describe('Phase 18A — unsupported input selection audit', () => {
           returnDate: '2026-09-04',
           flightsRequested: true,
         },
-        expectedFollowUpIfCalled: FOLLOW_UPS.flightsAdultCount,
+        expectedFollowUp: FOLLOW_UPS.flightsAdultCount,
+        expectedReply: activatedFollowUp(FOLLOW_UPS.flightsAdultCount),
       },
       {
         label: 'Complete trip + unsupported input',
@@ -447,25 +474,20 @@ describe('Phase 18A — unsupported input selection audit', () => {
           adultCount: 2,
           flightsRequested: true,
         },
-        expectedFollowUpIfCalled: NEUTRAL,
+        expectedFollowUp: NEUTRAL,
+        expectedReply: ACTIVATED_NEUTRAL,
       },
     ];
 
     for (const entry of matrix) {
       const t = trace("I'm not sure yet", entry.seed);
-      expect(t.followUpIfCalled, entry.label).toBe(
-        entry.expectedFollowUpIfCalled,
-      );
       expect(t.acknowledgement, entry.label).toBeNull();
-      expect(t.followUpQuestion, entry.label).toBeNull();
-      expect(t.continuation, entry.label).toBe(NEUTRAL);
-      expect(t.assembledPlanFollowUp, entry.label).toBe(NEUTRAL);
-      expect(t.exactFinalReply, entry.label).toBe(ACTIVATED_NEUTRAL);
-      // Activated neutral only: no acknowledgement and no required-field prompt.
-      if (entry.expectedFollowUpIfCalled !== NEUTRAL) {
-        expect(t.exactFinalReply, entry.label).not.toContain(
-          entry.expectedFollowUpIfCalled,
-        );
+      expect(t.followUpQuestion, entry.label).toBe(entry.expectedFollowUp);
+      expect(t.assembledPlanFollowUp, entry.label).toBe(entry.expectedFollowUp);
+      expect(t.exactFinalReply, entry.label).toBe(entry.expectedReply);
+      if (entry.expectedFollowUp !== NEUTRAL) {
+        expect(t.continuation, entry.label).toBeNull();
+        expect(t.exactFinalReply, entry.label).not.toContain(NEUTRAL);
       }
     }
   });
@@ -511,13 +533,15 @@ describe('Phase 18A — unsupported input selection audit', () => {
       expect(t.extractedPatch, entry.label).toEqual(entry.expectedPatch);
       expect(t.messageInterpreted, entry.label).toBe(false);
       expect(t.followUpIfCalled, entry.label).toBe(FOLLOW_UPS.origin);
-      expect(t.followUpQuestion, entry.label).toBeNull();
-      expect(t.continuation, entry.label).toBe(NEUTRAL);
-      expect(t.exactFinalReply, entry.label).toBe(ACTIVATED_NEUTRAL);
+      expect(t.followUpQuestion, entry.label).toBe(FOLLOW_UPS.origin);
+      expect(t.continuation, entry.label).toBeNull();
+      expect(t.exactFinalReply, entry.label).toBe(
+        activatedFollowUp(FOLLOW_UPS.origin),
+      );
     }
   });
 
-  it('shows the defect after a prior turn just set a field, and when prior state is unchanged', () => {
+  it('shows required follow-up after a prior turn just set a field, and when prior state is unchanged', () => {
     const first = processConversationTurn({
       message: 'go to Cairns',
       state: createState(),
@@ -553,9 +577,9 @@ describe('Phase 18A — unsupported input selection audit', () => {
     expect(selectConversationFollowUpQuestion(second.state)).toBe(
       FOLLOW_UPS.origin,
     );
-    expect(components.followUpQuestion).toBeNull();
-    expect(components.continuationPrompt).toBe(NEUTRAL);
-    expect(second.reply).toBe(ACTIVATED_NEUTRAL);
+    expect(components.followUpQuestion).toBe(FOLLOW_UPS.origin);
+    expect(components.continuationPrompt).toBeNull();
+    expect(second.reply).toBe(activatedFollowUp(FOLLOW_UPS.origin));
 
     const unchangedPrior = trace("I'm not sure yet", {
       destination: 'Cairns',
@@ -565,10 +589,12 @@ describe('Phase 18A — unsupported input selection audit', () => {
       destination: 'Cairns',
       origin: null,
     });
-    expect(unchangedPrior.exactFinalReply).toBe(ACTIVATED_NEUTRAL);
+    expect(unchangedPrior.exactFinalReply).toBe(
+      activatedFollowUp(FOLLOW_UPS.origin),
+    );
   });
 
-  it('confirms the renderer preserves the already-incorrect assembled plan', () => {
+  it('confirms the renderer preserves the assembled required-field follow-up plan', () => {
     const previous = createState({
       destination: 'Cairns',
       flightsRequested: true,
@@ -581,7 +607,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
     expect(plan).toEqual({
       acknowledgements: [],
       acknowledgementEvent: null,
-      followUpQuestion: NEUTRAL,
+      followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: false,
     });
     const result = processConversationTurn({
@@ -592,7 +618,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
       userMessageAt: new Date('2026-07-29T00:00:00.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:01.000Z'),
     });
-    expect(result.reply).toBe(ACTIVATED_NEUTRAL);
-    expect(result.reply).toContain(NEUTRAL);
+    expect(result.reply).toBe(activatedFollowUp(FOLLOW_UPS.origin));
+    expect(result.reply).toContain(FOLLOW_UPS.origin);
   });
 });

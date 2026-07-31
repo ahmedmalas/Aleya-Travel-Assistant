@@ -165,15 +165,26 @@ describe('phase 10N — deterministic reply-component selection boundary', () =>
       createState({ destination: 'Cairns' }),
       createState({ destination: 'Cairns' }),
     );
-    expect(unchanged.followUpQuestion).toBeNull();
+    // Phase 18B — uninterpreted turns still select follow-up from final state.
+    expect(unchanged.followUpQuestion).toBe(
+      'Where will you be travelling from?',
+    );
     expect(unchanged.continuationPrompt).toBe(
       selectConversationContinuationPrompt({
         followUpQuestion: unchanged.followUpQuestion,
       }),
     );
-    expect(unchanged.continuationPrompt).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(unchanged.continuationPrompt).toBeNull();
     expect(unchanged.messageInterpreted).toBe(false);
     expect(unchanged.acknowledgement).toBeNull();
+
+    const completeUnchanged = componentsFor(
+      completeCore({ adultCount: 2 }),
+      completeCore({ adultCount: 2 }),
+    );
+    expect(completeUnchanged.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(completeUnchanged.continuationPrompt).toBeNull();
+    expect(completeUnchanged.messageInterpreted).toBe(false);
   });
 
   it('preserves existing follow-up priority and adultCount suppression', () => {

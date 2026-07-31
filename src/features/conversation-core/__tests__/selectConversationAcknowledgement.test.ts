@@ -16,6 +16,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationAcknowledgement } from '../selectConversationAcknowledgement';
+import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
@@ -1005,7 +1006,10 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         expect(acknowledgement).toBeNull();
       }
       if (!classification.hasInterpretedChange) {
-        expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+        // Phase 18B: follow-up always from final state, not gated on interpretation.
+        expect(plan.followUpQuestion).toBe(
+          selectConversationFollowUpQuestion(result.state),
+        );
       }
     }
   });

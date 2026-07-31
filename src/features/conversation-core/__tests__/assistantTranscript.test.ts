@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import {
   createInitialConversationCoreState,
   processConversationTurn,
   type ConversationCoreState,
 } from '../index';
+import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
+
+const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
 const USER_AT = new Date('2026-07-29T00:00:00.000Z');
 const ASSISTANT_AT = new Date('2026-07-29T00:00:01.000Z');
@@ -105,8 +109,9 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
       message: result.reply,
       timestamp: '2026-07-29T00:00:01.000Z',
     });
+    // Phase 18B: uninterpreted incomplete trip keeps required-field follow-up.
     expect(result.reply).toBe(
-      "There's just one more thing I'd like to know. What else should I know about your trip?",
+      renderBaselineFollowUpOnly({ followUpQuestion: FOLLOW_UPS.destination }),
     );
   });
 

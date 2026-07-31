@@ -582,15 +582,19 @@ describe('Phase 16K — conversational quality closure audit', () => {
   });
 
   it('Journey F — generic, follow-up-only, neutral-only, and fallback paths unchanged', () => {
-    // Follow-up only / neutral only: unsupported after destination set.
+    // Phase 18B: unsupported after destination set keeps the origin follow-up
+    // (15E) instead of skipping to activated neutral (pre-18B 15J defect).
     const unsupported = runJourney([
       { message: 'go to Cairns' },
       { message: 'asdfgh nonsense' },
     ]);
     expect(unsupported[1]!.deterministicAcknowledgement).toBeNull();
     expect(unsupported[1]!.acknowledgementEvent).toBeNull();
-    expect(unsupported[1]!.owner).toBe('15J');
-    expect(unsupported[1]!.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(unsupported[1]!.owner).toBe('15E');
+    expect(unsupported[1]!.followUpOrContinuation).toBe(FOLLOW_UPS.origin);
+    expect(unsupported[1]!.reply).toBe(
+      `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
+    );
 
     // Generic catalogue transform still maps Perfect. → Perfect, got it.
     expect(
@@ -760,6 +764,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
     expect(hiking[1]!.followUpOrContinuation).toBe(FOLLOW_UPS.activities);
 
     // Seafood preference ignored — no seafood wording; restaurants flag remains.
+    // Phase 18B: uninterpreted preference text still receives the restaurants
+    // follow-up (15F) rather than activated neutral.
     const seafood = runJourney(
       [{ message: 'looking for seafood' }],
       {
@@ -773,7 +779,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
     );
     expect(seafood[0]!.reply).not.toMatch(/seafood/i);
     expect(seafood[0]!.restaurantsRequested).toBe(true);
-    expect(seafood[0]!.owner).toBe('15J');
+    expect(seafood[0]!.owner).toBe('15F');
+    expect(seafood[0]!.followUpOrContinuation).toBe(FOLLOW_UPS.restaurants);
 
     // Phase 17I: origin capture is clean; departureDate is still missed on
     // this non-repair multi-fact shape (historical departure gap preserved).

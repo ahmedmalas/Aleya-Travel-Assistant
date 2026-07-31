@@ -304,9 +304,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
       const result = turn(entry.message, entry.state, entry.stateUpdate);
       const plan = planFor(entry.state, result.state);
       expect(plan.followUpQuestion, entry.message).toBe(
-        plan.acknowledgements.length === 0
-          ? NEUTRAL_TRIP_FALLBACK_REPLY
-          : selectConversationFollowUpQuestion(result.state),
+        selectConversationFollowUpQuestion(result.state),
       );
       expect(expectedActivatedBaselineReply(plan), entry.message).toBe(
         result.reply,

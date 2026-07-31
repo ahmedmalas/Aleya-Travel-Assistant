@@ -143,9 +143,13 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       /acknowledgements:\s*input\.acknowledgement === null \? \[\] : \[input\.acknowledgement\]/,
     );
 
-    // Follow-up only when interpreted; otherwise null.
-    expect(components).toMatch(
-      /const followUpQuestion = messageInterpreted\s*\?\s*selectConversationFollowUpQuestion\(state\)\s*:\s*null/,
+    // Phase 18B — follow-up always selected from final state; not gated on messageInterpreted.
+    expect(components).toContain('Phase 18B');
+    expect(components).toContain(
+      'const followUpQuestion = selectConversationFollowUpQuestion(state);',
+    );
+    expect(components).not.toMatch(
+      /const followUpQuestion = messageInterpreted\s*\?/,
     );
 
     // Continuation fills when follow-up is null.
@@ -466,9 +470,14 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       true,
     );
 
+    // Phase 18B: uninterpreted incomplete state keeps the destination follow-up.
     const uninterpreted = turn('hello there', createState());
     expect(uninterpreted.trace.messageInterpreted).toBe(false);
-    expect(uninterpreted.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(uninterpreted.reply).toBe(
+      renderBaselineFollowUpOnly({
+        followUpQuestion: FOLLOW_UPS.destination,
+      }),
+    );
   });
 
   it('proves Phase 14I deterministic fallback remains reachable on baseline failure', () => {

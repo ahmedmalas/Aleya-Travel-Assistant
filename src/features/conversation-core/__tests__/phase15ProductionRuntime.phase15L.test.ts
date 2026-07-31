@@ -466,18 +466,26 @@ describe('phase 15L — production runtime conversational output', () => {
       message: string;
       previous: ConversationCoreState;
       interpreted: boolean;
+      followUp: string;
+      expectedReply: string;
     }> = [
       {
         label: 'fully satisfied uninterpreted',
         message: 'thanks',
         previous: completeCore({ flightsRequested: true, adultCount: 2 }),
         interpreted: false,
+        followUp: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
+        expectedReply: ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
       },
       {
         label: 'unsupported input on empty state',
         message: 'hello there',
         previous: createState(),
         interpreted: false,
+        followUp: FOLLOW_UPS.destination,
+        expectedReply: renderBaselineFollowUpOnly({
+          followUpQuestion: FOLLOW_UPS.destination,
+        }),
       },
     ];
 
@@ -488,9 +496,6 @@ describe('phase 15L — production runtime conversational output', () => {
         previous,
         result,
       );
-      const expected = renderBaselineNeutralContinuation({
-        followUpQuestion: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
-      });
 
       expect(result.trace.messageInterpreted, journey.label).toBe(
         journey.interpreted,
@@ -499,25 +504,20 @@ describe('phase 15L — production runtime conversational output', () => {
         journey.interpreted,
       );
       expect(components.acknowledgement, journey.label).toBeNull();
-      expect(components.followUpQuestion, journey.label).toBeNull();
-      expect(components.continuationPrompt, journey.label).toBe(
-        CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
-      );
+      // Phase 18B: follow-up always selected; continuation null when follow-up exists.
+      expect(components.followUpQuestion, journey.label).toBe(journey.followUp);
+      expect(components.continuationPrompt, journey.label).toBeNull();
       expect(plan.acknowledgements, journey.label).toEqual([]);
-      expect(plan.followUpQuestion, journey.label).toBe(
-        CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
+      expect(plan.followUpQuestion, journey.label).toBe(journey.followUp);
+      expect(classifyOwner(plan), journey.label).toBe(
+        journey.followUp === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
+          ? '15J'
+          : '15F',
       );
-      expect(classifyOwner(plan), journey.label).toBe('15J');
-      expect(result.reply, journey.label).toBe(expected);
-      expect(result.reply, journey.label).toBe(
-        ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
-      );
+      expect(result.reply, journey.label).toBe(journey.expectedReply);
+      expect(result.reply.endsWith(journey.followUp), journey.label).toBe(true);
       expect(
-        result.reply.endsWith(CANONICAL_NEUTRAL_CONTINUATION_PROMPT),
-        journey.label,
-      ).toBe(true);
-      expect(
-        countOccurrences(result.reply, CANONICAL_NEUTRAL_CONTINUATION_PROMPT),
+        countOccurrences(result.reply, journey.followUp),
         journey.label,
       ).toBe(1);
       assertCleanActivatedReply(result.reply);

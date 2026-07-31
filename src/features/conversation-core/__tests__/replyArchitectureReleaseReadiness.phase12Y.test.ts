@@ -250,13 +250,13 @@ ${FOLLOW_UPS.origin}`,
       'completed→neutral',
     );
 
-    // Uninterpreted input → continuation
+    // Uninterpreted input → follow-up from final state (Phase 18B)
     const uninterpreted = pipeline(completeCore(), completeCore());
     expect(uninterpreted.components.messageInterpreted).toBe(false);
-    expect(uninterpreted.components.followUpQuestion).toBeNull();
-    expect(uninterpreted.components.continuationPrompt).toBe(
+    expect(uninterpreted.components.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );
+    expect(uninterpreted.components.continuationPrompt).toBeNull();
     expect(uninterpreted.plan.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );

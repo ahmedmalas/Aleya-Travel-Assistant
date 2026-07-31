@@ -211,9 +211,8 @@ describe('phase 10M — deterministic reply-plan assembly boundary', () => {
       );
       const acknowledgement = selected?.text ?? null;
       const acknowledgementEvent = selected?.event ?? null;
-      const followUpQuestion = messageInterpreted
-        ? selectConversationFollowUpQuestion(result.state)
-        : null;
+      // Phase 18B — follow-up selection is not gated on messageInterpreted.
+      const followUpQuestion = selectConversationFollowUpQuestion(result.state);
       const continuationPrompt = selectConversationContinuationPrompt({
         followUpQuestion,
       });

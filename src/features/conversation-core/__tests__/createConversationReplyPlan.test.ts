@@ -7,6 +7,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
@@ -16,6 +17,8 @@ import {
   generateConversationReply,
   renderConversationReplyPlan,
 } from '../generateConversationReply';
+
+const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
 const ROOT = process.cwd();
 const PLAN_SOURCE = resolve(
@@ -408,9 +411,10 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     const state = createState({ destination: 'Cairns' });
     const plan = planFor(previous, state);
     expect(plan.acknowledgements).toEqual([]);
-    expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    // Phase 18B: follow-up no longer gated on messageInterpreted.
+    expect(plan.followUpQuestion).toBe(FOLLOW_UPS.origin);
     expect(plan.messageInterpreted).toBe(false);
-    expect(renderConversationReplyPlan(plan)).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(renderConversationReplyPlan(plan)).toBe(FOLLOW_UPS.origin);
   });
 
   it('plans one acknowledgement for multiple current-turn changes with capability precedence', () => {

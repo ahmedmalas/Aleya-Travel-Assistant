@@ -234,10 +234,11 @@ describe('phase 12X — human-conversation readiness characterisation', () => {
       completeCore({ adultCount: 2 }),
     );
     expect(uninterpreted.components.messageInterpreted).toBe(false);
-    expect(uninterpreted.components.followUpQuestion).toBeNull();
-    expect(uninterpreted.components.continuationPrompt).toBe(
+    // Phase 18B: complete uninterpreted → follow-up NEUTRAL; continuation null.
+    expect(uninterpreted.components.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );
+    expect(uninterpreted.components.continuationPrompt).toBeNull();
     expect(uninterpreted.plan.messageInterpreted).toBe(false);
     expect(uninterpreted.plan.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
@@ -277,12 +278,14 @@ describe('phase 12X — human-conversation readiness characterisation', () => {
     expect(neutral.plan.followUpQuestion).toBe(FOLLOW_UPS.neutralContinuation);
     expect(neutral.rendered).toContain(FOLLOW_UPS.neutralContinuation);
 
-    // 4) uninterpreted message with continuation
+    // 4) uninterpreted message on complete state
     const uninterpreted = pipeline(completeCore(), completeCore());
     expect(uninterpreted.components.messageInterpreted).toBe(false);
-    expect(uninterpreted.components.continuationPrompt).toBe(
+    // Phase 18B: follow-up selected directly; continuation stays null.
+    expect(uninterpreted.components.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );
+    expect(uninterpreted.components.continuationPrompt).toBeNull();
     expect(uninterpreted.plan.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );

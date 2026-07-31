@@ -10,11 +10,14 @@ import {
   classifyConversationStateChange,
   fieldValueChanged,
 } from '../classifyConversationStateChange';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   generateConversationReply,
 } from '../generateConversationReply';
-import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
+import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
+
+const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
 const ROOT = process.cwd();
 const CLASSIFY_SOURCE = resolve(
@@ -234,8 +237,9 @@ describe('phase 10F — deterministic change classification', () => {
       "Great, I've added flights, accommodation and activities to your trip. What kinds of activities are you interested in?",
     );
 
+    // Phase 18B: uninterpreted incomplete trip keeps required-field follow-up.
     expect(turn('Hello there', createState({ destination: 'Cairns' })).reply).toBe(
-      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      renderBaselineFollowUpOnly({ followUpQuestion: FOLLOW_UPS.origin }),
     );
 
     expect(

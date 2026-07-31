@@ -669,11 +669,14 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     );
     expect(specific[0]!.reply.endsWith(FOLLOW_UPS.origin)).toBe(true);
 
-    const neutralOnly = runJourney([
+    const followUpOnlyUnsupported = runJourney([
       { message: 'go to Cairns' },
       { message: 'what is the weather like' },
     ]);
-    expect(neutralOnly[1]!.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
-    expect(neutralOnly[1]!.owner).toBe('15J');
+    // Phase 18B: unsupported incomplete turns keep the required-field follow-up.
+    expect(followUpOnlyUnsupported[1]!.reply).toBe(
+      `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
+    );
+    expect(followUpOnlyUnsupported[1]!.owner).toBe('15F');
   });
 });

@@ -142,15 +142,17 @@ describe('phase 10L — deterministic continuation prompt boundary', () => {
     const previous = createState({ destination: 'Cairns' });
     const state = createState({ destination: 'Cairns' });
     const plan = planFor(previous, state);
-    const continuation = selectConversationContinuationPrompt({
-      followUpQuestion: null,
-    });
 
     expect(plan.acknowledgements).toEqual([]);
     expect(plan.messageInterpreted).toBe(false);
-    expect(plan.followUpQuestion).toBe(continuation);
-    expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(renderConversationReplyPlan(plan)).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    // Phase 18B: follow-up selected from state; continuation stays null.
+    expect(plan.followUpQuestion).toBe(
+      selectConversationFollowUpQuestion(state),
+    );
+    expect(plan.followUpQuestion).toBe('Where will you be travelling from?');
+    expect(renderConversationReplyPlan(plan)).toBe(
+      'Where will you be travelling from?',
+    );
   });
 
   it('keeps reply-plan output and rendered replies identical', () => {
@@ -190,9 +192,7 @@ describe('phase 10L — deterministic continuation prompt boundary', () => {
         entry.state,
         result.state,
       );
-      const followUpQuestion = classification.hasInterpretedChange
-        ? selectConversationFollowUpQuestion(result.state)
-        : null;
+      const followUpQuestion = selectConversationFollowUpQuestion(result.state);
       const continuationPrompt = selectConversationContinuationPrompt({
         followUpQuestion,
       });

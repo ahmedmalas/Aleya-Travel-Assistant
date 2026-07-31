@@ -16,6 +16,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { selectConversationMessageInterpreted } from '../selectConversationMessageInterpreted';
+import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 const ROOT = process.cwd();
@@ -266,7 +267,10 @@ describe('phase 10J — deterministic interpretation selection boundary', () => 
 
       if (!messageInterpreted) {
         expect(plan.acknowledgements).toEqual([]);
-        expect(plan.followUpQuestion).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+        // Phase 18B: follow-up from final state (required-field or neutral when complete).
+        expect(plan.followUpQuestion).toBe(
+          selectConversationFollowUpQuestion(result.state),
+        );
       }
     }
   });

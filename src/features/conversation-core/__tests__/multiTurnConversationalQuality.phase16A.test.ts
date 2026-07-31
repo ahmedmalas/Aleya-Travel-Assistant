@@ -454,11 +454,12 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added restaurants to your trip. What type of dining are you looking for?",
-      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      // Phase 18B: uninterpreted preference keeps the restaurants follow-up.
+      `Now for dining. ${FOLLOW_UPS.restaurants}`,
     ]);
     // Dining preference text is not stored; restaurants flag remains true.
     expect(turns[5]!.final.restaurantsRequested).toBe(true);
-    expect(turns[5]!.owner).toBe('15J');
+    expect(turns[5]!.owner).toBe('15F');
   });
 
   it('characterises unsupported message mid-journey', () => {
@@ -469,12 +470,13 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      // Phase 18B: incomplete trip keeps the origin follow-up.
+      `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
       "We'll start from Sydney. When would you like to depart?",
     ]);
     expect(turns[1]!.final.destination).toBe('Cairns');
     expect(turns[1]!.final.origin).toBeNull();
-    expect(turns[1]!.owner).toBe('15J');
+    expect(turns[1]!.owner).toBe('15F');
   });
 
   it('characterises correction of a previous statement', () => {
@@ -656,7 +658,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: 'go to Cairns' },
       { message: 'what is the weather like' },
     ]);
-    expect(unsupported[1]!.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    // Phase 18B: incomplete trip keeps the origin follow-up on unsupported input.
+    expect(unsupported[1]!.reply).toBe(
+      `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
+    );
     expect(unsupported[1]!.final.origin).toBeNull();
   });
 });
