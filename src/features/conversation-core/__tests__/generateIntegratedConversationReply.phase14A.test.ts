@@ -73,16 +73,16 @@ describe('phase 14A — generateIntegratedConversationReply', () => {
         'generateIntegratedConversationReply',
       ),
     ).toBe(false);
+    // Phase 14B routes processTurn through this seam; the helper itself still
+    // delegates only to generateConversationReply with no conversational layer.
     expect(
       readFileSync(PROCESS_TURN_SOURCE, 'utf8').includes(
         'generateIntegratedConversationReply',
       ),
-    ).toBe(false);
-    expect(
-      readFileSync(PROCESS_TURN_SOURCE, 'utf8').includes(
-        'generateConversationReply',
-      ),
     ).toBe(true);
+    expect(
+      readFileSync(PROCESS_TURN_SOURCE, 'utf8'),
+    ).not.toMatch(/generateConversationReply\(/);
   });
 
   it('delegates directly to generateConversationReply with exact output parity', () => {

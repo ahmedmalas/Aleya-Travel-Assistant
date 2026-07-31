@@ -1,8 +1,6 @@
 import { applyConversationStateUpdate } from './applyConversationStateUpdate';
-import {
-  generateConversationReply,
-  hasSupportedTravelFieldChange,
-} from './generateConversationReply';
+import { generateIntegratedConversationReply } from './generateIntegratedConversationReply';
+import { hasSupportedTravelFieldChange } from './generateConversationReply';
 import { hasConversationStateUpdateChanged } from './hasConversationStateUpdateChanged';
 import { transitionConversationStateFromExtraction } from './transitionConversationStateFromExtraction';
 import {
@@ -51,10 +49,11 @@ export type ProcessConversationTurnResult = {
  *
  * Phase 5I/10B: run the internal extraction transition, apply any explicit
  * injected ConversationStateUpdate (explicit input wins), generate a
- * deterministic reply from final travel state, append raw user + assistant
- * transcript entries, increment turnCount by one, set updatedAt from
- * assistantMessageAt, set status to active, and expose ageMs. Does not ask
- * next questions, call search/itinerary, or persist.
+ * deterministic reply from final travel state via
+ * generateIntegratedConversationReply (Phase 14B seam → generateConversationReply),
+ * append raw user + assistant transcript entries, increment turnCount by one,
+ * set updatedAt from assistantMessageAt, set status to active, and expose ageMs.
+ * Does not ask next questions, call search/itinerary, or persist.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
@@ -89,7 +88,7 @@ export function processConversationTurn(
     transcript: base.transcript,
   };
 
-  const reply = generateConversationReply({
+  const reply = generateIntegratedConversationReply({
     message: input.message,
     state: provisionalState,
     previousState: base,

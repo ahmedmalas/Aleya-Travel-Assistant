@@ -11,7 +11,9 @@ import {
  * introduces no behaviour change, branching, feature flags, or conversational
  * stack usage.
  *
- * Not exported from index.ts. Not wired into processConversationTurn.
+ * Not exported from index.ts.
+ * Phase 14B wires processConversationTurn through this seam while preserving
+ * exact generateConversationReply behaviour.
  */
 export function generateIntegratedConversationReply(
   input: GenerateConversationReplyInput,

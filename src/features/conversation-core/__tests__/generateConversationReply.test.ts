@@ -85,13 +85,14 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     expect(replySource).toMatch(/classifyConversationStateChange\(/);
     expect(replySource).toMatch(/createConversationReplyPlan\(/);
     expect(replySource).toMatch(/renderConversationReplyPlan\(/);
-    expect(processTurn).toMatch(/generateConversationReply\(/);
+    expect(processTurn).toMatch(/generateIntegratedConversationReply\(/);
     expect(processTurn).toMatch(
-      /applyConversationStateUpdate\([\s\S]*generateConversationReply\(/,
+      /applyConversationStateUpdate\([\s\S]*generateIntegratedConversationReply\(/,
     );
     expect(processTurn).toMatch(
-      /generateConversationReply\([\s\S]*assistantEntry/,
+      /generateIntegratedConversationReply\([\s\S]*assistantEntry/,
     );
+    expect(processTurn).not.toMatch(/generateConversationReply\(/);
     expect(processTurn).not.toMatch(/ENGINE_NOT_ASSEMBLED_REPLY/);
     expect(index).not.toMatch(/export\s*\{[^}]*generateConversationReply/);
     expect(index).not.toMatch(/ENGINE_NOT_ASSEMBLED_REPLY/);

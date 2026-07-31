@@ -116,7 +116,11 @@ describe('phase 13R — experimental conversational stack isolation', () => {
 
     const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
     expect(processTurn).toMatch(/export function processConversationTurn/);
-    expect(processTurn.includes('generateConversationReply')).toBe(true);
+    expect(processTurn.includes('generateIntegratedConversationReply')).toBe(
+      true,
+    );
+    expect(processTurn).toMatch(/generateIntegratedConversationReply\(/);
+    expect(processTurn).not.toMatch(/generateConversationReply\(/);
     expect(processTurn.includes('import(')).toBe(false);
     expect(processTurn.includes('require(')).toBe(false);
   });
@@ -250,9 +254,9 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(createPlan.includes('generateBaselineConversationalReply')).toBe(false);
     expect(createPlan.includes('buildConversationalLayerInput')).toBe(false);
 
-    // Production reply path still ends at the authoritative deterministic renderer.
+    // Production reply path reaches the seam, then the authoritative renderer.
     expect(generate).toMatch(/renderConversationReplyPlan\(/);
-    expect(processTurn).toMatch(/generateConversationReply\(/);
+    expect(processTurn).toMatch(/generateIntegratedConversationReply\(/);
     expect(createPlan).toMatch(/assembleConversationReplyPlan\(/);
     expect(createPlan).toMatch(/selectConversationReplyComponents\(/);
   });
