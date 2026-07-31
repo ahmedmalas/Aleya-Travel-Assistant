@@ -6,7 +6,6 @@ import { buildConversationalLayerInput } from '../buildConversationalLayerInput'
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import {
   createConversationalLayerInput,
-  type ConversationalLayerInput,
   type ConversationalLayerOutput,
   type ConversationalLayerRenderer,
 } from '../conversationalLayerContracts';
