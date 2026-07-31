@@ -4,6 +4,7 @@ import {
   createConversationReplyPlan,
   type ConversationReplyPlan,
 } from './createConversationReplyPlan';
+import { renderIntegratedConversationReplyPlan } from './renderIntegratedConversationReplyPlan';
 import type { ConversationCoreState } from './types';
 
 export { NEUTRAL_TRIP_FALLBACK_REPLY };
@@ -30,8 +31,9 @@ export type GenerateConversationReplyInput = {
  * CONVERSATION_REPLY_CATALOGUE. Phase 10L: continuation fallback uses
  * selectConversationContinuationPrompt. Phase 10M: reply-plan object
  * assembly uses assembleConversationReplyPlan. Phase 10N: selector
- * coordination uses selectConversationReplyComponents. This function only
- * renders the planned reply text. Invoked solely by processConversationTurn
+ * coordination uses selectConversationReplyComponents. Phase 14E: final
+ * rendering routes through renderIntegratedConversationReplyPlan while
+ * remaining deterministic-only. Invoked solely by processConversationTurn
  * after extraction and explicit stateUpdate precedence. Does not re-extract,
  * inspect message text, call search/itinerary, or use an AI provider.
  */
@@ -42,7 +44,7 @@ export function generateConversationReply(
   const { state, previousState } = input;
   const classification = classifyConversationStateChange(previousState, state);
   const plan = createConversationReplyPlan({ state, classification });
-  return renderConversationReplyPlan(plan);
+  return renderIntegratedConversationReplyPlan({ plan });
 }
 
 /** True when any canonical travel field differs between pre- and post-turn state. */

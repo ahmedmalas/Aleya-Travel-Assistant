@@ -13,8 +13,9 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
  * Phase 14D — plan-level reply rendering seam characterisation.
  *
  * Proves ConversationReplyPlan → renderIntegratedConversationReplyPlan is a
- * pure delegate to renderConversationReplyPlan, isolated from production
- * wiring and the conversational layer.
+ * pure delegate to renderConversationReplyPlan, free of conversational-layer
+ * imports, and not exported from the barrel. Production wiring belongs to
+ * generateConversationReply (Phase 14E), not processTurn or the state seam.
  */
 
 const ROOT = process.cwd();
@@ -47,7 +48,7 @@ function plan(
 }
 
 describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
-  it('is an isolated plan-level seam with no assembly, conversational, or runtime wiring', () => {
+  it('is an isolated plan-level seam with no assembly or conversational wiring', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
 
     expect(source).toMatch(

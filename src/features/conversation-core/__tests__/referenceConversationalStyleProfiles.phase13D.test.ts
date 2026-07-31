@@ -178,6 +178,9 @@ describe('phase 13D — reference conversational style profiles', () => {
     }
 
     expect(generate).toMatch(/createConversationReplyPlan\(/);
-    expect(generate).toMatch(/renderConversationReplyPlan\(/);
+    expect(generate).toMatch(
+      /return renderIntegratedConversationReplyPlan\(\{\s*plan\s*\}\)/,
+    );
+    expect(generate).toMatch(/export function renderConversationReplyPlan/);
   });
 });

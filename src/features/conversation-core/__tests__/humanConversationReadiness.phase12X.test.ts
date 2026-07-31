@@ -120,9 +120,11 @@ describe('phase 12X — human-conversation readiness characterisation', () => {
     expect(assemble.includes('ConversationCoreState')).toBe(false);
     expect(assemble.includes('selectConversation')).toBe(false);
 
-    // Generator classifies + plans, then renders the plan; renderer takes plan only.
+    // Generator classifies + plans, then renders via the plan-level seam.
     expect(generate).toMatch(/createConversationReplyPlan\(/);
-    expect(generate).toMatch(/renderConversationReplyPlan\(/);
+    expect(generate).toMatch(
+      /return renderIntegratedConversationReplyPlan\(\{\s*plan\s*\}\)/,
+    );
     expect(generate).toMatch(
       /export function renderConversationReplyPlan\(\s*plan: ConversationReplyPlan,/,
     );

@@ -111,9 +111,13 @@ describe('phase 10G — deterministic reply planning boundary', () => {
     expect(replySource).toContain('Phase 10M');
     expect(replySource).toContain('Phase 10N');
     expect(replySource).toMatch(/createConversationReplyPlan\(/);
-    expect(replySource).toMatch(/renderConversationReplyPlan\(/);
+    expect(replySource).toMatch(
+      /return renderIntegratedConversationReplyPlan\(\{\s*plan\s*\}\)/,
+    );
+    expect(replySource).toMatch(/export function renderConversationReplyPlan/);
     expect(index).not.toMatch(/createConversationReplyPlan/);
     expect(index).not.toMatch(/renderConversationReplyPlan/);
+    expect(index).not.toMatch(/renderIntegratedConversationReplyPlan/);
     expect(index).not.toMatch(/selectConversationFollowUpQuestion/);
     expect(index).not.toMatch(/selectConversationAcknowledgement/);
     expect(index).not.toMatch(/selectConversationMessageInterpreted/);

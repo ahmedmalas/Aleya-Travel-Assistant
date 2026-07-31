@@ -67,6 +67,7 @@ const PHASE13_MODULES = [
 
 const PRODUCTION_PIPELINE = [
   'src/features/conversation-core/generateConversationReply.ts',
+  'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
   'src/features/conversation-core/processTurn.ts',
   'src/features/conversation-core/selectConversationReplyComponents.ts',
   'src/features/conversation-core/assembleConversationReplyPlan.ts',

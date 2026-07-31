@@ -23,6 +23,7 @@ const PRODUCTION_PIPELINE_FILES = [
   'src/features/conversation-core/assembleConversationReplyPlan.ts',
   'src/features/conversation-core/createConversationReplyPlan.ts',
   'src/features/conversation-core/generateConversationReply.ts',
+  'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
   'src/features/conversation-core/processTurn.ts',
 ] as const;
 
@@ -254,8 +255,9 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(createPlan.includes('generateBaselineConversationalReply')).toBe(false);
     expect(createPlan.includes('buildConversationalLayerInput')).toBe(false);
 
-    // Production reply path reaches the seam, then the authoritative renderer.
-    expect(generate).toMatch(/renderConversationReplyPlan\(/);
+    // Production reply path reaches the plan seam, then the authoritative renderer.
+    expect(generate).toMatch(/renderIntegratedConversationReplyPlan\(/);
+    expect(generate).toMatch(/export function renderConversationReplyPlan/);
     expect(processTurn).toMatch(/generateIntegratedConversationReply\(/);
     expect(createPlan).toMatch(/assembleConversationReplyPlan\(/);
     expect(createPlan).toMatch(/selectConversationReplyComponents\(/);

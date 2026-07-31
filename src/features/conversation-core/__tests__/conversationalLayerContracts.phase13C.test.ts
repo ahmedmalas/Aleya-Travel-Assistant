@@ -338,7 +338,10 @@ describe('phase 13C — conversational layer contracts', () => {
   it('leaves the existing reply-generation path unchanged', () => {
     const generate = readFileSync(GENERATE_SOURCE, 'utf8');
     expect(generate).toMatch(/createConversationReplyPlan\(/);
-    expect(generate).toMatch(/renderConversationReplyPlan\(/);
+    expect(generate).toMatch(
+      /return renderIntegratedConversationReplyPlan\(\{\s*plan\s*\}\)/,
+    );
+    expect(generate).toMatch(/export function renderConversationReplyPlan/);
     expect(generate.includes('createConversationalLayerInput')).toBe(false);
     expect(generate.includes('ConversationalLayerOutput')).toBe(false);
     expect(generate.includes('ConversationalLayerRenderer')).toBe(false);
