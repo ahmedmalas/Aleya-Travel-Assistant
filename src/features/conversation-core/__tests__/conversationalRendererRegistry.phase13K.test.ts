@@ -168,10 +168,11 @@ describe('phase 13K — conversationalRendererRegistry', () => {
     const first: ConversationalLayerRenderer = () => ({ wording: 'first' });
     const second: ConversationalLayerRenderer = () => ({ wording: 'second' });
 
-    const entries = {
+    // Equivalent to a duplicate-key object literal: later assignment wins.
+    const entries: Record<string, ConversationalLayerRenderer> = {
       shared: first,
-      shared: second,
     };
+    entries.shared = second;
     expect(entries.shared).toBe(second);
 
     const registry = createConversationalRendererRegistry(entries);
