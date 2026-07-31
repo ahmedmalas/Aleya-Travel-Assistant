@@ -197,6 +197,12 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(
       index.includes("from './evaluateBaselineConversationalReplyPlan'"),
     ).toBe(false);
+    expect(index.includes('compareBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(
+      index.includes("from './compareBaselineConversationalReplyPlan'"),
+    ).toBe(false);
   });
 
   it('allows experimental → production while prohibiting production → experimental', () => {
@@ -289,11 +295,21 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(generate.includes('evaluateBaselineConversationalReplyPlan')).toBe(
       false,
     );
+    expect(generate.includes('compareBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
     expect(processTurn.includes('evaluateBaselineConversationalReplyPlan')).toBe(
       false,
     );
+    expect(processTurn.includes('compareBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
     expect(seam.includes('evaluateBaselineConversationalReplyPlan')).toBe(false);
+    expect(seam.includes('compareBaselineConversationalReplyPlan')).toBe(false);
     expect(modeDriven.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(modeDriven.includes('compareBaselineConversationalReplyPlan')).toBe(
       false,
     );
     expect(generate.includes('renderBaselineConversationalReplyPlan')).toBe(false);

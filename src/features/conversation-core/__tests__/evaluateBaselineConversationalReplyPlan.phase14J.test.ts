@@ -124,9 +124,11 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     }
 
     // No production .ts module under conversation-core imports the evaluation entry.
+    // Phase 14K comparison is evaluation-only and may import it.
     for (const name of readdirSync(CONVERSATION_CORE_DIR)) {
       if (!name.endsWith('.ts')) continue;
       if (name === 'evaluateBaselineConversationalReplyPlan.ts') continue;
+      if (name === 'compareBaselineConversationalReplyPlan.ts') continue;
       const relative = `src/features/conversation-core/${name}`;
       const contents = readFileSync(resolve(CONVERSATION_CORE_DIR, name), 'utf8');
       expect(
