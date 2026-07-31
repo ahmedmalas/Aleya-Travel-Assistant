@@ -87,7 +87,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
     );
     expect(modeSource).toMatch(
-      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+      /case 'baseline-conversational':\s*try \{\s*return generateBaselineConversationalReply\(input\.plan\);\s*\} catch \{\s*return renderConversationReplyPlan\(input\.plan\);\s*\}/,
     );
     expect(modeSource.match(/case '/g)?.length).toBe(2);
     expect(modeSource.includes('as ')).toBe(false);
@@ -101,6 +101,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
     expect(modeSource.includes('URLSearchParams')).toBe(false);
     expect(modeSource.includes('window.')).toBe(false);
     expect(modeSource.includes('if (')).toBe(false);
+    expect(modeSource.includes('console.')).toBe(false);
 
     expect(seam).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,

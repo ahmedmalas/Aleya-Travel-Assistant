@@ -4,6 +4,7 @@ import { renderConversationReplyPlan } from './generateConversationReply';
 
 /**
  * Phase 14H — mode-driven plan renderer (internal testable contract).
+ * Phase 14I — deterministic fallback when the baseline conversational branch fails.
  *
  * Exhaustive ConversationReplyPlan → rendered reply switch by integration mode.
  * Production never selects a mode through this entry; the production wrapper
@@ -27,6 +28,10 @@ export function renderConversationReplyPlanByIntegrationMode(
     case 'deterministic':
       return renderConversationReplyPlan(input.plan);
     case 'baseline-conversational':
-      return generateBaselineConversationalReply(input.plan);
+      try {
+        return generateBaselineConversationalReply(input.plan);
+      } catch {
+        return renderConversationReplyPlan(input.plan);
+      }
   }
 }

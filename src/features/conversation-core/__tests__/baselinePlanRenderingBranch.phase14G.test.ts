@@ -118,7 +118,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
       /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
     );
     expect(modeSource).toMatch(
-      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+      /case 'baseline-conversational':\s*try \{\s*return generateBaselineConversationalReply\(input\.plan\);\s*\} catch \{\s*return renderConversationReplyPlan\(input\.plan\);\s*\}/,
     );
     expect(modeSource).toMatch(
       /from '\.\/generateBaselineConversationalReply'/,

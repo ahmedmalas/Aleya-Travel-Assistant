@@ -102,7 +102,7 @@ describe('phase 13R — experimental conversational stack isolation', () => {
         // baseline entry. Production wrapper still selects deterministic only.
         expect(source).toMatch(/switch \(input\.mode\)/);
         expect(source).toMatch(
-          /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+          /case 'baseline-conversational':\s*try \{\s*return generateBaselineConversationalReply\(input\.plan\);\s*\} catch \{\s*return renderConversationReplyPlan\(input\.plan\);\s*\}/,
         );
         for (const symbol of EXPERIMENTAL_SYMBOLS) {
           if (symbol === 'generateBaselineConversationalReply') continue;
@@ -308,7 +308,7 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     // Mode-driven module may statically import the baseline entry.
     expect(modeDriven.includes('generateBaselineConversationalReply')).toBe(true);
     expect(modeDriven).toMatch(
-      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+      /case 'baseline-conversational':\s*try \{\s*return generateBaselineConversationalReply\(input\.plan\);\s*\} catch \{\s*return renderConversationReplyPlan\(input\.plan\);\s*\}/,
     );
 
     // Production reply path reaches the plan seam, then the authoritative renderer.
