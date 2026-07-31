@@ -95,19 +95,24 @@ function classifyFamily(acknowledgement: string | null): Family | 'other' {
 
 function renderedOpener(rendered: string | null): string {
   if (rendered === null) return '(none)';
+  if (rendered.startsWith('Updated —')) return 'Updated —';
   if (rendered.startsWith('Great,')) return 'Great,';
   if (rendered.startsWith("We'll start")) return "We'll start";
+  if (rendered.startsWith("We'll depart")) return "We'll depart";
+  if (rendered.startsWith('Departure is now set')) return 'Departure is now set';
   if (rendered.startsWith('Departure is set')) return 'Departure is set';
+  if (rendered.startsWith('Return is now set')) return 'Return is now set';
   if (rendered.startsWith('Return is set')) return 'Return is set';
   if (rendered.startsWith('Travelling with')) return 'Travelling with';
+  if (rendered.startsWith('Updated to')) return 'Updated to';
   if (rendered.startsWith("I've noted")) return "I've noted";
   if (rendered.startsWith('That includes')) return 'That includes';
   return rendered.split(/[\s.]/)[0] ?? rendered;
 }
 
 /**
- * Current catalogue templates do not include set/changed or first/repeated
- * markers. Presence of a different interior value is not such a marker.
+ * Catalogue acknowledgement strings still do not encode set/changed.
+ * Phase 16J wording uses acknowledgementEvent — not literal value content.
  */
 function identifiesSetVersusChanged(_acknowledgement: string | null): boolean {
   return false;
@@ -149,7 +154,10 @@ function runJourney(messages: string[]): CapturedTurn[] {
     const renderedAcknowledgement =
       deterministicAcknowledgement === null
         ? null
-        : transformBaselineAcknowledgement(deterministicAcknowledgement);
+        : transformBaselineAcknowledgement(
+            deterministicAcknowledgement,
+            components.acknowledgementEvent,
+          );
 
     captured.push({
       turn: index + 1,
@@ -180,7 +188,7 @@ const CORE = [
 ] as const;
 
 describe('phase 16G — audit stateless same-family diversification', () => {
-  it('locks same-family value changes retaining the same opener while complete acks differ', () => {
+  it('locks same-family set-then-change openers via acknowledgementEvent (not literal values)', () => {
     const destination = runJourney([
       'go to Melbourne',
       'go to Cairns',
@@ -191,19 +199,21 @@ describe('phase 16G — audit stateless same-family diversification', () => {
       'destination',
       'destination',
     ]);
+    // Phase 16J: initial set vs later changes use event-aware openers.
     expect(destination.map((turn) => turn.renderedOpener)).toEqual([
       'Great,',
-      'Great,',
-      'Great,',
+      'Updated —',
+      'Updated —',
     ]);
     expect(destination.map((turn) => turn.renderedAcknowledgement)).toEqual([
       'Great, Melbourne it is.',
-      'Great, Cairns it is.',
-      'Great, Hobart it is.',
+      'Updated — Cairns it is.',
+      'Updated — Hobart it is.',
     ]);
     expect(
       new Set(destination.map((turn) => turn.deterministicAcknowledgement)).size,
     ).toBe(3);
+    // Catalogue strings still do not encode set vs changed.
     expect(
       destination.every((turn) => turn.identifiesSetVersusChanged === false),
     ).toBe(true);
@@ -221,13 +231,13 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(originTurns).toHaveLength(3);
     expect(originTurns.map((turn) => turn.renderedOpener)).toEqual([
       "We'll start",
-      "We'll start",
-      "We'll start",
+      "We'll depart",
+      "We'll depart",
     ]);
     expect(originTurns.map((turn) => turn.renderedAcknowledgement)).toEqual([
       "We'll start from Sydney.",
-      "We'll start from Brisbane.",
-      "We'll start from Adelaide.",
+      "We'll depart from Brisbane instead.",
+      "We'll depart from Adelaide instead.",
     ]);
     expect(
       originTurns.every((turn) => turn.identifiesSetVersusChanged === false),
@@ -247,8 +257,8 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(departureTurns).toHaveLength(3);
     expect(departureTurns.map((turn) => turn.renderedOpener)).toEqual([
       'Departure is set',
-      'Departure is set',
-      'Departure is set',
+      'Departure is now set',
+      'Departure is now set',
     ]);
     expect(
       new Set(departureTurns.map((turn) => turn.renderedAcknowledgement)).size,
@@ -265,8 +275,8 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(returnTurns).toHaveLength(3);
     expect(returnTurns.map((turn) => turn.renderedOpener)).toEqual([
       'Return is set',
-      'Return is set',
-      'Return is set',
+      'Return is now set',
+      'Return is now set',
     ]);
     expect(
       new Set(returnTurns.map((turn) => turn.renderedAcknowledgement)).size,
@@ -277,13 +287,13 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(adultTurns).toHaveLength(3);
     expect(adultTurns.map((turn) => turn.renderedOpener)).toEqual([
       'Travelling with',
-      'Travelling with',
-      'Travelling with',
+      'Updated to',
+      'Updated to',
     ]);
     expect(adultTurns.map((turn) => turn.renderedAcknowledgement)).toEqual([
       'Travelling with 1 adult.',
-      'Travelling with 2 adults.',
-      'Travelling with 4 adults.',
+      'Updated to 2 adults.',
+      'Updated to 4 adults.',
     ]);
 
     const children = runJourney([
@@ -296,13 +306,13 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(childTurns).toHaveLength(3);
     expect(childTurns.map((turn) => turn.renderedOpener)).toEqual([
       "I've noted",
-      "I've noted",
-      "I've noted",
+      'Updated to',
+      'Updated to',
     ]);
     expect(childTurns.map((turn) => turn.renderedAcknowledgement)).toEqual([
       "I've noted 1 child.",
-      "I've noted 2 children.",
-      "I've noted 3 children.",
+      'Updated to 2 children.',
+      'Updated to 3 children.',
     ]);
 
     const infants = runJourney([
@@ -315,26 +325,26 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(infantTurns).toHaveLength(3);
     expect(infantTurns.map((turn) => turn.renderedOpener)).toEqual([
       'That includes',
-      'That includes',
-      'That includes',
+      'Updated to',
+      'Updated to',
     ]);
     expect(infantTurns.map((turn) => turn.renderedAcknowledgement)).toEqual([
       'That includes 1 infant.',
-      'That includes 2 infants.',
-      'That includes 3 infants.',
+      'Updated to 2 infants.',
+      'Updated to 3 infants.',
     ]);
   });
 
-  it('proves transformBaselineAcknowledgement receives only the current acknowledgement string', () => {
+  it('proves transformBaselineAcknowledgement does not inspect history or trip state', () => {
     const source = readFileSync(TRANSFORM_SOURCE, 'utf8');
     expect(source).toMatch(
-      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*\)/,
+      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*acknowledgementEvent: ConversationAcknowledgementEvent = null,\s*\)/,
     );
     expect(source.includes('transcript')).toBe(false);
     expect(source.includes('turnCount')).toBe(false);
     expect(source.includes('setVersusChanged')).toBe(false);
     expect(source.includes('firstOccurrence')).toBe(false);
-    // Signature is acknowledgement-string only (no history / state params).
+    // No history / previous-state params — event is the semantic input.
     expect(source).not.toMatch(
       /transformBaselineAcknowledgement\([^)]*previous/,
     );
@@ -350,14 +360,13 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     );
   });
 
-  it('proves no first-set / change / history signal exists on consecutive same-family turns', () => {
+  it('proves catalogue strings alone are not a set-versus-changed semantic signal', () => {
     const destination = runJourney([
       'go to Melbourne',
       'go to Cairns',
       'go to Hobart',
     ]);
-    // First turn is an initial set; later turns are changes — but the
-    // acknowledgement string shape cannot mark that distinction.
+    // Catalogue acknowledgement strings still cannot mark set vs changed.
     expect(destination[0]!.identifiesSetVersusChanged).toBe(false);
     expect(destination[1]!.identifiesSetVersusChanged).toBe(false);
     expect(destination[2]!.identifiesSetVersusChanged).toBe(false);
@@ -368,8 +377,16 @@ describe('phase 16G — audit stateless same-family diversification', () => {
     expect(destination[0]!.deterministicAcknowledgement).not.toBe(
       destination[1]!.deterministicAcknowledgement,
     );
-    // …but that alone is not a conversational-event signal for opener choice.
-    expect(destination[0]!.renderedOpener).toBe(destination[1]!.renderedOpener);
+    // …but literal value differences alone are not the semantic signal.
+    // Phase 16J openers differ via acknowledgementEvent, not via place names.
+    expect(destination[0]!.renderedOpener).toBe('Great,');
+    expect(destination[1]!.renderedOpener).toBe('Updated —');
+    expect(
+      transformBaselineAcknowledgement(
+        destination[1]!.deterministicAcknowledgement!,
+        null,
+      ),
+    ).toBe('Great, Cairns it is.');
   });
 
   it('preserves Phase 16F adult → child → infant and Phase 16D mixed-field sequences', () => {

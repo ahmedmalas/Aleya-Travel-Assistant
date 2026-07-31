@@ -335,7 +335,7 @@ describe('phase 15K — final conversational output surface audit', () => {
       'renderBaselineAcknowledgementNeutralContinuation({',
     );
     const branch15B = layer.indexOf(
-      'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
+      'transformBaselineAcknowledgement(\n        plan.acknowledgements[0]!,\n        acknowledgementEvent,\n      )',
     );
     const branch15C = layer.indexOf('renderBaselineAcknowledgementFollowUp({');
     const branch15J = layer.indexOf('renderBaselineNeutralContinuation({');

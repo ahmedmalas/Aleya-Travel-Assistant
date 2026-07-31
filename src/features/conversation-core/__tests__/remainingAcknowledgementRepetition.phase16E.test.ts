@@ -122,11 +122,16 @@ function renderedOpener(renderedAcknowledgement: string | null): string {
   if (renderedAcknowledgement === null) return '(none)';
   const t = renderedAcknowledgement;
   if (t.startsWith("Great, I've added")) return "Great, I've added";
+  if (t.startsWith('Updated —')) return 'Updated —';
   if (t.startsWith('Great,')) return 'Great,';
   if (t.startsWith("We'll start")) return "We'll start";
+  if (t.startsWith("We'll depart")) return "We'll depart";
+  if (t.startsWith('Departure is now set')) return 'Departure is now set';
   if (t.startsWith('Departure is set')) return 'Departure is set';
+  if (t.startsWith('Return is now set')) return 'Return is now set';
   if (t.startsWith('Return is set')) return 'Return is set';
   if (t.startsWith('Travelling with')) return 'Travelling with';
+  if (t.startsWith('Updated to')) return 'Updated to';
   if (t.startsWith("I've noted")) return "I've noted";
   if (t.startsWith('That includes')) return 'That includes';
   if (t.startsWith("No problem, I've removed") && t.endsWith(' from your trip.')) {
@@ -228,7 +233,10 @@ function runJourney(steps: TurnStep[]): CapturedTurn[] {
     const renderedAcknowledgement =
       deterministicAcknowledgement === null
         ? null
-        : transformBaselineAcknowledgement(deterministicAcknowledgement);
+        : transformBaselineAcknowledgement(
+            deterministicAcknowledgement,
+            components.acknowledgementEvent,
+          );
     const base = {
       turn: index + 1,
       message: step.message,
@@ -307,17 +315,17 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       'destination',
       'destination',
     ]);
+    // Phase 16J: set vs change openers differ via acknowledgementEvent.
     expect(destination.map((turn) => turn.renderedOpener)).toEqual([
       'Great,',
-      'Great,',
+      'Updated —',
     ]);
-    expect(destination[1]!.openerMatchesPrevious).toBe(true);
+    expect(destination[1]!.openerMatchesPrevious).toBe(false);
     expect(destination[1]!.completeAckMatchesPrevious).toBe(false);
     expect(destination[1]!.distinguishableByCurrentAck).toBe(true);
-    expect(destination[1]!.boundaryClass).toBe('A');
     expect(destination.map((turn) => turn.renderedAcknowledgement)).toEqual([
       'Great, Brisbane it is.',
-      'Great, Cairns it is.',
+      'Updated — Cairns it is.',
     ]);
 
     const origin = runJourney([
@@ -331,21 +339,20 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
     ]);
     expect(origin.slice(1).map((turn) => turn.renderedOpener)).toEqual([
       "We'll start",
-      "We'll start",
+      "We'll depart",
     ]);
-    expect(origin[2]!.openerMatchesPrevious).toBe(true);
+    expect(origin[2]!.openerMatchesPrevious).toBe(false);
     expect(origin[2]!.distinguishableByCurrentAck).toBe(true);
-    expect(origin[2]!.boundaryClass).toBe('A');
 
     const departure = runJourney([
       ...CORE_SETUP,
       { message: 'Depart on 1 September 2026' },
     ]);
-    // turns 3 and 5 are departure-date sets (index 2 and 4)
+    // turns 3 and 5 are departure-date set then change (index 2 and 4)
     expect(departure[2]!.family).toBe('departureDate');
     expect(departure[4]!.family).toBe('departureDate');
-    expect(departure[4]!.renderedOpener).toBe('Departure is set');
-    expect(departure[4]!.renderedOpener).toBe(departure[2]!.renderedOpener);
+    expect(departure[4]!.renderedOpener).toBe('Departure is now set');
+    expect(departure[2]!.renderedOpener).toBe('Departure is set');
     // Not consecutive — interrupted by return date — so openerMatchesPrevious is false
     expect(departure[4]!.openerMatchesPrevious).toBe(false);
     expect(departure[4]!.distinguishableByCurrentAck).toBe(true);
@@ -360,6 +367,7 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
     ]);
     expect(consecutiveDeparture[4]!.family).toBe('departureDate');
     expect(consecutiveDeparture[5]!.family).toBe('departureDate');
+    // Two consecutive field-changed departure turns share "Departure is now set".
     expect(consecutiveDeparture[5]!.openerMatchesPrevious).toBe(true);
     expect(consecutiveDeparture[5]!.completeAckMatchesPrevious).toBe(false);
     expect(consecutiveDeparture[5]!.boundaryClass).toBe('A');
@@ -383,9 +391,10 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       'adultCount',
       'adultCount',
     ]);
-    expect(adult[5]!.openerMatchesPrevious).toBe(true);
-    expect(adult[5]!.renderedAcknowledgement).toBe('Travelling with 3 adults.');
-    expect(adult[5]!.boundaryClass).toBe('A');
+    expect(adult[5]!.openerMatchesPrevious).toBe(false);
+    expect(adult[5]!.renderedAcknowledgement).toBe('Updated to 3 adults.');
+    expect(adult[4]!.renderedOpener).toBe('Travelling with');
+    expect(adult[5]!.renderedOpener).toBe('Updated to');
 
     const child = runJourney([
       ...CORE_SETUP,
@@ -396,8 +405,9 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       'childCount',
       'childCount',
     ]);
-    expect(child[5]!.openerMatchesPrevious).toBe(true);
-    expect(child[5]!.boundaryClass).toBe('A');
+    expect(child[4]!.renderedOpener).toBe("I've noted");
+    expect(child[5]!.renderedOpener).toBe('Updated to');
+    expect(child[5]!.openerMatchesPrevious).toBe(false);
 
     const infant = runJourney([
       ...CORE_SETUP,
@@ -408,8 +418,9 @@ describe('phase 16E — remaining acknowledgement repetition audit', () => {
       'infantCount',
       'infantCount',
     ]);
-    expect(infant[5]!.openerMatchesPrevious).toBe(true);
-    expect(infant[5]!.boundaryClass).toBe('A');
+    expect(infant[4]!.renderedOpener).toBe('That includes');
+    expect(infant[5]!.renderedOpener).toBe('Updated to');
+    expect(infant[5]!.openerMatchesPrevious).toBe(false);
   });
 
   it('captures child-to-infant opener distinction after Phase 16F (supersedes shared I\'ve noted)', () => {

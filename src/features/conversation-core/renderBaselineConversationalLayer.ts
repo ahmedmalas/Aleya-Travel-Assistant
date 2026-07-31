@@ -17,6 +17,7 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
  * Phase 15E — follow-up-only conversational lead-in when eligible.
  * Phase 15J — neutral-continuation conversational expression when eligible.
  * Phase 16B — acknowledgement-plus-canonical-neutral bridge when eligible.
+ * Phase 16J — forwards acknowledgementEvent into acknowledgement expression.
  *
  * Consumes an existing ConversationalLayerInput and returns wording-only
  * ConversationalLayerOutput.
@@ -39,7 +40,7 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
 export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
   input,
 ) => {
-  const { plan } = input;
+  const { plan, acknowledgementEvent } = input;
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
@@ -48,6 +49,7 @@ export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
       wording: renderBaselineAcknowledgementNeutralContinuation({
         acknowledgement: plan.acknowledgements[0]!,
         followUpQuestion: plan.followUpQuestion,
+        acknowledgementEvent,
       }),
     };
   }
@@ -56,7 +58,10 @@ export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
     plan.followUpQuestion === null
   ) {
     return {
-      wording: transformBaselineAcknowledgement(plan.acknowledgements[0]!),
+      wording: transformBaselineAcknowledgement(
+        plan.acknowledgements[0]!,
+        acknowledgementEvent,
+      ),
     };
   }
   if (
@@ -67,6 +72,7 @@ export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
       wording: renderBaselineAcknowledgementFollowUp({
         acknowledgement: plan.acknowledgements[0]!,
         followUpQuestion: plan.followUpQuestion,
+        acknowledgementEvent,
       }),
     };
   }

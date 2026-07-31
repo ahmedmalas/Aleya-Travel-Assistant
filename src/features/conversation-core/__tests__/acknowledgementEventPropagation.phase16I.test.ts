@@ -290,7 +290,7 @@ describe('Phase 16I — acknowledgement event contract propagation', () => {
     );
   });
 
-  it('lets the baseline renderer receive the event without changing output', () => {
+  it('lets the baseline renderer receive the event for expression', () => {
     const setPlan = selectFor(
       createState(),
       createState({ destination: 'Cairns' }),
@@ -321,13 +321,13 @@ describe('Phase 16I — acknowledgement event contract propagation', () => {
     expect(setWording).toBe(generateBaselineConversationalReply(setPlan));
     expect(changeWording).toBe(generateBaselineConversationalReply(changePlan));
 
-    // Same family openers — event is present but unused by transform.
+    // Phase 16J: field-set vs field-changed openers differ via the event.
     expect(setWording.startsWith('Great, Cairns')).toBe(true);
-    expect(changeWording.startsWith('Great, Hobart')).toBe(true);
+    expect(changeWording.startsWith('Updated — Hobart')).toBe(true);
     expect(transformBaselineAcknowledgement(ACKS.destination('Cairns'))).toBe(
       'Great, Cairns it is.',
     );
-    expect(readCore('transformBaselineAcknowledgement.ts')).not.toMatch(
+    expect(readCore('transformBaselineAcknowledgement.ts')).toMatch(
       /acknowledgementEvent/,
     );
   });
@@ -400,16 +400,16 @@ describe('Phase 16I — acknowledgement event contract propagation', () => {
     }
   });
 
-  it('keeps transformBaselineAcknowledgement string-driven and catalogue wording unchanged', () => {
+  it('keeps catalogue wording unchanged while transform accepts acknowledgementEvent', () => {
     expect(ACKS.destination('Cairns')).toBe('Great — Cairns.');
     expect(ACKS.adultCount(2)).toBe('Perfect — 2 adults travelling.');
     expect(readCore('transformBaselineAcknowledgement.ts')).toMatch(
-      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*\): string/,
+      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*acknowledgementEvent: ConversationAcknowledgementEvent = null,\s*\): string/,
     );
-    expect(readCore('renderBaselineAcknowledgementNeutralContinuation.ts')).not.toMatch(
+    expect(readCore('renderBaselineAcknowledgementNeutralContinuation.ts')).toMatch(
       /acknowledgementEvent/,
     );
-    expect(readCore('renderBaselineAcknowledgementFollowUp.ts')).not.toMatch(
+    expect(readCore('renderBaselineAcknowledgementFollowUp.ts')).toMatch(
       /acknowledgementEvent/,
     );
   });

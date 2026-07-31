@@ -1,14 +1,25 @@
+import type {
+  AcknowledgementTravelField,
+  ConversationAcknowledgementEvent,
+} from './conversationAcknowledgementEvent';
+
 /**
  * Phase 15B — first controlled acknowledgement-only conversational transform.
  * Phase 16D — refine cross-field acknowledgement openers (stateless).
  * Phase 16F — distinguish infant opener from child (`That includes`).
+ * Phase 16J — event-aware set-versus-changed wording from acknowledgementEvent.
  *
- * Pure, deterministic mapping from a single completed-plan acknowledgement
- * string to a restrained conversational variant. Operates on wording only.
+ * Pure, deterministic mapping from a completed-plan acknowledgement string
+ * (plus optional acknowledgementEvent) to a restrained conversational variant.
+ * Operates on wording only.
  *
- * Does not import catalogue, state, or classification modules. Does not use
- * regex inference, keyword guessing, AI, randomness, or mutation.
- * Unknown acknowledgements are returned unchanged.
+ * Does not import catalogue, state, or classification modules. Does not
+ * compare trip states, re-derive events from text, use regex inference beyond
+ * exact catalogue-shape extraction, keyword guessing, AI, randomness, or
+ * mutation. Unknown acknowledgements are returned unchanged.
+ *
+ * When acknowledgementEvent is null, mismatched, or unsupported, falls back
+ * to Phase 16F string-driven behaviour.
  *
  * Not exported from index.ts.
  */
@@ -46,12 +57,26 @@ function extractBetween(
   );
 }
 
+function isFieldChanged(
+  acknowledgementEvent: ConversationAcknowledgementEvent,
+  field: AcknowledgementTravelField,
+): boolean {
+  return (
+    acknowledgementEvent !== null &&
+    acknowledgementEvent.kind === 'field-changed' &&
+    acknowledgementEvent.field === field
+  );
+}
+
 /**
- * Transform a single deterministic acknowledgement string into its first
- * conversational variant. Unknown strings are returned unchanged.
+ * Transform a single deterministic acknowledgement string into its
+ * conversational variant. Optional acknowledgementEvent selects set versus
+ * changed wording for matching travel-field families; otherwise Phase 16F
+ * string-driven behaviour is preserved.
  */
 export function transformBaselineAcknowledgement(
   acknowledgement: string,
+  acknowledgementEvent: ConversationAcknowledgementEvent = null,
 ): string {
   const exact = EXACT_ACKNOWLEDGEMENT_TRANSFORMS[acknowledgement];
   if (exact !== undefined) {
@@ -60,6 +85,9 @@ export function transformBaselineAcknowledgement(
 
   const destination = extractBetween(acknowledgement, 'Great — ', '.');
   if (destination !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'destination')) {
+      return `Updated — ${destination} it is.`;
+    }
     return `Great, ${destination} it is.`;
   }
 
@@ -69,6 +97,9 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (origin !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'origin')) {
+      return `We'll depart from ${origin} instead.`;
+    }
     return `We'll start from ${origin}.`;
   }
 
@@ -78,6 +109,9 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (departureDate !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'departureDate')) {
+      return `Departure is now set for ${departureDate}.`;
+    }
     return `Departure is set for ${departureDate}.`;
   }
 
@@ -87,6 +121,9 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (returnDate !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'returnDate')) {
+      return `Return is now set for ${returnDate}.`;
+    }
     return `Return is set for ${returnDate}.`;
   }
 
@@ -96,6 +133,9 @@ export function transformBaselineAcknowledgement(
     ' adult travelling.',
   );
   if (adultSingular !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'adultCount')) {
+      return `Updated to ${adultSingular} adult.`;
+    }
     return `Travelling with ${adultSingular} adult.`;
   }
 
@@ -105,6 +145,9 @@ export function transformBaselineAcknowledgement(
     ' adults travelling.',
   );
   if (adultPlural !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'adultCount')) {
+      return `Updated to ${adultPlural} adults.`;
+    }
     return `Travelling with ${adultPlural} adults.`;
   }
 
@@ -114,6 +157,9 @@ export function transformBaselineAcknowledgement(
     ' child travelling.',
   );
   if (childSingular !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'childCount')) {
+      return `Updated to ${childSingular} child.`;
+    }
     return `I've noted ${childSingular} child.`;
   }
 
@@ -123,6 +169,9 @@ export function transformBaselineAcknowledgement(
     ' children travelling.',
   );
   if (childPlural !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'childCount')) {
+      return `Updated to ${childPlural} children.`;
+    }
     return `I've noted ${childPlural} children.`;
   }
 
@@ -132,6 +181,9 @@ export function transformBaselineAcknowledgement(
     ' infant travelling.',
   );
   if (infantSingular !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'infantCount')) {
+      return `Updated to ${infantSingular} infant.`;
+    }
     return `That includes ${infantSingular} infant.`;
   }
 
@@ -141,6 +193,9 @@ export function transformBaselineAcknowledgement(
     ' infants travelling.',
   );
   if (infantPlural !== null) {
+    if (isFieldChanged(acknowledgementEvent, 'infantCount')) {
+      return `Updated to ${infantPlural} infants.`;
+    }
     return `That includes ${infantPlural} infants.`;
   }
 

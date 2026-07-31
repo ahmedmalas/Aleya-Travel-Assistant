@@ -279,7 +279,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(successful, [
       'Great, Brisbane it is. Where will you be travelling from?',
-      'Great, Cairns it is. Where will you be travelling from?',
+      'Updated — Cairns it is. Where will you be travelling from?',
     ]);
     expect(successful[1]!.final.destination).toBe('Cairns');
     expect(successful[1]!.owner).toBe('15C');
@@ -306,7 +306,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "We'll start from Brisbane. When would you like to depart?",
-      "We'll start from Sydney. When would you like to depart?",
+      "We'll depart from Sydney instead. When would you like to depart?",
     ]);
     expect(turns[2]!.final.origin).toBe('Sydney');
     expect(turns.map((turn) => turn.owner)).toEqual(['15C', '15C', '15C']);
@@ -322,13 +322,14 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: 'Return on 10 September 2026' },
     ]);
     // Phase 16B supersedes prior direct ack+neutral joins on post-core date edits.
+    // Phase 16J uses event-aware changed wording on later date edits.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "We'll start from Sydney. When would you like to depart?",
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
-      fieldSetNeutral('Departure is set for 2026-09-01.'),
-      fieldSetNeutral('Return is set for 2026-09-10.'),
+      fieldSetNeutral('Departure is now set for 2026-09-01.'),
+      fieldSetNeutral('Return is now set for 2026-09-10.'),
     ]);
     expect(turns[5]!.final).toMatchObject({
       departureDate: '2026-09-01',
@@ -360,7 +361,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       fieldSetNeutral('Travelling with 2 adults.'),
       fieldSetNeutral("I've noted 1 child."),
       fieldSetNeutral('That includes 1 infant.'),
-      fieldSetNeutral('Travelling with 3 adults.'),
+      fieldSetNeutral('Updated to 3 adults.'),
     ]);
     expect(turns[8]!.final).toMatchObject({
       adultCount: 3,
@@ -543,10 +544,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expect(dateChange[4]!.owner).toBe('16B');
     expect(dateChange[4]!.reply).toBe(
-      fieldSetNeutral('Departure is set for 2026-09-01.'),
+      fieldSetNeutral('Departure is now set for 2026-09-01.'),
     );
     expect(dateChange[4]!.reply).not.toBe(
-      'Departure is set for 2026-09-01. What else should I know about your trip?',
+      'Departure is now set for 2026-09-01. What else should I know about your trip?',
     );
 
     // field removed after trip completion

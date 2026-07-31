@@ -50,11 +50,16 @@ function createState(
 }
 
 function opener(rendered: string): string {
+  if (rendered.startsWith('Updated —')) return 'Updated —';
   if (rendered.startsWith('Great,')) return 'Great,';
   if (rendered.startsWith("We'll start")) return "We'll start";
+  if (rendered.startsWith("We'll depart")) return "We'll depart";
+  if (rendered.startsWith('Departure is now set')) return 'Departure is now set';
   if (rendered.startsWith('Departure is set')) return 'Departure is set';
+  if (rendered.startsWith('Return is now set')) return 'Return is now set';
   if (rendered.startsWith('Return is set')) return 'Return is set';
   if (rendered.startsWith('Travelling with')) return 'Travelling with';
+  if (rendered.startsWith('Updated to')) return 'Updated to';
   if (rendered.startsWith("I've noted")) return "I've noted";
   if (rendered.startsWith('That includes')) return 'That includes';
   return rendered.split(/[\s.]/)[0] ?? rendered;
@@ -99,7 +104,10 @@ function runTurn(
   const rendered =
     components.acknowledgement === null
       ? null
-      : transformBaselineAcknowledgement(components.acknowledgement);
+      : transformBaselineAcknowledgement(
+          components.acknowledgement,
+          components.acknowledgementEvent,
+        );
 
   return {
     previous,
@@ -146,7 +154,7 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(initialAdults.classification.updated).not.toContain('adultCount');
   });
 
-  it('rendered acknowledgement text does not preserve set-versus-changed', () => {
+  it('catalogue acknowledgement text still does not encode set-versus-changed', () => {
     let state = createState();
     const set = runTurn(state, 'go to Melbourne', 0);
     state = set.next;
@@ -160,10 +168,11 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(set.acknowledgement?.startsWith('Great — ')).toBe(true);
     expect(changed.acknowledgement?.startsWith('Great — ')).toBe(true);
 
+    // Phase 16J: rendered openers differ via acknowledgementEvent.
     expect(set.rendered).toBe('Great, Melbourne it is.');
-    expect(changed.rendered).toBe('Great, Cairns it is.');
-    expect(opener(set.rendered!)).toBe(opener(changed.rendered!));
+    expect(changed.rendered).toBe('Updated — Cairns it is.');
     expect(opener(set.rendered!)).toBe('Great,');
+    expect(opener(changed.rendered!)).toBe('Updated —');
   });
 
   it('reply-plan acknowledgements remain string catalogue text (event is separate)', () => {
@@ -200,12 +209,12 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     expect(set.acknowledgement?.includes('field-changed')).toBe(false);
   });
 
-  it('transformBaselineAcknowledgement receives only the acknowledgement string', () => {
+  it('null acknowledgementEvent preserves Phase 16F string-driven set wording', () => {
     const transformSource = readCore('transformBaselineAcknowledgement.ts');
     expect(transformSource).toMatch(
-      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*\): string/,
+      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*acknowledgementEvent: ConversationAcknowledgementEvent = null,\s*\): string/,
     );
-    expect(transformSource).not.toMatch(/acknowledgementEvent/);
+    expect(transformSource).toMatch(/acknowledgementEvent/);
     expect(transformSource).not.toMatch(/previousState/);
     expect(transformSource).not.toMatch(/newlyPopulated/);
 
@@ -222,14 +231,14 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     );
   });
 
-  it('initial set and later change share the same family opener for destination and passenger counts', () => {
+  it('initial set and later change use distinct openers via acknowledgementEvent', () => {
     // Destination
     let state = createState();
     const destSet = runTurn(state, 'go to Cairns', 0);
     state = destSet.next;
     const destChange = runTurn(state, 'go to Hobart', 1);
     expect(opener(destSet.rendered!)).toBe('Great,');
-    expect(opener(destChange.rendered!)).toBe('Great,');
+    expect(opener(destChange.rendered!)).toBe('Updated —');
 
     // Adult count: initial set from empty, then change
     state = createState();
@@ -239,7 +248,7 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     const adultChange = runTurn(state, '3 adults', 3);
     expect(adultChange.classification.updated).toContain('adultCount');
     expect(opener(adultSet.rendered!)).toBe('Travelling with');
-    expect(opener(adultChange.rendered!)).toBe('Travelling with');
+    expect(opener(adultChange.rendered!)).toBe('Updated to');
 
     // Child count
     state = createState({ adultCount: 2 });
@@ -249,7 +258,7 @@ describe('Phase 16H — set-versus-changed metadata path audit', () => {
     const childChange = runTurn(state, '1 child', 5);
     expect(childChange.classification.updated).toContain('childCount');
     expect(opener(childSet.rendered!)).toBe("I've noted");
-    expect(opener(childChange.rendered!)).toBe("I've noted");
+    expect(opener(childChange.rendered!)).toBe('Updated to');
   });
 
   it('selected acknowledgement text still uses one catalogue family for set and change', () => {

@@ -10,7 +10,7 @@ import {
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
- * Expected production / baseline wording after Phase 15B–16B activation.
+ * Expected production / baseline wording after Phase 15B–16J activation.
  *
  * Mirrors renderBaselineConversationalLayer branching without weakening
  * deterministic renderConversationReplyPlan assertions.
@@ -18,6 +18,7 @@ import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledg
 export function expectedActivatedBaselineReply(
   plan: ConversationReplyPlan,
 ): string {
+  const acknowledgementEvent = plan.acknowledgementEvent;
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
@@ -25,13 +26,17 @@ export function expectedActivatedBaselineReply(
     return renderBaselineAcknowledgementNeutralContinuation({
       acknowledgement: plan.acknowledgements[0]!,
       followUpQuestion: plan.followUpQuestion,
+      acknowledgementEvent,
     });
   }
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === null
   ) {
-    return transformBaselineAcknowledgement(plan.acknowledgements[0]!);
+    return transformBaselineAcknowledgement(
+      plan.acknowledgements[0]!,
+      acknowledgementEvent,
+    );
   }
   if (
     plan.acknowledgements.length === 1 &&
@@ -40,6 +45,7 @@ export function expectedActivatedBaselineReply(
     return renderBaselineAcknowledgementFollowUp({
       acknowledgement: plan.acknowledgements[0]!,
       followUpQuestion: plan.followUpQuestion,
+      acknowledgementEvent,
     });
   }
   if (

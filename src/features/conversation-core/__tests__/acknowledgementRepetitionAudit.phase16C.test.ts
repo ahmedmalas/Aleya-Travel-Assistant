@@ -139,12 +139,17 @@ function classifyOwner(plan: {
 /** Leading opener family used for repetition measurement. */
 function openingPhrase(reply: string): string {
   if (reply.startsWith('Perfect,')) return 'Perfect,';
+  if (reply.startsWith('Updated —')) return 'Updated —';
   if (reply.startsWith('Great,')) return 'Great,';
   if (reply.startsWith('No problem,')) return 'No problem,';
   if (reply.startsWith("We'll start")) return "We'll start";
+  if (reply.startsWith("We'll depart")) return "We'll depart";
+  if (reply.startsWith('Departure is now set')) return 'Departure is now set';
   if (reply.startsWith('Departure is set')) return 'Departure is set';
+  if (reply.startsWith('Return is now set')) return 'Return is now set';
   if (reply.startsWith('Return is set')) return 'Return is set';
   if (reply.startsWith('Travelling with')) return 'Travelling with';
+  if (reply.startsWith('Updated to')) return 'Updated to';
   if (reply.startsWith("I've noted")) return "I've noted";
   if (reply.startsWith('That includes')) return 'That includes';
   if (reply.startsWith("There's just one more thing")) {
@@ -415,11 +420,12 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     ]);
     // Phase 16F: infant uses That includes; child keeps I've noted.
     // Historical 16C had Perfect,×4; historical 16E had I've noted×2 for child→infant.
+    // Phase 16J: later adult-count change uses Updated to.
     expect(passengers.slice(5).map((turn) => turn.openingPhrase)).toEqual([
       'Travelling with',
       "I've noted",
       'That includes',
-      'Travelling with',
+      'Updated to',
     ]);
     expect(
       maxConsecutiveIdentical(
@@ -433,10 +439,10 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     ]);
     expect(destChange.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
-      'Great,',
+      'Updated —',
     ]);
     expect(maxConsecutiveIdentical(destChange.map((t) => t.openingPhrase))).toBe(
-      2,
+      1,
     );
 
     const originChange = runJourney([
@@ -447,7 +453,7 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     expect(originChange.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
       "We'll start",
-      "We'll start",
+      "We'll depart",
     ]);
 
     const removal = runJourney([
@@ -571,11 +577,12 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       expect(source.includes('recentPhrase')).toBe(false);
     }
 
-    // ConversationalLayerInput exposes only plan + objective + optional style.
+    // ConversationalLayerInput exposes plan + objective + acknowledgementEvent + optional style.
     expect(contracts).toMatch(/readonly plan: ConversationReplyPlan/);
     expect(contracts).toMatch(
       /readonly objective: ConversationalObjective \| null/,
     );
+    expect(contracts).toMatch(/readonly acknowledgementEvent: ConversationAcknowledgementEvent/);
     expect(contracts).toMatch(/readonly styleProfile\?: ConversationalStyleProfile/);
     expect(contracts.includes('transcript')).toBe(false);
     expect(contracts.includes('turnCount')).toBe(false);
@@ -584,13 +591,13 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     expect(buildInput).toMatch(/selectConversationalObjective\(plan\)/);
     expect(buildInput.includes('transcript')).toBe(false);
 
-    // Helper signatures are rendering-layer strings only.
+    // Helper signatures are rendering-layer strings + optional acknowledgementEvent.
     expect(ackFollowUp).toMatch(/acknowledgement: string/);
     expect(ackFollowUp).toMatch(/followUpQuestion: string/);
     expect(ackNeutral).toMatch(/acknowledgement: string/);
     expect(ackNeutral).toMatch(/followUpQuestion: string/);
     expect(transform).toMatch(
-      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*\)/,
+      /export function transformBaselineAcknowledgement\(\s*acknowledgement: string,\s*acknowledgementEvent: ConversationAcknowledgementEvent = null,\s*\)/,
     );
 
     // Layer ignores styleProfile and never consults objective for wording.

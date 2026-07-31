@@ -86,7 +86,7 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
       'renderBaselineAcknowledgementNeutralContinuation({',
     );
     const branch15B = renderer.indexOf(
-      'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
+      'transformBaselineAcknowledgement(\n        plan.acknowledgements[0]!,\n        acknowledgementEvent,\n      )',
     );
     const branch15C = renderer.indexOf('renderBaselineAcknowledgementFollowUp({');
     const branch15J = renderer.indexOf('renderBaselineNeutralContinuation({');

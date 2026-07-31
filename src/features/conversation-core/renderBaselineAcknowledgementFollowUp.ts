@@ -1,7 +1,9 @@
+import type { ConversationAcknowledgementEvent } from './conversationAcknowledgementEvent';
 import { transformBaselineAcknowledgement } from './transformBaselineAcknowledgement';
 
 /**
  * Phase 15C — acknowledgement-plus-follow-up conversational transition.
+ * Phase 16J — forwards acknowledgementEvent into acknowledgement transform.
  *
  * Transforms the single acknowledgement expression via
  * transformBaselineAcknowledgement, then joins it to the unchanged
@@ -15,6 +17,7 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
 export type RenderBaselineAcknowledgementFollowUpInput = Readonly<{
   acknowledgement: string;
   followUpQuestion: string;
+  acknowledgementEvent?: ConversationAcknowledgementEvent;
 }>;
 
 /**
@@ -27,6 +30,7 @@ export function renderBaselineAcknowledgementFollowUp(
 ): string {
   const transformedAcknowledgement = transformBaselineAcknowledgement(
     input.acknowledgement,
+    input.acknowledgementEvent ?? null,
   );
   return `${transformedAcknowledgement} ${input.followUpQuestion}`;
 }

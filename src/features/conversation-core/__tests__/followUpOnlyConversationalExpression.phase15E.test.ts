@@ -124,7 +124,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
     expect(renderer).toMatch(/renderBaselineFollowUpOnly/);
     // Explicit ownership order in the executable branch body.
     const branch15B = renderer.indexOf(
-      'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
+      'transformBaselineAcknowledgement(\n        plan.acknowledgements[0]!,\n        acknowledgementEvent,\n      )',
     );
     const branch15C = renderer.indexOf('renderBaselineAcknowledgementFollowUp({');
     const branch15E = renderer.indexOf('renderBaselineFollowUpOnly({');

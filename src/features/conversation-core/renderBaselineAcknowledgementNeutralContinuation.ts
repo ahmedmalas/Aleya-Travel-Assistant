@@ -1,3 +1,4 @@
+import type { ConversationAcknowledgementEvent } from './conversationAcknowledgementEvent';
 import {
   CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
 } from './renderBaselineNeutralContinuation';
@@ -5,14 +6,14 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
 
 /**
  * Phase 16B — acknowledgement-plus-canonical-neutral conversational bridge.
+ * Phase 16J — forwards acknowledgementEvent into acknowledgement transform.
  *
  * Reuses transformBaselineAcknowledgement for acknowledgement expression, then
  * inserts a deterministic category bridge before the byte-identical canonical
  * neutral question. Non-canonical follow-ups fall through to the Phase 15C
  * join shape so neighbouring ownership stays unchanged.
  *
- * Inputs are rendering-layer strings only. Does not inspect trip state,
- * classification, selection, or extraction data.
+ * Does not inspect trip state, classification, selection, or extraction data.
  *
  * Not exported from index.ts.
  */
@@ -20,6 +21,7 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
 export type RenderBaselineAcknowledgementNeutralContinuationInput = Readonly<{
   acknowledgement: string;
   followUpQuestion: string;
+  acknowledgementEvent?: ConversationAcknowledgementEvent;
 }>;
 
 type AcknowledgementBridgeCategory =
@@ -39,11 +41,12 @@ const BRIDGE_CAPABILITY_DISABLED = 'We can keep refining the plan.';
 const BRIDGE_GENERIC = "Is there anything else you'd like me to consider?";
 
 /**
- * Classify a catalogue acknowledgement using Phase 15B recognition outcomes.
+ * Classify a catalogue acknowledgement using Phase 15B/16J recognition
+ * outcomes.
  *
  * Unknown strings are those transformBaselineAcknowledgement leaves unchanged.
- * Known categories are derived from the transformed expression shapes already
- * established by Phase 15B — no duplicate transform mapping.
+ * Known categories are derived from the transformed expression shapes — no
+ * duplicate transform mapping. field-set and field-changed share one bridge.
  */
 function classifyAcknowledgementBridgeCategory(
   acknowledgement: string,
@@ -107,6 +110,7 @@ export function renderBaselineAcknowledgementNeutralContinuation(
 ): string {
   const transformedAcknowledgement = transformBaselineAcknowledgement(
     input.acknowledgement,
+    input.acknowledgementEvent ?? null,
   );
 
   if (input.followUpQuestion !== CANONICAL_NEUTRAL_CONTINUATION_PROMPT) {

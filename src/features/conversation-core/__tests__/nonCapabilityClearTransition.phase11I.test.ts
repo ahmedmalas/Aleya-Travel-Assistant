@@ -282,7 +282,8 @@ describe('phase 11I — non-capability clear-transition audit characterisation',
       destination: 'Hobart',
       adultCount: null,
     });
-    expect(result.reply).toContain('Great, Hobart it is.');
+    // Phase 16J: Cairns → Hobart is field-changed.
+    expect(result.reply).toContain('Updated — Hobart it is.');
     expect(result.reply).not.toMatch(/Perfect\./);
   });
 
