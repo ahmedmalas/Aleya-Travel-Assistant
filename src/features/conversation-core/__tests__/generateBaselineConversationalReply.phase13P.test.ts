@@ -16,12 +16,14 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13P — baseline conversational reply generator characterisation.
  *
  * Proves ConversationReplyPlan → renderBaselineConversationalReplyPlan →
- * wording-string return without runtime wiring or wording mutation.
+ * wording-string return without runtime wiring or wording mutation beyond the
+ * acknowledgement-only transform.
  */
 
 const ROOT = process.cwd();
@@ -52,13 +54,23 @@ function plan(
   };
 }
 
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
 function expectWording(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof generateBaselineConversationalReply>[1],
 ) {
   const wording = generateBaselineConversationalReply(replyPlan, style);
   const viaAdapter = renderBaselineConversationalReplyPlan(replyPlan, style);
-  const expected = renderConversationReplyPlan(replyPlan);
+  const expected = expectedBaselineWording(replyPlan);
 
   expect(typeof wording).toBe('string');
   expect(wording).toBe(viaAdapter.wording);
@@ -150,7 +162,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
           messageInterpreted: true,
         }),
       ).wording,
-    ).toBe('Perfect.');
+    ).toBe('Perfect, got it.');
 
     expect(expectWording(plan()).wording).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
   });
@@ -164,7 +176,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
     expect(selectConversationalObjective(emptyObjectivePlan)).toBeNull();
     expect(buildConversationalLayerInput(emptyObjectivePlan).objective).toBeNull();
     expect(generateBaselineConversationalReply(emptyObjectivePlan)).toBe(
-      'Perfect.',
+      'Perfect, got it.',
     );
 
     const replyPlan = plan({

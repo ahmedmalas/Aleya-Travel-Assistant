@@ -12,13 +12,15 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13Q — baseline conversational generator parity audit.
  *
  * Proves generateBaselineConversationalReply(plan[, style]) matches
- * renderConversationReplyPlan(plan) exactly for representative plan shapes.
- * Style profiles remain intentionally ignored by the baseline renderer.
+ * renderConversationReplyPlan(plan) for non-eligible plans, and applies the
+ * acknowledgement-only transform when eligible. Style profiles remain
+ * intentionally ignored by the baseline renderer.
  * Adds no production behaviour and no runtime wiring.
  */
 
@@ -53,12 +55,22 @@ function plan(
   };
 }
 
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
 function assertExactParity(replyPlan: ConversationReplyPlan, label: string) {
   const before = structuredClone(replyPlan);
-  const deterministic = renderConversationReplyPlan(replyPlan);
+  const expected = expectedBaselineWording(replyPlan);
 
   const experimental = generateBaselineConversationalReply(replyPlan);
-  expect(experimental, label).toBe(deterministic);
+  expect(experimental, label).toBe(expected);
 
   const professional = generateBaselineConversationalReply(
     replyPlan,
@@ -73,9 +85,9 @@ function assertExactParity(replyPlan: ConversationReplyPlan, label: string) {
     REFERENCE_CONVERSATIONAL_STYLE_LUXURY,
   );
 
-  expect(professional, `${label} / professional`).toBe(deterministic);
-  expect(warm, `${label} / warm`).toBe(deterministic);
-  expect(luxury, `${label} / luxury`).toBe(deterministic);
+  expect(professional, `${label} / professional`).toBe(expected);
+  expect(warm, `${label} / warm`).toBe(expected);
+  expect(luxury, `${label} / luxury`).toBe(expected);
 
   expect(replyPlan, `${label} / plan unchanged`).toEqual(before);
 
@@ -83,10 +95,10 @@ function assertExactParity(replyPlan: ConversationReplyPlan, label: string) {
     experimental,
   );
   expect(generateBaselineConversationalReply(replyPlan), `${label} / repeat 2`).toBe(
-    deterministic,
+    expected,
   );
 
-  return deterministic;
+  return expected;
 }
 
 describe('phase 13Q — baseline conversational generator parity audit', () => {
@@ -248,7 +260,7 @@ describe('phase 13Q — baseline conversational generator parity audit', () => {
       nullObjectivePlan,
       'null conversational objective',
     );
-    expect(wording).toBe(ACKS.genericTravelFieldChange);
+    expect(wording).toBe('Perfect, got it.');
   });
 
   it('preserves catalogue punctuation and spacing exactly across styled and unstyled paths', () => {

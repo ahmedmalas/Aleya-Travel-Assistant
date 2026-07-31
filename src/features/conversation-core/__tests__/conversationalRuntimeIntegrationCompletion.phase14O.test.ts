@@ -19,6 +19,7 @@ import {
 import { REFERENCE_CONVERSATIONAL_STYLE_PROFESSIONAL } from '../referenceConversationalStyleProfiles';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14O — runtime integration completion audit and freeze.
@@ -117,6 +118,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 function createState(
@@ -523,6 +534,7 @@ describe('phase 14O — conversational runtime integration completion', () => {
       const frozen = freezePlan(entry.replyPlan);
       const before = structuredClone(frozen);
       const deterministic = renderConversationReplyPlan(frozen);
+      const expected = expectedBaselineWording(frozen);
       const viaProduction = renderIntegratedConversationReplyPlan({
         plan: frozen,
       });
@@ -532,9 +544,17 @@ describe('phase 14O — conversational runtime integration completion', () => {
       });
       const viaBaseline = generateBaselineConversationalReply(frozen);
 
-      expect(viaProduction, entry.label).toBe(deterministic);
-      expect(viaMode, `${entry.label} / mode`).toBe(deterministic);
-      expect(viaBaseline, `${entry.label} / baseline`).toBe(deterministic);
+      expect(viaProduction, entry.label).toBe(expected);
+      expect(viaMode, `${entry.label} / mode`).toBe(expected);
+      expect(viaBaseline, `${entry.label} / baseline`).toBe(expected);
+      if (
+        frozen.acknowledgements.length !== 1 ||
+        frozen.followUpQuestion !== null
+      ) {
+        expect(viaBaseline, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      }
       expect(frozen, `${entry.label} / unchanged`).toEqual(before);
       expect(Object.isFrozen(frozen), entry.label).toBe(true);
     }

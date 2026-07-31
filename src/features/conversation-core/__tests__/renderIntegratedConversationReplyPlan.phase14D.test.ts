@@ -8,12 +8,13 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14D — plan-level reply rendering seam characterisation.
  *
  * Proves ConversationReplyPlan → renderIntegratedConversationReplyPlan is a
- * pure delegate to renderConversationReplyPlan, free of conversational-layer
+ * pure delegate through the activated baseline mode, free of conversational-layer
  * imports, and not exported from the barrel. Production wiring belongs to
  * generateConversationReply (Phase 14E), not processTurn or the state seam.
  */
@@ -45,6 +46,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedProductionWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
@@ -160,15 +171,24 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
     for (const entry of cases) {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
+      const expected = expectedProductionWording(entry.replyPlan);
       const integrated = renderIntegratedConversationReplyPlan({
         plan: entry.replyPlan,
       });
 
-      expect(integrated, entry.label).toBe(deterministic);
+      expect(integrated, entry.label).toBe(expected);
       expect(
         renderIntegratedConversationReplyPlan({ plan: entry.replyPlan }),
         `${entry.label} / repeat`,
-      ).toBe(deterministic);
+      ).toBe(expected);
+      if (
+        entry.replyPlan.acknowledgements.length !== 1 ||
+        entry.replyPlan.followUpQuestion !== null
+      ) {
+        expect(integrated, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 

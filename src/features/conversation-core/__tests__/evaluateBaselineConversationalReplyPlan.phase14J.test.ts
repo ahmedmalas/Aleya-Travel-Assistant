@@ -11,6 +11,7 @@ import {
 } from '../generateConversationReply';
 import * as generateConversationReplyModule from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14J — isolated baseline conversational evaluation entry point.
@@ -68,6 +69,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
@@ -237,9 +248,17 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
       });
 
       expect(result, entry.label).toBe(expected);
-      expect(result, `${entry.label} / deterministic parity`).toBe(
-        renderConversationReplyPlan(entry.replyPlan),
+      expect(result, `${entry.label} / baseline expected`).toBe(
+        expectedBaselineWording(entry.replyPlan),
       );
+      if (
+        entry.replyPlan.acknowledgements.length !== 1 ||
+        entry.replyPlan.followUpQuestion !== null
+      ) {
+        expect(result, `${entry.label} / deterministic parity`).toBe(
+          renderConversationReplyPlan(entry.replyPlan),
+        );
+      }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 

@@ -31,6 +31,7 @@ import {
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13T — conversational layer foundation completion audit.
@@ -106,6 +107,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 13T — conversational layer foundation completion', () => {
@@ -211,7 +222,12 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(readSrc(PHASE13_MODULES[7]!)).toMatch(/selectConversationalLayerRenderer/);
     expect(readSrc(PHASE13_MODULES[7]!)).toMatch(/invokeConversationalLayerRenderer/);
     expect(readSrc(PHASE13_MODULES[5]!)).toMatch(/return renderer\(input\)/);
-    expect(readSrc(PHASE13_MODULES[4]!)).toMatch(/renderConversationReplyPlan\(input\.plan\)/);
+    expect(readSrc(PHASE13_MODULES[4]!)).toMatch(
+      /renderConversationReplyPlan\(plan\)/,
+    );
+    expect(readSrc(PHASE13_MODULES[4]!)).toMatch(
+      /transformBaselineAcknowledgement/,
+    );
   });
 
   it('proves deterministic parity with and without reference style profiles', () => {
@@ -243,12 +259,12 @@ describe('phase 13T — conversational layer foundation completion', () => {
     ];
 
     for (const replyPlan of cases) {
-      const deterministic = renderConversationReplyPlan(replyPlan);
-      expect(generateBaselineConversationalReply(replyPlan)).toBe(deterministic);
+      const expected = expectedBaselineWording(replyPlan);
+      expect(generateBaselineConversationalReply(replyPlan)).toBe(expected);
 
       for (const style of STYLE_PROFILES) {
         expect(generateBaselineConversationalReply(replyPlan, style)).toBe(
-          deterministic,
+          expected,
         );
       }
 
@@ -261,7 +277,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
         expect(selectConversationalObjective(nullObjectivePlan)).toBeNull();
         expect(buildConversationalLayerInput(nullObjectivePlan).objective).toBeNull();
         expect(generateBaselineConversationalReply(nullObjectivePlan)).toBe(
-          renderConversationReplyPlan(nullObjectivePlan),
+          expectedBaselineWording(nullObjectivePlan),
         );
       }
     }
@@ -443,7 +459,7 @@ describe('phase 13T — conversational layer foundation completion', () => {
     ).toBeNull();
   });
 
-  it('characterizes ownership boundaries and proves baseline performs no tone/phrasing transformation', () => {
+  it('characterizes ownership boundaries and proves baseline style/objective cannot alter plan wording', () => {
     const architecture = readSrc(
       'docs/architecture/travel-consultant-layer.md',
     );
@@ -463,8 +479,9 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(styleDoc).toMatch(/Priority \/ eligibility \| Engine-only/);
     expect(styleDoc).toMatch(/Wording \/ tone \| Profile-specific/);
 
-    // Current baseline implementation: no transformation — style ignored,
-    // wording equals authoritative deterministic renderer exactly.
+    // Style/objective metadata never overrides the plan. Acknowledgement-only
+    // plans may apply transformBaselineAcknowledgement; all other shapes still
+    // equal the deterministic renderer.
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
       followUpQuestion: FOLLOW_UPS.origin,
@@ -475,8 +492,9 @@ describe('phase 13T — conversational layer foundation completion', () => {
       'src/features/conversation-core/renderBaselineConversationalLayer.ts',
     );
     expect(baselineSource).toMatch(
-      /wording:\s*renderConversationReplyPlan\(input\.plan\)/,
+      /wording:\s*renderConversationReplyPlan\(plan\)/,
     );
+    expect(baselineSource).toMatch(/transformBaselineAcknowledgement/);
     expect(baselineSource.includes('styleProfile')).toBe(true);
     expect(baselineSource.includes('input.styleProfile')).toBe(false);
     expect(baselineSource.includes('input.objective')).toBe(false);

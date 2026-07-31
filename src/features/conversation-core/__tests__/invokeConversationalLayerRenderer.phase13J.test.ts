@@ -144,7 +144,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
         renderBaselineConversationalLayer,
         nullObjectiveInput,
       ),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
 
     const withStyle = buildConversationalLayerInput(
       replyPlan,
@@ -158,7 +158,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
         renderBaselineConversationalLayer,
         withStyle,
       ),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
 
     const withoutStyle = buildConversationalLayerInput(replyPlan);
     expect(withoutStyle.styleProfile).toBeUndefined();
@@ -167,7 +167,7 @@ describe('phase 13J — invokeConversationalLayerRenderer', () => {
         renderBaselineConversationalLayer,
         withoutStyle,
       ),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
   });
 
   it('leaves a frozen input unmodified and does not mutate renderer output', () => {

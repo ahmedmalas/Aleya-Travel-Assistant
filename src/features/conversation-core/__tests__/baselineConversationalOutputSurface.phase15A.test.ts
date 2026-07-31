@@ -20,13 +20,14 @@ import { renderBaselineConversationalLayer } from '../renderBaselineConversation
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 15A — baseline conversational output surface characterisation.
  *
- * Characterises exact activated baseline wording before any Phase 15 phrasing,
- * tone, empathy, repair, or style transformation. Does not change production
- * wording.
+ * Characterises exact activated baseline wording. Acknowledgement-only plans
+ * receive the Phase 15B transform; all other shapes remain identity-passthrough
+ * relative to the deterministic renderer.
  */
 
 const ROOT = process.cwd();
@@ -63,6 +64,16 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
   });
 }
 
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
 type CharacterisedCase = {
   label: string;
   replyPlan: ConversationReplyPlan;
@@ -79,7 +90,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: null,
       messageInterpreted: true,
     }),
-    expectedOutput: ACKS.destination('Brisbane'),
+    expectedOutput: 'Great, Brisbane it is.',
     expectedObjectiveId: null,
     expectedCatalogueWording: null,
   },
@@ -156,7 +167,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: null,
       messageInterpreted: true,
     }),
-    expectedOutput: ACKS.genericTravelFieldChange,
+    expectedOutput: 'Perfect, got it.',
     expectedObjectiveId: null,
     expectedCatalogueWording: null,
   },
@@ -206,7 +217,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     vi.restoreAllMocks();
   });
 
-  it('keeps production mode baseline-conversational and baseline renderer identity-passthrough', () => {
+  it('keeps production mode baseline-conversational and baseline renderer transform wiring', () => {
     const seam = readFileSync(SEAM_SOURCE, 'utf8');
     const renderer = readFileSync(BASELINE_RENDERER_SOURCE, 'utf8');
 
@@ -216,13 +227,13 @@ describe('phase 15A — baseline conversational output surface', () => {
     );
 
     expect(renderer).toMatch(
-      /wording:\s*renderConversationReplyPlan\(input\.plan\)/,
+      /wording:\s*renderConversationReplyPlan\(plan\)/,
     );
+    expect(renderer).toMatch(/transformBaselineAcknowledgement/);
     expect(renderer.includes('styleProfile')).toBe(true);
     expect(renderer).toMatch(/Ignores styleProfile/);
     expect(renderer.includes('empathy')).toBe(false);
     expect(renderer.includes('repair')).toBe(false);
-    expect(renderer.includes('transform')).toBe(false);
     expect(renderer.includes('prompt')).toBe(false);
     expect(renderer.includes('Math.random')).toBe(false);
     expect(renderer.includes('async ')).toBe(false);
@@ -241,13 +252,23 @@ describe('phase 15A — baseline conversational output surface', () => {
       const objective = selectConversationalObjective(frozen);
       const layerOutput = renderBaselineConversationalLayer(layerInput);
 
-      expect(deterministic, entry.label).toBe(entry.expectedOutput);
+      if (
+        frozen.acknowledgements.length === 1 &&
+        frozen.followUpQuestion === null
+      ) {
+        expect(deterministic, entry.label).toBe(frozen.acknowledgements[0]);
+      } else {
+        expect(deterministic, entry.label).toBe(entry.expectedOutput);
+      }
       expect(baseline, `${entry.label} / baseline`).toBe(entry.expectedOutput);
       expect(production, `${entry.label} / production`).toBe(
         entry.expectedOutput,
       );
       expect(layerOutput.wording, `${entry.label} / layer`).toBe(
         entry.expectedOutput,
+      );
+      expect(baseline, `${entry.label} / helper`).toBe(
+        expectedBaselineWording(frozen),
       );
 
       if (entry.expectedObjectiveId === null) {
@@ -272,7 +293,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     }
   });
 
-  it('proves no phrasing, empathy, repair, or style transformation currently occurs', () => {
+  it('proves style, empathy, and repair do not alter non-eligible plan wording', () => {
     const replyPlan = freezePlan(
       plan({
         acknowledgements: [ACKS.destination('Hobart')],
@@ -302,6 +323,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     }
 
     // Objective metadata does not alter wording when the plan is fixed.
+    // Acknowledgement-only plans receive the approved transform.
     const acknowledgementOnly = freezePlan(
       plan({
         acknowledgements: [ACKS.genericTravelFieldChange],
@@ -319,7 +341,7 @@ describe('phase 15A — baseline conversational output surface', () => {
     expect(selectConversationalObjective(acknowledgementOnly)).toBeNull();
     expect(selectConversationalObjective(withFollowUp)?.id).toBe('activities');
     expect(generateBaselineConversationalReply(acknowledgementOnly)).toBe(
-      ACKS.genericTravelFieldChange,
+      'Perfect, got it.',
     );
     expect(generateBaselineConversationalReply(withFollowUp)).toBe(
       `${ACKS.genericTravelFieldChange}\n${FOLLOW_UPS.activities}`,
@@ -407,7 +429,7 @@ describe('phase 15A — baseline conversational output surface', () => {
       NEUTRAL_TRIP_FALLBACK_REPLY,
     );
     expect(generateBaselineConversationalReply(single)).toBe(
-      ACKS.destination('Brisbane'),
+      'Great, Brisbane it is.',
     );
     expect(generateBaselineConversationalReply(multi)).toBe(first);
   });

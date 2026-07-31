@@ -13,13 +13,14 @@ import {
   type ConversationReplyPlanIntegrationMode,
 } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14H — mode-driven plan renderer characterisation.
  *
  * Proves both integration branches are directly parity-tested through
  * renderConversationReplyPlanByIntegrationMode while the production wrapper
- * remains permanently deterministic.
+ * remains permanently on the activated baseline mode.
  */
 
 const ROOT = process.cwd();
@@ -62,6 +63,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
@@ -224,6 +235,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
       const baseline = generateBaselineConversationalReply(entry.replyPlan);
+      const expectedBaseline = expectedBaselineWording(entry.replyPlan);
 
       const viaDeterministicMode = renderConversationReplyPlanByIntegrationMode({
         plan: entry.replyPlan,
@@ -239,8 +251,20 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
 
       expect(viaDeterministicMode, entry.label).toBe(deterministic);
       expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(baseline);
-      expect(baseline, `${entry.label} / baseline parity`).toBe(deterministic);
-      expect(viaProduction, `${entry.label} / production`).toBe(deterministic);
+      expect(baseline, `${entry.label} / baseline expected`).toBe(
+        expectedBaseline,
+      );
+      expect(viaProduction, `${entry.label} / production`).toBe(
+        expectedBaseline,
+      );
+      if (
+        entry.replyPlan.acknowledgements.length !== 1 ||
+        entry.replyPlan.followUpQuestion !== null
+      ) {
+        expect(baseline, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 

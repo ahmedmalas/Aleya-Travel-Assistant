@@ -166,3 +166,79 @@ reply-plan assembly
 required follow-up selection
 deterministic fallback
 ```
+
+---
+
+## Phase 15B record — first acknowledgement-only transformation
+
+Baseline parity is now **intentionally broken only for eligible acknowledgement-only plans**.
+
+### First transformed category
+
+```text
+acknowledgement-only plans
+```
+
+### Exact eligibility boundary
+
+```text
+plan.acknowledgements.length === 1
+AND plan.followUpQuestion === null
+```
+
+Eligible plans apply `transformBaselineAcknowledgement(acknowledgement)` inside
+`renderBaselineConversationalLayer`. Catalogue ownership and deterministic
+acknowledgement selection are unchanged; only the completed plan’s
+acknowledgement string is rewritten at render time.
+
+### Mapped acknowledgement categories
+
+| Category | Examples (deterministic → conversational) |
+| --- | --- |
+| field set or changed | `Great — Cairns.` → `Great, Cairns it is.`; `Perfect — departing from Sydney.` → `Perfect, we'll start from Sydney.`; date / passenger count templates similarly |
+| field removed | `Destination removed.` → `No problem, I've removed the destination.` (and parallel removal strings) |
+| capability enabled | `I've added flights to your trip requirements.` → `Great, I've added flights to your trip.` |
+| capability disabled | `I've removed flights from your trip requirements.` → `No problem, I've removed flights from your trip.` |
+| generic acknowledgement | `Perfect.` → `Perfect, got it.` |
+
+Unknown acknowledgement strings remain unchanged.
+
+### Unchanged categories
+
+```text
+acknowledgement + follow-up
+follow-up only
+neutral continuation
+multiple acknowledgements
+empty plans
+uninterpreted messages (neutral continuation shape)
+```
+
+These continue to equal deterministic `renderConversationReplyPlan(plan)` output.
+
+### Fallback guarantee
+
+Phase 14I mode-driven fallback is preserved:
+
+```text
+try generateBaselineConversationalReply(plan)
+catch → renderConversationReplyPlan(plan)
+```
+
+No additional fallback layer was added. Transformation failure is covered by the
+existing baseline catch boundary and returns the deterministic reply for the
+same plan.
+
+### Deterministic ownership guarantee
+
+Unchanged and still exclusively deterministic:
+
+- trip state
+- classification
+- priority
+- eligibility
+- reply-component selection
+- reply-plan assembly
+- required follow-up selection
+- deterministic renderer (`renderConversationReplyPlan`)
+- production mode (`'baseline-conversational'`)

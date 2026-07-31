@@ -18,12 +18,14 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13H — deterministic conversational-layer baseline characterisation.
  *
- * Proves baseline wording matches the existing deterministic renderer and that
- * style / objective metadata cannot alter rendered output.
+ * Proves baseline wording matches the deterministic renderer for non-eligible
+ * plans, applies acknowledgement-only transform when eligible, and that style /
+ * objective metadata cannot alter rendered output.
  */
 
 const ROOT = process.cwd();
@@ -54,13 +56,23 @@ function plan(
   };
 }
 
-function expectWordingMatchesDeterministic(
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
+function expectWordingMatchesBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof buildConversationalLayerInput>[1],
 ): string {
   const input = buildConversationalLayerInput(replyPlan, style);
   const output = renderBaselineConversationalLayer(input);
-  const expected = renderConversationReplyPlan(replyPlan);
+  const expected = expectedBaselineWording(replyPlan);
   expect(output).toEqual({ wording: expected });
   expect(Object.keys(output)).toEqual(['wording']);
   return output.wording;
@@ -79,6 +91,10 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     expect(source.includes('selectConversationFollowUpQuestion')).toBe(false);
     expect(source.includes('renderConversationReplyPlan')).toBe(true);
     expect(source.includes("from './generateConversationReply'")).toBe(true);
+    expect(source.includes('transformBaselineAcknowledgement')).toBe(true);
+    expect(source.includes("from './transformBaselineAcknowledgement'")).toBe(
+      true,
+    );
     expect(source.includes('generateConversationReply(')).toBe(false);
     expect(source.includes('processConversationTurn')).toBe(false);
     expect(source.includes('styleProfile')).toBe(true);
@@ -101,7 +117,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   });
 
   it('renders acknowledgement + destination follow-up like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+    const wording = expectWordingMatchesBaseline(
       plan({
         acknowledgements: ['Great — Brisbane.'],
         followUpQuestion: FOLLOW_UPS.destination,
@@ -112,7 +128,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   });
 
   it('renders acknowledgement + origin follow-up like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+    const wording = expectWordingMatchesBaseline(
       plan({
         acknowledgements: ['Perfect — departing from Sydney.'],
         followUpQuestion: FOLLOW_UPS.origin,
@@ -125,7 +141,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   });
 
   it('renders a specific follow-up only like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+    const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.activities,
         messageInterpreted: true,
@@ -135,7 +151,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   });
 
   it('renders neutral continuation like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+    const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
@@ -145,7 +161,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
   });
 
   it('renders uninterpreted continuation like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+    const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: false,
@@ -155,19 +171,19 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     expect(wording).toBe(FOLLOW_UPS.neutralContinuation);
   });
 
-  it('renders acknowledgement only like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(
+  it('renders acknowledgement only with the approved conversational transform', () => {
+    const wording = expectWordingMatchesBaseline(
       plan({
         acknowledgements: ['Perfect.'],
         followUpQuestion: null,
         messageInterpreted: true,
       }),
     );
-    expect(wording).toBe('Perfect.');
+    expect(wording).toBe('Perfect, got it.');
   });
 
   it('renders an empty plan like the deterministic renderer', () => {
-    const wording = expectWordingMatchesDeterministic(plan());
+    const wording = expectWordingMatchesBaseline(plan());
     expect(wording).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
   });
 
@@ -182,9 +198,9 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
 
     const output = renderBaselineConversationalLayer(input);
     expect(output).toEqual({
-      wording: renderConversationReplyPlan(replyPlan),
+      wording: transformBaselineAcknowledgement('Perfect.'),
     });
-    expect(output.wording).toBe('Perfect.');
+    expect(output.wording).toBe('Perfect, got it.');
   });
 
   it('ignores professional, warm, and luxury style profiles', () => {

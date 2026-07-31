@@ -225,7 +225,10 @@ describe('phase 13S — experimental conversational stack architecture', () => {
     );
     expect(execute.includes('invokeConversationalLayerRenderer')).toBe(true);
     expect(readSrc(BASELINE_RENDERER)).toMatch(
-      /renderConversationReplyPlan\(input\.plan\)/,
+      /renderConversationReplyPlan\(plan\)/,
+    );
+    expect(readSrc(BASELINE_RENDERER)).toMatch(
+      /transformBaselineAcknowledgement/,
     );
   });
 
@@ -298,7 +301,10 @@ describe('phase 13S — experimental conversational stack architecture', () => {
       callSitesOutside('renderConversationReplyPlan(', [BASELINE_RENDERER]),
     ).toEqual([]);
     expect(readSrc(BASELINE_RENDERER)).toMatch(
-      /wording:\s*renderConversationReplyPlan\(input\.plan\)/,
+      /wording:\s*renderConversationReplyPlan\(plan\)/,
+    );
+    expect(readSrc(BASELINE_RENDERER)).toMatch(
+      /transformBaselineAcknowledgement/,
     );
 
     expect(
@@ -348,10 +354,14 @@ describe('phase 13S — experimental conversational stack architecture', () => {
       /\{\s*baseline:\s*renderBaselineConversationalLayer,\s*\}/,
     );
 
-    // Wording is produced only by the baseline renderer wrapping the
-    // authoritative deterministic renderer.
-    expect(readSrc(BASELINE_RENDERER)).toMatch(
-      /ConversationalLayerRenderer\s*=\s*\(\s*input,?\s*\)\s*=>\s*\(\s*\{\s*wording:\s*renderConversationReplyPlan\(input\.plan\)\s*,?\s*\}\s*\)/,
+    // Wording is produced by the baseline renderer: acknowledgement-only
+    // transform when eligible, otherwise the authoritative deterministic renderer.
+    const baselineRenderer = readSrc(BASELINE_RENDERER);
+    expect(baselineRenderer).toMatch(/transformBaselineAcknowledgement/);
+    expect(baselineRenderer).toMatch(
+      /wording:\s*renderConversationReplyPlan\(plan\)/,
     );
+    expect(baselineRenderer).toMatch(/acknowledgements\.length === 1/);
+    expect(baselineRenderer).toMatch(/followUpQuestion === null/);
   });
 });

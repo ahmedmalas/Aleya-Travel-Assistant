@@ -180,7 +180,7 @@ describe('phase 13L — executeConversationalLayerRenderer', () => {
     expect(nullObjective.objective).toBeNull();
     expect(
       executeConversationalLayerRenderer(registry, 'baseline', nullObjective),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
 
     const withStyle = buildConversationalLayerInput(
       replyPlan,
@@ -191,13 +191,13 @@ describe('phase 13L — executeConversationalLayerRenderer', () => {
     );
     expect(
       executeConversationalLayerRenderer(registry, 'baseline', withStyle),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
 
     const withoutStyle = buildConversationalLayerInput(replyPlan);
     expect(withoutStyle.styleProfile).toBeUndefined();
     expect(
       executeConversationalLayerRenderer(registry, 'baseline', withoutStyle),
-    ).toEqual({ wording: 'Perfect.' });
+    ).toEqual({ wording: 'Perfect, got it.' });
   });
 
   it('leaves frozen registry and input unmodified', () => {

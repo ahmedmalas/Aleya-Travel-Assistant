@@ -16,6 +16,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13O — baseline conversational reply-plan adapter characterisation.
@@ -52,14 +53,24 @@ function plan(
   };
 }
 
-function expectDeterministic(
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
+function expectBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof renderBaselineConversationalReplyPlan>[1],
 ) {
   const output = renderBaselineConversationalReplyPlan(replyPlan, style);
   const input = buildConversationalLayerInput(replyPlan, style);
   const viaExecution = executeBaselineConversationalRenderer(input);
-  const expected = renderConversationReplyPlan(replyPlan);
+  const expected = expectedBaselineWording(replyPlan);
 
   expect(output).toEqual({ wording: expected });
   expect(output).toEqual(viaExecution);
@@ -108,7 +119,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
   });
 
   it('renders acknowledgement + follow-up with exact deterministic wording', () => {
-    const { expected } = expectDeterministic(
+    const { expected } = expectBaseline(
       plan({
         acknowledgements: ['Great — Brisbane.'],
         followUpQuestion: FOLLOW_UPS.origin,
@@ -120,7 +131,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
 
   it('renders specific follow-up only, neutral continuation, acknowledgement-only, and empty plans', () => {
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           followUpQuestion: FOLLOW_UPS.activities,
           messageInterpreted: true,
@@ -129,7 +140,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
     ).toBe(FOLLOW_UPS.activities);
 
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
@@ -138,16 +149,16 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
     ).toBe(FOLLOW_UPS.neutralContinuation);
 
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           acknowledgements: ['Perfect.'],
           followUpQuestion: null,
           messageInterpreted: true,
         }),
       ).expected,
-    ).toBe('Perfect.');
+    ).toBe('Perfect, got it.');
 
-    expect(expectDeterministic(plan()).expected).toBe(
+    expect(expectBaseline(plan()).expected).toBe(
       NEUTRAL_TRIP_FALLBACK_REPLY,
     );
   });
@@ -161,7 +172,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
     expect(selectConversationalObjective(emptyPlan)).toBeNull();
     expect(buildConversationalLayerInput(emptyPlan).objective).toBeNull();
     expect(renderBaselineConversationalReplyPlan(emptyPlan)).toEqual({
-      wording: 'Perfect.',
+      wording: 'Perfect, got it.',
     });
 
     const replyPlan = plan({
@@ -178,7 +189,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
       REFERENCE_CONVERSATIONAL_STYLE_WARM,
       REFERENCE_CONVERSATIONAL_STYLE_LUXURY,
     ]) {
-      expectDeterministic(replyPlan, style);
+      expectBaseline(replyPlan, style);
     }
   });
 

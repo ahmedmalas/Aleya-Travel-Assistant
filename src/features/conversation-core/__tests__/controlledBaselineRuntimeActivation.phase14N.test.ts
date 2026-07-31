@@ -15,6 +15,7 @@ import {
 } from '../index';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14N — controlled baseline conversational runtime activation.
@@ -97,6 +98,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 function createState(
@@ -299,6 +310,7 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
       });
       const before = structuredClone(frozen);
       const deterministic = renderConversationReplyPlan(frozen);
+      const expected = expectedBaselineWording(frozen);
       const viaProduction = renderIntegratedConversationReplyPlan({
         plan: frozen,
       });
@@ -307,10 +319,16 @@ describe('phase 14N — controlled baseline conversational runtime activation', 
         mode: 'baseline-conversational',
       });
 
-      expect(viaProduction, entry.label).toBe(deterministic);
-      expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(
-        deterministic,
-      );
+      expect(viaProduction, entry.label).toBe(expected);
+      expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(expected);
+      if (
+        frozen.acknowledgements.length !== 1 ||
+        frozen.followUpQuestion !== null
+      ) {
+        expect(viaProduction, `${entry.label} / deterministic parity`).toBe(
+          deterministic,
+        );
+      }
       expect(frozen, `${entry.label} / unchanged`).toEqual(before);
       expect(Object.isFrozen(frozen), entry.label).toBe(true);
     }

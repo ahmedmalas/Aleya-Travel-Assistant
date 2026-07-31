@@ -16,6 +16,7 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 13N — baseline conversational renderer execution characterisation.
@@ -52,13 +53,23 @@ function plan(
   };
 }
 
-function expectDeterministic(
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
+}
+
+function expectBaseline(
   replyPlan: ConversationReplyPlan,
   style?: Parameters<typeof buildConversationalLayerInput>[1],
 ) {
   const input = buildConversationalLayerInput(replyPlan, style);
   const output = executeBaselineConversationalRenderer(input);
-  const expected = renderConversationReplyPlan(replyPlan);
+  const expected = expectedBaselineWording(replyPlan);
   expect(output).toEqual({ wording: expected });
   expect(output).toEqual(renderBaselineConversationalLayer(input));
   return { input, output, expected };
@@ -105,7 +116,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
   });
 
   it('renders acknowledgement + follow-up with exact deterministic wording', () => {
-    const { expected } = expectDeterministic(
+    const { expected } = expectBaseline(
       plan({
         acknowledgements: ['Great — Brisbane.'],
         followUpQuestion: FOLLOW_UPS.origin,
@@ -117,7 +128,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
 
   it('renders specific follow-up only, neutral continuation, acknowledgement-only, and empty plans', () => {
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           followUpQuestion: FOLLOW_UPS.activities,
           messageInterpreted: true,
@@ -126,7 +137,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
     ).toBe(FOLLOW_UPS.activities);
 
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
@@ -135,16 +146,16 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
     ).toBe(FOLLOW_UPS.neutralContinuation);
 
     expect(
-      expectDeterministic(
+      expectBaseline(
         plan({
           acknowledgements: ['Perfect.'],
           followUpQuestion: null,
           messageInterpreted: true,
         }),
       ).expected,
-    ).toBe('Perfect.');
+    ).toBe('Perfect, got it.');
 
-    expect(expectDeterministic(plan()).expected).toBe(
+    expect(expectBaseline(plan()).expected).toBe(
       NEUTRAL_TRIP_FALLBACK_REPLY,
     );
   });
@@ -168,7 +179,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
       REFERENCE_CONVERSATIONAL_STYLE_WARM,
       REFERENCE_CONVERSATIONAL_STYLE_LUXURY,
     ]) {
-      expectDeterministic(replyPlan, style);
+      expectBaseline(replyPlan, style);
     }
   });
 

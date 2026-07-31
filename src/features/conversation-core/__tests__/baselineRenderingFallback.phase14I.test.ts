@@ -11,6 +11,7 @@ import {
 import * as generateConversationReplyModule from '../generateConversationReply';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
  * Phase 14I — deterministic fallback for baseline rendering failure.
@@ -53,6 +54,16 @@ function plan(
     messageInterpreted: false,
     ...overrides,
   };
+}
+
+function expectedBaselineWording(replyPlan: ConversationReplyPlan): string {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === null
+  ) {
+    return transformBaselineAcknowledgement(replyPlan.acknowledgements[0]!);
+  }
+  return renderConversationReplyPlan(replyPlan);
 }
 
 describe('phase 14I — baseline rendering fallback', () => {
@@ -184,9 +195,17 @@ describe('phase 14I — baseline rendering fallback', () => {
       });
 
       expect(viaMode, entry.label).toBe(expected);
-      expect(viaMode, `${entry.label} / deterministic parity`).toBe(
-        renderConversationReplyPlan(entry.replyPlan),
+      expect(viaMode, `${entry.label} / baseline expected`).toBe(
+        expectedBaselineWording(entry.replyPlan),
       );
+      if (
+        entry.replyPlan.acknowledgements.length !== 1 ||
+        entry.replyPlan.followUpQuestion !== null
+      ) {
+        expect(viaMode, `${entry.label} / deterministic parity`).toBe(
+          renderConversationReplyPlan(entry.replyPlan),
+        );
+      }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 
