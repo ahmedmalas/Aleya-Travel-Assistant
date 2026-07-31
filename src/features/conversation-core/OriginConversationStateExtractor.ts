@@ -1,3 +1,4 @@
+import { trimRepairPlaceCaptureAtSiblingClause } from './repairPlaceClauseBoundary';
 import type {
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
@@ -14,6 +15,9 @@ import type {
  * Phase 17C: adds explicit origin-cued repair forms (meant from / Actually,
  * from / make that from / change origin|departure location / from … instead).
  * Bare-place repairs remain destination-owned (Phase 17B).
+ *
+ * Phase 17I: repair place captures trim at following date/passenger clauses;
+ * destination-contrast messages may keep a trailing from-origin cue.
  */
 export class OriginConversationStateExtractor
   implements ConversationStateExtractor
@@ -82,7 +86,14 @@ function isBlockedOriginMessage(message: string): boolean {
   if (/\bi(?:\s+am|'m)\s+not\s+from\b/i.test(message)) {
     return true;
   }
-  if (/\bnot\b/i.test(message)) {
+  // Phase 17I: allow trailing from-origin after destination contrast
+  // ("Not Melbourne, Cairns, from Sydney") while keeping other not-forms blocked.
+  if (
+    /\bnot\b/i.test(message) &&
+    !/^not\s+[^,]+,.+\b(?:leaving\s+from|departing\s+from|from)\s+\S+/i.test(
+      message,
+    )
+  ) {
     return true;
   }
   return false;
@@ -157,6 +168,8 @@ function isOriginRepairCue(cue: RegExp): boolean {
 
 function normaliseCapturedOrigin(raw: string): string | null {
   let value = edgeTrim(raw);
+  // Phase 17I: stop before following date / passenger clauses.
+  value = trimRepairPlaceCaptureAtSiblingClause(value);
   // Stop before a destination clause on the same turn.
   value = value.replace(
     /,?\s+i\s+(?:want|need|would\s+like)\s+to\s+(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?|visit(?:ing)?)\s+to\b.*$/i,

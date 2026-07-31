@@ -1,3 +1,4 @@
+import { trimRepairPlaceCaptureAtSiblingClause } from './repairPlaceClauseBoundary';
 import type {
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
@@ -18,6 +19,9 @@ import type {
  *
  * Phase 17C collision: origin-cued repairs ("meant from …", "Actually, from …")
  * must not yield a destination capture such as "from Brisbane".
+ *
+ * Phase 17I: repair place captures trim at following origin/date/passenger
+ * clauses via the shared clause-boundary helper.
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -131,7 +135,12 @@ function isBlockedDestinationMessage(message: string): boolean {
   if (/\bflights\s+to\s+compare\b/i.test(message)) {
     return true;
   }
-  if (/\bleaving\b/i.test(message) || /\bdeparting\b/i.test(message)) {
+  // Origin/date “leaving/departing …” remains blocked unless a destination
+  // repair/route cue is also present (Phase 17I multi-fact coexistence).
+  if (
+    (/\bleaving\b/i.test(message) || /\bdeparting\b/i.test(message)) &&
+    !hasExplicitDestinationCueAlongsideOrigin(message)
+  ) {
     return true;
   }
   // Origin-only “from …” remains blocked; allow when a destination cue is also
@@ -263,6 +272,8 @@ function isRepairDestinationCue(cue: RegExp): boolean {
 
 function normaliseCapturedDestination(raw: string): string | null {
   let value = edgeTrim(raw);
+  // Phase 17I: stop before following origin / date / passenger clauses.
+  value = trimRepairPlaceCaptureAtSiblingClause(value);
   value = value.replace(/\s+instead(?:\s+of\b.*)?$/i, '');
   value = value.replace(/\s+from\b.*$/i, '');
   value = value.replace(/\s+for\b.*$/i, '');

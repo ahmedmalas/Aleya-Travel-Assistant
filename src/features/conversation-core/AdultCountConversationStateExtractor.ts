@@ -144,7 +144,16 @@ function isBlockedAdultCountMessage(message: string): boolean {
   if (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) {
     return true;
   }
-  if (/\binstead\b/i.test(message) || /\bactually\b/i.test(message)) {
+  if (/\binstead\b/i.test(message)) {
+    return true;
+  }
+  // Phase 17I: allow adult count after origin-repair "Actually, from …"
+  // coexistence; keep other Actually forms blocked (17G whole-message repair
+  // is handled before this guard).
+  if (
+    /\bactually\b/i.test(message) &&
+    !/\bactually,?\s+from\b/i.test(message)
+  ) {
     return true;
   }
   if (

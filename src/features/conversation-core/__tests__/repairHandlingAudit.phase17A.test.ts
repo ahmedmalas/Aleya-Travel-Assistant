@@ -445,43 +445,51 @@ describe('Phase 17A — repair handling characterization audit', () => {
     });
   });
 
-  it('multi-fact repair: destination missed; origin polluted; departure conditional on year', () => {
+  it('multi-fact repair: Phase 17I cleans destination/origin; no-year departure still absent', () => {
+    // Pre-17I: destination missed; origin polluted; no-year left prior departure.
     const withoutYear = traceRepair(
       'Sorry, I meant Cairns, leaving from Sydney on 28 August',
     );
     expect(withoutYear.extractedPatch).toEqual({
-      origin: 'Sydney on 28 August',
+      destination: 'Cairns',
+      origin: 'Sydney',
     });
-    expect(withoutYear.final.destination).toBe('Melbourne');
-    expect(withoutYear.final.origin).toBe('Sydney on 28 August');
+    expect(withoutYear.final.destination).toBe('Cairns');
+    expect(withoutYear.final.origin).toBe('Sydney');
+    // No-year policy unchanged: departureDate stays at prior populated value.
     expect(withoutYear.final.departureDate).toBe('2026-08-10');
-    expect(withoutYear.updated).toEqual(['origin']);
+    expect(withoutYear.updated).toEqual(['destination']);
     expect(withoutYear.acknowledgementEvent).toEqual({
       kind: 'field-changed',
-      field: 'origin',
+      field: 'destination',
     });
     expect(withoutYear.exactFinalReply).toBe(
-      "We'll depart from Sydney on 28 August instead. Is there anything else you'd like me to consider? What else should I know about your trip?",
+      "Updated — Cairns it is. Is there anything else you'd like me to consider? What else should I know about your trip?",
     );
 
     const withYear = traceRepair(
       'Sorry, I meant Cairns, leaving from Brisbane on 28 August 2026',
     );
     expect(withYear.extractedPatch).toEqual({
-      origin: 'Brisbane on 28 August 2026',
+      destination: 'Cairns',
+      origin: 'Brisbane',
       departureDate: '2026-08-28',
     });
-    expect(withYear.final.destination).toBe('Melbourne');
-    expect(withYear.final.origin).toBe('Brisbane on 28 August 2026');
+    expect(withYear.final.destination).toBe('Cairns');
+    expect(withYear.final.origin).toBe('Brisbane');
     expect(withYear.final.departureDate).toBe('2026-08-28');
-    expect(withYear.updated).toEqual(['origin', 'departureDate']);
-    // Origin acknowledgement wins priority over departureDate.
+    expect(withYear.updated).toEqual([
+      'destination',
+      'origin',
+      'departureDate',
+    ]);
+    // Destination acknowledgement priority wins over origin/departureDate.
     expect(withYear.acknowledgementEvent).toEqual({
       kind: 'field-changed',
-      field: 'origin',
+      field: 'destination',
     });
-    expect(withYear.selectedAcknowledgement).toBe(
-      'Perfect — departing from Brisbane on 28 August 2026.',
+    expect(withYear.exactFinalReply).toBe(
+      "Updated — Cairns it is. Is there anything else you'd like me to consider? What else should I know about your trip?",
     );
   });
 
