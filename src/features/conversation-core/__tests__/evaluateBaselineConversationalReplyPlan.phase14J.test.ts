@@ -142,7 +142,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     }
 
     expect(readFileSync(SEAM_SOURCE, 'utf8')).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
   });
 
@@ -332,7 +332,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     }
   });
 
-  it('does not affect production deterministic selection', () => {
+  it('keeps production output parity-identical after baseline activation', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.origin('Sydney')],
       followUpQuestion: FOLLOW_UPS.departureDate,
@@ -348,6 +348,7 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,
     );
-    expect(baselineSpy).not.toHaveBeenCalled();
+    expect(baselineSpy).toHaveBeenCalledTimes(1);
+    expect(baselineSpy.mock.calls[0]?.[0]).toBe(replyPlan);
   });
 });

@@ -1,11 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ConversationReplyPlan } from '../assembleConversationReplyPlan';
-import { compareBaselineConversationalReplyPlan } from '../compareBaselineConversationalReplyPlan';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
-import { evaluateBaselineConversationalReplyPlan } from '../evaluateBaselineConversationalReplyPlan';
-import { evaluateBaselineConversationalReplyPlanOutcome } from '../evaluateBaselineConversationalReplyPlanOutcome';
 import * as baselineModule from '../generateBaselineConversationalReply';
 import {
   generateConversationReply,
@@ -13,16 +10,17 @@ import {
 } from '../generateConversationReply';
 import {
   createInitialConversationCoreState,
+  processConversationTurn,
   type ConversationCoreState,
 } from '../index';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 
 /**
- * Phase 14M — controlled runtime activation readiness audit.
+ * Phase 14N — controlled baseline conversational runtime activation.
  *
- * Audit-only characterisation of the Phase 14 integration architecture.
- * Does not activate the baseline conversational branch in production.
+ * Proves the production plan-level seam statically selects
+ * `'baseline-conversational'` while ownership, fallback, and parity hold.
  */
 
 const ROOT = process.cwd();
@@ -85,6 +83,11 @@ const RUNTIME_SELECTION_MARKERS = [
 const ACKS = CONVERSATION_REPLY_CATALOGUE.acknowledgements;
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
+const BASELINE_MODE_CONST =
+  /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/;
+const DETERMINISTIC_MODE_CONST =
+  /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/;
+
 function plan(
   overrides: Partial<ConversationReplyPlan> = {},
 ): ConversationReplyPlan {
@@ -101,7 +104,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-14m',
+      conversationId: 'conversation-14n',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -110,7 +113,18 @@ function createState(
   };
 }
 
-describe('phase 14M — controlled runtime activation readiness audit', () => {
+function turn(message: string, state: ConversationCoreState) {
+  return processConversationTurn({
+    message,
+    state,
+    userEntryId: 'user-14n',
+    assistantEntryId: 'assistant-14n',
+    userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
+    assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
+  });
+}
+
+describe('phase 14N — controlled baseline conversational runtime activation', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -142,12 +156,8 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
     expect(generate.includes('mode:')).toBe(false);
     expect(generate.includes('baseline-conversational')).toBe(false);
 
-    expect(seam).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
-    );
-    expect(seam).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
-    );
+    expect(seam).toMatch(BASELINE_MODE_CONST);
+    expect(seam).not.toMatch(DETERMINISTIC_MODE_CONST);
     expect(seam).toMatch(
       /export function renderIntegratedConversationReplyPlan\(\s*input: RenderIntegratedConversationReplyPlanInput,\s*\): string/,
     );
@@ -167,7 +177,7 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
     );
   });
 
-  it('proves completed-plan ownership remains with the deterministic engine', () => {
+  it('proves processTurn reaches the baseline renderer while ownership stays deterministic', () => {
     const generate = readFileSync(GENERATE_SOURCE, 'utf8');
     const createPlan = readFileSync(CREATE_PLAN_SOURCE, 'utf8');
     const modeDriven = readFileSync(MODE_SOURCE, 'utf8');
@@ -189,15 +199,53 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
     expect(modeDriven.includes('selectConversationReplyComponents')).toBe(
       false,
     );
-    expect(modeDriven).toMatch(
-      /plan: Readonly<ConversationReplyPlan>/,
+    expect(modeDriven).toMatch(/plan: Readonly<ConversationReplyPlan>/);
+
+    const baselineSpy = vi.spyOn(
+      baselineModule,
+      'generateBaselineConversationalReply',
     );
+    const result = turn('go to Brisbane', createState());
+
+    expect(result.reply).toBe(
+      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+    );
+    expect(baselineSpy).toHaveBeenCalledTimes(1);
+    const receivedPlan = baselineSpy.mock.calls[0]?.[0] as ConversationReplyPlan;
+    expect(receivedPlan.acknowledgements).toEqual([
+      ACKS.destination('Brisbane'),
+    ]);
+    expect(receivedPlan.followUpQuestion).toBe(FOLLOW_UPS.origin);
+    expect(receivedPlan.messageInterpreted).toBe(true);
+
+    const viaGenerate = generateConversationReply({
+      message: 'go to Brisbane',
+      previousState: createState(),
+      state: createState({ destination: 'Brisbane' }),
+    });
+    expect(viaGenerate).toBe(result.reply);
+    expect(baselineSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('proves successful baseline parity, fallback, same-plan use, and immutability', () => {
+  it('proves parity across reply shapes, forced fallback, same-plan use, and immutability', () => {
     const cases: Array<{ label: string; replyPlan: ConversationReplyPlan }> = [
       {
-        label: 'acknowledgement + follow-up',
+        label: 'acknowledgement-only',
+        replyPlan: plan({
+          acknowledgements: [ACKS.destination('Brisbane')],
+          followUpQuestion: null,
+          messageInterpreted: true,
+        }),
+      },
+      {
+        label: 'follow-up-only',
+        replyPlan: plan({
+          followUpQuestion: FOLLOW_UPS.activities,
+          messageInterpreted: true,
+        }),
+      },
+      {
+        label: 'acknowledgement plus follow-up',
         replyPlan: plan({
           acknowledgements: [ACKS.destination('Brisbane')],
           followUpQuestion: FOLLOW_UPS.origin,
@@ -220,7 +268,26 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
         }),
       },
       {
-        label: 'empty',
+        label: 'capability disable',
+        replyPlan: plan({
+          acknowledgements: [ACKS.removedCapabilities('flights')],
+          followUpQuestion: FOLLOW_UPS.neutralContinuation,
+          messageInterpreted: true,
+        }),
+      },
+      {
+        label: 'multi-component reply',
+        replyPlan: plan({
+          acknowledgements: [
+            ACKS.destination('Cairns'),
+            ACKS.origin('Sydney'),
+          ],
+          followUpQuestion: FOLLOW_UPS.departureDate,
+          messageInterpreted: true,
+        }),
+      },
+      {
+        label: 'empty reply plan',
         replyPlan: plan(),
       },
     ];
@@ -239,20 +306,11 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
         plan: frozen,
         mode: 'baseline-conversational',
       });
-      const viaEvaluate = evaluateBaselineConversationalReplyPlan({
-        plan: frozen,
-      });
-      const comparison = compareBaselineConversationalReplyPlan({
-        plan: frozen,
-      });
 
       expect(viaProduction, entry.label).toBe(deterministic);
       expect(viaBaselineMode, `${entry.label} / baseline mode`).toBe(
         deterministic,
       );
-      expect(viaEvaluate, `${entry.label} / evaluate`).toBe(deterministic);
-      expect(comparison.matchesDeterministic, entry.label).toBe(true);
-      expect(comparison.status, entry.label).toBe('identical');
       expect(frozen, `${entry.label} / unchanged`).toEqual(before);
       expect(Object.isFrozen(frozen), entry.label).toBe(true);
     }
@@ -272,31 +330,24 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
       'generateBaselineConversationalReply',
     ).mockImplementation((receivedPlan) => {
       expect(receivedPlan).toBe(failurePlan);
-      throw new Error('forced-baseline-failure:14m');
+      throw new Error('forced-baseline-failure:14n');
     });
 
-    const fallbackReply = renderConversationReplyPlanByIntegrationMode({
+    const fallbackReply = renderIntegratedConversationReplyPlan({
+      plan: failurePlan,
+    });
+    const fallbackViaMode = renderConversationReplyPlanByIntegrationMode({
       plan: failurePlan,
       mode: 'baseline-conversational',
     });
-    const fallbackOutcome = evaluateBaselineConversationalReplyPlanOutcome({
-      plan: failurePlan,
-    });
-    const fallbackComparison = compareBaselineConversationalReplyPlan({
-      plan: failurePlan,
-    });
 
     expect(fallbackReply).toBe(failureExpected);
-    expect(fallbackOutcome).toEqual({
-      reply: failureExpected,
-      usedFallback: true,
-    });
-    expect(fallbackComparison.status).toBe('fallback');
-    expect(fallbackComparison.matchesDeterministic).toBe(true);
+    expect(fallbackViaMode).toBe(failureExpected);
     expect(failurePlan).toEqual(failureBefore);
+    expect(Object.isFrozen(failurePlan)).toBe(true);
   });
 
-  it('proves no runtime selection mechanisms on the authoritative production path', () => {
+  it('proves no runtime selection mechanisms and no evaluation helpers on the production path', () => {
     for (const sourcePath of PRODUCTION_PATH_SOURCES) {
       const source = readFileSync(sourcePath, 'utf8');
       for (const marker of RUNTIME_SELECTION_MARKERS) {
@@ -305,51 +356,6 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
           `${sourcePath} must not contain ${marker}`,
         ).toBe(false);
       }
-    }
-
-    const productionReply = generateConversationReply({
-      message: 'go to Brisbane',
-      previousState: createState(),
-      state: createState({ destination: 'Brisbane' }),
-    });
-    expect(productionReply).toBe(
-      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
-    );
-    expect(
-      renderIntegratedConversationReplyPlan({
-        plan: plan({
-          acknowledgements: [ACKS.destination('Brisbane')],
-          followUpQuestion: FOLLOW_UPS.origin,
-          messageInterpreted: true,
-        }),
-      }),
-    ).toBe(productionReply);
-  });
-
-  it('proves evaluation-only helpers stay out of production modules and public barrels', () => {
-    const index = readFileSync(INDEX_SOURCE, 'utf8');
-    for (const marker of EVALUATION_ONLY_MARKERS) {
-      expect(index.includes(marker), `barrel must not expose ${marker}`).toBe(
-        false,
-      );
-    }
-
-    expect(index).toMatch(/processConversationTurn/);
-    expect(index).toMatch(/createInitialConversationCoreState/);
-    expect(index.includes('generateConversationReply')).toBe(false);
-    expect(index.includes('renderIntegratedConversationReplyPlan')).toBe(false);
-    expect(index.includes('renderConversationReplyPlanByIntegrationMode')).toBe(
-      false,
-    );
-    expect(index.includes('generateBaselineConversationalReply')).toBe(false);
-
-    for (const sourcePath of [
-      PROCESS_TURN_SOURCE,
-      INTEGRATED_REPLY_SOURCE,
-      GENERATE_SOURCE,
-      SEAM_SOURCE,
-    ] as const) {
-      const source = readFileSync(sourcePath, 'utf8');
       for (const marker of EVALUATION_ONLY_MARKERS) {
         expect(
           source.includes(marker),
@@ -358,34 +364,17 @@ describe('phase 14M — controlled runtime activation readiness audit', () => {
       }
     }
 
-    for (const name of readdirSync(CONVERSATION_CORE_DIR)) {
-      if (!name.endsWith('.ts')) continue;
-      if (
-        name === 'evaluateBaselineConversationalReplyPlan.ts' ||
-        name === 'evaluateBaselineConversationalReplyPlanOutcome.ts' ||
-        name === 'compareBaselineConversationalReplyPlan.ts'
-      ) {
-        continue;
-      }
-      if (
-        name === 'renderConversationReplyPlanByIntegrationMode.ts' ||
-        name === 'renderIntegratedConversationReplyPlan.ts' ||
-        name === 'generateConversationReply.ts' ||
-        name === 'generateIntegratedConversationReply.ts' ||
-        name === 'processTurn.ts' ||
-        name === 'index.ts'
-      ) {
-        const contents = readFileSync(
-          resolve(CONVERSATION_CORE_DIR, name),
-          'utf8',
-        );
-        for (const marker of EVALUATION_ONLY_MARKERS) {
-          expect(
-            contents.includes(marker),
-            `${name} must not reference ${marker}`,
-          ).toBe(false);
-        }
-      }
+    const index = readFileSync(INDEX_SOURCE, 'utf8');
+    for (const marker of EVALUATION_ONLY_MARKERS) {
+      expect(index.includes(marker), `barrel must not expose ${marker}`).toBe(
+        false,
+      );
     }
+    expect(index.includes('renderIntegratedConversationReplyPlan')).toBe(false);
+    expect(index.includes('renderConversationReplyPlanByIntegrationMode')).toBe(
+      false,
+    );
+    expect(index.includes('generateBaselineConversationalReply')).toBe(false);
+    expect(index.includes('ConversationReplyPlanIntegrationMode')).toBe(false);
   });
 });

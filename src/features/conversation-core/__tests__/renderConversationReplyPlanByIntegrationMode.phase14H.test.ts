@@ -104,7 +104,7 @@ describe('phase 14H — renderConversationReplyPlanByIntegrationMode', () => {
     expect(modeSource.includes('console.')).toBe(false);
 
     expect(seam).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(seam).toMatch(
       /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,

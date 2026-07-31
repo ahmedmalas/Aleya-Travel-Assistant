@@ -122,7 +122,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(generate.match(/createConversationReplyPlan\(/g)?.length).toBe(1);
 
     expect(seam).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(seam).toMatch(
       /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,

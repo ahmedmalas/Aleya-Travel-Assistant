@@ -148,7 +148,7 @@ describe('phase 14L — baseline comparison status', () => {
     }
 
     expect(readFileSync(SEAM_SOURCE, 'utf8')).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
   });
 
@@ -269,7 +269,7 @@ describe('phase 14L — baseline comparison status', () => {
     expect(comparison.status).not.toBe('fallback');
   });
 
-  it('does not affect production deterministic selection', () => {
+  it('keeps production output parity-identical after baseline activation', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Cairns')],
       followUpQuestion: FOLLOW_UPS.origin,
@@ -285,6 +285,7 @@ describe('phase 14L — baseline comparison status', () => {
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,
     );
-    expect(baselineSpy).not.toHaveBeenCalled();
+    expect(baselineSpy).toHaveBeenCalledTimes(1);
+    expect(baselineSpy.mock.calls[0]?.[0]).toBe(replyPlan);
   });
 });

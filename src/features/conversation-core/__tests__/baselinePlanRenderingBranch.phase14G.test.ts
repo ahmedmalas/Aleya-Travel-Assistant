@@ -20,9 +20,11 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
 /**
  * Phase 14G — unselected baseline plan-rendering branch characterisation.
  *
- * Proves the mode contract includes both modes, production selection remains
- * statically deterministic, and the unreachable baseline branch delegates to
- * generateBaselineConversationalReply(plan) without rebuilding the plan.
+ * Proves the mode contract includes both modes and the baseline branch
+ * delegates to generateBaselineConversationalReply(plan) without rebuilding
+ * the plan.
+ *
+ * Phase 14N: accepted production mode is `'baseline-conversational'`.
  */
 
 const ROOT = process.cwd();
@@ -96,7 +98,7 @@ function turn(message: string, state: ConversationCoreState) {
 }
 
 describe('phase 14G — baseline plan rendering branch', () => {
-  it('declares both modes, keeps production selection deterministic, and wires the unselected branch', () => {
+  it('declares both modes, keeps production selection static, and wires the baseline branch', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
     const modeSource = readFileSync(MODE_SOURCE, 'utf8');
     const baseline = readFileSync(BASELINE_SOURCE, 'utf8');
@@ -105,10 +107,10 @@ describe('phase 14G — baseline plan rendering branch', () => {
       /export type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
     );
     expect(source).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(source).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
     expect(source).toMatch(
       /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
@@ -243,7 +245,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
         plan: entry.replyPlan,
       });
 
-      // Production seam still selects deterministic path.
+      // Production seam remains parity-identical via the baseline path.
       expect(integrated, entry.label).toBe(deterministic);
       // Baseline entry retains parity with deterministic wording.
       expect(baseline, `${entry.label} / baseline parity`).toBe(deterministic);

@@ -136,7 +136,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
     }
 
     expect(readFileSync(SEAM_SOURCE, 'utf8')).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
   });
 
@@ -316,7 +316,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
     expect(replyPlan).toEqual(before);
   });
 
-  it('does not affect production deterministic selection', () => {
+  it('keeps evaluation helpers off the activated production path', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Cairns')],
       followUpQuestion: FOLLOW_UPS.origin,

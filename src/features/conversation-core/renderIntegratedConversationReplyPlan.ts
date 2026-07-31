@@ -10,6 +10,8 @@ import {
  * Phase 14G — unselected baseline-conversational branch (statically unused).
  * Phase 14H — production wrapper permanently selects `'deterministic'` and
  * delegates to renderConversationReplyPlanByIntegrationMode.
+ * Phase 14N — production wrapper statically selects `'baseline-conversational'`
+ * (deterministic fallback preserved in the mode-driven renderer).
  *
  * Shared internal contract boundary: ConversationReplyPlan → rendered reply.
  * Does not accept a mode argument, read environment variables, or use feature
@@ -25,7 +27,8 @@ export type RenderIntegratedConversationReplyPlanInput = Readonly<{
 export function renderIntegratedConversationReplyPlan(
   input: RenderIntegratedConversationReplyPlanInput,
 ): string {
-  const mode: ConversationReplyPlanIntegrationMode = 'deterministic';
+  const mode: ConversationReplyPlanIntegrationMode =
+    'baseline-conversational';
   return renderConversationReplyPlanByIntegrationMode({
     plan: input.plan,
     mode,

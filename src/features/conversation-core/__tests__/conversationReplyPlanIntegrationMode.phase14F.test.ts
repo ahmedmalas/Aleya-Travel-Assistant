@@ -12,9 +12,11 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
 /**
  * Phase 14F — explicit deterministic plan-rendering integration mode.
  *
- * Proves the production wrapper permanently selects `'deterministic'` and
- * delegates to the extracted mode-driven renderer, without exposing any
+ * Proves the production wrapper permanently selects a static integration mode
+ * and delegates to the extracted mode-driven renderer, without exposing any
  * alternate production mode selection path.
+ *
+ * Phase 14N: accepted production mode is `'baseline-conversational'`.
  */
 
 const ROOT = process.cwd();
@@ -69,12 +71,12 @@ function plan(
 }
 
 describe('phase 14F — conversation reply plan integration mode', () => {
-  it('keeps production selection deterministic and delegates to the extracted mode switch', () => {
+  it('keeps production selection static and delegates to the extracted mode switch', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
     const modeSource = readFileSync(MODE_SOURCE, 'utf8');
 
     expect(source).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(source).toMatch(
       /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,
@@ -122,7 +124,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     expect(modeSource.match(/case 'deterministic'/g)?.length).toBe(1);
     expect(modeSource.match(/case 'baseline-conversational'/g)?.length).toBe(1);
     expect(source).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
 
     // Mode type is not exported from the production wrapper or barrel.
@@ -167,7 +169,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
 
     expect(source.includes('generateBaselineConversationalReply')).toBe(false);
     expect(source).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
 
     for (const marker of CONVERSATIONAL_MARKERS) {

@@ -98,8 +98,8 @@ describe('phase 13R — experimental conversational stack isolation', () => {
         relativePath ===
         'src/features/conversation-core/renderConversationReplyPlanByIntegrationMode.ts'
       ) {
-        // Phase 14H: mode-driven renderer statically imports the unselected
-        // baseline entry. Production wrapper still selects deterministic only.
+        // Phase 14H/14N: mode-driven renderer statically imports the baseline
+        // entry. Production wrapper selects baseline-conversational.
         expect(source).toMatch(/switch \(input\.mode\)/);
         expect(source).toMatch(
           /case 'baseline-conversational':\s*try \{\s*return generateBaselineConversationalReply\(input\.plan\);\s*\} catch \{\s*return renderConversationReplyPlan\(input\.plan\);\s*\}/,
@@ -336,12 +336,12 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(createPlan.includes('generateBaselineConversationalReply')).toBe(false);
     expect(createPlan.includes('buildConversationalLayerInput')).toBe(false);
 
-    // Production wrapper permanently selects deterministic and delegates.
+    // Production wrapper permanently selects baseline-conversational and delegates.
     expect(seam).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(seam).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
     expect(seam.includes('generateBaselineConversationalReply')).toBe(false);
     expect(seam).toMatch(/renderConversationReplyPlanByIntegrationMode\(/);

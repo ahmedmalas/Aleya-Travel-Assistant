@@ -55,7 +55,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
       /export function renderIntegratedConversationReplyPlan/,
     );
     expect(source).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(source).toMatch(
       /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode,\s*\}\)/,

@@ -16,8 +16,10 @@ import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConver
  * Phase 14I — deterministic fallback for baseline rendering failure.
  *
  * Proves the baseline branch catches synchronous failures and falls back to
- * renderConversationReplyPlan with the same plan, while production remains
- * statically deterministic.
+ * renderConversationReplyPlan with the same plan.
+ *
+ * Phase 14N: accepted production mode is `'baseline-conversational'`; fallback
+ * therefore applies on the production path as well.
  */
 
 const ROOT = process.cwd();
@@ -86,10 +88,10 @@ describe('phase 14I — baseline rendering fallback', () => {
     expect(modeSource.includes('assembleConversationReplyPlan(')).toBe(false);
 
     expect(seam).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /const mode: ConversationReplyPlanIntegrationMode =\s*'baseline-conversational'/,
     );
     expect(seam).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
     );
     expect(readFileSync(GENERATE_SOURCE, 'utf8')).toMatch(
       /return renderIntegratedConversationReplyPlan\(\{\s*plan\s*\}\)/,
@@ -317,13 +319,16 @@ describe('phase 14I — baseline rendering fallback', () => {
     expect(deterministicSpy).toHaveBeenCalledTimes(1);
     expect(deterministicSpy.mock.calls[0]?.[0]).toBe(replyPlan);
 
-    // Production wrapper cannot reach the baseline branch.
+    // Production wrapper reaches the baseline branch (Phase 14N).
+    // Baseline wording itself may call renderConversationReplyPlan for parity;
+    // the mode-driven catch fallback is not required on the success path.
+    baselineSpy.mockClear();
     deterministicSpy.mockClear();
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,
     );
-    expect(baselineSpy).not.toHaveBeenCalled();
-    expect(deterministicSpy).toHaveBeenCalledTimes(1);
+    expect(baselineSpy).toHaveBeenCalledTimes(1);
+    expect(baselineSpy.mock.calls[0]?.[0]).toBe(replyPlan);
   });
 
   it('does not mutate a frozen plan when falling back', () => {

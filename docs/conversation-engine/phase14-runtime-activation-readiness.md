@@ -154,3 +154,22 @@ READY FOR CONTROLLED ACTIVATION
 ```
 
 Meaning: the architecture is safe for a **later, deliberate, static** change of the plan-level production mode constant from `'deterministic'` to `'baseline-conversational'`, given current parity and the deterministic fallback contract. This verdict does **not** authorize performing that change in Phase 14M, does not authorize merge of PR #29, and does not authorize deployment.
+
+---
+
+## Activation record — Phase 14N (2026-07-31)
+
+Phase 14N activated the baseline-conversational renderer in the production code path.
+Activation is committed only inside PR #29.
+PR #29 remains OPEN, Draft, Unmerged and Undeployed.
+No live environment has been changed.
+
+Activation change (sole production behaviour change):
+
+```text
+renderIntegratedConversationReplyPlan
+  const mode: ConversationReplyPlanIntegrationMode =
+    'baseline-conversational'
+```
+
+Prior audit evidence and the readiness verdict above are retained unchanged.
