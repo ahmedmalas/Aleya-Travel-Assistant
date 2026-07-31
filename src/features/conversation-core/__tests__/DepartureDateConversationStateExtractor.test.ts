@@ -163,7 +163,8 @@ describe('phase 8C — DepartureDateConversationStateExtractor activation', () =
       'Keep my departure date',
       'Forget the departure date',
       'Depart on 28 August 2026 instead',
-      'Actually depart on 28 August 2026',
+      // Phase 17D: bare "Actually depart on …" is now supported; "instead"
+      // forms remain blocked.
       'Actually leave on 2026-11-01 instead of 2026-09-01',
       'Forget the departure date / not 2026-09-01',
       'Leave on Monday',

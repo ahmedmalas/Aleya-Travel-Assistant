@@ -284,20 +284,52 @@ describe('Phase 17A — repair handling characterization audit', () => {
     });
   });
 
-  it('field-by-field: departureDate — actually/meant bare dates fail; explicit Depart on works', () => {
+  it('field-by-field: departureDate — bare dates stay unowned; explicit departure repairs work', () => {
+    // Bare repaired dates remain unowned (Phase 17D ownership rule).
     expectUnchangedPopulated(traceRepair('Sorry, I meant 30 August 2026'));
-    // \\bactually\\b hard-blocks departure date extraction.
-    expectUnchangedPopulated(
-      traceRepair('Actually, Depart on 30 August 2026'),
-    );
+    expectUnchangedPopulated(traceRepair('Actually, 30 August 2026'));
+    expectUnchangedPopulated(traceRepair('No, make that 30 August 2026'));
 
-    const nullDeparture = traceRepair('Sorry, I meant 30 August 2026', {
+    const nullBare = traceRepair('Sorry, I meant 30 August 2026', {
       ...POPULATED,
       departureDate: null,
     });
-    expect(nullDeparture.extractedPatch).toEqual({});
-    expect(nullDeparture.final.departureDate).toBeNull();
+    expect(nullBare.extractedPatch).toEqual({});
+    expect(nullBare.final.departureDate).toBeNull();
 
+    // Phase 17D: explicit departure-cued repairs succeed (including Actually,).
+    const meantDepart = traceRepair(
+      'Sorry, I meant depart on 30 August 2026',
+    );
+    expect(meantDepart.extractedPatch).toEqual({
+      departureDate: '2026-08-30',
+    });
+    expect(meantDepart.final.departureDate).toBe('2026-08-30');
+    expect(meantDepart.final.returnDate).toBe('2026-08-17');
+    expect(meantDepart.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'departureDate',
+    });
+
+    const actuallyDepart = traceRepair(
+      'Actually, Depart on 30 August 2026',
+    );
+    expect(actuallyDepart.extractedPatch).toEqual({
+      departureDate: '2026-08-30',
+    });
+    expect(actuallyDepart.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'departureDate',
+    });
+
+    const changeDeparture = traceRepair(
+      'Change the departure date to 30 August 2026',
+    );
+    expect(changeDeparture.extractedPatch).toEqual({
+      departureDate: '2026-08-30',
+    });
+
+    // Prior bare Depart on cue still works.
     const cue = traceRepair('Depart on 30 August 2026');
     expect(cue.extractedPatch).toEqual({ departureDate: '2026-08-30' });
     expect(cue.final.departureDate).toBe('2026-08-30');
