@@ -225,8 +225,8 @@ describe('Phase 17A — repair handling characterization audit', () => {
     expect(bothValues.final.destination).toBe('Cairns');
   });
 
-  it('field-by-field: origin still requires from-cues; meant is destination repair', () => {
-    // Phase 17B: bare "I meant {place}" is destination extraction, not origin.
+  it('field-by-field: bare-place repair stays destination-owned; origin needs from-cues', () => {
+    // Phase 17B ownership: bare "I meant {place}" is destination, not origin.
     const meantPlace = traceRepair('I meant Hobart');
     expect(meantPlace.extractedPatch).toEqual({ destination: 'Hobart' });
     expect(meantPlace.final.origin).toBe('Sydney');
@@ -245,7 +245,35 @@ describe('Phase 17A — repair handling characterization audit', () => {
     expect(nullOrigin.final.origin).toBeNull();
     expect(nullOrigin.final.destination).toBe('Brisbane');
 
-    // Cue-backed origin change still works.
+    // Phase 17C: explicit origin-cued repairs update origin only.
+    const meantFrom = traceRepair('Sorry, I meant from Brisbane', {
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-10',
+      returnDate: '2026-08-17',
+      adultCount: 2,
+      childCount: 1,
+      infantCount: 1,
+    });
+    expect(meantFrom.extractedPatch).toEqual({ origin: 'Brisbane' });
+    expect(meantFrom.final.origin).toBe('Brisbane');
+    expect(meantFrom.final.destination).toBe('Cairns');
+    expect(meantFrom.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'origin',
+    });
+
+    const changeOrigin = traceRepair('Change the origin to Brisbane', {
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-10',
+      returnDate: '2026-08-17',
+      adultCount: 2,
+    });
+    expect(changeOrigin.extractedPatch).toEqual({ origin: 'Brisbane' });
+    expect(changeOrigin.final.destination).toBe('Cairns');
+
+    // Prior cue-backed origin change still works.
     const cue = traceRepair('from Brisbane instead');
     expect(cue.extractedPatch).toEqual({ origin: 'Brisbane' });
     expect(cue.final.origin).toBe('Brisbane');

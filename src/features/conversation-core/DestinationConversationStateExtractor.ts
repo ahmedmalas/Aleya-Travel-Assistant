@@ -15,6 +15,9 @@ import type {
  * Phase 17B: adds explicit single-fact destination repair cues (meant /
  * Actually, Place / make that / change that / Not X, Y). Does not inspect
  * prior destination values; contrast repair selects only the new place.
+ *
+ * Phase 17C collision: origin-cued repairs ("meant from …", "Actually, from …")
+ * must not yield a destination capture such as "from Brisbane".
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -169,6 +172,10 @@ function isBlockedDestinationMessage(message: string): boolean {
  */
 function isRejectedRepairDestinationCapture(value: string): boolean {
   if (/^(?:that|this|it|the|i|we|you|a|an)\b/i.test(value)) {
+    return true;
+  }
+  // Phase 17C: origin-cued "from …" repairs are origin-owned, not destinations.
+  if (/^(?:from|departing(?:\s+from)?|leaving(?:\s+from)?)\b/i.test(value)) {
     return true;
   }
   if (

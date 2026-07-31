@@ -10,6 +10,10 @@ import type {
  * Phase 7B / Phase 8B: recognises only narrow, explicit origin statements in
  * the current message. Deterministic and local — no external lookup,
  * geographic validation, destination extraction, or currentState inspection.
+ *
+ * Phase 17C: adds explicit origin-cued repair forms (meant from / Actually,
+ * from / make that from / change origin|departure location / from … instead).
+ * Bare-place repairs remain destination-owned (Phase 17B).
  */
 export class OriginConversationStateExtractor
   implements ConversationStateExtractor
@@ -84,7 +88,58 @@ function isBlockedOriginMessage(message: string): boolean {
   return false;
 }
 
+/**
+ * Phase 17C — reject repair captures that are passenger counts, dates,
+ * pronouns, or non-origin tokens.
+ */
+function isRejectedRepairOriginCapture(value: string): boolean {
+  if (/^(?:that|this|it|the|i|we|you|a|an|from)\b/i.test(value)) {
+    return true;
+  }
+  if (
+    /\b(?:adults?|children|kids?|infants?|bab(?:y|ies)|flights?|accommodation|hotel|should|need|sure|about)\b/i.test(
+      value,
+    )
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:adults?|children|kids?|infants?|bab(?:y|ies))\b/i.test(
+      value,
+    )
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
+      value,
+    )
+  ) {
+    return true;
+  }
+  if (/\b\d{4}\b/.test(value) && /\b\d{1,2}\b/.test(value)) {
+    return true;
+  }
+  if (/,/.test(value) || /\bnot\b/i.test(value)) {
+    return true;
+  }
+  return false;
+}
+
+/** Phase 17C explicit origin-repair cues (tried before general origin cues). */
+const ORIGIN_REPAIR_CUES: readonly RegExp[] = [
+  /\b(?:sorry[,.]?\s+)?i\s+meant\s+from\s+(.+)$/i,
+  /\bactually[,]\s+from\s+(.+)$/i,
+  /\bno[,.]?\s+make\s+that\s+from\s+(.+)$/i,
+  /\bchange\s+that\s+to\s+departing\s+from\s+(.+)$/i,
+  /\bchange\s+(?:the\s+)?origin\s+to\s+(.+)$/i,
+  /\bchange\s+(?:the\s+)?departure\s+location\s+to\s+(.+)$/i,
+  /\bfrom\s+(.+?)\s+instead\b/i,
+  /\bdeparting\s+from\s+(.+?)\s+instead\b/i,
+];
+
 const EXPLICIT_ORIGIN_CUES: readonly RegExp[] = [
+  ...ORIGIN_REPAIR_CUES,
   /\bmy\s+origin\s+is\s+(.+)$/i,
   /\borigin\s+is\s+(.+)$/i,
   /\bi(?:\s+am|'m)\s+coming\s+from\s+(.+)$/i,
@@ -92,6 +147,13 @@ const EXPLICIT_ORIGIN_CUES: readonly RegExp[] = [
   /\b(?:we\s+are\s+)?(?:fly(?:ing)?|travel(?:l?ing)?|depart(?:ing)?|leav(?:e|ing)|start(?:ing)?|coming)\s+from\s+(.+)$/i,
   /\bfrom\s+(.+)$/i,
 ];
+
+function isOriginRepairCue(cue: RegExp): boolean {
+  return ORIGIN_REPAIR_CUES.some(
+    (repairCue) =>
+      repairCue.source === cue.source && repairCue.flags === cue.flags,
+  );
+}
 
 function normaliseCapturedOrigin(raw: string): string | null {
   let value = edgeTrim(raw);
@@ -145,9 +207,13 @@ function extractExplicitOrigin(message: string): string | null {
       continue;
     }
     const origin = normaliseCapturedOrigin(captured);
-    if (origin !== null) {
-      return origin;
+    if (origin === null) {
+      continue;
     }
+    if (isOriginRepairCue(cue) && isRejectedRepairOriginCapture(origin)) {
+      continue;
+    }
+    return origin;
   }
   return null;
 }
