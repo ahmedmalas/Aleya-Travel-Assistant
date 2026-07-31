@@ -316,3 +316,72 @@ Deterministic ownership remains exclusive for trip state, classification,
 priority, eligibility, reply-component selection, reply-plan assembly, required
 follow-up selection, and the deterministic renderer. Production mode remains
 `'baseline-conversational'`.
+
+---
+
+## Phase 15D record — follow-up-only baseline output characterisation
+
+Investigation-only. Production wording for follow-up-only plans is unchanged.
+
+### Exact eligibility boundary
+
+```text
+plan.acknowledgements.length === 0
+AND plan.followUpQuestion !== null
+```
+
+### Traced runtime path
+
+```text
+renderIntegratedConversationReplyPlan({ plan })
+→ static mode: 'baseline-conversational'
+→ renderConversationReplyPlanByIntegrationMode()
+→ generateBaselineConversationalReply(plan)
+→ renderBaselineConversationalReplyPlan()
+→ buildConversationalLayerInput()
+→ executeBaselineConversationalRenderer()
+→ renderBaselineConversationalLayer()
+→ (no Phase 15B/15C branch matches: acknowledgements.length !== 1)
+→ renderConversationReplyPlan(plan)
+→ follow-up string only
+```
+
+### Complete follow-up-only catalogue
+
+Catalogue follow-ups that currently characterise this surface (exact wording):
+
+| id | Exact output |
+| --- | --- |
+| destination | `Where would you like to travel?` |
+| origin | `Where will you be travelling from?` |
+| departureDate | `When would you like to depart?` |
+| returnDate | `When would you like to return?` |
+| flightsAdultCount | `How many adults will be travelling?` |
+| accommodationGuestCount | `How many guests will be staying?` |
+| activities | `What kinds of activities are you interested in?` |
+| restaurants | `What type of dining are you looking for?` |
+
+### Current output surface
+
+For every follow-up-only plan above:
+
+- baseline output is **byte-identical** to deterministic `renderConversationReplyPlan(plan)`
+- output is exactly the catalogue follow-up string
+- no acknowledgement is introduced
+- no conversational filler (`Now,` / `Next,` / `Also,`) is introduced
+
+### Ownership boundary
+
+```text
+Follow-up-only plans remain owned by the deterministic renderer path inside
+the baseline conversational layer fall-through branch.
+Phase 15B owns acknowledgement-only.
+Phase 15C owns acknowledgement-plus-follow-up.
+Neutral continuation is outside the Phase 15D follow-up-only characterisation
+group (separate category), even though it also has empty acknowledgements.
+Multiple acknowledgements and empty plans remain unchanged / deterministic.
+```
+
+### Unchanged by this phase
+
+No production files were modified. No follow-up wording transform was added.
