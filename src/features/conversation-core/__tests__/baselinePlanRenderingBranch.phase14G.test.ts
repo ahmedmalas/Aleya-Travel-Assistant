@@ -17,6 +17,7 @@ import {
 } from '../index';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -251,10 +252,10 @@ describe('phase 14G — baseline plan rendering branch', () => {
       const expected = expectedActivatedBaselineReply(entry.replyPlan);
       expect(integrated, entry.label).toBe(expected);
       expect(baseline, `${entry.label} / baseline`).toBe(expected);
-      if (entry.replyPlan.acknowledgements.length === 1) {
-        expect(expected, `${entry.label} / diverges`).not.toBe(deterministic);
-      } else {
+      if (expected === deterministic) {
         expect(expected, `${entry.label} / parity`).toBe(deterministic);
+      } else {
+        expect(expected, `${entry.label} / diverges`).not.toBe(deterministic);
       }
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
@@ -276,7 +277,7 @@ describe('phase 14G — baseline plan rendering branch', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
 
     const viaProcessTurn = turn('go to Brisbane', createState());
     expect(viaProcessTurn.reply).toBe(

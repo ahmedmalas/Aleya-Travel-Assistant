@@ -11,6 +11,7 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   generateConversationReply,
 } from '../generateConversationReply';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
@@ -212,7 +213,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
 
   it('returns the neutral fallback and messageInterpreted false when nothing changes', () => {
     const result = turn('Hello there', createState({ destination: 'Cairns' }));
-    expect(result.reply).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    expect(result.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
     expect(result.trace.messageInterpreted).toBe(false);
     expect(result.state.transcript.at(-1)?.message).toBe(result.reply);
     expect(result.reply).not.toMatch(/assembled|unavailable/i);

@@ -14,6 +14,7 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   generateConversationReply,
 } from '../generateConversationReply';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 
 const ROOT = process.cwd();
 const CLASSIFY_SOURCE = resolve(
@@ -234,7 +235,7 @@ describe('phase 10F — deterministic change classification', () => {
     );
 
     expect(turn('Hello there', createState({ destination: 'Cairns' })).reply).toBe(
-      NEUTRAL_TRIP_FALLBACK_REPLY,
+      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     );
 
     expect(

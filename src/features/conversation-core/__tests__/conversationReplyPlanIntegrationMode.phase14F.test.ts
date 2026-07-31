@@ -8,6 +8,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
@@ -277,7 +278,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
   });
 
   it('does not mutate a frozen plan through the mode branch', () => {

@@ -14,6 +14,7 @@ import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -221,7 +222,7 @@ describe('phase 15E — follow-up-only conversational expression', () => {
       }),
     );
     expect(generateBaselineConversationalReply(neutralPlan)).toBe(
-      NEUTRAL_TRIP_FALLBACK_REPLY,
+      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     );
     expect(renderConversationReplyPlan(neutralPlan)).toBe(
       NEUTRAL_TRIP_FALLBACK_REPLY,

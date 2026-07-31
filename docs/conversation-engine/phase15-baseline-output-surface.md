@@ -592,7 +592,11 @@ Investigation-only. Production wording is unchanged. Phase 15H was a baseline
 verification check (no behaviour commit); accepted tip remains Phase 15G
 `86a303f56e67e9792f55db3d9fc546d649fd8450`.
 
-### Complete output-surface matrix
+### Complete output-surface matrix (superseded for neutral by Phase 15J)
+
+At Phase 15I completion, zero-ack neutral continuation still passed through the
+Phase 15E follow-up-only arm unchanged. Phase 15J replaces that pass-through
+characterization with a dedicated transform (see below).
 
 | Reply-plan shape | Baseline branch | Final renderer | Transformed / pass-through | Owning phase |
 | --- | --- | --- | --- | --- |
@@ -600,30 +604,32 @@ verification check (no behaviour commit); accepted tip remains Phase 15G
 | 1 ack + specific follow-up | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed; follow-up preserved | **15C** |
 | 1 ack + neutral continuation | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed; neutral preserved | **15C** |
 | 1 ack + unknown follow-up | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed (or unchanged if unknown ack); follow-up preserved | **15C** |
-| 0 acks + supported specific follow-up | arm 3 | `renderBaselineFollowUpOnly` | lead-in + preserved question | **15F** (15E renderer) |
-| 0 acks + neutral continuation | arm 3 | `renderBaselineFollowUpOnly` | pass-through | **15E pass-through** (15G) |
-| 0 acks + unknown follow-up | arm 3 | `renderBaselineFollowUpOnly` | pass-through | **15E pass-through** |
-| 0 acks + `followUpQuestion === null` (empty / uninterpreted empty) | arm 4 | `renderConversationReplyPlan` | deterministic null-coalesce to neutral wording | **deterministic** |
-| 2+ acks + null follow-up | arm 4 | `renderConversationReplyPlan` | deterministic | **deterministic** |
-| 2+ acks + specific / neutral / unknown follow-up | arm 4 | `renderConversationReplyPlan` | deterministic | **deterministic** |
+| 0 acks + supported specific follow-up | arm 4 | `renderBaselineFollowUpOnly` | lead-in + preserved question | **15F** (15E renderer) |
+| 0 acks + neutral continuation | arm 3 | `renderBaselineNeutralContinuation` | lead-in + preserved question | **15J** |
+| 0 acks + unknown follow-up | arm 4 | `renderBaselineFollowUpOnly` | pass-through | **15E pass-through** |
+| 0 acks + `followUpQuestion === null` (empty / uninterpreted empty) | arm 5 | `renderConversationReplyPlan` | deterministic null-coalesce to neutral wording | **deterministic** |
+| 2+ acks + null follow-up | arm 5 | `renderConversationReplyPlan` | deterministic | **deterministic** |
+| 2+ acks + specific / neutral / unknown follow-up | arm 5 | `renderConversationReplyPlan` | deterministic | **deterministic** |
 
 `messageInterpreted` does not select a renderer branch; only acknowledgement
 count and `followUpQuestion` do.
 
-### Ownership map
+### Ownership map (after Phase 15J)
 
 ```text
 15B  → acknowledgements.length === 1 && followUpQuestion === null
 15C  → acknowledgements.length === 1 && followUpQuestion !== null
+15J  → acknowledgements.length === 0
+       && followUpQuestion === "What else should I know about your trip?"
 15E  → acknowledgements.length === 0 && followUpQuestion !== null
-       (15F transforms the eight supported catalogue follow-ups;
-        unknown + neutral pass through)
+       (after the 15J arm; 15F transforms the eight supported catalogue
+        follow-ups; unknown strings pass through)
 deterministic fall-through → all remaining shapes
   (empty plans; multi-acknowledgement plans with or without follow-up)
 ```
 
 Branch predicates are mutually exclusive; multi-acknowledgement plans never
-enter 15B/15C.
+enter 15B/15C/15J.
 
 ### Remaining deterministic-only categories
 
@@ -638,4 +644,66 @@ multiple acknowledgements + unknown follow-up
 ### Confirmation
 
 All reachable `ConversationReplyPlan` shapes are accounted for in the matrix
-above. No additional conversational transform was introduced in Phase 15I.
+above. Phase 15I introduced no conversational transform; Phase 15J owns the
+neutral-continuation expression that 15I had characterized as pass-through.
+
+---
+
+## Phase 15J record — neutral-continuation conversational expression
+
+Implements the missing dedicated transform for the canonical zero-acknowledgement
+neutral continuation prompt. Phase 15H was verification/check-only and never
+landed this change; Phase 15I confirmed pass-through under the 15E arm.
+
+### Exact eligibility boundary
+
+```text
+plan.acknowledgements.length === 0
+AND
+plan.followUpQuestion === "What else should I know about your trip?"
+```
+
+### Exact activated output
+
+```text
+There's just one more thing I'd like to know. What else should I know about your trip?
+```
+
+### Final branch order
+
+```text
+1. acknowledgement-only → Phase 15B
+2. acknowledgement + follow-up → Phase 15C
+3. neutral continuation → Phase 15J
+4. follow-up-only supported/unknown → Phase 15F / Phase 15E
+5. all remaining shapes → deterministic fallback
+```
+
+The Phase 15J arm appears before the general zero-ack follow-up-only arm.
+
+### Byte-preservation proof
+
+The canonical deterministic question remains an exact trailing substring of the
+activated output. The lead-in is a complete sentence ending in a full stop.
+Catalogue wording, selectors, and reply-plan assembly are unchanged.
+
+### Distinction: zero-ack neutral vs acknowledgement-plus-neutral
+
+| Shape | Owner | Activated form |
+| --- | --- | --- |
+| `acks=[]` + canonical neutral | **15J** | lead-in + preserved neutral question |
+| `acks.length === 1` + canonical neutral | **15C** | transformed ack + space + preserved neutral question (no 15J lead-in) |
+| `acks=[]` + `followUpQuestion === null` (empty) | **deterministic** | null-coalesce to raw neutral (no 15J lead-in) |
+
+### Unchanged categories
+
+```text
+acknowledgement-only (15B)
+acknowledgement + specific / neutral / unknown follow-up (15C)
+supported follow-up-only lead-ins (15F)
+unknown follow-up pass-through (15E)
+multi-acknowledgement plans (deterministic)
+empty plans (deterministic)
+Phase 14I fallback / production mode
+canonical neutral question string / selection / assembly
+```

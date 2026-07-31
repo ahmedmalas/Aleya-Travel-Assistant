@@ -11,6 +11,7 @@ import {
 import * as generateConversationReplyModule from '../generateConversationReply';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -208,7 +209,7 @@ describe('phase 14I — baseline rendering fallback', () => {
         }),
         mode: 'baseline-conversational',
       }),
-    ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
   });
 
   it('falls back to the deterministic renderer with the same plan when baseline throws', () => {

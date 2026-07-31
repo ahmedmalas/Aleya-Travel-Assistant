@@ -18,6 +18,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { renderConversationReplyPlanByIntegrationMode } from '../renderConversationReplyPlanByIntegrationMode';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
@@ -114,7 +115,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    expectedOutput: NEUTRAL_TRIP_FALLBACK_REPLY,
+    expectedOutput: ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     expectedObjectiveId: 'neutralContinuation',
     expectedCatalogueWording: FOLLOW_UPS.neutralContinuation,
   },
@@ -169,7 +170,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: false,
     }),
-    expectedOutput: NEUTRAL_TRIP_FALLBACK_REPLY,
+    expectedOutput: ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     expectedObjectiveId: 'neutralContinuation',
     expectedCatalogueWording: FOLLOW_UPS.neutralContinuation,
   },

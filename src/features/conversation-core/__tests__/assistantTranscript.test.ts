@@ -105,7 +105,9 @@ describe('phase 2B — assistant placeholder transcript recording', () => {
       message: result.reply,
       timestamp: '2026-07-29T00:00:01.000Z',
     });
-    expect(result.reply).toBe('What else should I know about your trip?');
+    expect(result.reply).toBe(
+      "There's just one more thing I'd like to know. What else should I know about your trip?",
+    );
   });
 
   it('appends without altering prior transcript entries or deduplicating repeats', () => {

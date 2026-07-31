@@ -252,19 +252,28 @@ describe('phase 15C — baseline acknowledgement follow-up transformation', () =
       FOLLOW_UPS.activities,
     );
 
+    // Neutral continuation (zero-ack) is owned by Phase 15J, not Phase 15C.
+    const neutralOwned = freezePlan(
+      plan({
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
+    );
+    expect(renderConversationReplyPlan(neutralOwned)).toBe(
+      NEUTRAL_TRIP_FALLBACK_REPLY,
+    );
+    expect(generateBaselineConversationalReply(neutralOwned)).toBe(
+      expectedActivatedBaselineReply(neutralOwned),
+    );
+    expect(generateBaselineConversationalReply(neutralOwned)).not.toBe(
+      NEUTRAL_TRIP_FALLBACK_REPLY,
+    );
+
     const unchangedCases: Array<{
       label: string;
       replyPlan: ConversationReplyPlan;
       expected: string;
     }> = [
-      {
-        label: 'neutral continuation',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.neutralContinuation,
-          messageInterpreted: true,
-        }),
-        expected: NEUTRAL_TRIP_FALLBACK_REPLY,
-      },
       {
         label: 'multiple acknowledgements',
         replyPlan: plan({

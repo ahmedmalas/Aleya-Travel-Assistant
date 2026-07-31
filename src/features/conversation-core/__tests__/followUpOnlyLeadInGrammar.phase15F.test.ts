@@ -9,6 +9,7 @@ import {
 import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -169,7 +170,7 @@ describe('phase 15F — follow-up-only lead-in grammar', () => {
       }),
     );
     expect(generateBaselineConversationalReply(neutralPlan)).toBe(
-      NEUTRAL_TRIP_FALLBACK_REPLY,
+      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     );
     expect(renderConversationReplyPlan(neutralPlan)).toBe(
       NEUTRAL_TRIP_FALLBACK_REPLY,

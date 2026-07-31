@@ -15,6 +15,7 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
@@ -143,7 +144,7 @@ describe('phase 13P — generateBaselineConversationalReply', () => {
           messageInterpreted: true,
         }),
       ).wording,
-    ).toBe(FOLLOW_UPS.neutralContinuation);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
 
     expect(
       expectWording(

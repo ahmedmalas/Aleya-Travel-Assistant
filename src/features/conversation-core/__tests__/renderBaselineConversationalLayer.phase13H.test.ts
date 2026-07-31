@@ -18,6 +18,7 @@ import {
   REFERENCE_CONVERSATIONAL_STYLE_WARM,
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
@@ -145,25 +146,26 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
     expect(wording.endsWith(FOLLOW_UPS.activities)).toBe(true);
   });
 
-  it('renders neutral continuation like the deterministic renderer', () => {
+  it('renders neutral continuation via Phase 15J activated expression', () => {
     const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: true,
       }),
     );
-    expect(wording).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(wording).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(wording.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(true);
   });
 
-  it('renders uninterpreted continuation like the deterministic renderer', () => {
+  it('renders uninterpreted continuation via Phase 15J activated expression', () => {
     const wording = expectWordingMatchesBaseline(
       plan({
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
         messageInterpreted: false,
       }),
     );
-    expect(wording).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(wording).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(wording).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(wording.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(true);
   });
 
   it('renders acknowledgement only with the approved conversational transform', () => {

@@ -8,6 +8,7 @@ import {
 } from '../index';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { NEUTRAL_TRIP_FALLBACK_REPLY } from '../generateConversationReply';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
 /**
@@ -160,8 +161,10 @@ describe('phase 14B — integrated conversation reply runtime', () => {
       flightsRequested: true,
       adultCount: 2,
     });
-    expect(continuation.reply).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(continuation.reply).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(continuation.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(continuation.reply.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(
+      true,
+    );
   });
 
   it('does not mutate turn state inputs and repeats equivalent replies', () => {

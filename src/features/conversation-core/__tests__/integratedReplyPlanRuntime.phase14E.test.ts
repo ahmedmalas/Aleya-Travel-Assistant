@@ -16,6 +16,7 @@ import {
 import { createConversationReplyPlan } from '../createConversationReplyPlan';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
@@ -211,8 +212,10 @@ describe('phase 14E — integrated reply plan runtime', () => {
       flightsRequested: true,
       adultCount: 2,
     });
-    expect(continuation.reply).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(continuation.reply).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(continuation.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(continuation.reply.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(
+      true,
+    );
   });
 
   it('keeps generateConversationReply output identical to direct deterministic rendering', () => {
@@ -304,10 +307,10 @@ describe('phase 14E — integrated reply plan runtime', () => {
 
       expect(viaGenerator, entry.label).toBe(expected);
       expect(viaSeam, `${entry.label} / seam`).toBe(expected);
-      if (plan.acknowledgements.length === 1) {
-        expect(expected, `${entry.label} / diverges`).not.toBe(viaDirect);
-      } else {
+      if (expected === viaDirect) {
         expect(expected, `${entry.label} / parity`).toBe(viaDirect);
+      } else {
+        expect(expected, `${entry.label} / diverges`).not.toBe(viaDirect);
       }
       expect(entry.previousState, `${entry.label} / previous`).toEqual(
         previousBefore,

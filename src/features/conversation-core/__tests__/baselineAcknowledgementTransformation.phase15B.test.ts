@@ -14,6 +14,7 @@ import { renderConversationReplyPlanByIntegrationMode } from '../renderConversat
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 15B — acknowledgement-only conversational transformation.
@@ -294,19 +295,28 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     );
     expect(followUpOnlyBaseline).not.toBe(followUpOnlyDeterministic);
 
+    // Neutral continuation (interpreted / uninterpreted) is owned by Phase 15J.
+    const neutralOwned = freezePlan(
+      plan({
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
+    );
+    expect(renderConversationReplyPlan(neutralOwned)).toBe(
+      NEUTRAL_TRIP_FALLBACK_REPLY,
+    );
+    expect(generateBaselineConversationalReply(neutralOwned)).toBe(
+      expectedActivatedBaselineReply(neutralOwned),
+    );
+    expect(generateBaselineConversationalReply(neutralOwned)).not.toBe(
+      NEUTRAL_TRIP_FALLBACK_REPLY,
+    );
+
     const unchangedCases: Array<{
       label: string;
       replyPlan: ConversationReplyPlan;
       expected: string;
     }> = [
-      {
-        label: 'neutral continuation',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.neutralContinuation,
-          messageInterpreted: true,
-        }),
-        expected: NEUTRAL_TRIP_FALLBACK_REPLY,
-      },
       {
         label: 'multiple acknowledgements',
         replyPlan: plan({
@@ -322,14 +332,6 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
       {
         label: 'empty plan',
         replyPlan: plan(),
-        expected: NEUTRAL_TRIP_FALLBACK_REPLY,
-      },
-      {
-        label: 'uninterpreted message',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.neutralContinuation,
-          messageInterpreted: false,
-        }),
         expected: NEUTRAL_TRIP_FALLBACK_REPLY,
       },
     ];

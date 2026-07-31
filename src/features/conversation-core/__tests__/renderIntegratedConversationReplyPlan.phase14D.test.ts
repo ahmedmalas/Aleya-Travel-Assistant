@@ -8,6 +8,7 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
 
@@ -201,7 +202,7 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
           messageInterpreted: true,
         }),
       }),
-    ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
 
     expect(
       renderIntegratedConversationReplyPlan({

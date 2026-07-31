@@ -16,6 +16,7 @@ import {
 } from '../referenceConversationalStyleProfiles';
 import { renderBaselineConversationalReplyPlan } from '../renderBaselineConversationalReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -136,7 +137,7 @@ describe('phase 13O — renderBaselineConversationalReplyPlan', () => {
           messageInterpreted: true,
         }),
       ).expected,
-    ).toBe(FOLLOW_UPS.neutralContinuation);
+    ).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
 
     expect(
       expectBaseline(

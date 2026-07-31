@@ -35,6 +35,7 @@ const UNKNOWN_FOLLOW_UP = 'Would you like a window seat preference noted?';
 type BranchOwner =
   | '15B'
   | '15C'
+  | '15J'
   | '15E-pass-through'
   | '15F'
   | 'deterministic';
@@ -77,6 +78,12 @@ function classifyOwner(replyPlan: ConversationReplyPlan): BranchOwner {
     replyPlan.followUpQuestion !== null
   ) {
     return '15C';
+  }
+  if (
+    replyPlan.acknowledgements.length === 0 &&
+    replyPlan.followUpQuestion === FOLLOW_UPS.neutralContinuation
+  ) {
+    return '15J';
   }
   if (
     replyPlan.acknowledgements.length === 0 &&
@@ -159,8 +166,8 @@ const SURFACE_CASES: SurfaceCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    owner: '15E-pass-through',
-    passThroughOrDeterministic: true,
+    owner: '15J',
+    passThroughOrDeterministic: false,
   },
   {
     label: 'unknown follow-up only',
@@ -196,8 +203,8 @@ const SURFACE_CASES: SurfaceCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: false,
     }),
-    owner: '15E-pass-through',
-    passThroughOrDeterministic: true,
+    owner: '15J',
+    passThroughOrDeterministic: false,
   },
   {
     label: 'multiple acknowledgements only',
@@ -251,6 +258,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     expect(renderer).toMatch(/acknowledgements\.length === 0/);
     expect(renderer).toMatch(/transformBaselineAcknowledgement/);
     expect(renderer).toMatch(/renderBaselineAcknowledgementFollowUp/);
+    expect(renderer).toMatch(/renderBaselineNeutralContinuation/);
     expect(renderer).toMatch(/renderBaselineFollowUpOnly/);
     expect(renderer).toMatch(/renderConversationReplyPlan\(plan\)/);
 
@@ -258,13 +266,15 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
       'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
     );
     const branch15C = renderer.indexOf('renderBaselineAcknowledgementFollowUp({');
+    const branch15J = renderer.indexOf('renderBaselineNeutralContinuation({');
     const branch15E = renderer.indexOf('renderBaselineFollowUpOnly({');
     const fallthrough = renderer.lastIndexOf(
       'renderConversationReplyPlan(plan)',
     );
     expect(branch15B).toBeGreaterThan(-1);
     expect(branch15C).toBeGreaterThan(branch15B);
-    expect(branch15E).toBeGreaterThan(branch15C);
+    expect(branch15J).toBeGreaterThan(branch15C);
+    expect(branch15E).toBeGreaterThan(branch15J);
     expect(fallthrough).toBeGreaterThan(branch15E);
   });
 
@@ -274,6 +284,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     const ownerCounts = {
       '15B': 0,
       '15C': 0,
+      '15J': 0,
       '15F': 0,
       '15E-pass-through': 0,
       deterministic: 0,
@@ -325,6 +336,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
 
     expect(ownerCounts['15B']).toBeGreaterThan(0);
     expect(ownerCounts['15C']).toBeGreaterThan(0);
+    expect(ownerCounts['15J']).toBeGreaterThan(0);
     expect(ownerCounts['15F']).toBeGreaterThan(0);
     expect(ownerCounts['15E-pass-through']).toBeGreaterThan(0);
     expect(ownerCounts.deterministic).toBeGreaterThan(0);
@@ -342,6 +354,10 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
       }),
       plan({
         acknowledgements: [],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+      }),
+      plan({
+        acknowledgements: [],
         followUpQuestion: FOLLOW_UPS.origin,
       }),
       plan({
@@ -355,6 +371,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     expect(owners).toEqual([
       '15B',
       '15C',
+      '15J',
       '15F',
       'deterministic',
       'deterministic',

@@ -154,11 +154,11 @@ describe('phase 14L — baseline comparison status', () => {
   });
 
   it('classifies successful matching baseline output as identical', () => {
-    // Unaffected shape (neutral continuation) still matches deterministic parity.
+    // Empty plan remains deterministic fall-through (null-coalesce), so identical.
     const replyPlan = plan({
       acknowledgements: [],
-      followUpQuestion: FOLLOW_UPS.neutralContinuation,
-      messageInterpreted: true,
+      followUpQuestion: null,
+      messageInterpreted: false,
     });
     const before = structuredClone(replyPlan);
     const expected = renderConversationReplyPlan(replyPlan);
@@ -172,6 +172,29 @@ describe('phase 14L — baseline comparison status', () => {
       baselineReply: expected,
       matchesDeterministic: true,
       status: 'identical',
+    });
+    expect(replyPlan).toEqual(before);
+  });
+
+  it('classifies successful neutral-continuation baseline divergence as different', () => {
+    const replyPlan = plan({
+      acknowledgements: [],
+      followUpQuestion: FOLLOW_UPS.neutralContinuation,
+      messageInterpreted: true,
+    });
+    const before = structuredClone(replyPlan);
+    const deterministicExpected = renderConversationReplyPlan(replyPlan);
+    const baselineExpected = expectedActivatedBaselineReply(replyPlan);
+
+    const comparison = compareBaselineConversationalReplyPlan({
+      plan: replyPlan,
+    });
+
+    expect(comparison).toEqual({
+      deterministicReply: deterministicExpected,
+      baselineReply: baselineExpected,
+      matchesDeterministic: false,
+      status: 'different',
     });
     expect(replyPlan).toEqual(before);
   });

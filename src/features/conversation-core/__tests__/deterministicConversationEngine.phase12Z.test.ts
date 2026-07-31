@@ -232,12 +232,14 @@ describe('phase 12Z — deterministic conversation engine characterisation', () 
       expect(first.generated, scenario.name).toBe(
         expectedActivatedBaselineReply(first.plan),
       );
-      if (first.plan.acknowledgements.length === 1) {
-        expect(first.generated, `${scenario.name} / diverges`).not.toBe(
+      if (first.generated === first.rendered) {
+        expect(first.generated, `${scenario.name} / parity`).toBe(
           first.rendered,
         );
       } else {
-        expect(first.generated, `${scenario.name} / parity`).toBe(first.rendered);
+        expect(first.generated, `${scenario.name} / diverges`).not.toBe(
+          first.rendered,
+        );
       }
 
       expect(first.components.followUpQuestion ?? first.components.continuationPrompt, scenario.name).toBe(

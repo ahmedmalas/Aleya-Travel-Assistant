@@ -16,6 +16,11 @@ import {
 } from '../index';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
+import {
+  ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+  CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
+  renderBaselineNeutralContinuation,
+} from '../renderBaselineNeutralContinuation';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationContinuationPrompt } from '../selectConversationContinuationPrompt';
 import { selectConversationFollowUpQuestion } from '../selectConversationFollowUpQuestion';
@@ -26,9 +31,9 @@ import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply
 /**
  * Phase 15G — neutral-continuation baseline output characterisation.
  *
- * Investigation-only. Proves the exact plan shape, selection boundary, and
- * byte-identical activated output for neutral continuation before any
- * conversational transformation of that category.
+ * Originally investigation-only (pass-through). Phase 15J now owns the
+ * activated expression for zero-ack canonical neutral plans; this file retains
+ * plan-shape / selection characterisation and updated activated expectations.
  */
 
 const ROOT = process.cwd();
@@ -56,7 +61,7 @@ const ASSEMBLY_SOURCE = resolve(
 const ACKS = CONVERSATION_REPLY_CATALOGUE.acknowledgements;
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
-const CANONICAL_NEUTRAL = 'What else should I know about your trip?';
+const CANONICAL_NEUTRAL = CANONICAL_NEUTRAL_CONTINUATION_PROMPT;
 
 function plan(
   overrides: Partial<ConversationReplyPlan> = {},
@@ -113,19 +118,16 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     const renderer = readFileSync(RENDERER_SOURCE, 'utf8');
     const followUpOnly = readFileSync(FOLLOW_UP_ONLY_SOURCE, 'utf8');
 
-    // Neutral is selected as a follow-up string when no specific question applies.
     expect(followUpSource).toMatch(/return NEUTRAL_TRIP_FALLBACK_REPLY/);
-    // Continuation prompt is only used when followUpQuestion is null.
     expect(continuationSource).toMatch(
       /if \(input\.followUpQuestion !== null\) \{\s*return null;/,
     );
     expect(continuationSource).toMatch(/return NEUTRAL_TRIP_FALLBACK_REPLY/);
-    // Assembled plans store either follow-up or continuation into followUpQuestion.
     expect(assemblySource).toMatch(
       /followUpQuestion: input\.followUpQuestion \?\? input\.continuationPrompt/,
     );
-    // Renderer has no dedicated neutral branch; 15E pass-through handles the string.
-    expect(renderer.includes('neutralContinuation')).toBe(false);
+    // Phase 15J owns a dedicated neutral branch before follow-up-only.
+    expect(renderer).toMatch(/renderBaselineNeutralContinuation/);
     expect(followUpOnly.includes('neutralContinuation')).toBe(false);
     expect(followUpOnly.includes(CANONICAL_NEUTRAL)).toBe(false);
 
@@ -147,7 +149,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
     });
   });
 
-  it('proves exact output is byte-identical across deterministic, baseline, and production', () => {
+  it('proves activated output for stored neutral plans and deterministic empty coalesce', () => {
     const interpretedNeutral = freezePlan(
       plan({
         acknowledgements: [],
@@ -176,35 +178,34 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
       const layer = renderBaselineConversationalLayer(
         buildConversationalLayerInput(replyPlan),
       );
+      const viaHelper = renderBaselineNeutralContinuation({
+        followUpQuestion: CANONICAL_NEUTRAL,
+      });
+      // Follow-up-only helper still pass-throughs; 15J owns the transform.
       const viaFollowUpOnly = renderBaselineFollowUpOnly({
         followUpQuestion: CANONICAL_NEUTRAL,
       });
 
       expect(deterministic, label).toBe(CANONICAL_NEUTRAL);
-      expect(baseline, `${label} / baseline`).toBe(CANONICAL_NEUTRAL);
-      expect(production, `${label} / production`).toBe(CANONICAL_NEUTRAL);
-      expect(layer.wording, `${label} / layer`).toBe(CANONICAL_NEUTRAL);
-      expect(viaFollowUpOnly, `${label} / 15E pass-through`).toBe(
-        CANONICAL_NEUTRAL,
+      expect(baseline, `${label} / baseline`).toBe(
+        ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
       );
-      expect(baseline, `${label} / byte-identical`).toBe(deterministic);
+      expect(production, `${label} / production`).toBe(
+        ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      );
+      expect(layer.wording, `${label} / layer`).toBe(
+        ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      );
+      expect(viaHelper, `${label} / 15J helper`).toBe(
+        ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      );
+      expect(viaFollowUpOnly, `${label} / 15E helper`).toBe(CANONICAL_NEUTRAL);
       expect(production, `${label} / path agree`).toBe(baseline);
-
-      expect(baseline.includes('Great,'), label).toBe(false);
-      expect(baseline.includes('Perfect,'), label).toBe(false);
-      expect(baseline.includes("Let's start"), label).toBe(false);
-      expect(baseline.includes("Let's begin"), label).toBe(false);
-      expect(baseline.includes('Now for'), label).toBe(false);
-      expect(baseline.includes('And for'), label).toBe(false);
-      expect(baseline.includes('Now,'), label).toBe(false);
-      expect(baseline.includes('Next,'), label).toBe(false);
-      expect(baseline.includes('Also,'), label).toBe(false);
-      expect(baseline.includes('\n'), label).toBe(false);
+      expect(baseline.endsWith(CANONICAL_NEUTRAL), label).toBe(true);
       expect(replyPlan, `${label} / unchanged`).toEqual(before);
     }
 
-    // Empty plan also renders the same string, but via null-coalesce, not a
-    // stored neutral followUpQuestion.
+    // Empty plan still null-coalesces deterministically (not Phase 15J eligible).
     const emptyPlan = freezePlan(plan());
     expect(emptyPlan.followUpQuestion).toBeNull();
     expect(renderConversationReplyPlan(emptyPlan)).toBe(CANONICAL_NEUTRAL);
@@ -245,7 +246,6 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
       }),
     ).toBeNull();
 
-    // When follow-up selection is suppressed (null), continuation supplies neutral.
     expect(
       selectConversationContinuationPrompt({ followUpQuestion: null }),
     ).toBe(CANONICAL_NEUTRAL);
@@ -323,7 +323,7 @@ describe('phase 15G — neutral-continuation baseline output characterisation', 
       }),
     );
     expect(generateBaselineConversationalReply(uninterpreted)).toBe(
-      CANONICAL_NEUTRAL,
+      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     );
     expect(renderConversationReplyPlan(uninterpreted)).toBe(CANONICAL_NEUTRAL);
   });

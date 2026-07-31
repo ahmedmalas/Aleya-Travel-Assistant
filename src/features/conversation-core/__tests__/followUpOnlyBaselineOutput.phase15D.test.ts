@@ -13,6 +13,7 @@ import { buildConversationalLayerInput } from '../buildConversationalLayerInput'
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 import { selectConversationalObjective } from '../selectConversationalObjective';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
@@ -171,8 +172,9 @@ describe('phase 15D — follow-up-only baseline output characterisation', () => 
     const baseline = generateBaselineConversationalReply(neutralPlan);
 
     expect(deterministic).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(baseline).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
-    expect(baseline).toBe(deterministic);
+    expect(baseline).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(baseline.endsWith(NEUTRAL_TRIP_FALLBACK_REPLY)).toBe(true);
+    expect(baseline).not.toBe(deterministic);
     expect(selectConversationalObjective(neutralPlan)?.id).toBe(
       'neutralContinuation',
     );
