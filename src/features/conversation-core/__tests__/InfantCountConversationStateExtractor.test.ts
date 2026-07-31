@@ -145,6 +145,11 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       ['2 adults, 1 child and 1 infant', 1],
       ['flights for 2 infants', 2],
       ['Sydney to Brisbane for one infant', 1],
+      // Phase 17G passenger repair families
+      ['Actually 2 infants', 2],
+      ['Actually, 1 infant', 1],
+      ['Not 2 infants, 1 infant', 1],
+      ['Change the infant count to 1', 1],
     ];
 
     for (const [message, infantCount] of cases) {
@@ -227,7 +232,6 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       'Keep my infant count',
       'Forget the infants',
       '2 infants instead',
-      'Actually 2 infants',
       'babies: 3',
       'infant travellers',
       'Hello',

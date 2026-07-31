@@ -140,6 +140,12 @@ describe('phase 8F — ChildCountConversationStateExtractor activation', () => {
       ['2 adults and 2 children', 2],
       ['flights for 1 child', 1],
       ['Sydney to Brisbane for two children', 2],
+      // Phase 17G passenger repair families
+      ['Actually 2 children', 2],
+      ['Actually, 1 child', 1],
+      ['Not 1 child, 2 children', 2],
+      ['Change the child count to 2', 2],
+      ['Change the children count to 3', 3],
     ];
 
     for (const [message, childCount] of cases) {
@@ -215,7 +221,6 @@ describe('phase 8F — ChildCountConversationStateExtractor activation', () => {
       'Keep my child count',
       'Forget the children',
       '2 children instead',
-      'Actually 2 children',
       'kids: 3',
       'child travellers',
       'Hello',

@@ -137,6 +137,11 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
       ['2 adults flying from Sydney to Brisbane', 2],
       ['book flights for 3 adults', 3],
       ['we need accommodation for two adults', 2],
+      // Phase 17G passenger repair families
+      ['Actually 2 adults', 2],
+      ['Actually, 3 adults', 3],
+      ['Not 2 adults, 4 adults', 4],
+      ['Change the adult count to 3', 3],
     ];
 
     for (const [message, adultCount] of cases) {
@@ -200,7 +205,6 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
       'Keep my adult count',
       'Forget the adults',
       '2 adults instead',
-      'Actually 2 adults',
       'adults: 5',
       'me',
       'I',
