@@ -502,11 +502,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     expectReplies(turns, [
       'Great, Cairns it is. When would you like to depart?',
     ]);
-    // Current extraction pollutes origin and misses departureDate.
+    // Phase 17I: origin clause boundary cleans place capture; departureDate
+    // is still missed on this non-repair multi-fact shape.
     expect(turns[0]!.final.destination).toBe('Cairns');
-    expect(turns[0]!.final.origin).toBe(
-      'Sydney on 28 August 2026 returning 5 September 2026',
-    );
+    expect(turns[0]!.final.origin).toBe('Sydney');
     expect(turns[0]!.final.departureDate).toBeNull();
     expect(turns[0]!.final.returnDate).toBe('2026-09-05');
     expect(turns[0]!.owner).toBe('15C');

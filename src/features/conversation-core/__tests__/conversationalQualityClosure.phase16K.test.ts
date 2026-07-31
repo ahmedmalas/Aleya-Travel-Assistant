@@ -775,7 +775,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
     expect(seafood[0]!.restaurantsRequested).toBe(true);
     expect(seafood[0]!.owner).toBe('15J');
 
-    // Multi-fact extraction pollutes origin and misses departureDate.
+    // Phase 17I: origin capture is clean; departureDate is still missed on
+    // this non-repair multi-fact shape (historical departure gap preserved).
     const multiFact = runJourney([
       {
         message:
@@ -783,9 +784,7 @@ describe('Phase 16K — conversational quality closure audit', () => {
       },
     ]);
     expect(multiFact[0]!.destination).toBe('Cairns');
-    expect(multiFact[0]!.origin).toBe(
-      'Sydney on 28 August 2026 returning 5 September 2026',
-    );
+    expect(multiFact[0]!.origin).toBe('Sydney');
     expect(multiFact[0]!.departureDate).toBeNull();
     expect(multiFact[0]!.returnDate).toBe('2026-09-05');
     expect(multiFact[0]!.followUpOrContinuation).toBe(FOLLOW_UPS.departureDate);
