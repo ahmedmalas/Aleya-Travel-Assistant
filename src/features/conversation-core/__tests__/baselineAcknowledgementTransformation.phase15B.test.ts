@@ -19,8 +19,11 @@ import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply
 /**
  * Phase 15B — acknowledgement-only conversational transformation.
  *
- * Proves eligible acknowledgement-only plans receive approved conversational
- * wording while all other plan shapes remain unchanged.
+ * Renderer-surface contract: eligible acknowledgement-only plans
+ * (`acks.length === 1 && followUpQuestion === null`) receive approved
+ * conversational wording. Production assembly does not currently emit this
+ * shape (continuation coalescing); see Phase 15L / 15M. This file remains the
+ * defensive renderer-surface proof for 15B.
  */
 
 const ROOT = process.cwd();

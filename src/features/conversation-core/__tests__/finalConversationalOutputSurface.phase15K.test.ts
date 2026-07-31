@@ -22,9 +22,10 @@ import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply
 /**
  * Phase 15K — final Phase 15 baseline-conversational output-surface audit.
  *
- * Characterization / completion-proof only. Proves exclusive ownership,
- * byte-preservation contracts, path agreement, and deterministic fallback
- * boundaries after Phase 15J.
+ * Renderer-surface completion-proof: exclusive ownership, byte-preservation,
+ * path agreement, and deterministic fallback after Phase 15J. Includes
+ * defensive shapes (15B / multi-ack / empty-null) that production assembly does
+ * not currently emit; see Phase 15L / 15M for production reachability.
  */
 
 const ROOT = process.cwd();

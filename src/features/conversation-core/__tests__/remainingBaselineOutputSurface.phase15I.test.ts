@@ -17,9 +17,10 @@ import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply
 /**
  * Phase 15I — remaining / complete baseline output-surface characterisation.
  *
- * Proves every reachable ConversationReplyPlan shape is accounted for after
- * Phases 15B–15H, with exclusive branch ownership and no accidental transforms
- * on deterministic-only / pass-through categories.
+ * Renderer-surface matrix after Phases 15B–15H (plan-level). Later phases add
+ * 15J and distinguish production-reachable vs defensive-only shapes
+ * (see Phase 15L / 15M). This file keeps exclusive-ownership coverage for the
+ * full renderer surface, including shapes production does not currently emit.
  */
 
 const ROOT = process.cwd();

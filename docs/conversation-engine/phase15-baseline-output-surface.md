@@ -645,9 +645,11 @@ multiple acknowledgements + unknown follow-up
 
 ### Confirmation
 
-All reachable `ConversationReplyPlan` shapes are accounted for in the matrix
-above. Phase 15I introduced no conversational transform; Phase 15J owns the
+All **renderer-supported** `ConversationReplyPlan` shapes known at Phase 15I
+are accounted for in the matrix above (later refined by 15J / 15K). Phase 15I
+introduced no conversational transform; Phase 15J later owns the
 neutral-continuation expression that 15I had characterized as pass-through.
+Production reachability of those shapes is closed in Phase 15M.
 
 ---
 
@@ -803,9 +805,11 @@ null-coalesce to the raw canonical neutral string without the 15J lead-in.
 
 ### Confirmation
 
-All currently reachable `ConversationReplyPlan` shapes are accounted for in the
-matrix above. No production behaviour was changed in Phase 15K. No ownership
-overlap or production defect was found during the audit.
+All **renderer-supported** `ConversationReplyPlan` shapes are accounted for in
+the matrix above (plan-level surface). Phase 15L / 15M separately distinguish
+which of those shapes are **production-reachable** through current selection and
+assembly. No production behaviour was changed in Phase 15K. No ownership overlap
+or production defect was found during the audit.
 
 ---
 
@@ -893,3 +897,95 @@ not emitted by the live selector→assembly path.
   `generateBaselineConversationalReply` to throw during `processConversationTurn`
   returns `renderConversationReplyPlan(plan)` for the same assembled plan
   (e.g. destination turn falls back to `Great — Cairns.\nWhere will you be travelling from?`)
+
+---
+
+## Phase 15M record — production reachability closure
+
+Characterization and completion-proof only. Production wording is unchanged.
+Accepted tip before this closure: Phase 15L
+`2796922db96763a8e078a1712d105cedb7ac11f1`.
+
+### Distinction
+
+| Term | Meaning |
+| --- | --- |
+| **Renderer-supported** | `renderBaselineConversationalLayer` has an exclusive branch (or deterministic fall-through) for the plan shape |
+| **Production-reachable** | Current `select* → assembleConversationReplyPlan → processConversationTurn` path can emit that plan shape |
+| **Historically characterized** | Point-in-time Phase 15A–15L records; may be superseded for reachability or wording |
+| **Currently activated** | Production mode is `'baseline-conversational'`; transformed owners are 15B/15C/15F/15J where eligible |
+
+Unreachability of 15B / multi-ack / empty-null is caused by intentional selection and
+assembly cardinality contracts, not an accidental defect.
+
+### Traced production reachability contracts
+
+| Contract | Function / predicate | Effect |
+| --- | --- | --- |
+| Acknowledgement cardinality | `selectConversationAcknowledgement` → `string \| null` | At most one acknowledgement string |
+| Acknowledgement array shape | `assembleConversationReplyPlan` → `acknowledgement === null ? [] : [acknowledgement]` | Plan `acks.length` is 0 or 1 |
+| Follow-up selection | `messageInterpreted ? selectConversationFollowUpQuestion(state) : null` | Specific follow-up only when interpreted |
+| Continuation selection | `selectConversationContinuationPrompt` → null if follow-up set, else canonical neutral | Always a continuation when follow-up is null |
+| Reply-plan assembly | `followUpQuestion ?? continuationPrompt` | Production `followUpQuestion` is never null in practice |
+| Production rendering | `processConversationTurn` → baseline-conversational layer | Applies Phase 15 owners to emitted plans |
+| Fallback | Phase 14I `try/catch` around `generateBaselineConversationalReply` | Deterministic render of the same plan |
+
+### Final production-reachability matrix
+
+| Shape | Renderer-supported? | Production-reachable? | Production owner | Reason | Protection test |
+| --- | --- | --- | --- | --- | --- |
+| 1 ack, no follow-up | yes (**15B**) | **no** | — | assembly coalesces continuation → becomes 1 ack + neutral (**15C**) | Phase 15B renderer tests; Phase 15M non-emission |
+| 1 ack + specific follow-up | yes (**15C**) | **yes** | **15C** | interpreted change + missing field follow-up | Phase 15L / 15M |
+| 1 ack + neutral continuation | yes (**15C**) | **yes** | **15C** | interpreted change + catalogue/continuation neutral | Phase 15L / 15M |
+| 0 acks + supported follow-up | yes (**15F**) | **yes** | **15F** | interpreted, acknowledgement-inert change (e.g. request-flag clear) | Phase 15L / 15M |
+| 0 acks + canonical neutral | yes (**15J**) | **yes** | **15J** | uninterpreted / fully satisfied → continuation coalesced | Phase 15L / 15M |
+| 0 acks + unknown follow-up | yes (**15E pass-through**) | **no*** | — | production follow-up selector only emits catalogue strings | Phase 15E/15K renderer tests |
+| multiple acknowledgements | yes (deterministic) | **no** | — | acknowledgement selector cardinality is 0..1 | Phase 15K/15M |
+| empty plan (`followUp === null`) | yes (deterministic) | **no** | — | continuation always fills → stored neutral (**15J**) | Phase 15K/15M |
+| uninterpreted input | yes (via assembled neutral) | **yes** | **15J** | follow-up suppressed; continuation → canonical neutral | Phase 15L / 15M |
+| baseline renderer failure | yes (14I fallback) | **yes** | **deterministic fallback** | catch returns `renderConversationReplyPlan(plan)` | Phase 14I / 15L / 15M |
+
+\*Unknown follow-up strings are renderer-supported for defense but are not selected by
+`selectConversationFollowUpQuestion` / continuation today.
+
+### Active production owners
+
+```text
+15C  — acknowledgement + specific or neutral follow-up
+15F  — follow-up-only supported catalogue questions
+15J  — zero-ack canonical neutral continuation
+14I  — deterministic fallback on baseline throw
+```
+
+### Defensive-only branches (renderer-supported, not production-emitted)
+
+```text
+15B acknowledgement-only
+15E unknown follow-up pass-through (no catalogue selector path)
+deterministic multi-ack fall-through
+deterministic empty-null fall-through
+```
+
+These remain covered by Phase 15B / 15E / 15I / 15K plan-level tests and must not
+be deleted merely because production does not emit them.
+
+### Fallback boundary
+
+```text
+try generateBaselineConversationalReply(plan)
+catch → renderConversationReplyPlan(plan)
+```
+
+Reachable through `processConversationTurn` when baseline generation throws.
+
+### Phase 15 completion statement
+
+Phase 15 is **complete and ready to close**:
+
+- fully characterized at the renderer-surface level (Phases 15A–15K)
+- production-path verified for active owners 15C / 15F / 15J (Phases 15L–15M)
+- ownership-safe (mutually exclusive branches; no overlap found)
+- reachability boundaries documented as intentional selection/assembly contracts
+- defensive branches retained for non-emitted shapes
+- Phase 14I fallback preserved
+- PR #29 remains OPEN, Draft, Unmerged, Undeployed; no deploy performed
