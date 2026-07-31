@@ -195,7 +195,8 @@ describe('phase 8D — ReturnDateConversationStateExtractor activation', () => {
       'Keep my return date',
       'Forget the return date',
       'Return on 31 August 2026 instead',
-      'Actually return on 31 August 2026',
+      // Phase 17E: bare "Actually return on …" is now supported; "instead"
+      // forms remain blocked.
       'Actually return on 2026-11-01 instead of 2026-09-08',
       'Forget the return date / not 2026-09-08',
       'Returning tomorrow after 5 nights',

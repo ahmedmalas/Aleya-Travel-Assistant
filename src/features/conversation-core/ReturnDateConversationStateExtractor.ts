@@ -11,6 +11,9 @@ import type {
  * current message. Phase 8D extends clear return-date cues only.
  * Deterministic and local — no Date API, geographic services, departure-date
  * extraction, or currentState inspection.
+ *
+ * Phase 17E: adds explicit return-cued repair forms. Bare repaired dates
+ * remain unowned. Departure-cued messages are not claimed here.
  */
 export class ReturnDateConversationStateExtractor
   implements ConversationStateExtractor
@@ -57,6 +60,41 @@ function monthTokenToMm(month: string): string | null {
   return null;
 }
 
+/**
+ * Phase 17E contrast repair:
+ * "Not returning on 1 September 2026, returning on 2 September 2026".
+ */
+function matchContrastReturnDateRepair(
+  message: string,
+): { previousRaw: string; nextRaw: string } | null {
+  const match = edgeTrim(message).match(
+    /^not\s+returning\s+on\s+([^,]+),\s*returning\s+on\s+(.+)$/i,
+  );
+  if (match === null) {
+    return null;
+  }
+  const previousRaw = match[1];
+  const nextRaw = match[2];
+  if (typeof previousRaw !== 'string' || typeof nextRaw !== 'string') {
+    return null;
+  }
+  return { previousRaw, nextRaw };
+}
+
+/** True when the message carries an explicit return-date cue or repair form. */
+function hasExplicitReturnDateCue(message: string): boolean {
+  return (
+    /\breturn\s+date\s+is\b/i.test(message) ||
+    /\bchange\s+(?:the\s+)?return\s+date\s+to\b/i.test(message) ||
+    /\bno[,.]?\s+make\s+the\s+return\s+date\b/i.test(message) ||
+    /\breturn(?:ing)?\s+on\b/i.test(message) ||
+    /\bcome\s+back\s+on\b/i.test(message) ||
+    /\bcoming\s+back\s+on\b/i.test(message) ||
+    /\bback\s+on\b/i.test(message) ||
+    matchContrastReturnDateRepair(message) !== null
+  );
+}
+
 function isBlockedReturnDateMessage(message: string): boolean {
   if (/\?/.test(message)) {
     return true;
@@ -99,7 +137,17 @@ function isBlockedReturnDateMessage(message: string): boolean {
   if (/\bkeep\b/i.test(message) || /\bforget\b/i.test(message)) {
     return true;
   }
-  if (/\binstead\b/i.test(message) || /\bactually\b/i.test(message)) {
+  // Comparative / non-repair clauses that mention returning on a date.
+  if (/\bcheaper\b/i.test(message)) {
+    return true;
+  }
+  // "instead" remains a hard block (including "Return on … instead").
+  if (/\binstead\b/i.test(message)) {
+    return true;
+  }
+  // Phase 17E: allow "Actually, return on …" when an explicit return cue
+  // is present; bare "Actually, {date}" stays blocked (no cue).
+  if (/\bactually\b/i.test(message) && !hasExplicitReturnDateCue(message)) {
     return true;
   }
   if (
@@ -107,13 +155,28 @@ function isBlockedReturnDateMessage(message: string): boolean {
   ) {
     return true;
   }
-  if (/\bnot\b/i.test(message)) {
+  // Phase 17E: allow only the narrow contrast-repair shape through not-block.
+  if (
+    /\bnot\b/i.test(message) &&
+    matchContrastReturnDateRepair(message) === null
+  ) {
     return true;
   }
   return false;
 }
 
+/** Phase 17E explicit return-date repair cues (before general cues). */
+const RETURN_DATE_REPAIR_CUES: readonly RegExp[] = [
+  /\b(?:sorry[,.]?\s+)?i\s+meant\s+return(?:ing)?\s+(?:on\s+)?(.+)$/i,
+  /\bactually[,.]?\s+return(?:ing)?\s+(?:on\s+)?(.+)$/i,
+  /\bactually[,.]?\s+come\s+back\s+(?:on\s+)?(.+)$/i,
+  /\bno[,.]?\s+make\s+the\s+return\s+date\s+(.+)$/i,
+  /\bchange\s+(?:the\s+)?return\s+date\s+to\s+(.+)$/i,
+  /\bchange\s+that\s+to\s+returning\s+on\s+(.+)$/i,
+];
+
 const EXPLICIT_RETURN_DATE_CUES: readonly RegExp[] = [
+  ...RETURN_DATE_REPAIR_CUES,
   /\breturn\s+date\s+is\s+(.+)$/i,
   /\breturn(?:ing)?\s+(?:on\s+)?(.+)$/i,
   /\bcome\s+back\s+(?:on\s+)?(.+)$/i,
@@ -172,11 +235,33 @@ function parseCanonicalReturnDate(raw: string): string | null {
   return null;
 }
 
+function extractContrastReturnDate(message: string): string | null {
+  const matched = matchContrastReturnDateRepair(message);
+  if (matched === null) {
+    return null;
+  }
+  const previous = parseCanonicalReturnDate(matched.previousRaw);
+  const next = parseCanonicalReturnDate(matched.nextRaw);
+  if (previous === null || next === null) {
+    return null;
+  }
+  if (previous === next) {
+    return null;
+  }
+  return next;
+}
+
 function extractExplicitReturnDate(message: string): string | null {
   const text = edgeTrim(message);
   if (text.length === 0) {
     return null;
   }
+
+  const contrast = extractContrastReturnDate(text);
+  if (contrast !== null) {
+    return contrast;
+  }
+
   if (isBlockedReturnDateMessage(text)) {
     return null;
   }

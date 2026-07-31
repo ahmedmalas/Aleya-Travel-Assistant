@@ -340,7 +340,7 @@ describe('Phase 17A — repair handling characterization audit', () => {
     });
   });
 
-  it('field-by-field: returnDate — meant+Return on works; Actually blocks', () => {
+  it('field-by-field: returnDate — bare dates stay unowned; explicit return repairs work', () => {
     // Return cue survives a leading "Sorry, I meant" preface.
     const meantReturn = traceRepair(
       'Sorry, I meant Return on 20 August 2026',
@@ -349,16 +349,34 @@ describe('Phase 17A — repair handling characterization audit', () => {
       returnDate: '2026-08-20',
     });
     expect(meantReturn.final.returnDate).toBe('2026-08-20');
+    expect(meantReturn.final.departureDate).toBe('2026-08-10');
     expect(meantReturn.updated).toEqual(['returnDate']);
     expect(meantReturn.acknowledgementEvent).toEqual({
       kind: 'field-changed',
       field: 'returnDate',
     });
 
-    // \\bactually\\b hard-blocks return date extraction.
-    expectUnchangedPopulated(
-      traceRepair('Actually, Return on 20 August 2026'),
+    // Phase 17E: Actually, + explicit return cue now succeeds.
+    const actuallyReturn = traceRepair(
+      'Actually, Return on 20 August 2026',
     );
+    expect(actuallyReturn.extractedPatch).toEqual({
+      returnDate: '2026-08-20',
+    });
+    expect(actuallyReturn.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'returnDate',
+    });
+
+    const changeReturn = traceRepair(
+      'Change the return date to 20 August 2026',
+    );
+    expect(changeReturn.extractedPatch).toEqual({
+      returnDate: '2026-08-20',
+    });
+
+    // Bare repaired dates remain unowned.
+    expectUnchangedPopulated(traceRepair('Actually, 20 August 2026'));
 
     const cue = traceRepair('Return on 20 August 2026');
     expect(cue.extractedPatch).toEqual({ returnDate: '2026-08-20' });
