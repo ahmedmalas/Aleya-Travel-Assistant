@@ -356,6 +356,21 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(
       index.includes("from './renderConversationReplyPlanByIntegrationMode'"),
     ).toBe(false);
+    expect(index.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(
+      index.includes("from './evaluateBaselineConversationalReplyPlan'"),
+    ).toBe(false);
+
+    // Phase 14J evaluation entry is isolated from the production pipeline.
+    for (const relativePath of PRODUCTION_PIPELINE) {
+      if (relativePath.endsWith('index.ts')) continue;
+      expect(
+        readSrc(relativePath).includes('evaluateBaselineConversationalReplyPlan'),
+        `${relativePath} must not import the evaluation entry point`,
+      ).toBe(false);
+    }
   });
 
   it('proves the Phase 13 stack has no hidden AI/tool/API/memory/booking capability or automatic fallback wording', () => {

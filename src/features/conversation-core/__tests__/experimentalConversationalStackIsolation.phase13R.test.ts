@@ -191,6 +191,12 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     expect(index.includes("from './referenceConversationalStyleProfiles'")).toBe(
       false,
     );
+    expect(index.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(
+      index.includes("from './evaluateBaselineConversationalReplyPlan'"),
+    ).toBe(false);
   });
 
   it('allows experimental → production while prohibiting production → experimental', () => {
@@ -280,6 +286,16 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     );
 
     expect(generate.includes('generateBaselineConversationalReply')).toBe(false);
+    expect(generate.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(processTurn.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(seam.includes('evaluateBaselineConversationalReplyPlan')).toBe(false);
+    expect(modeDriven.includes('evaluateBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
     expect(generate.includes('renderBaselineConversationalReplyPlan')).toBe(false);
     expect(generate.includes('executeBaselineConversationalRenderer')).toBe(false);
     expect(generate.includes('buildConversationalLayerInput')).toBe(false);
