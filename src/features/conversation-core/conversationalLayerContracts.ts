@@ -80,6 +80,17 @@ export type ConversationalLayerOutput = {
   readonly wording: string;
 };
 
+/**
+ * Phase 13I — minimal renderer contract for conversational-layer implementations.
+ *
+ * Accepts readonly structured input and returns wording-only output.
+ * Implementations must not produce state updates, approvals, tools, or booking
+ * actions.
+ */
+export type ConversationalLayerRenderer = (
+  input: Readonly<ConversationalLayerInput>,
+) => ConversationalLayerOutput;
+
 const OBJECTIVE_BY_CATALOGUE_WORDING = new Map<string, ConversationalObjectiveId>(
   (
     Object.entries(FOLLOW_UPS) as Array<

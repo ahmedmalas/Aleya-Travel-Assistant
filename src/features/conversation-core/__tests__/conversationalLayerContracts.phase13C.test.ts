@@ -11,6 +11,7 @@ import {
   identifyConversationalObjective,
   type ConversationalLayerInput,
   type ConversationalLayerOutput,
+  type ConversationalLayerRenderer,
   type ConversationalObjective,
   type ConversationalStyleProfile,
 } from '../conversationalLayerContracts';
@@ -123,6 +124,25 @@ describe('phase 13C — conversational layer contracts', () => {
     expectTypeOf<ConversationalLayerOutput>().not.toHaveProperty('toolCall');
     expectTypeOf<ConversationalLayerOutput>().not.toHaveProperty('booking');
     expectTypeOf<ConversationalLayerOutput>().not.toHaveProperty('plan');
+  });
+
+  it('defines ConversationalLayerRenderer as wording-only over readonly input', () => {
+    expectTypeOf<ConversationalLayerRenderer>().parameter(0).toEqualTypeOf<
+      Readonly<ConversationalLayerInput>
+    >();
+    expectTypeOf<ConversationalLayerRenderer>().returns.toEqualTypeOf<ConversationalLayerOutput>();
+
+    const renderer: ConversationalLayerRenderer = (input) => ({
+      wording: input.plan.followUpQuestion ?? 'fallback',
+    });
+    const output = renderer(
+      createConversationalLayerInput(samplePlan(), {
+        id: 'origin',
+        catalogueWording: FOLLOW_UPS.origin,
+      }),
+    );
+    expect(Object.keys(output)).toEqual(['wording']);
+    expectTypeOf(output).toEqualTypeOf<ConversationalLayerOutput>();
   });
 
   it('identifies ConversationalObjective from the plan without recalculating eligibility', () => {
@@ -321,6 +341,7 @@ describe('phase 13C — conversational layer contracts', () => {
     expect(generate).toMatch(/renderConversationReplyPlan\(/);
     expect(generate.includes('createConversationalLayerInput')).toBe(false);
     expect(generate.includes('ConversationalLayerOutput')).toBe(false);
+    expect(generate.includes('ConversationalLayerRenderer')).toBe(false);
     expect(generate.includes('identifyConversationalObjective')).toBe(false);
   });
 });

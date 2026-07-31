@@ -1,11 +1,9 @@
-import type {
-  ConversationalLayerInput,
-  ConversationalLayerOutput,
-} from './conversationalLayerContracts';
+import type { ConversationalLayerRenderer } from './conversationalLayerContracts';
 import { renderConversationReplyPlan } from './generateConversationReply';
 
 /**
  * Phase 13H — deterministic conversational-layer baseline renderer.
+ * Phase 13I — typed as ConversationalLayerRenderer.
  *
  * Consumes an existing ConversationalLayerInput and returns wording-only
  * ConversationalLayerOutput by delegating to the existing deterministic reply
@@ -18,10 +16,8 @@ import { renderConversationReplyPlan } from './generateConversationReply';
  *
  * Not an AI implementation. Not wired into reply generation or turn processing.
  */
-export function renderBaselineConversationalLayer(
-  input: Readonly<ConversationalLayerInput>,
-): ConversationalLayerOutput {
-  return {
-    wording: renderConversationReplyPlan(input.plan),
-  };
-}
+export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
+  input,
+) => ({
+  wording: renderConversationReplyPlan(input.plan),
+});
