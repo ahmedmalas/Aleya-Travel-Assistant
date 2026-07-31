@@ -491,7 +491,9 @@ production mode
 
 ## Phase 15G record — neutral-continuation baseline output characterisation
 
-Investigation-only. Production wording for neutral continuation is unchanged.
+Investigation-only at the time of Phase 15G. Production wording for neutral
+continuation was unchanged then (15E pass-through). **Superseded by Phase 15J**,
+which adds a dedicated neutral-continuation transform; see Phase 15J / 15K.
 
 ### Exact current output
 
@@ -707,3 +709,100 @@ empty plans (deterministic)
 Phase 14I fallback / production mode
 canonical neutral question string / selection / assembly
 ```
+
+---
+
+## Phase 15K record — final Phase 15 conversational output-surface audit
+
+Characterization and completion-proof only. Production wording is unchanged.
+Accepted tip before this audit: Phase 15J
+`48a59ff140699bef82196cb0ab1c3d5a0d955089`.
+
+### Final runtime path
+
+```text
+renderIntegratedConversationReplyPlan({ plan })
+→ mode: 'baseline-conversational'
+→ renderConversationReplyPlanByIntegrationMode()
+→ try generateBaselineConversationalReply(plan)
+→ renderBaselineConversationalReplyPlan()
+→ buildConversationalLayerInput()
+→ executeBaselineConversationalRenderer()
+→ renderBaselineConversationalLayer()
+→ ConversationalLayerOutput.wording
+```
+
+Phase 14I catch fallback still returns `renderConversationReplyPlan(plan)`.
+
+### Final branch order
+
+```text
+1. one acknowledgement, no follow-up → Phase 15B
+2. one acknowledgement + follow-up → Phase 15C
+3. zero acknowledgements + canonical neutral prompt → Phase 15J
+4. zero acknowledgements + supported or unknown follow-up → Phase 15F / 15E
+5. every remaining shape → deterministic fallback
+```
+
+### Complete output-surface matrix
+
+| Plan shape | Branch | Owning phase | Final renderer / helper | Transformed / deterministic | Representative output |
+| --- | --- | --- | --- | --- | --- |
+| acknowledgement-only | arm 1 | **15B** | `transformBaselineAcknowledgement` | transformed | `Great, Cairns it is.` |
+| acknowledgement + specific follow-up | arm 2 | **15C** | `renderBaselineAcknowledgementFollowUp` | ack transformed; follow-up preserved | `Perfect, we'll start from Sydney. When would you like to depart?` |
+| acknowledgement + neutral follow-up | arm 2 | **15C** | `renderBaselineAcknowledgementFollowUp` | ack transformed; neutral preserved | `Perfect, got it. What else should I know about your trip?` |
+| acknowledgement + unknown follow-up | arm 2 | **15C** | `renderBaselineAcknowledgementFollowUp` | ack transformed; follow-up preserved | `No problem, I've removed the destination. Would you like a window seat preference noted?` |
+| supported follow-up-only | arm 4 | **15F** | `renderBaselineFollowUpOnly` | lead-in + preserved question | `Let's look at activities. What kinds of activities are you interested in?` |
+| neutral continuation | arm 3 | **15J** | `renderBaselineNeutralContinuation` | lead-in + preserved question | `There's just one more thing I'd like to know. What else should I know about your trip?` |
+| unknown follow-up-only | arm 4 | **15E pass-through** | `renderBaselineFollowUpOnly` | deterministic pass-through | `Would you like a window seat preference noted?` |
+| multiple acknowledgements, no follow-up | arm 5 | **deterministic** | `renderConversationReplyPlan` | deterministic | `Great — Cairns. Perfect — departing from Sydney.` |
+| multiple acknowledgements + specific follow-up | arm 5 | **deterministic** | `renderConversationReplyPlan` | deterministic | `{acks joined by space}\n{follow-up}` |
+| multiple acknowledgements + neutral follow-up | arm 5 | **deterministic** | `renderConversationReplyPlan` | deterministic | `{acks joined by space}\nWhat else should I know about your trip?` |
+| empty plan | arm 5 | **deterministic** | `renderConversationReplyPlan` | deterministic null-coalesce | `What else should I know about your trip?` |
+| uninterpreted empty plan | arm 5 | **deterministic** | `renderConversationReplyPlan` | deterministic null-coalesce | `What else should I know about your trip?` |
+
+`messageInterpreted` does not select a renderer branch.
+
+### Ownership map
+
+```text
+15B  → acknowledgements.length === 1 && followUpQuestion === null
+15C  → acknowledgements.length === 1 && followUpQuestion !== null
+15J  → acknowledgements.length === 0
+       && followUpQuestion === "What else should I know about your trip?"
+15E/F → acknowledgements.length === 0 && followUpQuestion !== null
+        (after 15J; eight supported catalogue strings → 15F lead-ins;
+         all other non-null strings → 15E pass-through)
+deterministic → every remaining shape
+  (empty / uninterpreted-empty; multi-acknowledgement ± follow-up)
+```
+
+Predicates are mutually exclusive. Multi-acknowledgement plans never enter
+15B, 15C, 15J, or 15E/F.
+
+### Byte-preservation contracts
+
+| Owner | Preserved deterministic content |
+| --- | --- |
+| **15B** | Transform operates on the completed acknowledgement string only |
+| **15C** | Follow-up question is an exact trailing substring (space join) |
+| **15F** | Supported follow-up question is an exact trailing substring |
+| **15J** | Canonical neutral question is an exact trailing substring |
+| **15E pass-through** | Unknown follow-up string unchanged |
+| **deterministic** | Exact `renderConversationReplyPlan` output |
+
+### Deterministic fallback boundary
+
+```text
+try generateBaselineConversationalReply(plan)
+catch → renderConversationReplyPlan(plan)
+```
+
+Empty plans (`followUpQuestion === null`) are not Phase 15J-eligible; they
+null-coalesce to the raw canonical neutral string without the 15J lead-in.
+
+### Confirmation
+
+All currently reachable `ConversationReplyPlan` shapes are accounted for in the
+matrix above. No production behaviour was changed in Phase 15K. No ownership
+overlap or production defect was found during the audit.

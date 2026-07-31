@@ -27,9 +27,9 @@ import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledg
 /**
  * Phase 15A — baseline conversational output surface characterisation.
  *
- * Characterises exact activated baseline wording. Acknowledgement-only plans
- * receive the Phase 15B transform; all other shapes remain identity-passthrough
- * relative to the deterministic renderer.
+ * Point-in-time characterisation at Phase 15A start (parity passthrough), later
+ * superseded by Phases 15B–15J transforms. Expected outputs in this file track
+ * the current activated surface; see Phase 15K for the final locked matrix.
  */
 
 const ROOT = process.cwd();
