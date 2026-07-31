@@ -486,3 +486,100 @@ follow-up catalogue strings and selection
 Phase 14I fallback
 production mode
 ```
+
+---
+
+## Phase 15G record — neutral-continuation baseline output characterisation
+
+Investigation-only. Production wording for neutral continuation is unchanged.
+
+### Exact current output
+
+```text
+What else should I know about your trip?
+```
+
+(`NEUTRAL_TRIP_FALLBACK_REPLY` / `CONVERSATION_REPLY_CATALOGUE.followUps.neutralContinuation`)
+
+### Exact neutral-continuation plan shape
+
+```text
+acknowledgements: []
+followUpQuestion: "What else should I know about your trip?"
+messageInterpreted: true | false
+```
+
+Representation (actual implementation, not assumed):
+
+- Assembled plans store the neutral string in `followUpQuestion`.
+- When a specific follow-up is selected, `selectConversationFollowUpQuestion`
+  returns that question; otherwise it returns the neutral continuation string.
+- `selectConversationContinuationPrompt` returns the neutral string only when
+  `followUpQuestion === null`; otherwise `null`.
+- `assembleConversationReplyPlan` assigns
+  `followUpQuestion ?? continuationPrompt` into the plan’s `followUpQuestion`.
+- There is no separate `continuation` field on `ConversationReplyPlan`.
+- The baseline renderer has no dedicated neutral branch; the plan enters the
+  Phase 15E follow-up-only arm (`acknowledgements.length === 0` and
+  `followUpQuestion !== null`), and `renderBaselineFollowUpOnly` pass-through
+  returns the question unchanged because the neutral string is absent from the
+  lead-in map.
+
+### Runtime path
+
+```text
+renderIntegratedConversationReplyPlan({ plan })
+→ mode: 'baseline-conversational'
+→ renderConversationReplyPlanByIntegrationMode()
+→ generateBaselineConversationalReply(plan)
+→ renderBaselineConversationalLayer()
+→ renderBaselineFollowUpOnly({ followUpQuestion: neutral })
+→ pass-through (no lead-in mapping)
+→ "What else should I know about your trip?"
+```
+
+Deterministic `renderConversationReplyPlan(plan)` returns the same string for
+this plan shape.
+
+### Selection boundary
+
+```text
+selectConversationFollowUpQuestion(state)
+→ first missing core/contextual follow-up, else NEUTRAL_TRIP_FALLBACK_REPLY
+
+selectConversationContinuationPrompt({ followUpQuestion })
+→ null when followUpQuestion !== null
+→ NEUTRAL_TRIP_FALLBACK_REPLY when followUpQuestion === null
+```
+
+A required specific follow-up therefore prevents the continuation selector from
+emitting neutral, and the follow-up selector itself emits neutral only after
+progression and contextual questions are satisfied.
+
+### Distinction from neighbouring shapes
+
+| Shape | Distinguishing plan facts |
+| --- | --- |
+| Neutral continuation | empty acks + `followUpQuestion ===` exact neutral string |
+| Follow-up-only (15E/15F) | empty acks + specific catalogue follow-up (lead-in applied) |
+| Acknowledgement-only (15B) | one ack + `followUpQuestion === null` |
+| Acknowledgement + follow-up (15C) | one ack + non-null follow-up |
+| Empty plan | empty acks + `followUpQuestion === null` (renderer null-coalesces to same wording) |
+| Uninterpreted neutral | same stored neutral `followUpQuestion`, `messageInterpreted: false` |
+
+### Byte-identity proof
+
+Baseline, production seam, layer output, and deterministic rendering are
+byte-identical to the canonical neutral string. No acknowledgement, Phase 15E
+lead-in, or filler is introduced.
+
+### Branch ownership / unchanged categories
+
+```text
+Neutral continuation: 15E pass-through (no transform)
+Specific follow-ups: Phase 15F
+Acknowledgement-only: Phase 15B
+Acknowledgement + follow-up: Phase 15C
+Unknown follow-ups / empty plans: unchanged
+Phase 14I fallback / production mode: unchanged
+```
