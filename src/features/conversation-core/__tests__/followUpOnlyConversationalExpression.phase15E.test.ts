@@ -57,37 +57,37 @@ const TRANSFORMED_FOLLOW_UPS: Array<{
   {
     id: 'origin',
     followUp: FOLLOW_UPS.origin,
-    expected: `First, ${FOLLOW_UPS.origin}`,
+    expected: `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
   },
   {
     id: 'departureDate',
     followUp: FOLLOW_UPS.departureDate,
-    expected: `And ${FOLLOW_UPS.departureDate}`,
+    expected: `Now for the timing. ${FOLLOW_UPS.departureDate}`,
   },
   {
     id: 'returnDate',
     followUp: FOLLOW_UPS.returnDate,
-    expected: `And ${FOLLOW_UPS.returnDate}`,
+    expected: `And for your return. ${FOLLOW_UPS.returnDate}`,
   },
   {
     id: 'flightsAdultCount',
     followUp: FOLLOW_UPS.flightsAdultCount,
-    expected: `For flights, ${FOLLOW_UPS.flightsAdultCount}`,
+    expected: `Now for the flights. ${FOLLOW_UPS.flightsAdultCount}`,
   },
   {
     id: 'accommodationGuestCount',
     followUp: FOLLOW_UPS.accommodationGuestCount,
-    expected: `For the stay, ${FOLLOW_UPS.accommodationGuestCount}`,
+    expected: `Now for the accommodation. ${FOLLOW_UPS.accommodationGuestCount}`,
   },
   {
     id: 'activities',
     followUp: FOLLOW_UPS.activities,
-    expected: `For activities, ${FOLLOW_UPS.activities}`,
+    expected: `Let's look at activities. ${FOLLOW_UPS.activities}`,
   },
   {
     id: 'restaurants',
     followUp: FOLLOW_UPS.restaurants,
-    expected: `For dining, ${FOLLOW_UPS.restaurants}`,
+    expected: `Now for dining. ${FOLLOW_UPS.restaurants}`,
   },
 ];
 

@@ -410,18 +410,22 @@ Neutral continuation is excluded from transformation (exact-string pass-through)
 4. all other plans → deterministic renderConversationReplyPlan
 ```
 
-### Exact transformed outputs
+### Exact transformed outputs (Phase 15E; refined in Phase 15F)
+
+Phase 15E originally used some clause-style lead-ins that produced mid-sentence
+capitalization (`First, Where…`, `And When…`). Phase 15F refined lead-ins to
+complete sentences; eligibility and ownership are unchanged. Current outputs:
 
 | Follow-up | Activated output |
 | --- | --- |
 | destination | `Let's start with the destination. Where would you like to travel?` |
-| origin | `First, Where will you be travelling from?` |
-| departureDate | `And When would you like to depart?` |
-| returnDate | `And When would you like to return?` |
-| flightsAdultCount | `For flights, How many adults will be travelling?` |
-| accommodationGuestCount | `For the stay, How many guests will be staying?` |
-| activities | `For activities, What kinds of activities are you interested in?` |
-| restaurants | `For dining, What type of dining are you looking for?` |
+| origin | `Let's begin with where you're travelling from. Where will you be travelling from?` |
+| departureDate | `Now for the timing. When would you like to depart?` |
+| returnDate | `And for your return. When would you like to return?` |
+| flightsAdultCount | `Now for the flights. How many adults will be travelling?` |
+| accommodationGuestCount | `Now for the accommodation. How many guests will be staying?` |
+| activities | `Let's look at activities. What kinds of activities are you interested in?` |
+| restaurants | `Now for dining. What type of dining are you looking for?` |
 
 ### Follow-up preservation proof
 
@@ -442,4 +446,43 @@ acknowledgement-only (Phase 15B)
 acknowledgement + follow-up (Phase 15C)
 multiple acknowledgements
 empty plans
+```
+
+---
+
+## Phase 15F record — follow-up-only lead-in grammar refinement
+
+Grammatical refinement of Phase 15E only. Eligibility boundary and branch
+ownership are unchanged.
+
+### Before → after (selected)
+
+| Category | Before (15E) | After (15F) |
+| --- | --- | --- |
+| origin | `First, Where will you be travelling from?` | `Let's begin with where you're travelling from. Where will you be travelling from?` |
+| departureDate | `And When would you like to depart?` | `Now for the timing. When would you like to depart?` |
+| flightsAdultCount | `For flights, How many adults will be travelling?` | `Now for the flights. How many adults will be travelling?` |
+
+### Malformed-pattern exclusion
+
+Activated follow-up-only outputs must not contain:
+
+```text
+, Where
+And When
+, How
+, What
+```
+
+### Unchanged
+
+```text
+eligibility boundary
+branch order
+neutral continuation pass-through
+unknown follow-up pass-through
+Phase 15B / 15C outputs
+follow-up catalogue strings and selection
+Phase 14I fallback
+production mode
 ```

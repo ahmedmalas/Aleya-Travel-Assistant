@@ -92,7 +92,7 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     }),
-    expectedOutput: `First, ${FOLLOW_UPS.origin}`,
+    expectedOutput: `Let's begin with where you're travelling from. ${FOLLOW_UPS.origin}`,
     expectedObjectiveId: 'origin',
     expectedCatalogueWording: FOLLOW_UPS.origin,
   },

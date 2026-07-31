@@ -140,7 +140,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
         messageInterpreted: true,
       }),
     );
-    expect(wording).toBe(`For activities, ${FOLLOW_UPS.activities}`);
+    expect(wording).toBe(`Let's look at activities. ${FOLLOW_UPS.activities}`);
     expect(wording).not.toBe(FOLLOW_UPS.activities);
     expect(wording.endsWith(FOLLOW_UPS.activities)).toBe(true);
   });

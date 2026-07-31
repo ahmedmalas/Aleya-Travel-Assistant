@@ -246,7 +246,7 @@ describe('phase 15C — baseline acknowledgement follow-up transformation', () =
       expectedActivatedBaselineReply(followUpOnly),
     );
     expect(generateBaselineConversationalReply(followUpOnly)).toBe(
-      `For activities, ${FOLLOW_UPS.activities}`,
+      `Let's look at activities. ${FOLLOW_UPS.activities}`,
     );
     expect(generateBaselineConversationalReply(followUpOnly)).not.toBe(
       FOLLOW_UPS.activities,

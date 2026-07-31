@@ -193,7 +193,7 @@ describe('phase 14L — baseline comparison status', () => {
     expect(comparison.deterministicReply).toBe(deterministicExpected);
     expect(comparison.baselineReply).toBe(baselineExpected);
     expect(comparison.baselineReply).toBe(
-      `For activities, ${FOLLOW_UPS.activities}`,
+      `Let's look at activities. ${FOLLOW_UPS.activities}`,
     );
     expect(comparison.matchesDeterministic).toBe(false);
     expect(comparison.status).toBe('different');

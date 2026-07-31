@@ -124,7 +124,7 @@ describe('phase 13N — executeBaselineConversationalRenderer', () => {
           messageInterpreted: true,
         }),
       ).expected,
-    ).toBe(`For activities, ${FOLLOW_UPS.activities}`);
+    ).toBe(`Let's look at activities. ${FOLLOW_UPS.activities}`);
 
     expect(
       expectBaseline(

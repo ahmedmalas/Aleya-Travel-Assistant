@@ -1,5 +1,7 @@
 /**
  * Phase 15E — follow-up-only conversational lead-in renderer.
+ * Phase 15F — grammatical refinement: lead-ins are complete sentences so the
+ * original capitalized follow-up question can begin naturally.
  *
  * Eligible plans have empty acknowledgements and a non-null follow-up.
  * Neutral continuation is excluded. Supported follow-ups are matched by exact
@@ -17,18 +19,20 @@ export type RenderBaselineFollowUpOnlyInput = Readonly<{
 }>;
 
 /**
- * Exact supported follow-up wording → short conversational lead-in.
+ * Exact supported follow-up wording → short complete-sentence lead-in.
  * Keys are the complete deterministic follow-up strings.
  */
 const FOLLOW_UP_ONLY_LEAD_INS: Readonly<Record<string, string>> = {
   'Where would you like to travel?': "Let's start with the destination.",
-  'Where will you be travelling from?': 'First,',
-  'When would you like to depart?': 'And',
-  'When would you like to return?': 'And',
-  'How many adults will be travelling?': 'For flights,',
-  'How many guests will be staying?': 'For the stay,',
-  'What kinds of activities are you interested in?': 'For activities,',
-  'What type of dining are you looking for?': 'For dining,',
+  'Where will you be travelling from?':
+    "Let's begin with where you're travelling from.",
+  'When would you like to depart?': 'Now for the timing.',
+  'When would you like to return?': 'And for your return.',
+  'How many adults will be travelling?': 'Now for the flights.',
+  'How many guests will be staying?': 'Now for the accommodation.',
+  'What kinds of activities are you interested in?':
+    "Let's look at activities.",
+  'What type of dining are you looking for?': 'Now for dining.',
 };
 
 /**

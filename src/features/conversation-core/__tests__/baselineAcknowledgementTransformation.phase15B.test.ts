@@ -290,7 +290,7 @@ describe('phase 15B — baseline acknowledgement transformation', () => {
     const followUpOnlyBaseline = generateBaselineConversationalReply(followUpOnly);
     expect(followUpOnlyDeterministic).toBe(FOLLOW_UPS.activities);
     expect(followUpOnlyBaseline).toBe(
-      `For activities, ${FOLLOW_UPS.activities}`,
+      `Let's look at activities. ${FOLLOW_UPS.activities}`,
     );
     expect(followUpOnlyBaseline).not.toBe(followUpOnlyDeterministic);
 
