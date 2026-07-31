@@ -14,8 +14,8 @@ import { selectConversationalObjective } from './selectConversationalObjective';
  * and delegating immutable packaging to createConversationalLayerInput.
  *
  * Does not inspect authoritative trip state or original user text, does not
- * recalculate priority or eligibility, does not render wording, and does not
- * mutate the plan or style profile.
+ * recalculate follow-up ordering or suppression rules, does not render wording,
+ * and does not mutate the plan or style profile.
  *
  * Not wired into reply generation or turn processing.
  */
