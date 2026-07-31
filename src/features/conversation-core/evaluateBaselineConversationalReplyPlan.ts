@@ -1,12 +1,12 @@
 import type { ConversationReplyPlan } from './assembleConversationReplyPlan';
-import { renderConversationReplyPlanByIntegrationMode } from './renderConversationReplyPlanByIntegrationMode';
+import { evaluateBaselineConversationalReplyPlanOutcome } from './evaluateBaselineConversationalReplyPlanOutcome';
 
 /**
  * Phase 14J — non-production baseline conversational evaluation entry point.
+ * Phase 14L — delegates through the outcome boundary so fallback remains
+ * observable for comparison without changing this string contract.
  *
- * Explicitly exercises the `'baseline-conversational'` mode through the
- * mode-driven renderer (including Phase 14I deterministic fallback). Not used
- * by production reply generation. Not exported from index.ts.
+ * Not used by production reply generation. Not exported from index.ts.
  */
 
 export type EvaluateBaselineConversationalReplyPlanInput = Readonly<{
@@ -16,8 +16,7 @@ export type EvaluateBaselineConversationalReplyPlanInput = Readonly<{
 export function evaluateBaselineConversationalReplyPlan(
   input: EvaluateBaselineConversationalReplyPlanInput,
 ): string {
-  return renderConversationReplyPlanByIntegrationMode({
+  return evaluateBaselineConversationalReplyPlanOutcome({
     plan: input.plan,
-    mode: 'baseline-conversational',
-  });
+  }).reply;
 }

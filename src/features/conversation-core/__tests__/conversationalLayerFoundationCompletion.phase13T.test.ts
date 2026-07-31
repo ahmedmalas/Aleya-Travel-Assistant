@@ -368,8 +368,14 @@ describe('phase 13T — conversational layer foundation completion', () => {
     expect(
       index.includes("from './compareBaselineConversationalReplyPlan'"),
     ).toBe(false);
+    expect(
+      index.includes('evaluateBaselineConversationalReplyPlanOutcome'),
+    ).toBe(false);
+    expect(
+      index.includes("from './evaluateBaselineConversationalReplyPlanOutcome'"),
+    ).toBe(false);
 
-    // Phase 14J/14K evaluation entry points are isolated from the production pipeline.
+    // Phase 14J/14K/14L evaluation entry points are isolated from the production pipeline.
     for (const relativePath of PRODUCTION_PIPELINE) {
       if (relativePath.endsWith('index.ts')) continue;
       expect(
@@ -379,6 +385,12 @@ describe('phase 13T — conversational layer foundation completion', () => {
       expect(
         readSrc(relativePath).includes('compareBaselineConversationalReplyPlan'),
         `${relativePath} must not import the comparison entry point`,
+      ).toBe(false);
+      expect(
+        readSrc(relativePath).includes(
+          'evaluateBaselineConversationalReplyPlanOutcome',
+        ),
+        `${relativePath} must not import the outcome entry point`,
       ).toBe(false);
     }
   });

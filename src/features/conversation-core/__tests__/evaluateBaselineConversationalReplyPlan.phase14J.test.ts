@@ -10,7 +10,6 @@ import {
   renderConversationReplyPlan,
 } from '../generateConversationReply';
 import * as generateConversationReplyModule from '../generateConversationReply';
-import * as modeDrivenModule from '../renderConversationReplyPlanByIntegrationMode';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 
 /**
@@ -86,10 +85,10 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
       /export type EvaluateBaselineConversationalReplyPlanInput/,
     );
     expect(source).toMatch(
-      /return renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode: 'baseline-conversational',\s*\}\)/,
+      /return evaluateBaselineConversationalReplyPlanOutcome\(\{\s*plan: input\.plan,\s*\}\)\.reply/,
     );
     expect(source).toMatch(
-      /from '\.\/renderConversationReplyPlanByIntegrationMode'/,
+      /from '\.\/evaluateBaselineConversationalReplyPlanOutcome'/,
     );
 
     expect(source.includes('generateBaselineConversationalReply')).toBe(false);
@@ -124,11 +123,16 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     }
 
     // No production .ts module under conversation-core imports the evaluation entry.
-    // Phase 14K comparison is evaluation-only and may import it.
+    // Phase 14K/14L comparison and outcome modules are evaluation-only.
     for (const name of readdirSync(CONVERSATION_CORE_DIR)) {
       if (!name.endsWith('.ts')) continue;
-      if (name === 'evaluateBaselineConversationalReplyPlan.ts') continue;
-      if (name === 'compareBaselineConversationalReplyPlan.ts') continue;
+      if (
+        name === 'evaluateBaselineConversationalReplyPlan.ts' ||
+        name === 'evaluateBaselineConversationalReplyPlanOutcome.ts' ||
+        name === 'compareBaselineConversationalReplyPlan.ts'
+      ) {
+        continue;
+      }
       const relative = `src/features/conversation-core/${name}`;
       const contents = readFileSync(resolve(CONVERSATION_CORE_DIR, name), 'utf8');
       expect(
@@ -142,32 +146,18 @@ describe('phase 14J — evaluateBaselineConversationalReplyPlan', () => {
     );
   });
 
-  it('delegates through the mode-driven renderer and never calls the baseline generator directly', () => {
+  it('delegates through the outcome boundary and preserves the string contract', () => {
     const replyPlan = plan({
       acknowledgements: [ACKS.destination('Brisbane')],
       followUpQuestion: FOLLOW_UPS.origin,
       messageInterpreted: true,
     });
     const before = structuredClone(replyPlan);
-
-    const modeSpy = vi
-      .spyOn(modeDrivenModule, 'renderConversationReplyPlanByIntegrationMode')
-      .mockReturnValue('evaluation-via-mode-driven');
-    const directBaselineSpy = vi.spyOn(
-      baselineModule,
-      'generateBaselineConversationalReply',
-    );
+    const expected = baselineModule.generateBaselineConversationalReply(replyPlan);
 
     expect(
       evaluateBaselineConversationalReplyPlan({ plan: replyPlan }),
-    ).toBe('evaluation-via-mode-driven');
-    expect(modeSpy).toHaveBeenCalledTimes(1);
-    expect(modeSpy.mock.calls[0]?.[0]).toEqual({
-      plan: replyPlan,
-      mode: 'baseline-conversational',
-    });
-    expect(modeSpy.mock.calls[0]?.[0]?.plan).toBe(replyPlan);
-    expect(directBaselineSpy).not.toHaveBeenCalled();
+    ).toBe(expected);
     expect(replyPlan).toEqual(before);
   });
 

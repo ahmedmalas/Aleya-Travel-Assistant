@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ConversationReplyPlan } from '../assembleConversationReplyPlan';
 import { compareBaselineConversationalReplyPlan } from '../compareBaselineConversationalReplyPlan';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
-import * as evaluateModule from '../evaluateBaselineConversationalReplyPlan';
+import * as outcomeModule from '../evaluateBaselineConversationalReplyPlanOutcome';
 import * as baselineModule from '../generateBaselineConversationalReply';
 import { renderConversationReplyPlan } from '../generateConversationReply';
 import * as modeDrivenModule from '../renderConversationReplyPlanByIntegrationMode';
@@ -86,14 +86,18 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
       /export type BaselineConversationalReplyPlanComparison/,
     );
     expect(source).toMatch(
+      /export type BaselineConversationalComparisonStatus/,
+    );
+    expect(source).toMatch(
       /renderConversationReplyPlanByIntegrationMode\(\{\s*plan: input\.plan,\s*mode: 'deterministic',\s*\}\)/,
     );
     expect(source).toMatch(
-      /evaluateBaselineConversationalReplyPlan\(\{\s*plan: input\.plan,\s*\}\)/,
+      /evaluateBaselineConversationalReplyPlanOutcome\(\{\s*plan: input\.plan,\s*\}\)/,
     );
     expect(source).toMatch(
-      /matchesDeterministic:\s*deterministicReply === baselineReply/,
+      /const matchesDeterministic = deterministicReply === baselineReply/,
     );
+    expect(source).toMatch(/status: BaselineConversationalComparisonStatus/);
 
     expect(source.includes('generateBaselineConversationalReply')).toBe(false);
     expect(source.includes('renderConversationReplyPlan(')).toBe(false);
@@ -210,9 +214,9 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         modeDrivenModule,
         'renderConversationReplyPlanByIntegrationMode',
       );
-      const evaluateSpy = vi.spyOn(
-        evaluateModule,
-        'evaluateBaselineConversationalReplyPlan',
+      const outcomeSpy = vi.spyOn(
+        outcomeModule,
+        'evaluateBaselineConversationalReplyPlanOutcome',
       );
 
       const comparison = compareBaselineConversationalReplyPlan({
@@ -222,6 +226,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
       expect(comparison.deterministicReply, entry.label).toBe(expected);
       expect(comparison.baselineReply, entry.label).toBe(expected);
       expect(comparison.matchesDeterministic, entry.label).toBe(true);
+      expect(comparison.status, entry.label).toBe('identical');
 
       expect(modeSpy, entry.label).toHaveBeenCalled();
       expect(
@@ -232,11 +237,11 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
         `${entry.label} / deterministic mode path`,
       ).toBe(true);
 
-      expect(evaluateSpy, entry.label).toHaveBeenCalledTimes(1);
-      expect(evaluateSpy.mock.calls[0]?.[0], entry.label).toEqual({
+      expect(outcomeSpy, entry.label).toHaveBeenCalledTimes(1);
+      expect(outcomeSpy.mock.calls[0]?.[0], entry.label).toEqual({
         plan: entry.replyPlan,
       });
-      expect(evaluateSpy.mock.calls[0]?.[0]?.plan, entry.label).toBe(
+      expect(outcomeSpy.mock.calls[0]?.[0]?.plan, entry.label).toBe(
         entry.replyPlan,
       );
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
@@ -267,6 +272,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
     expect(comparison.deterministicReply).toBe(expected);
     expect(comparison.baselineReply).toBe(expected);
     expect(comparison.matchesDeterministic).toBe(true);
+    expect(comparison.status).toBe('fallback');
     expect(replyPlan).toEqual(before);
   });
 
@@ -280,11 +286,14 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
     const deterministicExpected = renderConversationReplyPlan(replyPlan);
 
     vi.spyOn(
-      evaluateModule,
-      'evaluateBaselineConversationalReplyPlan',
+      outcomeModule,
+      'evaluateBaselineConversationalReplyPlanOutcome',
     ).mockImplementation((input) => {
       expect(input.plan).toBe(replyPlan);
-      return 'controlled-baseline-difference';
+      return {
+        reply: 'controlled-baseline-difference',
+        usedFallback: false,
+      };
     });
 
     let escaped: unknown;
@@ -302,6 +311,7 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
       deterministicReply: deterministicExpected,
       baselineReply: 'controlled-baseline-difference',
       matchesDeterministic: false,
+      status: 'different',
     });
     expect(replyPlan).toEqual(before);
   });
@@ -314,14 +324,14 @@ describe('phase 14K — compareBaselineConversationalReplyPlan', () => {
     });
     const expected = renderConversationReplyPlan(replyPlan);
 
-    const evaluateSpy = vi.spyOn(
-      evaluateModule,
-      'evaluateBaselineConversationalReplyPlan',
+    const outcomeSpy = vi.spyOn(
+      outcomeModule,
+      'evaluateBaselineConversationalReplyPlanOutcome',
     );
 
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,
     );
-    expect(evaluateSpy).not.toHaveBeenCalled();
+    expect(outcomeSpy).not.toHaveBeenCalled();
   });
 });
