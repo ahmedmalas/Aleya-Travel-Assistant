@@ -59,11 +59,15 @@ export type ConversationalStyleProfile = {
 /**
  * Sole structured input to a future conversational layer.
  * Contains a readonly reply plan plus an identified objective and optional style.
- * Must not carry mutable authoritative conversation state.
+ * `objective` is null when the plan has no follow-up and no continuation —
+ * never a synthetic "none" objective. Must not carry mutable authoritative
+ * conversation state.
+ *
+ * Phase 13F — nullable objective correction.
  */
 export type ConversationalLayerInput = {
   readonly plan: ConversationReplyPlan;
-  readonly objective: ConversationalObjective;
+  readonly objective: ConversationalObjective | null;
   readonly styleProfile?: ConversationalStyleProfile;
 };
 
@@ -104,19 +108,23 @@ export function identifyConversationalObjective(
 }
 
 /**
- * Build a contract input from an already-assembled reply plan.
- * Pure structuring helper — not integrated into reply generation.
+ * Build a contract input from an already-assembled reply plan and an
+ * already-identified objective (or null when none).
+ *
+ * Pure packaging helper — preserves the plan reference and objective as given,
+ * including null. Does not invent a synthetic "none" objective. Not integrated
+ * into reply generation.
+ *
+ * Phase 13F — accepts and preserves nullable objective.
  */
 export function createConversationalLayerInput(
   plan: ConversationReplyPlan,
+  objective: ConversationalObjective | null,
   styleProfile?: ConversationalStyleProfile,
 ): ConversationalLayerInput {
-  const input: ConversationalLayerInput = {
-    plan,
-    objective: identifyConversationalObjective(plan),
-  };
-  if (styleProfile !== undefined) {
-    return { ...input, styleProfile };
-  }
-  return input;
+  const input: ConversationalLayerInput =
+    styleProfile === undefined
+      ? { plan, objective }
+      : { plan, objective, styleProfile };
+  return Object.freeze(input);
 }

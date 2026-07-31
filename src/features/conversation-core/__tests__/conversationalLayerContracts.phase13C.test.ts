@@ -82,7 +82,11 @@ describe('phase 13C — conversational layer contracts', () => {
 
   it('requires ConversationalLayerInput to reference a readonly structured reply plan', () => {
     const plan = samplePlan();
-    const input = createConversationalLayerInput(plan);
+    const objective: ConversationalObjective = {
+      id: 'origin',
+      catalogueWording: FOLLOW_UPS.origin,
+    };
+    const input = createConversationalLayerInput(plan, objective);
 
     expect(input.plan).toBe(plan);
     expect(input.plan).toEqual({
@@ -92,6 +96,9 @@ describe('phase 13C — conversational layer contracts', () => {
     });
     expectTypeOf<ConversationalLayerInput['plan']>().toEqualTypeOf<ConversationReplyPlan>();
     expectTypeOf(input.plan).toMatchTypeOf<ConversationReplyPlan>();
+    expectTypeOf<ConversationalLayerInput['objective']>().toEqualTypeOf<
+      ConversationalObjective | null
+    >();
     expectTypeOf<ConversationalLayerInput>().not.toHaveProperty('state');
     expectTypeOf<ConversationalLayerInput>().not.toHaveProperty('stateUpdate');
     expectTypeOf<ConversationalLayerInput>().not.toHaveProperty('priority');
@@ -239,21 +246,21 @@ describe('phase 13C — conversational layer contracts', () => {
       messageInterpreted: true,
     });
     const planBefore = structuredClone(plan);
-
-    const input = createConversationalLayerInput(plan, {
-      id: 'concise',
-      tone: 'concise',
-    });
-
-    expect(input.plan).toEqual(planBefore);
-    expect(input.objective).toEqual({
+    const objective: ConversationalObjective = {
       id: 'origin',
       catalogueWording: FOLLOW_UPS.origin,
-    });
-    expect(input.styleProfile).toEqual({
+    };
+    const style: ConversationalStyleProfile = {
       id: 'concise',
       tone: 'concise',
-    });
+    };
+
+    const input = createConversationalLayerInput(plan, objective, style);
+
+    expect(input.plan).toBe(plan);
+    expect(input.plan).toEqual(planBefore);
+    expect(input.objective).toEqual(objective);
+    expect(input.styleProfile).toEqual(style);
 
     // Output remains wording-only; contracts do not produce control side effects.
     const output: ConversationalLayerOutput = {
@@ -263,6 +270,49 @@ describe('phase 13C — conversational layer contracts', () => {
       wording: 'Which city will you be departing from?',
     });
     expect(plan).toEqual(planBefore);
+  });
+
+  it('preserves a concrete objective and accepts null without inventing "none"', () => {
+    const planWithObjective = samplePlan();
+    const concrete: ConversationalObjective = {
+      id: 'origin',
+      catalogueWording: FOLLOW_UPS.origin,
+    };
+    const style: ConversationalStyleProfile = {
+      id: 'warm-consultant',
+      tone: 'warm',
+    };
+
+    const withObjective = createConversationalLayerInput(
+      planWithObjective,
+      concrete,
+      style,
+    );
+    expect(withObjective.plan).toBe(planWithObjective);
+    expect(withObjective.objective).toBe(concrete);
+    expect(withObjective.objective).toEqual({
+      id: 'origin',
+      catalogueWording: FOLLOW_UPS.origin,
+    });
+    expect(withObjective.styleProfile).toBe(style);
+    expect(Object.isFrozen(withObjective)).toBe(true);
+
+    const emptyPlan = samplePlan({
+      acknowledgements: [],
+      followUpQuestion: null,
+      messageInterpreted: false,
+    });
+    const withNull = createConversationalLayerInput(emptyPlan, null);
+    expect(withNull.plan).toBe(emptyPlan);
+    expect(withNull.objective).toBeNull();
+    expect(withNull.objective).not.toEqual({
+      id: 'none',
+      catalogueWording: null,
+    });
+    expect(withNull.styleProfile).toBeUndefined();
+    expect(Object.isFrozen(withNull)).toBe(true);
+
+    expectTypeOf(withNull.objective).toEqualTypeOf<ConversationalObjective | null>();
   });
 
   it('leaves the existing reply-generation path unchanged', () => {
