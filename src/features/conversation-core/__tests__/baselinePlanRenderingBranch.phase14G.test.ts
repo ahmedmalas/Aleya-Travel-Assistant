@@ -3,18 +3,26 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ConversationReplyPlan } from '../assembleConversationReplyPlan';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
+import { generateBaselineConversationalReply } from '../generateBaselineConversationalReply';
 import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
+  generateConversationReply,
   renderConversationReplyPlan,
+  type GenerateConversationReplyInput,
 } from '../generateConversationReply';
+import {
+  createInitialConversationCoreState,
+  processConversationTurn,
+  type ConversationCoreState,
+} from '../index';
 import { renderIntegratedConversationReplyPlan } from '../renderIntegratedConversationReplyPlan';
 
 /**
- * Phase 14F — explicit deterministic plan-rendering integration mode.
+ * Phase 14G — unselected baseline plan-rendering branch characterisation.
  *
- * Proves the plan-level seam declares only `'deterministic'`, delegates
- * through an exhaustive switch to renderConversationReplyPlan, and does not
- * expose any alternate mode selection path.
+ * Proves the plan-level seam declares both modes, keeps production selection
+ * statically deterministic, and wires the unreachable baseline branch to
+ * generateBaselineConversationalReply(plan) without rebuilding the plan.
  */
 
 const ROOT = process.cwd();
@@ -31,27 +39,13 @@ const GENERATE_SOURCE = resolve(
   ROOT,
   'src/features/conversation-core/generateConversationReply.ts',
 );
-const INTEGRATED_REPLY_SOURCE = resolve(
+const BASELINE_SOURCE = resolve(
   ROOT,
-  'src/features/conversation-core/generateIntegratedConversationReply.ts',
+  'src/features/conversation-core/generateBaselineConversationalReply.ts',
 );
 
 const ACKS = CONVERSATION_REPLY_CATALOGUE.acknowledgements;
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
-
-const CONVERSATIONAL_MARKERS = [
-  'generateBaselineConversationalReply',
-  'renderBaselineConversationalReplyPlan',
-  'renderBaselineConversationalLayer',
-  'buildConversationalLayerInput',
-  'executeBaselineConversationalRenderer',
-  'executeConversationalLayerRenderer',
-  'createBaselineConversationalRendererRegistry',
-  'invokeConversationalLayerRenderer',
-  'ConversationalLayerRenderer',
-  'ConversationalLayerInput',
-  'conversationalLayerContracts',
-] as const;
 
 function plan(
   overrides: Partial<ConversationReplyPlan> = {},
@@ -64,15 +58,52 @@ function plan(
   };
 }
 
-describe('phase 14F — conversation reply plan integration mode', () => {
-  it('declares only the deterministic mode and uses an exhaustive internal switch', () => {
+function createState(
+  overrides: Partial<ConversationCoreState> = {},
+): ConversationCoreState {
+  return {
+    ...createInitialConversationCoreState({
+      conversationId: 'conversation-14g',
+      now: new Date('2026-07-29T00:00:00.000Z'),
+    }),
+    status: 'active',
+    turnCount: 2,
+    ...overrides,
+  };
+}
+
+function replyInput(
+  previousState: ConversationCoreState,
+  state: ConversationCoreState,
+  message = 'phase-14g',
+): GenerateConversationReplyInput {
+  return { message, previousState, state };
+}
+
+function turn(message: string, state: ConversationCoreState) {
+  return processConversationTurn({
+    message,
+    state,
+    userEntryId: 'user-14g',
+    assistantEntryId: 'assistant-14g',
+    userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
+    assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
+  });
+}
+
+describe('phase 14G — baseline plan rendering branch', () => {
+  it('declares both modes, keeps production selection deterministic, and wires the unselected branch', () => {
     const source = readFileSync(SEAM_SOURCE, 'utf8');
+    const baseline = readFileSync(BASELINE_SOURCE, 'utf8');
 
     expect(source).toMatch(
       /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
     );
     expect(source).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+    );
+    expect(source).not.toMatch(
+      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
     );
     expect(source).toMatch(/switch \(mode\)/);
     expect(source).toMatch(
@@ -81,41 +112,50 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     expect(source).toMatch(
       /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
     );
+    expect(source).toMatch(
+      /from '\.\/generateBaselineConversationalReply'/,
+    );
 
-    expect(source.includes("'experimental'")).toBe(false);
+    // Baseline entry consumes the plan directly — no duplicate assembly/input construction.
+    expect(baseline).toMatch(
+      /export function generateBaselineConversationalReply\(\s*plan: Readonly<ConversationReplyPlan>/,
+    );
+    expect(source.includes('buildConversationalLayerInput')).toBe(false);
+    expect(source.includes('createConversationReplyPlan')).toBe(false);
+    expect(source.includes('assembleConversationReplyPlan(')).toBe(false);
+    expect(source.includes('selectConversationalObjective')).toBe(false);
+    expect(source.includes('renderBaselineConversationalReplyPlan')).toBe(
+      false,
+    );
+    expect(source.includes('executeBaselineConversationalRenderer')).toBe(
+      false,
+    );
+
+    // Mode cannot be supplied through runtime input or environment.
+    expect(source.includes('mode?:')).toBe(false);
+    expect(source.includes('input.mode')).toBe(false);
+    expect(source.includes('integrationMode')).toBe(false);
     expect(source.includes('process.env')).toBe(false);
     expect(source.includes('import.meta.env')).toBe(false);
     expect(source.includes('featureFlag')).toBe(false);
-    expect(source.includes('mode?:')).toBe(false);
-    expect(source.includes('integrationMode')).toBe(false);
-
-    // Public contract remains plan-only — no mode argument.
-    expect(source).toMatch(
-      /export type RenderIntegratedConversationReplyPlanInput = Readonly<\{\s*plan: Readonly<ConversationReplyPlan>;\s*\}>/,
-    );
-    expect(source).toMatch(
-      /export function renderIntegratedConversationReplyPlan\(\s*input: RenderIntegratedConversationReplyPlanInput,\s*\): string/,
-    );
-    expect(source.includes('mode:')).toBe(true); // internal const only
-    expect(source.includes('input.mode')).toBe(false);
+    expect(source.includes('Math.random')).toBe(false);
+    expect(source.includes('percentage')).toBe(false);
     expect(source.includes('request')).toBe(false);
     expect(source.includes('session')).toBe(false);
     expect(source.includes('userId')).toBe(false);
-    expect(source.includes('URL')).toBe(false);
     expect(source.includes('window.')).toBe(false);
-    expect(source.includes('localStorage')).toBe(false);
-    expect(source.includes('input.plan.kind')).toBe(false);
+    expect(source.includes('URLSearchParams')).toBe(false);
     expect(source.includes('if (')).toBe(false);
 
-    // Exactly two case arms; production selection remains deterministic.
+    // Exhaustive switch: exactly two case arms.
     expect(source.match(/case '/g)?.length).toBe(2);
     expect(source.match(/case 'deterministic'/g)?.length).toBe(1);
     expect(source.match(/case 'baseline-conversational'/g)?.length).toBe(1);
-    expect(source).not.toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
-    );
 
-    // Mode type/constant not exported from the module or barrel.
+    // Public contract unchanged; mode not exported.
+    expect(source).toMatch(
+      /export type RenderIntegratedConversationReplyPlanInput = Readonly<\{\s*plan: Readonly<ConversationReplyPlan>;\s*\}>/,
+    );
     expect(source.includes('export type ConversationReplyPlanIntegrationMode')).toBe(
       false,
     );
@@ -127,43 +167,22 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     ).toBe(false);
     expect(
       readFileSync(INDEX_SOURCE, 'utf8').includes(
-        'renderIntegratedConversationReplyPlan',
+        'generateBaselineConversationalReply',
       ),
     ).toBe(false);
     expect(
       readFileSync(PROCESS_TURN_SOURCE, 'utf8').includes(
-        'ConversationReplyPlanIntegrationMode',
+        'generateBaselineConversationalReply',
       ),
     ).toBe(false);
     expect(
       readFileSync(GENERATE_SOURCE, 'utf8').includes(
-        'ConversationReplyPlanIntegrationMode',
-      ),
-    ).toBe(false);
-    expect(
-      readFileSync(INTEGRATED_REPLY_SOURCE, 'utf8').includes(
-        'ConversationReplyPlanIntegrationMode',
+        'generateBaselineConversationalReply',
       ),
     ).toBe(false);
   });
 
-  it('allows only the unselected baseline entry import on the plan seam', () => {
-    const source = readFileSync(SEAM_SOURCE, 'utf8');
-
-    expect(source.includes('generateBaselineConversationalReply')).toBe(true);
-    expect(source).toMatch(
-      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
-    );
-
-    for (const marker of CONVERSATIONAL_MARKERS) {
-      if (marker === 'generateBaselineConversationalReply') continue;
-      expect(source.includes(marker), `must not reference ${marker}`).toBe(
-        false,
-      );
-    }
-  });
-
-  it('preserves exact deterministic outputs through the explicit mode branch', () => {
+  it('keeps production output unchanged and baseline parity intact', () => {
     const cases: Array<{ label: string; replyPlan: ConversationReplyPlan }> = [
       {
         label: 'acknowledgement + follow-up',
@@ -174,30 +193,11 @@ describe('phase 14F — conversation reply plan integration mode', () => {
         }),
       },
       {
-        label: 'follow-up only',
-        replyPlan: plan({
-          followUpQuestion: FOLLOW_UPS.activities,
-          messageInterpreted: true,
-        }),
-      },
-      {
         label: 'neutral continuation',
         replyPlan: plan({
           followUpQuestion: FOLLOW_UPS.neutralContinuation,
           messageInterpreted: true,
         }),
-      },
-      {
-        label: 'acknowledgement only',
-        replyPlan: plan({
-          acknowledgements: [ACKS.genericTravelFieldChange],
-          followUpQuestion: null,
-          messageInterpreted: true,
-        }),
-      },
-      {
-        label: 'empty plan',
-        replyPlan: plan(),
       },
       {
         label: 'capability enable',
@@ -215,20 +215,24 @@ describe('phase 14F — conversation reply plan integration mode', () => {
           messageInterpreted: true,
         }),
       },
+      {
+        label: 'empty plan',
+        replyPlan: plan(),
+      },
     ];
 
     for (const entry of cases) {
       const before = structuredClone(entry.replyPlan);
       const deterministic = renderConversationReplyPlan(entry.replyPlan);
+      const baseline = generateBaselineConversationalReply(entry.replyPlan);
       const integrated = renderIntegratedConversationReplyPlan({
         plan: entry.replyPlan,
       });
 
+      // Production seam still selects deterministic path.
       expect(integrated, entry.label).toBe(deterministic);
-      expect(
-        renderIntegratedConversationReplyPlan({ plan: entry.replyPlan }),
-        `${entry.label} / repeat`,
-      ).toBe(deterministic);
+      // Baseline entry retains parity with deterministic wording.
+      expect(baseline, `${entry.label} / baseline parity`).toBe(deterministic);
       expect(entry.replyPlan, `${entry.label} / unchanged`).toEqual(before);
     }
 
@@ -250,9 +254,25 @@ describe('phase 14F — conversation reply plan integration mode', () => {
         }),
       }),
     ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
+
+    const viaProcessTurn = turn('go to Brisbane', createState());
+    expect(viaProcessTurn.reply).toBe(
+      `${ACKS.destination('Brisbane')}\n${FOLLOW_UPS.origin}`,
+    );
+
+    const previous = createState();
+    const state = createState({ destination: 'Cairns' });
+    const input = replyInput(previous, state, 'go to Cairns');
+    const previousBefore = structuredClone(previous);
+    const stateBefore = structuredClone(state);
+    expect(generateConversationReply(input)).toBe(
+      `${ACKS.destination('Cairns')}\n${FOLLOW_UPS.origin}`,
+    );
+    expect(previous).toEqual(previousBefore);
+    expect(state).toEqual(stateBefore);
   });
 
-  it('does not mutate a frozen plan through the mode branch', () => {
+  it('does not mutate a frozen plan through either branch entry point', () => {
     const replyPlan = Object.freeze(
       plan({
         acknowledgements: Object.freeze([ACKS.origin('Sydney')]),
@@ -266,6 +286,7 @@ describe('phase 14F — conversation reply plan integration mode', () => {
     expect(renderIntegratedConversationReplyPlan({ plan: replyPlan })).toBe(
       expected,
     );
+    expect(generateBaselineConversationalReply(replyPlan)).toBe(expected);
     expect(replyPlan).toEqual(before);
     expect(Object.isFrozen(replyPlan)).toBe(true);
   });

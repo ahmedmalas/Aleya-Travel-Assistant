@@ -315,6 +315,26 @@ describe('phase 13T — conversational layer foundation completion', () => {
   it('proves production runtime isolation and barrel non-export of the experimental stack', () => {
     for (const relativePath of PRODUCTION_PIPELINE) {
       const source = readSrc(relativePath);
+      if (
+        relativePath ===
+        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+      ) {
+        // Phase 14G: unselected baseline import is allowed; selection stays deterministic.
+        expect(source).toMatch(
+          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+        );
+        expect(source.includes('generateBaselineConversationalReply')).toBe(
+          true,
+        );
+        for (const marker of EXPERIMENTAL_MARKERS) {
+          if (marker === 'generateBaselineConversationalReply') continue;
+          expect(
+            source.includes(marker),
+            `${relativePath} must not reference ${marker}`,
+          ).toBe(false);
+        }
+        continue;
+      }
       for (const marker of EXPERIMENTAL_MARKERS) {
         expect(
           source.includes(marker),

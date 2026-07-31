@@ -122,7 +122,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(generate.match(/createConversationReplyPlan\(/g)?.length).toBe(1);
 
     expect(seam).toMatch(
-      /type ConversationReplyPlanIntegrationMode = 'deterministic'/,
+      /type ConversationReplyPlanIntegrationMode =\s*\|\s*'deterministic'\s*\|\s*'baseline-conversational'/,
     );
     expect(seam).toMatch(
       /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
@@ -130,6 +130,9 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(seam).toMatch(/switch \(mode\)/);
     expect(seam).toMatch(
       /case 'deterministic':\s*return renderConversationReplyPlan\(input\.plan\)/,
+    );
+    expect(seam).toMatch(
+      /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
     );
 
     // Final production rendering is owned by the plan seam, not processTurn
@@ -154,6 +157,12 @@ describe('phase 14E — integrated reply plan runtime', () => {
       expect(generate.includes(marker), `generate must not reference ${marker}`).toBe(
         false,
       );
+      // Seam may statically import generateBaselineConversationalReply (Phase 14G)
+      // but must not import deeper conversational-layer modules.
+      if (marker === 'generateBaselineConversationalReply') {
+        expect(seam.includes(marker)).toBe(true);
+        continue;
+      }
       expect(seam.includes(marker), `seam must not reference ${marker}`).toBe(
         false,
       );
@@ -165,6 +174,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
     expect(seam.includes('process.env')).toBe(false);
     expect(seam.includes('if (')).toBe(false);
     expect(seam.match(/case 'deterministic'/g)?.length).toBe(1);
+    expect(seam.match(/case 'baseline-conversational'/g)?.length).toBe(1);
   });
 
   it('preserves acknowledgement, follow-up, continuation, and capability output exactly', () => {

@@ -93,6 +93,27 @@ describe('phase 13R — experimental conversational stack isolation', () => {
   it('keeps every authoritative production pipeline file free of experimental symbols', () => {
     for (const relativePath of PRODUCTION_PIPELINE_FILES) {
       const source = readSrc(relativePath);
+      if (
+        relativePath ===
+        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+      ) {
+        // Phase 14G: seam statically imports the unselected baseline entry.
+        // Selected production mode remains deterministic.
+        expect(source).toMatch(
+          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+        );
+        expect(source).toMatch(
+          /case 'baseline-conversational':\s*return generateBaselineConversationalReply\(input\.plan\)/,
+        );
+        for (const symbol of EXPERIMENTAL_SYMBOLS) {
+          if (symbol === 'generateBaselineConversationalReply') continue;
+          expect(
+            source.includes(symbol),
+            `${relativePath} must not reference ${symbol}`,
+          ).toBe(false);
+        }
+        continue;
+      }
       assertNoExperimentalReferences(source, relativePath);
     }
   });
@@ -174,9 +195,25 @@ describe('phase 13R — experimental conversational stack isolation', () => {
   });
 
   it('allows experimental → production while prohibiting production → experimental', () => {
-    // Prohibited: production must not depend on experimental.
+    // Prohibited: production must not depend on experimental, except the
+    // plan-level seam's unselected baseline import (Phase 14G).
     for (const relativePath of PRODUCTION_PIPELINE_FILES) {
       const source = readSrc(relativePath);
+      if (
+        relativePath ===
+        'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts'
+      ) {
+        expect(source).toMatch(
+          /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+        );
+        expect(source.includes('generateBaselineConversationalReply')).toBe(
+          true,
+        );
+        expect(source.includes('buildConversationalLayerInput')).toBe(false);
+        expect(source.includes('ConversationalLayerRenderer')).toBe(false);
+        expect(source.includes('conversationalLayerContracts')).toBe(false);
+        continue;
+      }
       expect(
         source.includes('conversationalLayer'),
         `${relativePath} must not import conversational-layer modules`,
@@ -230,13 +267,16 @@ describe('phase 13R — experimental conversational stack isolation', () => {
     }
   });
 
-  it('proves no experimental module is reachable from the production reply path', () => {
+  it('proves no experimental module is reachable from the selected production reply path', () => {
     const generate = readSrc(
       'src/features/conversation-core/generateConversationReply.ts',
     );
     const processTurn = readSrc('src/features/conversation-core/processTurn.ts');
     const createPlan = readSrc(
       'src/features/conversation-core/createConversationReplyPlan.ts',
+    );
+    const seam = readSrc(
+      'src/features/conversation-core/renderIntegratedConversationReplyPlan.ts',
     );
 
     expect(generate.includes('generateBaselineConversationalReply')).toBe(false);
@@ -254,6 +294,15 @@ describe('phase 13R — experimental conversational stack isolation', () => {
 
     expect(createPlan.includes('generateBaselineConversationalReply')).toBe(false);
     expect(createPlan.includes('buildConversationalLayerInput')).toBe(false);
+
+    // Seam may statically import the baseline entry, but selection stays deterministic.
+    expect(seam).toMatch(
+      /const mode: ConversationReplyPlanIntegrationMode = 'deterministic'/,
+    );
+    expect(seam).not.toMatch(
+      /const mode: ConversationReplyPlanIntegrationMode = 'baseline-conversational'/,
+    );
+    expect(seam.includes('generateBaselineConversationalReply')).toBe(true);
 
     // Production reply path reaches the plan seam, then the authoritative renderer.
     expect(generate).toMatch(/renderIntegratedConversationReplyPlan\(/);

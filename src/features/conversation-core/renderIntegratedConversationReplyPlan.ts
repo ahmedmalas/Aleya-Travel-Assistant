@@ -1,20 +1,25 @@
 import type { ConversationReplyPlan } from './assembleConversationReplyPlan';
+import { generateBaselineConversationalReply } from './generateBaselineConversationalReply';
 import { renderConversationReplyPlan } from './generateConversationReply';
 
 /**
  * Phase 14D/14E — plan-level reply rendering seam.
  * Phase 14F — explicit deterministic plan-rendering integration mode.
+ * Phase 14G — unselected baseline-conversational branch (statically unused).
  *
  * Shared internal contract boundary: ConversationReplyPlan → rendered reply.
- * Selects the deterministic renderer via an explicit internal mode constant.
- * Does not accept a mode argument, read environment variables, use feature
- * flags, assemble plans, or invoke the conversational layer.
+ * Production selection remains statically `'deterministic'`. The baseline
+ * conversational branch is present for exhaustive mode coverage but is not
+ * selected. Does not accept a mode argument, read environment variables, or
+ * use feature flags.
  *
  * Not exported from index.ts.
  */
 
-/** Internal plan-rendering mode contract. Phase 14F allows only deterministic. */
-type ConversationReplyPlanIntegrationMode = 'deterministic';
+/** Internal plan-rendering mode contract. Phase 14G includes an unselected baseline branch. */
+type ConversationReplyPlanIntegrationMode =
+  | 'deterministic'
+  | 'baseline-conversational';
 
 export type RenderIntegratedConversationReplyPlanInput = Readonly<{
   plan: Readonly<ConversationReplyPlan>;
@@ -23,9 +28,11 @@ export type RenderIntegratedConversationReplyPlanInput = Readonly<{
 export function renderIntegratedConversationReplyPlan(
   input: RenderIntegratedConversationReplyPlanInput,
 ): string {
-  const mode: ConversationReplyPlanIntegrationMode = 'deterministic';
+  const mode: ConversationReplyPlanIntegrationMode = 'deterministic' as ConversationReplyPlanIntegrationMode;
   switch (mode) {
     case 'deterministic':
       return renderConversationReplyPlan(input.plan);
+    case 'baseline-conversational':
+      return generateBaselineConversationalReply(input.plan);
   }
 }
