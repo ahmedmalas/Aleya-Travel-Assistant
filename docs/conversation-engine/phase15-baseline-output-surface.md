@@ -583,3 +583,59 @@ Acknowledgement + follow-up: Phase 15C
 Unknown follow-ups / empty plans: unchanged
 Phase 14I fallback / production mode: unchanged
 ```
+
+---
+
+## Phase 15I record — complete remaining baseline output surface
+
+Investigation-only. Production wording is unchanged. Phase 15H was a baseline
+verification check (no behaviour commit); accepted tip remains Phase 15G
+`86a303f56e67e9792f55db3d9fc546d649fd8450`.
+
+### Complete output-surface matrix
+
+| Reply-plan shape | Baseline branch | Final renderer | Transformed / pass-through | Owning phase |
+| --- | --- | --- | --- | --- |
+| 1 ack + `followUpQuestion === null` | arm 1 | `transformBaselineAcknowledgement` | transformed | **15B** |
+| 1 ack + specific follow-up | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed; follow-up preserved | **15C** |
+| 1 ack + neutral continuation | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed; neutral preserved | **15C** |
+| 1 ack + unknown follow-up | arm 2 | `renderBaselineAcknowledgementFollowUp` | ack transformed (or unchanged if unknown ack); follow-up preserved | **15C** |
+| 0 acks + supported specific follow-up | arm 3 | `renderBaselineFollowUpOnly` | lead-in + preserved question | **15F** (15E renderer) |
+| 0 acks + neutral continuation | arm 3 | `renderBaselineFollowUpOnly` | pass-through | **15E pass-through** (15G) |
+| 0 acks + unknown follow-up | arm 3 | `renderBaselineFollowUpOnly` | pass-through | **15E pass-through** |
+| 0 acks + `followUpQuestion === null` (empty / uninterpreted empty) | arm 4 | `renderConversationReplyPlan` | deterministic null-coalesce to neutral wording | **deterministic** |
+| 2+ acks + null follow-up | arm 4 | `renderConversationReplyPlan` | deterministic | **deterministic** |
+| 2+ acks + specific / neutral / unknown follow-up | arm 4 | `renderConversationReplyPlan` | deterministic | **deterministic** |
+
+`messageInterpreted` does not select a renderer branch; only acknowledgement
+count and `followUpQuestion` do.
+
+### Ownership map
+
+```text
+15B  → acknowledgements.length === 1 && followUpQuestion === null
+15C  → acknowledgements.length === 1 && followUpQuestion !== null
+15E  → acknowledgements.length === 0 && followUpQuestion !== null
+       (15F transforms the eight supported catalogue follow-ups;
+        unknown + neutral pass through)
+deterministic fall-through → all remaining shapes
+  (empty plans; multi-acknowledgement plans with or without follow-up)
+```
+
+Branch predicates are mutually exclusive; multi-acknowledgement plans never
+enter 15B/15C.
+
+### Remaining deterministic-only categories
+
+```text
+empty reply plans (including uninterpreted empty)
+multiple acknowledgements only
+multiple acknowledgements + specific follow-up
+multiple acknowledgements + neutral continuation
+multiple acknowledgements + unknown follow-up
+```
+
+### Confirmation
+
+All reachable `ConversationReplyPlan` shapes are accounted for in the matrix
+above. No additional conversational transform was introduced in Phase 15I.
