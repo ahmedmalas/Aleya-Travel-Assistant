@@ -989,3 +989,41 @@ Phase 15 is **complete and ready to close**:
 - defensive branches retained for non-emitted shapes
 - Phase 14I fallback preserved
 - PR #29 remains OPEN, Draft, Unmerged, Undeployed; no deploy performed
+
+---
+
+## Phase 16B note — acknowledgement-plus-neutral ownership supersession
+
+Phase 16B splits the former Phase 15C arm for one acknowledgement + canonical
+neutral into a dedicated bridge renderer. Historical Phase 15 matrix rows that
+listed ack+neutral under **15C** are superseded for current ownership:
+
+```text
+1. one acknowledgement + canonical neutral → Phase 16B
+2. one acknowledgement, no follow-up → Phase 15B
+3. one acknowledgement + non-neutral follow-up → Phase 15C
+4. zero acknowledgements + canonical neutral → Phase 15J
+5. zero acknowledgements + supported/unknown follow-up → Phase 15F / 15E
+6. all remaining shapes → deterministic fallback
+```
+
+Eligibility:
+
+```text
+plan.acknowledgements.length === 1
+AND plan.followUpQuestion === "What else should I know about your trip?"
+```
+
+Category bridges (byte-identical trailing canonical neutral preserved):
+
+| Category | Bridge |
+| --- | --- |
+| field set/changed | `Is there anything else you'd like me to consider?` |
+| field removed | `We can update the rest as we go.` |
+| capability enabled | `Tell me anything else that matters for this trip.` |
+| capability disabled | `We can keep refining the plan.` |
+| generic | `Is there anything else you'd like me to consider?` |
+| unknown | *(none)* |
+
+See `docs/conversation-engine/phase16-conversational-quality-audit.md` for the
+full Phase 16B record.

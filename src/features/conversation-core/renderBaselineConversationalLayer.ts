@@ -1,6 +1,7 @@
 import type { ConversationalLayerRenderer } from './conversationalLayerContracts';
 import { renderConversationReplyPlan } from './generateConversationReply';
 import { renderBaselineAcknowledgementFollowUp } from './renderBaselineAcknowledgementFollowUp';
+import { renderBaselineAcknowledgementNeutralContinuation } from './renderBaselineAcknowledgementNeutralContinuation';
 import { renderBaselineFollowUpOnly } from './renderBaselineFollowUpOnly';
 import {
   CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
@@ -15,16 +16,18 @@ import { transformBaselineAcknowledgement } from './transformBaselineAcknowledge
  * Phase 15C — acknowledgement-plus-follow-up transition when eligible.
  * Phase 15E — follow-up-only conversational lead-in when eligible.
  * Phase 15J — neutral-continuation conversational expression when eligible.
+ * Phase 16B — acknowledgement-plus-canonical-neutral bridge when eligible.
  *
  * Consumes an existing ConversationalLayerInput and returns wording-only
  * ConversationalLayerOutput.
  *
  * Branching order:
- * 1. single acknowledgement + no follow-up → Phase 15B transform
- * 2. single acknowledgement + follow-up → Phase 15C transition renderer
- * 3. no acknowledgements + canonical neutral continuation → Phase 15J
- * 4. no acknowledgements + follow-up → Phase 15E follow-up-only renderer
- * 5. all other plan shapes → deterministic renderConversationReplyPlan
+ * 1. single acknowledgement + canonical neutral → Phase 16B
+ * 2. single acknowledgement + no follow-up → Phase 15B transform
+ * 3. single acknowledgement + non-neutral follow-up → Phase 15C
+ * 4. no acknowledgements + canonical neutral continuation → Phase 15J
+ * 5. no acknowledgements + follow-up → Phase 15E/15F follow-up-only renderer
+ * 6. all other plan shapes → deterministic renderConversationReplyPlan
  *
  * Ignores styleProfile. Allows objective to be null. Objective metadata never
  * overrides the plan. Does not inspect authoritative trip state or original
@@ -37,6 +40,17 @@ export const renderBaselineConversationalLayer: ConversationalLayerRenderer = (
   input,
 ) => {
   const { plan } = input;
+  if (
+    plan.acknowledgements.length === 1 &&
+    plan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
+  ) {
+    return {
+      wording: renderBaselineAcknowledgementNeutralContinuation({
+        acknowledgement: plan.acknowledgements[0]!,
+        followUpQuestion: plan.followUpQuestion,
+      }),
+    };
+  }
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === null

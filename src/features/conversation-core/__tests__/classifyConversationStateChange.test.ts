@@ -222,7 +222,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(
       turn('book flights', completeCore({ adultCount: 2 })).reply,
     ).toBe(
-      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     expect(
@@ -248,7 +248,7 @@ describe('phase 10F — deterministic change classification', () => {
         }),
       }),
     ).toBe(
-      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 });

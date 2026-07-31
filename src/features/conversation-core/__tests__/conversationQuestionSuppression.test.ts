@@ -79,7 +79,7 @@ describe('phase 10E — deterministic question suppression', () => {
     expect(result.state.adultCount).toBe(2);
     expect(result.reply).not.toMatch(/How many adults will be travelling/i);
     expect(result.reply).toBe(
-      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -91,7 +91,7 @@ describe('phase 10E — deterministic question suppression', () => {
     expect(result.state.adultCount).toBe(2);
     expect(result.reply).not.toMatch(/How many guests will be staying/i);
     expect(result.reply).toBe(
-      `Great, I've added accommodation to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added accommodation to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -123,7 +123,7 @@ describe('phase 10E — deterministic question suppression', () => {
       completeCore({ adultCount: 2 }),
     );
     expect(result.reply).toBe(
-      `Great, I've added flights and accommodation to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights and accommodation to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     expect(
@@ -142,7 +142,7 @@ describe('phase 10E — deterministic question suppression', () => {
         }),
       }),
     ).toBe(
-      `Great, I've added wildlife to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added wildlife to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -196,7 +196,7 @@ describe('phase 10E — deterministic question suppression', () => {
     });
     expect(suppressedByExplicitAdults.state.adultCount).toBe(4);
     expect(suppressedByExplicitAdults.reply).toBe(
-      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
     expect(suppressedByExplicitAdults.reply).not.toMatch(
       /adults will be travelling/i,
@@ -218,7 +218,7 @@ describe('phase 10E — deterministic question suppression', () => {
       /guests will be staying/i,
     );
     expect(accommodationSuppressed.reply).toBe(
-      `Great, I've added accommodation to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added accommodation to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 });

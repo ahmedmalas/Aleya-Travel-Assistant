@@ -13,6 +13,7 @@ import {
   type ConversationCoreState,
 } from '../index';
 import { renderBaselineAcknowledgementFollowUp } from '../renderBaselineAcknowledgementFollowUp';
+import { renderBaselineAcknowledgementNeutralContinuation } from '../renderBaselineAcknowledgementNeutralContinuation';
 import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
 import {
   ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
@@ -387,7 +388,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
     expect(assembledFromAckOnlyComponents.followUpQuestion).not.toBeNull();
   });
 
-  it('proves 15C, 15F, and 15J remain production-reachable', () => {
+  it('proves 15C, 15F, 15J, and 16B remain production-reachable', () => {
     // 15C — one ack + specific follow-up
     const previous15C = createState();
     const result15C = turn('go to Cairns', previous15C);
@@ -401,26 +402,26 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       }),
     );
 
-    // 15C — one ack + neutral continuation
-    const previous15CNeutral = createState({
+    // 16B — one ack + canonical neutral continuation (supersedes prior 15C join)
+    const previous16BNeutral = createState({
       destination: 'Cairns',
       origin: 'Sydney',
       departureDate: '2026-08-28',
     });
-    const result15CNeutral = turn(
+    const result16BNeutral = turn(
       'Return on 5 September 2026',
-      previous15CNeutral,
+      previous16BNeutral,
     );
-    const plan15CNeutral = productionPlan(
-      previous15CNeutral,
-      result15CNeutral,
+    const plan16BNeutral = productionPlan(
+      previous16BNeutral,
+      result16BNeutral,
     ).plan;
-    expect(plan15CNeutral.acknowledgements).toHaveLength(1);
-    expect(plan15CNeutral.followUpQuestion).toBe(
+    expect(plan16BNeutral.acknowledgements).toHaveLength(1);
+    expect(plan16BNeutral.followUpQuestion).toBe(
       FOLLOW_UPS.neutralContinuation,
     );
-    expect(result15CNeutral.reply).toBe(
-      renderBaselineAcknowledgementFollowUp({
+    expect(result16BNeutral.reply).toBe(
+      renderBaselineAcknowledgementNeutralContinuation({
         acknowledgement: ACKS.returnDate('2026-09-05'),
         followUpQuestion: FOLLOW_UPS.neutralContinuation,
       }),

@@ -188,7 +188,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
   it('retains the neutral continuation when no contextual question applies', () => {
     const beachesOnly = turn('show me beaches', completeCore({ adultCount: 2 }));
     expect(beachesOnly.reply).toBe(
-      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     const flightsWithAdults = turn(
@@ -196,7 +196,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
       completeCore({ adultCount: 2 }),
     );
     expect(flightsWithAdults.reply).toBe(
-      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     expect(
@@ -213,7 +213,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
         }),
       }),
     ).toBe(
-      `Great, I've added wildlife to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added wildlife to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -230,7 +230,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     });
     expect(adultsSatisfied.state.adultCount).toBe(3);
     expect(adultsSatisfied.reply).toBe(
-      `Great, I've added flights to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
 
     const forcedActivities = turn(

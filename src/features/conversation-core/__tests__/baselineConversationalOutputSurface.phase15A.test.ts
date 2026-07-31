@@ -137,7 +137,14 @@ const CHARACTERISED_CASES: CharacterisedCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    expectedOutput: `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
+    // Phase 16B supersedes prior direct ack+neutral join.
+    expectedOutput: expectedActivatedBaselineReply(
+      plan({
+        acknowledgements: [ACKS.removedCapabilities('flights')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
+    ),
     expectedObjectiveId: 'neutralContinuation',
     expectedCatalogueWording: FOLLOW_UPS.neutralContinuation,
   },

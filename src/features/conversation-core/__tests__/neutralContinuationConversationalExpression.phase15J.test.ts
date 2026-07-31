@@ -81,6 +81,9 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
     expect(helper).toContain(CANONICAL_NEUTRAL_CONTINUATION_PROMPT);
     expect(renderer).toMatch(/renderBaselineNeutralContinuation/);
 
+    const branch16B = renderer.indexOf(
+      'renderBaselineAcknowledgementNeutralContinuation({',
+    );
     const branch15B = renderer.indexOf(
       'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
     );
@@ -91,7 +94,8 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
       'renderConversationReplyPlan(plan)',
     );
 
-    expect(branch15B).toBeGreaterThan(-1);
+    expect(branch16B).toBeGreaterThan(-1);
+    expect(branch15B).toBeGreaterThan(branch16B);
     expect(branch15C).toBeGreaterThan(branch15B);
     expect(branch15J).toBeGreaterThan(branch15C);
     expect(branch15E).toBeGreaterThan(branch15J);
@@ -217,14 +221,18 @@ describe('phase 15J — neutral-continuation conversational expression', () => {
         messageInterpreted: true,
       }),
     );
+    // Phase 16B owns one-ack + canonical neutral; 15J must not claim it.
     expect(
       generateBaselineConversationalReply(acknowledgementPlusNeutral),
-    ).toBe(
-      `${transformBaselineAcknowledgement(ACKS.genericTravelFieldChange)} ${FOLLOW_UPS.neutralContinuation}`,
-    );
+    ).toBe(expectedActivatedBaselineReply(acknowledgementPlusNeutral));
     expect(
       generateBaselineConversationalReply(acknowledgementPlusNeutral),
     ).not.toBe(ACTIVATED_NEUTRAL);
+    expect(
+      generateBaselineConversationalReply(acknowledgementPlusNeutral),
+    ).toContain(
+      "Is there anything else you'd like me to consider?",
+    );
 
     const acknowledgementPlusSpecific = freezePlan(
       plan({

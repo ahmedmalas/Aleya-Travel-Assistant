@@ -278,3 +278,92 @@ src/features/conversation-core/__tests__/multiTurnConversationalQuality.phase16A
 ```
 
 Locks exact current replies for every audited journey, including awkward and defective extraction outcomes.
+
+---
+
+## Phase 16B record — refine acknowledgement-plus-neutral expression
+
+Expression-only refinement. Does not change extraction, state, classification,
+selection, or reply-plan assembly.
+
+### Eligibility boundary
+
+```text
+plan.acknowledgements.length === 1
+AND
+plan.followUpQuestion === "What else should I know about your trip?"
+```
+
+### Final branch order
+
+```text
+1. one acknowledgement + canonical neutral → Phase 16B
+2. one acknowledgement, no follow-up → Phase 15B
+3. one acknowledgement + non-neutral follow-up → Phase 15C
+4. zero acknowledgements + canonical neutral → Phase 15J
+5. zero acknowledgements + supported/unknown follow-up → Phase 15F / 15E
+6. all remaining shapes → deterministic fallback
+```
+
+### Category-to-bridge mapping
+
+| Acknowledgement category | Bridge before canonical neutral |
+| --- | --- |
+| field set or changed | `Is there anything else you'd like me to consider?` |
+| field removed | `We can update the rest as we go.` |
+| capability enabled | `Tell me anything else that matters for this trip.` |
+| capability disabled | `We can keep refining the plan.` |
+| generic acknowledgement | `Is there anything else you'd like me to consider?` |
+| unknown acknowledgement | *(none — direct join)* |
+
+Output shape:
+
+```text
+{transformed acknowledgement} {bridge?} {canonical neutral question}
+```
+
+One space between sentences. No newlines. Canonical neutral remains a
+byte-identical trailing substring.
+
+### Byte-preservation contract
+
+- `transformBaselineAcknowledgement` is reused; transform logic is not duplicated
+- Category recognition uses Phase 15B transform outcomes (unchanged string ⇒ unknown)
+- Canonical question `What else should I know about your trip?` is preserved byte-for-byte
+- Unknown acknowledgements receive no unsupported bridge
+
+### Production journeys improved
+
+| Journey | Prior repetitive join | Phase 16B expression |
+| --- | --- | --- |
+| Core field changed after trip completion | `{ack} What else…` | `{ack} Is there anything else you'd like me to consider? What else…` |
+| Field removed after trip completion | `{ack} What else…` | `{ack} We can update the rest as we go. What else…` |
+| Capability enabled after core completion | `{ack} What else…` | `{ack} Tell me anything else that matters for this trip. What else…` |
+| Capability disabled after core completion | `{ack} What else…` | `{ack} We can keep refining the plan. What else…` |
+
+### Unchanged categories
+
+```text
+one-ack + specific follow-up (15C)
+acknowledgement-only (15B)
+zero-ack canonical neutral (15J)
+zero-ack supported follow-ups (15F)
+unknown follow-up pass-through (15E)
+multi-ack / empty deterministic fallback
+Phase 14I fallback
+catalogue strings, selection, assembly, extraction, classification
+```
+
+### Production files
+
+```text
+src/features/conversation-core/renderBaselineAcknowledgementNeutralContinuation.ts
+src/features/conversation-core/renderBaselineConversationalLayer.ts
+```
+
+### Tests
+
+```text
+src/features/conversation-core/__tests__/acknowledgementNeutralContinuation.phase16B.test.ts
+src/features/conversation-core/__tests__/multiTurnConversationalQuality.phase16A.test.ts
+```

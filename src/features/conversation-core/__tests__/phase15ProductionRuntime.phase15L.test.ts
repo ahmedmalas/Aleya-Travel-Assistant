@@ -42,7 +42,14 @@ const PROCESS_TURN_SOURCE = resolve(
 const ACKS = CONVERSATION_REPLY_CATALOGUE.acknowledgements;
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
-type Owner = '15B' | '15C' | '15J' | '15F' | '15E-pass-through' | 'deterministic';
+type Owner =
+  | '15B'
+  | '15C'
+  | '15J'
+  | '15F'
+  | '15E-pass-through'
+  | '16B'
+  | 'deterministic';
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
@@ -90,6 +97,12 @@ function classifyOwner(plan: {
   acknowledgements: readonly string[];
   followUpQuestion: string | null;
 }): Owner {
+  if (
+    plan.acknowledgements.length === 1 &&
+    plan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
+  ) {
+    return '16B';
+  }
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === null
@@ -306,10 +319,9 @@ describe('phase 15L — production runtime conversational output', () => {
         previous,
         result,
       );
-      const expected = renderBaselineAcknowledgementFollowUp({
-        acknowledgement: journey.deterministicAck,
-        followUpQuestion: journey.followUp,
-      });
+      const expectedOwner =
+        journey.followUp === FOLLOW_UPS.neutralContinuation ? '16B' : '15C';
+      const expected = expectedActivatedBaselineReply(plan);
 
       journey.assertState(result.state);
       expect(classification.hasInterpretedChange, journey.label).toBe(true);
@@ -325,7 +337,7 @@ describe('phase 15L — production runtime conversational output', () => {
         journey.deterministicAck,
       ]);
       expect(plan.followUpQuestion, journey.label).toBe(journey.followUp);
-      expect(classifyOwner(plan), journey.label).toBe('15C');
+      expect(classifyOwner(plan), journey.label).toBe(expectedOwner);
       expect(result.reply, journey.label).toBe(expected);
       expect(result.reply, journey.label).toBe(
         expectedActivatedBaselineReply(plan),
@@ -528,7 +540,8 @@ describe('phase 15L — production runtime conversational output', () => {
     );
     expect(plan.acknowledgements).toHaveLength(1);
     expect(plan.followUpQuestion).not.toBeNull();
-    expect(classifyOwner(plan)).toBe('15C');
+    // Phase 16B owns production ack + canonical neutral (previously 15C).
+    expect(classifyOwner(plan)).toBe('16B');
     expect(classifyOwner(plan)).not.toBe('15B');
     expect(classifyOwner(plan)).not.toBe('deterministic');
 

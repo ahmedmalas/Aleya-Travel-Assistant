@@ -17,13 +17,14 @@ import { selectConversationReplyComponents } from '../selectConversationReplyCom
 /**
  * Phase 16A — multi-turn conversational quality gap audit.
  *
- * Investigation-only. Drives realistic journeys through processConversationTurn
- * and locks exact current replies, including awkward behaviour.
+ * Investigation-only baseline for Phase 16. Where Phase 16B intentionally
+ * supersedes acknowledgement-plus-neutral wording, expectations are marked
+ * as superseded and lock the Phase 16B bridge expression.
  */
 
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 
-type Owner = '15B' | '15C' | '15J' | '15F' | '15E' | 'deterministic';
+type Owner = '15B' | '15C' | '15J' | '15F' | '15E' | '16B' | 'deterministic';
 
 type TurnStep = {
   message: string;
@@ -65,6 +66,33 @@ type TravelSnapshot = {
   beachesRequested: boolean | null;
 };
 
+const BRIDGE_FIELD_SET =
+  "Is there anything else you'd like me to consider?";
+const BRIDGE_FIELD_REMOVED = 'We can update the rest as we go.';
+const BRIDGE_CAPABILITY_ENABLED =
+  'Tell me anything else that matters for this trip.';
+const BRIDGE_CAPABILITY_DISABLED = 'We can keep refining the plan.';
+
+/** Phase 16B superseded expression for field set/change + canonical neutral. */
+function fieldSetNeutral(transformedAck: string): string {
+  return `${transformedAck} ${BRIDGE_FIELD_SET} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
+}
+
+/** Phase 16B superseded expression for capability enabled + canonical neutral. */
+function capabilityEnabledNeutral(transformedAck: string): string {
+  return `${transformedAck} ${BRIDGE_CAPABILITY_ENABLED} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
+}
+
+/** Phase 16B superseded expression for capability disabled + canonical neutral. */
+function capabilityDisabledNeutral(transformedAck: string): string {
+  return `${transformedAck} ${BRIDGE_CAPABILITY_DISABLED} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
+}
+
+/** Phase 16B superseded expression for field removed + canonical neutral. */
+function fieldRemovedNeutral(transformedAck: string): string {
+  return `${transformedAck} ${BRIDGE_FIELD_REMOVED} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
+}
+
 function createState(
   overrides: Partial<ConversationCoreState> = {},
 ): ConversationCoreState {
@@ -99,6 +127,12 @@ function classifyOwner(plan: {
   acknowledgements: readonly string[];
   followUpQuestion: string | null;
 }): Owner {
+  if (
+    plan.acknowledgements.length === 1 &&
+    plan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
+  ) {
+    return '16B';
+  }
   if (
     plan.acknowledgements.length === 1 &&
     plan.followUpQuestion === null
@@ -212,19 +246,20 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: '2 adults' },
     ]);
 
+    // Phase 16B supersedes prior direct ack+neutral joins on turns 4–5.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
-      'Perfect, 2 adults travelling. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      fieldSetNeutral('Perfect, 2 adults travelling.'),
     ]);
     expect(turns.map((turn) => turn.owner)).toEqual([
       '15C',
       '15C',
       '15C',
-      '15C',
-      '15C',
+      '16B',
+      '16B',
     ]);
     expect(turns[4]!.final).toMatchObject({
       destination: 'Cairns',
@@ -284,18 +319,21 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: 'Depart on 1 September 2026' },
       { message: 'Return on 10 September 2026' },
     ]);
+    // Phase 16B supersedes prior direct ack+neutral joins on post-core date edits.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
-      'Perfect, set to depart on 2026-09-01. What else should I know about your trip?',
-      'Perfect, set to return on 2026-09-10. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      fieldSetNeutral('Perfect, set to depart on 2026-09-01.'),
+      fieldSetNeutral('Perfect, set to return on 2026-09-10.'),
     ]);
     expect(turns[5]!.final).toMatchObject({
       departureDate: '2026-09-01',
       returnDate: '2026-09-10',
     });
+    expect(turns[4]!.owner).toBe('16B');
+    expect(turns[5]!.owner).toBe('16B');
   });
 
   it('characterises adult / child / infant count changes', () => {
@@ -310,16 +348,17 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: '1 infant' },
       { message: '3 adults' },
     ]);
+    // Phase 16B supersedes prior direct ack+neutral joins on passenger turns.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      'Perfect, 2 adults travelling. What else should I know about your trip?',
-      'Perfect, 1 child travelling. What else should I know about your trip?',
-      'Perfect, 1 infant travelling. What else should I know about your trip?',
-      'Perfect, 3 adults travelling. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      fieldSetNeutral('Perfect, 1 child travelling.'),
+      fieldSetNeutral('Perfect, 1 infant travelling.'),
+      fieldSetNeutral('Perfect, 3 adults travelling.'),
     ]);
     expect(turns[8]!.final).toMatchObject({
       adultCount: 3,
@@ -359,16 +398,20 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: '2 adults' },
       { message: 'remove flights', stateUpdate: { flightsRequested: false } },
     ]);
+    // Phase 16B supersedes prior direct ack+neutral joins.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      'Perfect, 2 adults travelling. What else should I know about your trip?',
-      "No problem, I've removed flights from your trip. What else should I know about your trip?",
+      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      capabilityDisabledNeutral(
+        "No problem, I've removed flights from your trip.",
+      ),
     ]);
     expect(turns[6]!.final.flightsRequested).toBe(false);
+    expect(turns[6]!.owner).toBe('16B');
   });
 
   it('characterises activities enabled and clarified', () => {
@@ -384,7 +427,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
       "Great, I've added activities to your trip. What kinds of activities are you interested in?",
       "Great, I've added hiking and walking to your trip. What kinds of activities are you interested in?",
     ]);
@@ -406,7 +449,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
       "Great, I've added restaurants to your trip. What type of dining are you looking for?",
       ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     ]);
@@ -474,16 +517,92 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       { message: '2 adults' },
       { message: 'I like beaches' },
     ]);
+    // Phase 16B supersedes prior direct ack+neutral joins.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       "Perfect, we'll start from Sydney. When would you like to depart?",
       'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      'Perfect, set to return on 2026-09-05. What else should I know about your trip?',
-      'Perfect, 2 adults travelling. What else should I know about your trip?',
-      "Great, I've added beaches to your trip. What else should I know about your trip?",
+      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      capabilityEnabledNeutral("Great, I've added beaches to your trip."),
     ]);
     expect(turns[5]!.final.beachesRequested).toBe(true);
-    expect(turns[5]!.owner).toBe('15C');
+    expect(turns[5]!.owner).toBe('16B');
+  });
+
+  it('proves Phase 16B multi-turn production improvements over repetitive ack+neutral joins', () => {
+    // core field changed after trip completion
+    const dateChange = runJourney([
+      { message: 'go to Cairns' },
+      { message: 'from Sydney' },
+      { message: 'Depart on 28 August 2026' },
+      { message: 'Return on 5 September 2026' },
+      { message: 'Depart on 1 September 2026' },
+    ]);
+    expect(dateChange[4]!.owner).toBe('16B');
+    expect(dateChange[4]!.reply).toBe(
+      fieldSetNeutral('Perfect, set to depart on 2026-09-01.'),
+    );
+    expect(dateChange[4]!.reply).not.toBe(
+      'Perfect, set to depart on 2026-09-01. What else should I know about your trip?',
+    );
+
+    // field removed after trip completion
+    const fieldRemoved = runJourney([
+      { message: 'go to Cairns' },
+      { message: 'from Sydney' },
+      { message: 'Depart on 28 August 2026' },
+      { message: 'Return on 5 September 2026' },
+      { message: '2 adults' },
+      { message: '1 child' },
+      {
+        message: 'clear child count',
+        stateUpdate: { childCount: null },
+      },
+    ]);
+    expect(fieldRemoved[6]!.owner).toBe('16B');
+    expect(fieldRemoved[6]!.reply).toBe(
+      fieldRemovedNeutral("No problem, I've removed the child count."),
+    );
+    expect(fieldRemoved[6]!.reply).not.toBe(
+      "No problem, I've removed the child count. What else should I know about your trip?",
+    );
+
+    // capability enabled after core completion
+    const capabilityEnabled = runJourney([
+      { message: 'go to Cairns' },
+      { message: 'from Sydney' },
+      { message: 'Depart on 28 August 2026' },
+      { message: 'Return on 5 September 2026' },
+      { message: 'I like beaches' },
+    ]);
+    expect(capabilityEnabled[4]!.owner).toBe('16B');
+    expect(capabilityEnabled[4]!.reply).toBe(
+      capabilityEnabledNeutral("Great, I've added beaches to your trip."),
+    );
+    expect(capabilityEnabled[4]!.reply).not.toBe(
+      "Great, I've added beaches to your trip. What else should I know about your trip?",
+    );
+
+    // capability disabled after core completion
+    const capabilityDisabled = runJourney([
+      { message: 'go to Cairns' },
+      { message: 'from Sydney' },
+      { message: 'Depart on 28 August 2026' },
+      { message: 'Return on 5 September 2026' },
+      { message: 'I need flights' },
+      { message: '2 adults' },
+      { message: 'remove flights', stateUpdate: { flightsRequested: false } },
+    ]);
+    expect(capabilityDisabled[6]!.owner).toBe('16B');
+    expect(capabilityDisabled[6]!.reply).toBe(
+      capabilityDisabledNeutral(
+        "No problem, I've removed flights from your trip.",
+      ),
+    );
+    expect(capabilityDisabled[6]!.reply).not.toBe(
+      "No problem, I've removed flights from your trip. What else should I know about your trip?",
+    );
   });
 
   it('locks recurring quality patterns observed across journeys', () => {
@@ -500,9 +619,21 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       turn.reply.endsWith(CANONICAL_NEUTRAL_CONTINUATION_PROMPT),
     );
     expect(neutralTrailing.length).toBeGreaterThanOrEqual(3);
+    // Phase 16B supersedes prior 15C ownership for ack+neutral trailing replies.
     expect(
-      neutralTrailing.every((turn) => turn.owner === '15C'),
+      neutralTrailing.every((turn) => turn.owner === '16B'),
     ).toBe(true);
+    expect(
+      neutralTrailing.every((turn) => turn.reply.includes(BRIDGE_FIELD_SET)),
+    ).toBe(true);
+    // Prior Phase 16A repetitive direct join is no longer produced.
+    expect(
+      neutralTrailing.some((turn) =>
+        /^(Perfect,[^.]*\.|Great,[^.]*\.) What else should I know about your trip\?$/.test(
+          turn.reply,
+        ),
+      ),
+    ).toBe(false);
 
     const perfectOpeners = complete.filter((turn) =>
       turn.reply.startsWith('Perfect,'),

@@ -298,7 +298,7 @@ describe('phase 5I — processConversationTurn extraction integration', () => {
       timestamp: '2026-07-29T00:00:11.000Z',
     });
     expect(result.reply).toBe(
-      "No problem, I've removed flights from your trip. What else should I know about your trip?",
+      "No problem, I've removed flights from your trip. We can keep refining the plan. What else should I know about your trip?",
     );
     expect(result.trace).toEqual({
       entryPoint: 'processConversationTurn',

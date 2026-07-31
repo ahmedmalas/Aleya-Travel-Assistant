@@ -119,8 +119,9 @@ const ELIGIBLE_CASES: Array<{
   {
     label: 'capability disabled',
     acknowledgement: ACKS.removedCapabilities('flights'),
-    followUpQuestion: FOLLOW_UPS.neutralContinuation,
-    expectedObjectiveId: 'neutralContinuation',
+    // Phase 16B owns ack + canonical neutral; keep 15C on a specific follow-up.
+    followUpQuestion: FOLLOW_UPS.activities,
+    expectedObjectiveId: 'activities',
   },
   {
     label: 'generic acknowledgement',

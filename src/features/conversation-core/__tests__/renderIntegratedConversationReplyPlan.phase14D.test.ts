@@ -225,7 +225,13 @@ describe('phase 14D — renderIntegratedConversationReplyPlan', () => {
         }),
       }),
     ).toBe(
-      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
+      expectedActivatedBaselineReply(
+        plan({
+          acknowledgements: [ACKS.removedCapabilities('flights')],
+          followUpQuestion: FOLLOW_UPS.neutralContinuation,
+          messageInterpreted: true,
+        }),
+      ),
     );
   });
 

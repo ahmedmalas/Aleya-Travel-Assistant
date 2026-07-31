@@ -140,7 +140,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(completeViaExplicit.state.returnDate).toBe('2026-09-08');
     expect(completeViaExplicit.reply).toBe(
-      `Great, I've added wildlife to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added wildlife to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 
@@ -174,7 +174,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     });
     const result = turn('add beaches', complete);
     expect(result.reply).toBe(
-      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
     expect(questionCount(result.reply)).toBe(1);
 
@@ -188,7 +188,7 @@ describe('phase 10C — deterministic conversation progression', () => {
         },
       }),
     ).toBe(
-      `Great, I've added beaches to your trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added beaches to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
     );
   });
 });

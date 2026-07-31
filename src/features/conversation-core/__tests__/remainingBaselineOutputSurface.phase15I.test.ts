@@ -39,6 +39,7 @@ type BranchOwner =
   | '15J'
   | '15E-pass-through'
   | '15F'
+  | '16B'
   | 'deterministic';
 
 type SurfaceCase = {
@@ -68,6 +69,12 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
 }
 
 function classifyOwner(replyPlan: ConversationReplyPlan): BranchOwner {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === FOLLOW_UPS.neutralContinuation
+  ) {
+    return '16B';
+  }
   if (
     replyPlan.acknowledgements.length === 1 &&
     replyPlan.followUpQuestion === null
@@ -137,7 +144,7 @@ const SURFACE_CASES: SurfaceCase[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    owner: '15C',
+    owner: '16B',
     passThroughOrDeterministic: false,
   },
   {
@@ -263,6 +270,9 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     expect(renderer).toMatch(/renderBaselineFollowUpOnly/);
     expect(renderer).toMatch(/renderConversationReplyPlan\(plan\)/);
 
+    const branch16B = renderer.indexOf(
+      'renderBaselineAcknowledgementNeutralContinuation({',
+    );
     const branch15B = renderer.indexOf(
       'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
     );
@@ -272,7 +282,8 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     const fallthrough = renderer.lastIndexOf(
       'renderConversationReplyPlan(plan)',
     );
-    expect(branch15B).toBeGreaterThan(-1);
+    expect(branch16B).toBeGreaterThan(-1);
+    expect(branch15B).toBeGreaterThan(branch16B);
     expect(branch15C).toBeGreaterThan(branch15B);
     expect(branch15J).toBeGreaterThan(branch15C);
     expect(branch15E).toBeGreaterThan(branch15J);
@@ -285,6 +296,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
     const ownerCounts = {
       '15B': 0,
       '15C': 0,
+      '16B': 0,
       '15J': 0,
       '15F': 0,
       '15E-pass-through': 0,
@@ -337,6 +349,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
 
     expect(ownerCounts['15B']).toBeGreaterThan(0);
     expect(ownerCounts['15C']).toBeGreaterThan(0);
+    expect(ownerCounts['16B']).toBeGreaterThan(0);
     expect(ownerCounts['15J']).toBeGreaterThan(0);
     expect(ownerCounts['15F']).toBeGreaterThan(0);
     expect(ownerCounts['15E-pass-through']).toBeGreaterThan(0);
@@ -345,6 +358,10 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
 
   it('proves no ownership overlap between exclusive plan-shape predicates', () => {
     const shapes: ConversationReplyPlan[] = [
+      plan({
+        acknowledgements: [ACKS.destination('Cairns')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+      }),
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
         followUpQuestion: null,
@@ -370,6 +387,7 @@ describe('phase 15I — remaining baseline output surface characterisation', () 
 
     const owners = shapes.map((shape) => classifyOwner(shape));
     expect(owners).toEqual([
+      '16B',
       '15B',
       '15C',
       '15J',

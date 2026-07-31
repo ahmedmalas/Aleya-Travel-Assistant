@@ -10,6 +10,7 @@ import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { NEUTRAL_TRIP_FALLBACK_REPLY } from '../generateConversationReply';
 import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralContinuation';
 import { transformBaselineAcknowledgement } from '../transformBaselineAcknowledgement';
+import { expectedActivatedBaselineReply } from './expectedActivatedBaselineReply';
 
 /**
  * Phase 14B — route production through the integration seam.
@@ -153,7 +154,11 @@ describe('phase 14B — integrated conversation reply runtime', () => {
     );
     expect(disableFlights.state.flightsRequested).toBe(false);
     expect(disableFlights.reply).toBe(
-      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
+      expectedActivatedBaselineReply({
+        acknowledgements: [ACKS.removedCapabilities('flights')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
     );
 
     const continuation = turn('thanks', {

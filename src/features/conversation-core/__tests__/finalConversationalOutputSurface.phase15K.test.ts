@@ -7,6 +7,7 @@ import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { generateBaselineConversationalReply } from '../generateBaselineConversationalReply';
 import { renderConversationReplyPlan } from '../generateConversationReply';
 import { renderBaselineAcknowledgementFollowUp } from '../renderBaselineAcknowledgementFollowUp';
+import { renderBaselineAcknowledgementNeutralContinuation } from '../renderBaselineAcknowledgementNeutralContinuation';
 import { renderBaselineConversationalLayer } from '../renderBaselineConversationalLayer';
 import { renderBaselineFollowUpOnly } from '../renderBaselineFollowUpOnly';
 import {
@@ -72,6 +73,7 @@ type Owner =
   | '15J'
   | '15F'
   | '15E-pass-through'
+  | '16B'
   | 'deterministic';
 
 type MatrixRow = {
@@ -102,6 +104,12 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
 }
 
 function classifyOwner(replyPlan: ConversationReplyPlan): Owner {
+  if (
+    replyPlan.acknowledgements.length === 1 &&
+    replyPlan.followUpQuestion === CANONICAL_NEUTRAL_CONTINUATION_PROMPT
+  ) {
+    return '16B';
+  }
   if (
     replyPlan.acknowledgements.length === 1 &&
     replyPlan.followUpQuestion === null
@@ -177,10 +185,10 @@ const MATRIX: MatrixRow[] = [
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
       messageInterpreted: true,
     }),
-    owner: '15C',
-    renderer: 'renderBaselineAcknowledgementFollowUp',
+    owner: '16B',
+    renderer: 'renderBaselineAcknowledgementNeutralContinuation',
     transformed: true,
-    exactOutput: renderBaselineAcknowledgementFollowUp({
+    exactOutput: renderBaselineAcknowledgementNeutralContinuation({
       acknowledgement: ACKS.genericTravelFieldChange,
       followUpQuestion: FOLLOW_UPS.neutralContinuation,
     }),
@@ -313,6 +321,9 @@ describe('phase 15K — final conversational output surface audit', () => {
     expect(mode).toMatch(/renderConversationReplyPlan\(input\.plan\)/);
     expect(generator).toMatch(/renderBaselineConversationalReplyPlan/);
 
+    const branch16B = layer.indexOf(
+      'renderBaselineAcknowledgementNeutralContinuation({',
+    );
     const branch15B = layer.indexOf(
       'transformBaselineAcknowledgement(plan.acknowledgements[0]!)',
     );
@@ -321,7 +332,8 @@ describe('phase 15K — final conversational output surface audit', () => {
     const branch15E = layer.indexOf('renderBaselineFollowUpOnly({');
     const fallthrough = layer.lastIndexOf('renderConversationReplyPlan(plan)');
 
-    expect(branch15B).toBeGreaterThan(-1);
+    expect(branch16B).toBeGreaterThan(-1);
+    expect(branch15B).toBeGreaterThan(branch16B);
     expect(branch15C).toBeGreaterThan(branch15B);
     expect(branch15J).toBeGreaterThan(branch15C);
     expect(branch15E).toBeGreaterThan(branch15J);
@@ -394,6 +406,7 @@ describe('phase 15K — final conversational output surface audit', () => {
       new Set<Owner>([
         '15B',
         '15C',
+        '16B',
         '15J',
         '15F',
         '15E-pass-through',
@@ -404,6 +417,10 @@ describe('phase 15K — final conversational output surface audit', () => {
 
   it('proves mutually exclusive branch predicates and no ownership overlap', () => {
     const shapes: ConversationReplyPlan[] = [
+      plan({
+        acknowledgements: [ACKS.destination('Cairns')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+      }),
       plan({
         acknowledgements: [ACKS.destination('Cairns')],
         followUpQuestion: null,
@@ -432,6 +449,7 @@ describe('phase 15K — final conversational output surface audit', () => {
     ];
 
     expect(shapes.map((shape) => classifyOwner(shape))).toEqual([
+      '16B',
       '15B',
       '15C',
       '15J',
@@ -477,12 +495,8 @@ describe('phase 15K — final conversational output surface audit', () => {
       transformBaselineAcknowledgement(ACKS.destination('Cairns')),
     );
 
-    // 15C — every follow-up remains a byte-identical trailing substring.
-    const followUps = [
-      FOLLOW_UPS.departureDate,
-      FOLLOW_UPS.neutralContinuation,
-      UNKNOWN_FOLLOW_UP,
-    ];
+    // 15C — non-neutral follow-ups remain a byte-identical trailing substring.
+    const followUps = [FOLLOW_UPS.departureDate, UNKNOWN_FOLLOW_UP];
     for (const followUp of followUps) {
       const replyPlan = freezePlan(
         plan({
@@ -499,6 +513,28 @@ describe('phase 15K — final conversational output surface audit', () => {
       ).toBe(`${transformBaselineAcknowledgement(ACKS.origin('Sydney'))} `);
       expect(wording.includes('\n'), followUp).toBe(false);
     }
+
+    // 16B — canonical neutral remains a byte-identical trailing substring.
+    const ackNeutral = freezePlan(
+      plan({
+        acknowledgements: [ACKS.origin('Sydney')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
+    );
+    const ackNeutralWording = generateBaselineConversationalReply(ackNeutral);
+    expect(ackNeutralWording.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(
+      true,
+    );
+    expect(
+      ackNeutralWording.slice(
+        0,
+        ackNeutralWording.length - FOLLOW_UPS.neutralContinuation.length,
+      ),
+    ).toBe(
+      `${transformBaselineAcknowledgement(ACKS.origin('Sydney'))} Is there anything else you'd like me to consider? `,
+    );
+    expect(ackNeutralWording.includes('\n')).toBe(false);
 
     // 15F — each supported question remains a byte-identical trailing substring.
     const supported = [

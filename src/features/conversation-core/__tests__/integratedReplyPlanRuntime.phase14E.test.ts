@@ -204,7 +204,11 @@ describe('phase 14E — integrated reply plan runtime', () => {
       { flightsRequested: false },
     );
     expect(disableFlights.reply).toBe(
-      `${transformBaselineAcknowledgement(ACKS.removedCapabilities('flights'))} ${FOLLOW_UPS.neutralContinuation}`,
+      expectedActivatedBaselineReply({
+        acknowledgements: [ACKS.removedCapabilities('flights')],
+        followUpQuestion: FOLLOW_UPS.neutralContinuation,
+        messageInterpreted: true,
+      }),
     );
 
     const continuation = turn('thanks', {
