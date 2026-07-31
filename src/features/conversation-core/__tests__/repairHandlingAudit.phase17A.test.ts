@@ -137,17 +137,24 @@ function expectUnchangedPopulated(trace: RepairTrace): void {
 }
 
 describe('Phase 17A — repair handling characterization audit', () => {
-  it('primary case: Sorry, I meant Cairns leaves Melbourne unchanged', () => {
+  // Phase 17B: destination single-fact repair phrases now extract successfully.
+  it('primary case: Sorry, I meant Cairns replaces Melbourne (Phase 17B)', () => {
     const trace = traceRepair('Sorry, I meant Cairns');
-    expectUnchangedPopulated(trace);
-    expect(trace.final.destination).toBe('Melbourne');
-    expect(trace.selectedFollowUp).toBe(
-      'What else should I know about your trip?',
+    expect(trace.extractedPatch).toEqual({ destination: 'Cairns' });
+    expect(trace.final.destination).toBe('Cairns');
+    expect(trace.updated).toEqual(['destination']);
+    expect(trace.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'destination',
+    });
+    expect(trace.exactFinalReply).toBe(
+      "Updated — Cairns it is. Is there anything else you'd like me to consider? What else should I know about your trip?",
     );
   });
 
   it('characterizes required destination repair phrases against populated Melbourne', () => {
-    const failedPhrases = [
+    // Phase 17B: the six destination repair families now succeed.
+    const repairPhrases = [
       'Sorry, I meant Cairns',
       'I meant Cairns',
       'Actually, Cairns',
@@ -156,17 +163,19 @@ describe('Phase 17A — repair handling characterization audit', () => {
       'Not Melbourne, Cairns',
     ] as const;
 
-    for (const phrase of failedPhrases) {
+    for (const phrase of repairPhrases) {
       const trace = traceRepair(phrase);
-      expect(trace.extractedPatch, phrase).toEqual({});
-      expect(trace.final.destination, phrase).toBe('Melbourne');
-      expect(trace.hasInterpretedChange, phrase).toBe(false);
-      expect(trace.selectedAcknowledgement, phrase).toBeNull();
-      expect(trace.acknowledgementEvent, phrase).toBeNull();
-      expect(trace.exactFinalReply, phrase).toBe(NEUTRAL);
+      expect(trace.extractedPatch, phrase).toEqual({ destination: 'Cairns' });
+      expect(trace.final.destination, phrase).toBe('Cairns');
+      expect(trace.hasInterpretedChange, phrase).toBe(true);
+      expect(trace.acknowledgementEvent, phrase).toEqual({
+        kind: 'field-changed',
+        field: 'destination',
+      });
+      expect(trace.exactFinalReply, phrase).toContain('Updated — Cairns it is.');
     }
 
-    // Contrast: cue-backed destination replacements succeed today.
+    // Prior cue-backed destination replacements still succeed.
     const changeIt = traceRepair('change it to Cairns');
     expect(changeIt.extractedPatch).toEqual({ destination: 'Cairns' });
     expect(changeIt.final.destination).toBe('Cairns');
@@ -189,36 +198,52 @@ describe('Phase 17A — repair handling characterization audit', () => {
     expect(actuallyMakeIt.final.destination).toBe('Cairns');
   });
 
-  it('field-by-field: destination repair fails when populated or null', () => {
+  it('field-by-field: destination repair succeeds when populated or null (Phase 17B)', () => {
     const populated = traceRepair('Sorry, I meant Cairns', POPULATED);
-    expectUnchangedPopulated(populated);
+    expect(populated.extractedPatch).toEqual({ destination: 'Cairns' });
+    expect(populated.final.destination).toBe('Cairns');
+    expect(populated.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'destination',
+    });
 
     const whenNull = traceRepair('Sorry, I meant Cairns', {
       destination: null,
       origin: 'Sydney',
     });
-    expect(whenNull.extractedPatch).toEqual({});
-    expect(whenNull.final.destination).toBeNull();
-    expect(whenNull.hasInterpretedChange).toBe(false);
-    expect(whenNull.exactFinalReply).toBe(NEUTRAL);
+    expect(whenNull.extractedPatch).toEqual({ destination: 'Cairns' });
+    expect(whenNull.final.destination).toBe('Cairns');
+    expect(whenNull.newlyPopulated).toEqual(['destination']);
+    expect(whenNull.acknowledgementEvent).toEqual({
+      kind: 'field-set',
+      field: 'destination',
+    });
 
-    // Old and new values both in sentence — blocked by \\bnot\\b.
+    // Contrast repair selects the new value (Phase 17B).
     const bothValues = traceRepair('Not Melbourne, Cairns');
-    expect(bothValues.extractedPatch).toEqual({});
-    expect(bothValues.final.destination).toBe('Melbourne');
+    expect(bothValues.extractedPatch).toEqual({ destination: 'Cairns' });
+    expect(bothValues.final.destination).toBe('Cairns');
   });
 
-  it('field-by-field: origin repair phrases vs cue-backed replacement', () => {
-    expectUnchangedPopulated(traceRepair('I meant Sydney'));
-    expectUnchangedPopulated(traceRepair('Actually, Sydney'));
+  it('field-by-field: origin still requires from-cues; meant is destination repair', () => {
+    // Phase 17B: bare "I meant {place}" is destination extraction, not origin.
+    const meantPlace = traceRepair('I meant Hobart');
+    expect(meantPlace.extractedPatch).toEqual({ destination: 'Hobart' });
+    expect(meantPlace.final.origin).toBe('Sydney');
+    expect(meantPlace.final.destination).toBe('Hobart');
 
+    const actuallyPlace = traceRepair('Actually, Hobart');
+    expect(actuallyPlace.extractedPatch).toEqual({ destination: 'Hobart' });
+    expect(actuallyPlace.final.origin).toBe('Sydney');
+
+    // Origin remains null when only a destination repair fires.
     const nullOrigin = traceRepair('Sorry, I meant Brisbane', {
       ...POPULATED,
       origin: null,
     });
-    expect(nullOrigin.extractedPatch).toEqual({});
+    expect(nullOrigin.extractedPatch).toEqual({ destination: 'Brisbane' });
     expect(nullOrigin.final.origin).toBeNull();
-    expect(nullOrigin.hasInterpretedChange).toBe(false);
+    expect(nullOrigin.final.destination).toBe('Brisbane');
 
     // Cue-backed origin change still works.
     const cue = traceRepair('from Brisbane instead');
@@ -389,19 +414,19 @@ describe('Phase 17A — repair handling characterization audit', () => {
     );
     expect(classificationSource).toMatch(/updated: readonly TravelCompareKey/);
 
-    // Repair failures do not clear fields — updated stays empty.
-    const failed = traceRepair('Sorry, I meant Cairns');
-    expect(failed.updated).toEqual([]);
+    // Non-destination unsupported input still leaves updated empty.
+    const unsupported = traceRepair('asdfgh nonsense');
+    expect(unsupported.updated).toEqual([]);
   });
 
-  it('proves root cause is extraction: empty patch precedes inert classification and selection', () => {
+  it('proves destination repair now flows extraction → state → classification → selection (Phase 17B)', () => {
     const message = 'Sorry, I meant Cairns';
     const previous = createState(POPULATED);
     const extraction = EXTRACTOR.extract({
       message,
       currentState: previous,
     });
-    expect(extraction.stateUpdate).toEqual({});
+    expect(extraction.stateUpdate).toEqual({ destination: 'Cairns' });
 
     const result = processConversationTurn({
       message,
@@ -411,30 +436,33 @@ describe('Phase 17A — repair handling characterization audit', () => {
       userMessageAt: new Date('2026-07-29T00:00:00.000Z'),
       assistantMessageAt: new Date('2026-07-29T00:00:01.000Z'),
     });
-    expect(slice(result.state)).toEqual(POPULATED);
+    expect(result.state.destination).toBe('Cairns');
 
     const classification = classifyConversationStateChange(
       previous,
       result.state,
     );
-    expect(classification.hasInterpretedChange).toBe(false);
-    expect(classification.updated).toEqual([]);
+    expect(classification.hasInterpretedChange).toBe(true);
+    expect(classification.updated).toEqual(['destination']);
 
     const plan = createConversationReplyPlan({
       state: result.state,
       classification,
     });
-    expect(plan.acknowledgements).toEqual([]);
-    expect(plan.acknowledgementEvent).toBeNull();
-    expect(result.reply).toBe(NEUTRAL);
+    expect(plan.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'destination',
+    });
+    expect(result.reply).toContain('Updated — Cairns it is.');
 
-    // Destination extractor has no "meant" cue and blocks \\bnot\\b.
+    // Phase 17B destination extractor includes meant / change that / contrast.
     const destinationSource = readFileSync(
       resolve(CORE_SRC, 'DestinationConversationStateExtractor.ts'),
       'utf8',
     );
-    expect(destinationSource).not.toMatch(/meant/i);
-    expect(destinationSource).toMatch(/\\bnot\\b/);
+    expect(destinationSource).toMatch(/meant/i);
+    expect(destinationSource).toMatch(/change\\s\+that\\s\+to/);
+    expect(destinationSource).toMatch(/matchContrastDestinationRepair/);
     expect(destinationSource).toMatch(/change\\s\+it\\s\+to/);
   });
 

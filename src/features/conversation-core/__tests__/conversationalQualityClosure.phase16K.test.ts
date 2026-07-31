@@ -725,17 +725,20 @@ describe('Phase 16K — conversational quality closure audit', () => {
   });
 
   it('reconfirms known non-acknowledgement defects are unchanged', () => {
-    // Failed repair: natural correction phrasing is not extracted; destination stays.
-    const failedRepair = runJourney([
+    // Phase 17B: destination repair is fixed — natural correction updates destination.
+    const repaired = runJourney([
       { message: 'go to Brisbane' },
       { message: 'sorry I meant Cairns' },
     ]);
-    expect(failedRepair[0]!.destination).toBe('Brisbane');
-    expect(failedRepair[1]!.destination).toBe('Brisbane');
-    expect(failedRepair[1]!.deterministicAcknowledgement).toBeNull();
-    expect(failedRepair[1]!.acknowledgementEvent).toBeNull();
-    expect(failedRepair[1]!.owner).toBe('15J');
-    expect(failedRepair[1]!.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
+    expect(repaired[0]!.destination).toBe('Brisbane');
+    expect(repaired[1]!.destination).toBe('Cairns');
+    expect(repaired[1]!.acknowledgementEvent).toEqual({
+      kind: 'field-changed',
+      field: 'destination',
+    });
+    expect(repaired[1]!.reply).toBe(
+      `Updated — Cairns it is. ${FOLLOW_UPS.origin}`,
+    );
 
     // Activities re-asked after hiking interest clarification.
     const hiking = runJourney(

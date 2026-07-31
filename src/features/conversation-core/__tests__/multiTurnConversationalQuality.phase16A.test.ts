@@ -284,17 +284,17 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     expect(successful[1]!.final.destination).toBe('Cairns');
     expect(successful[1]!.owner).toBe('15C');
 
-    // Natural repair phrasing is not currently extracted.
-    const failedRepair = runJourney([
+    // Phase 17B: natural destination repair phrasing is extracted.
+    const repaired = runJourney([
       { message: 'go to Brisbane' },
       { message: 'sorry I meant Cairns' },
     ]);
-    expectReplies(failedRepair, [
+    expectReplies(repaired, [
       'Great, Brisbane it is. Where will you be travelling from?',
-      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      'Updated — Cairns it is. Where will you be travelling from?',
     ]);
-    expect(failedRepair[1]!.final.destination).toBe('Brisbane');
-    expect(failedRepair[1]!.owner).toBe('15J');
+    expect(repaired[1]!.final.destination).toBe('Cairns');
+    expect(repaired[1]!.owner).toBe('15C');
   });
 
   it('characterises origin change after initially being set', () => {
@@ -478,17 +478,18 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
   });
 
   it('characterises correction of a previous statement', () => {
+    // Phase 17B: "sorry I meant Cairns" updates destination.
     const turns = runJourney([
       { message: 'go to Brisbane' },
       { message: 'sorry I meant Cairns' },
     ]);
     expectReplies(turns, [
       'Great, Brisbane it is. Where will you be travelling from?',
-      ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
+      'Updated — Cairns it is. Where will you be travelling from?',
     ]);
-    expect(turns[1]!.final.destination).toBe('Brisbane');
-    expect(turns[1]!.classification.hasInterpretedChange).toBe(false);
-    expect(turns[1]!.owner).toBe('15J');
+    expect(turns[1]!.final.destination).toBe('Cairns');
+    expect(turns[1]!.classification.hasInterpretedChange).toBe(true);
+    expect(turns[1]!.owner).toBe('15C');
   });
 
   it('characterises multiple facts supplied in one message', () => {
