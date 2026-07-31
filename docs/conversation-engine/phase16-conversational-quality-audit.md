@@ -56,6 +56,8 @@ Primary journey assertions do not manually construct reply plans.
 
 ### Complete trip one field at a time
 
+Historical Phase 16A wording (pre-16B bridges / pre-16D openers):
+
 ```text
 U: I want to go to Cairns
 A: Great, Cairns it is. Where will you be travelling from?
@@ -71,6 +73,16 @@ A: Perfect, set to return on 2026-09-05. What else should I know about your trip
 
 U: 2 adults
 A: Perfect, 2 adults travelling. What else should I know about your trip?
+```
+
+Phase 16D supersedes acknowledgement openers on this journey (16B bridges retained on neutral turns):
+
+```text
+Great, Cairns it is. …
+We'll start from Sydney. …
+Departure is set for 2026-08-28. …
+Return is set for 2026-09-05. Is there anything else you'd like me to consider? What else should I know about your trip?
+Travelling with 2 adults. Is there anything else you'd like me to consider? What else should I know about your trip?
 ```
 
 ### Failed destination repair (current behaviour)
@@ -278,6 +290,8 @@ src/features/conversation-core/__tests__/multiTurnConversationalQuality.phase16A
 ```
 
 Locks exact current replies for every audited journey, including awkward and defective extraction outcomes.
+Where Phase 16D intentionally changes acknowledgement openers, exact reply
+expectations are updated and marked as superseded; extraction/selection findings remain.
 
 ---
 
@@ -367,3 +381,13 @@ src/features/conversation-core/renderBaselineConversationalLayer.ts
 src/features/conversation-core/__tests__/acknowledgementNeutralContinuation.phase16B.test.ts
 src/features/conversation-core/__tests__/multiTurnConversationalQuality.phase16A.test.ts
 ```
+
+---
+
+## Phase 16D note — stateless opener refinement
+
+Phase 16D implements the Phase 16C recommendation: refine acknowledgement
+openers inside `transformBaselineAcknowledgement` using only the current
+acknowledgement string. 16B bridges and follow-up byte-preservation are
+unchanged. Full map and remaining same-family limitation:
+`docs/conversation-engine/phase16-acknowledgement-repetition-audit.md`.

@@ -249,10 +249,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     // Phase 16B supersedes prior direct ack+neutral joins on turns 4–5.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
-      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
+      fieldSetNeutral('Travelling with 2 adults.'),
     ]);
     expect(turns.map((turn) => turn.owner)).toEqual([
       '15C',
@@ -303,8 +303,8 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Brisbane. When would you like to depart?",
-      "Perfect, we'll start from Sydney. When would you like to depart?",
+      "We'll start from Brisbane. When would you like to depart?",
+      "We'll start from Sydney. When would you like to depart?",
     ]);
     expect(turns[2]!.final.origin).toBe('Sydney');
     expect(turns.map((turn) => turn.owner)).toEqual(['15C', '15C', '15C']);
@@ -322,11 +322,11 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     // Phase 16B supersedes prior direct ack+neutral joins on post-core date edits.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
-      fieldSetNeutral('Perfect, set to depart on 2026-09-01.'),
-      fieldSetNeutral('Perfect, set to return on 2026-09-10.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
+      fieldSetNeutral('Departure is set for 2026-09-01.'),
+      fieldSetNeutral('Return is set for 2026-09-10.'),
     ]);
     expect(turns[5]!.final).toMatchObject({
       departureDate: '2026-09-01',
@@ -351,14 +351,14 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     // Phase 16B supersedes prior direct ack+neutral joins on passenger turns.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      fieldSetNeutral('Perfect, 2 adults travelling.'),
-      fieldSetNeutral('Perfect, 1 child travelling.'),
-      fieldSetNeutral('Perfect, 1 infant travelling.'),
-      fieldSetNeutral('Perfect, 3 adults travelling.'),
+      fieldSetNeutral('Travelling with 2 adults.'),
+      fieldSetNeutral("I've noted 1 child."),
+      fieldSetNeutral("I've noted 1 infant."),
+      fieldSetNeutral('Travelling with 3 adults.'),
     ]);
     expect(turns[8]!.final).toMatchObject({
       adultCount: 3,
@@ -377,7 +377,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
+      "We'll start from Sydney. When would you like to depart?",
       "No problem, I've removed the destination. Where would you like to travel?",
       'Great, Hobart it is. When would you like to depart?',
     ]);
@@ -401,11 +401,11 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     // Phase 16B supersedes prior direct ack+neutral joins.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      fieldSetNeutral('Travelling with 2 adults.'),
       capabilityDisabledNeutral(
         "No problem, I've removed flights from your trip.",
       ),
@@ -425,9 +425,9 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added activities to your trip. What kinds of activities are you interested in?",
       "Great, I've added hiking and walking to your trip. What kinds of activities are you interested in?",
     ]);
@@ -447,9 +447,9 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added restaurants to your trip. What type of dining are you looking for?",
       ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
     ]);
@@ -467,7 +467,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
       ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
-      "Perfect, we'll start from Sydney. When would you like to depart?",
+      "We'll start from Sydney. When would you like to depart?",
     ]);
     expect(turns[1]!.final.destination).toBe('Cairns');
     expect(turns[1]!.final.origin).toBeNull();
@@ -520,10 +520,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     // Phase 16B supersedes prior direct ack+neutral joins.
     expectReplies(turns, [
       'Great, Cairns it is. Where will you be travelling from?',
-      "Perfect, we'll start from Sydney. When would you like to depart?",
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
-      fieldSetNeutral('Perfect, set to return on 2026-09-05.'),
-      fieldSetNeutral('Perfect, 2 adults travelling.'),
+      "We'll start from Sydney. When would you like to depart?",
+      'Departure is set for 2026-08-28. When would you like to return?',
+      fieldSetNeutral('Return is set for 2026-09-05.'),
+      fieldSetNeutral('Travelling with 2 adults.'),
       capabilityEnabledNeutral("Great, I've added beaches to your trip."),
     ]);
     expect(turns[5]!.final.beachesRequested).toBe(true);
@@ -541,10 +541,10 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
     ]);
     expect(dateChange[4]!.owner).toBe('16B');
     expect(dateChange[4]!.reply).toBe(
-      fieldSetNeutral('Perfect, set to depart on 2026-09-01.'),
+      fieldSetNeutral('Departure is set for 2026-09-01.'),
     );
     expect(dateChange[4]!.reply).not.toBe(
-      'Perfect, set to depart on 2026-09-01. What else should I know about your trip?',
+      'Departure is set for 2026-09-01. What else should I know about your trip?',
     );
 
     // field removed after trip completion
@@ -635,10 +635,19 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       ),
     ).toBe(false);
 
+    // Historical Phase 16A/16C: ≥3 Perfect, openers. Phase 16D diversifies them.
     const perfectOpeners = complete.filter((turn) =>
       turn.reply.startsWith('Perfect,'),
     );
-    expect(perfectOpeners.length).toBeGreaterThanOrEqual(3);
+    expect(perfectOpeners.length).toBe(0);
+    expect(complete.map((turn) => turn.reply.split(/[.!?]/)[0])).toEqual([
+      'Great, Cairns it is',
+      "We'll start from Sydney",
+      'Departure is set for 2026-08-28',
+      'Return is set for 2026-09-05',
+      'Travelling with 2 adults',
+      "I've noted 1 child",
+    ]);
 
     const unsupported = runJourney([
       { message: 'go to Cairns' },

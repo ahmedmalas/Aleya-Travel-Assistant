@@ -1,5 +1,6 @@
 /**
  * Phase 15B — first controlled acknowledgement-only conversational transform.
+ * Phase 16D — refine cross-field acknowledgement openers (stateless).
  *
  * Pure, deterministic mapping from a single completed-plan acknowledgement
  * string to a restrained conversational variant. Operates on wording only.
@@ -67,7 +68,7 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (origin !== null) {
-    return `Perfect, we'll start from ${origin}.`;
+    return `We'll start from ${origin}.`;
   }
 
   const departureDate = extractBetween(
@@ -76,7 +77,7 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (departureDate !== null) {
-    return `Perfect, set to depart on ${departureDate}.`;
+    return `Departure is set for ${departureDate}.`;
   }
 
   const returnDate = extractBetween(
@@ -85,7 +86,7 @@ export function transformBaselineAcknowledgement(
     '.',
   );
   if (returnDate !== null) {
-    return `Perfect, set to return on ${returnDate}.`;
+    return `Return is set for ${returnDate}.`;
   }
 
   const adultSingular = extractBetween(
@@ -94,7 +95,7 @@ export function transformBaselineAcknowledgement(
     ' adult travelling.',
   );
   if (adultSingular !== null) {
-    return `Perfect, ${adultSingular} adult travelling.`;
+    return `Travelling with ${adultSingular} adult.`;
   }
 
   const adultPlural = extractBetween(
@@ -103,7 +104,7 @@ export function transformBaselineAcknowledgement(
     ' adults travelling.',
   );
   if (adultPlural !== null) {
-    return `Perfect, ${adultPlural} adults travelling.`;
+    return `Travelling with ${adultPlural} adults.`;
   }
 
   const childSingular = extractBetween(
@@ -112,7 +113,7 @@ export function transformBaselineAcknowledgement(
     ' child travelling.',
   );
   if (childSingular !== null) {
-    return `Perfect, ${childSingular} child travelling.`;
+    return `I've noted ${childSingular} child.`;
   }
 
   const childPlural = extractBetween(
@@ -121,7 +122,7 @@ export function transformBaselineAcknowledgement(
     ' children travelling.',
   );
   if (childPlural !== null) {
-    return `Perfect, ${childPlural} children travelling.`;
+    return `I've noted ${childPlural} children.`;
   }
 
   const infantSingular = extractBetween(
@@ -130,7 +131,7 @@ export function transformBaselineAcknowledgement(
     ' infant travelling.',
   );
   if (infantSingular !== null) {
-    return `Perfect, ${infantSingular} infant travelling.`;
+    return `I've noted ${infantSingular} infant.`;
   }
 
   const infantPlural = extractBetween(
@@ -139,7 +140,7 @@ export function transformBaselineAcknowledgement(
     ' infants travelling.',
   );
   if (infantPlural !== null) {
-    return `Perfect, ${infantPlural} infants travelling.`;
+    return `I've noted ${infantPlural} infants.`;
   }
 
   const addedCapabilities = extractBetween(

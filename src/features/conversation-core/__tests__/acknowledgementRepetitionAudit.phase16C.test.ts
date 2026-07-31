@@ -136,11 +136,16 @@ function classifyOwner(plan: {
   return 'deterministic';
 }
 
-/** Leading opener token used for repetition measurement (word before first comma or space-delimited head). */
+/** Leading opener family used for repetition measurement. */
 function openingPhrase(reply: string): string {
   if (reply.startsWith('Perfect,')) return 'Perfect,';
   if (reply.startsWith('Great,')) return 'Great,';
   if (reply.startsWith('No problem,')) return 'No problem,';
+  if (reply.startsWith("We'll start")) return "We'll start";
+  if (reply.startsWith('Departure is set')) return 'Departure is set';
+  if (reply.startsWith('Return is set')) return 'Return is set';
+  if (reply.startsWith('Travelling with')) return 'Travelling with';
+  if (reply.startsWith("I've noted")) return "I've noted";
   if (reply.startsWith("There's just one more thing")) {
     return "There's just one more thing";
   }
@@ -245,48 +250,54 @@ const CATALOGUE_TRANSFORM_ROWS: Array<{
   {
     category: 'field set (origin)',
     deterministic: ACKS.origin('Sydney'),
-    transformed: "Perfect, we'll start from Sydney.",
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, we'll start…
+    transformed: "We'll start from Sydney.",
+    openingPhrase: "We'll start",
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
   {
     category: 'field set (departure date)',
     deterministic: ACKS.departureDate('2026-08-28'),
-    transformed: 'Perfect, set to depart on 2026-08-28.',
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, set to depart…
+    transformed: 'Departure is set for 2026-08-28.',
+    openingPhrase: 'Departure is set',
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
   {
     category: 'field set (return date)',
     deterministic: ACKS.returnDate('2026-09-05'),
-    transformed: 'Perfect, set to return on 2026-09-05.',
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, set to return…
+    transformed: 'Return is set for 2026-09-05.',
+    openingPhrase: 'Return is set',
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
   {
     category: 'field set (adult count)',
     deterministic: ACKS.adultCount(2),
-    transformed: 'Perfect, 2 adults travelling.',
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, N adults travelling.
+    transformed: 'Travelling with 2 adults.',
+    openingPhrase: 'Travelling with',
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
   {
     category: 'field set (child count)',
     deterministic: ACKS.childCount(1),
-    transformed: 'Perfect, 1 child travelling.',
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, N child travelling.
+    transformed: "I've noted 1 child.",
+    openingPhrase: "I've noted",
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
   {
     category: 'field set (infant count)',
     deterministic: ACKS.infantCount(1),
-    transformed: 'Perfect, 1 infant travelling.',
-    openingPhrase: 'Perfect,',
+    // Phase 16D supersedes prior Perfect, N infant travelling.
+    transformed: "I've noted 1 infant.",
+    openingPhrase: "I've noted",
     productionShapes: '15C / 16B',
     owningHelper: 'transformBaselineAcknowledgement → 15C or 16B',
   },
@@ -344,21 +355,19 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       );
     }
 
+    // Historical Phase 16C evidence: before Phase 16D, origin/dates/passengers/
+    // generic all opened with Perfect,. After 16D only generic remains Perfect,.
     const perfectOpeners = CATALOGUE_TRANSFORM_ROWS.filter(
       (row) => row.openingPhrase === 'Perfect,',
     );
     expect(perfectOpeners.map((row) => row.category)).toEqual([
-      'field set (origin)',
-      'field set (departure date)',
-      'field set (return date)',
-      'field set (adult count)',
-      'field set (child count)',
-      'field set (infant count)',
       'generic acknowledgement',
     ]);
   });
 
-  it('characterises consecutive repeated openers across realistic journeys', () => {
+  it('characterises consecutive openers across realistic journeys (16D-superseded)', () => {
+    // Historical Phase 16C measurement (pre-16D): core progression opened
+    // Great, then Perfect,×4 (max consecutive identical opener = 4).
     const core = runJourney([
       { message: 'I want to go to Cairns' },
       { message: 'flying from Sydney' },
@@ -366,15 +375,16 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       { message: 'Return on 5 September 2026' },
       { message: '2 adults' },
     ]);
+    // Phase 16D supersedes the Perfect, streak with diversified openers.
     expect(core.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
-      'Perfect,',
-      'Perfect,',
-      'Perfect,',
-      'Perfect,',
+      "We'll start",
+      'Departure is set',
+      'Return is set',
+      'Travelling with',
     ]);
     expect(maxConsecutiveIdentical(core.map((turn) => turn.openingPhrase))).toBe(
-      4,
+      1,
     );
     expect(core.map((turn) => turn.owner)).toEqual([
       '15C',
@@ -402,12 +412,19 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       { message: '1 infant' },
       { message: '3 adults' },
     ]);
+    // Remaining same-family limitation: child/infant share I've noted;
+    // adult uses Travelling with. Historical 16C had Perfect,×4 here.
+    expect(passengers.slice(5).map((turn) => turn.openingPhrase)).toEqual([
+      'Travelling with',
+      "I've noted",
+      "I've noted",
+      'Travelling with',
+    ]);
     expect(
-      maxConsecutiveIdentical(passengers.map((turn) => turn.openingPhrase)),
-    ).toBe(4);
-    expect(
-      passengers.slice(5).map((turn) => turn.openingPhrase),
-    ).toEqual(['Perfect,', 'Perfect,', 'Perfect,', 'Perfect,']);
+      maxConsecutiveIdentical(
+        passengers.slice(5).map((turn) => turn.openingPhrase),
+      ),
+    ).toBe(2);
 
     const destChange = runJourney([
       { message: 'go to Brisbane' },
@@ -428,8 +445,8 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     ]);
     expect(originChange.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
-      'Perfect,',
-      'Perfect,',
+      "We'll start",
+      "We'll start",
     ]);
 
     const removal = runJourney([
@@ -440,7 +457,7 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     ]);
     expect(removal.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
-      'Perfect,',
+      "We'll start",
       'No problem,',
       'Great,',
     ]);
@@ -458,11 +475,11 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
     ]);
     expect(capabilities.map((turn) => turn.openingPhrase)).toEqual([
       'Great,',
-      'Perfect,',
-      'Perfect,',
-      'Perfect,',
+      "We'll start",
+      'Departure is set',
+      'Return is set',
       'Great,',
-      'Perfect,',
+      'Travelling with',
       'No problem,',
     ]);
     expect(capabilities[4]!.acknowledgement).toBe(
@@ -487,6 +504,8 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       ACKS.addedCapabilities('beaches'),
     );
 
+    // Historical Phase 16C: Perfect, was the most frequent opener (≥18).
+    // After 16D, Perfect, remains only for generic acknowledgements.
     const allOpeners = [
       ...core,
       ...passengers,
@@ -497,29 +516,27 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
       ...preference,
     ].map((turn) => turn.openingPhrase);
     const openerCounts = countBy(allOpeners);
-    expect(openerCounts['Perfect,']).toBeGreaterThan(
-      openerCounts['Great,'] ?? 0,
-    );
-    expect(openerCounts['Perfect,']).toBeGreaterThanOrEqual(18);
+    expect(openerCounts['Perfect,'] ?? 0).toBe(0);
+    expect(openerCounts['Great,']).toBeGreaterThan(0);
   });
 
-  it('proves repetition comes from both catalogue prefixes and conversational transforms', () => {
-    // Catalogue already clusters origin/dates/passengers/generic under Perfect —
+  it('records that catalogue prefixes still cluster under Perfect — while transforms diversify (16D)', () => {
+    // Catalogue still clusters origin/dates/passengers/generic under Perfect —
     expect(ACKS.origin('Sydney').startsWith('Perfect —')).toBe(true);
     expect(ACKS.departureDate('2026-08-28').startsWith('Perfect —')).toBe(true);
     expect(ACKS.returnDate('2026-09-05').startsWith('Perfect —')).toBe(true);
     expect(ACKS.adultCount(2).startsWith('Perfect —')).toBe(true);
     expect(ACKS.genericTravelFieldChange).toBe('Perfect.');
 
-    // Transform preserves the Perfect opener family rather than diversifying it.
+    // Phase 16D diversifies conversational openers for those catalogue families.
     expect(transformBaselineAcknowledgement(ACKS.origin('Sydney'))).toMatch(
-      /^Perfect,/,
+      /^We'll start/,
     );
     expect(
       transformBaselineAcknowledgement(ACKS.departureDate('2026-08-28')),
-    ).toMatch(/^Perfect,/);
+    ).toMatch(/^Departure is set/);
     expect(transformBaselineAcknowledgement(ACKS.adultCount(2))).toMatch(
-      /^Perfect,/,
+      /^Travelling with/,
     );
     expect(
       transformBaselineAcknowledgement(ACKS.genericTravelFieldChange),
@@ -588,7 +605,7 @@ describe('phase 16C — acknowledgement repetition and stateless rendering audit
         followUpQuestion: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
       }),
     ).toBe(
-      "Perfect, set to return on 2026-09-05. Is there anything else you'd like me to consider? What else should I know about your trip?",
+      "Return is set for 2026-09-05. Is there anything else you'd like me to consider? What else should I know about your trip?",
     );
     expect(
       renderBaselineAcknowledgementNeutralContinuation({

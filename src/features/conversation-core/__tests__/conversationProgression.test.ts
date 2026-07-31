@@ -60,7 +60,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.origin).toBe('Sydney');
     expect(result.reply).toBe(
-      'Perfect, we\'ll start from Sydney. When would you like to depart?',
+      "We'll start from Sydney. When would you like to depart?",
     );
     expect(questionCount(result.reply)).toBe(1);
   });
@@ -75,7 +75,7 @@ describe('phase 10C — deterministic conversation progression', () => {
     );
     expect(result.state.departureDate).toBe('2026-08-28');
     expect(result.reply).toBe(
-      'Perfect, set to depart on 2026-08-28. When would you like to return?',
+      'Departure is set for 2026-08-28. When would you like to return?',
     );
     expect(questionCount(result.reply)).toBe(1);
   });

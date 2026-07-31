@@ -240,3 +240,68 @@ No production files were modified in Phase 16C.
 ```text
 src/features/conversation-core/__tests__/acknowledgementRepetitionAudit.phase16C.test.ts
 ```
+
+---
+
+## Phase 16D record — refine stateless acknowledgement openers
+
+Expression-only. Production change limited to `transformBaselineAcknowledgement.ts`.
+15C / 16B / 15B consumers inherit refined acknowledgements automatically.
+
+### Stateless eligibility boundary
+
+```text
+Keyed only to the current deterministic acknowledgement string
+(and its existing catalogue/template family recognition).
+No transcript, previous reply, turn number, state, or classification.
+```
+
+### Exact transformation map (before → after)
+
+| Family | Deterministic catalogue | Phase 16C transform (historical) | Phase 16D transform |
+| --- | --- | --- | --- |
+| destination set/change | `Great — {destination}.` | `Great, {destination} it is.` | `Great, {destination} it is.` (unchanged) |
+| origin set/change | `Perfect — departing from {origin}.` | `Perfect, we'll start from {origin}.` | `We'll start from {origin}.` |
+| departure date | `Perfect — departing on {date}.` | `Perfect, set to depart on {date}.` | `Departure is set for {date}.` |
+| return date | `Perfect — returning on {date}.` | `Perfect, set to return on {date}.` | `Return is set for {date}.` |
+| adult singular/plural | `Perfect — {n} adult(s) travelling.` | `Perfect, {n} adult(s) travelling.` | `Travelling with {n} adult(s).` |
+| child singular/plural | `Perfect — {n} child/children travelling.` | `Perfect, {n} child/children travelling.` | `I've noted {n} child/children.` |
+| infant singular/plural | `Perfect — {n} infant(s) travelling.` | `Perfect, {n} infant(s) travelling.` | `I've noted {n} infant(s).` |
+
+### Unchanged transformation families
+
+```text
+field removals
+capability enabled / disabled
+generic Perfect. → Perfect, got it.
+unknown acknowledgement identity pass-through
+```
+
+### Consumer propagation
+
+```text
+15B acknowledgement-only → refined acknowledgement
+15C ack + specific follow-up → refined acknowledgement + byte-identical follow-up
+16B ack + canonical neutral → refined acknowledgement + exact bridge + byte-identical neutral
+15J / 15F / deterministic fallback → unchanged
+```
+
+### Multi-turn opener sequence
+
+Core progression `destination → origin → departure → return → adults`:
+
+| | Openers |
+| --- | --- |
+| Before (Phase 16C) | `Great,` · `Perfect,` · `Perfect,` · `Perfect,` · `Perfect,` (max consecutive = 4) |
+| After (Phase 16D) | `Great,` · `We'll start` · `Departure is set` · `Return is set` · `Travelling with` (max consecutive = 1) |
+
+### Remaining same-family repetition limitation
+
+Child and infant counts both open with `I've noted` (stateless; same template family).
+Consecutive same-family turns still cannot diversify without history.
+
+### Tests
+
+```text
+src/features/conversation-core/__tests__/statelessAcknowledgementOpeners.phase16D.test.ts
+```

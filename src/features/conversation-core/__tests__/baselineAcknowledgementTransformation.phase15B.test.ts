@@ -82,47 +82,47 @@ const ELIGIBLE_TRANSFORMATIONS: Array<{
   {
     label: 'field set/change — origin',
     acknowledgement: ACKS.origin('Sydney'),
-    transformed: "Perfect, we'll start from Sydney.",
+    transformed: "We'll start from Sydney.",
   },
   {
     label: 'field set/change — departure date',
     acknowledgement: ACKS.departureDate('2026-08-01'),
-    transformed: 'Perfect, set to depart on 2026-08-01.',
+    transformed: 'Departure is set for 2026-08-01.',
   },
   {
     label: 'field set/change — return date',
     acknowledgement: ACKS.returnDate('2026-08-10'),
-    transformed: 'Perfect, set to return on 2026-08-10.',
+    transformed: 'Return is set for 2026-08-10.',
   },
   {
     label: 'field set/change — adult singular',
     acknowledgement: ACKS.adultCount(1),
-    transformed: 'Perfect, 1 adult travelling.',
+    transformed: 'Travelling with 1 adult.',
   },
   {
     label: 'field set/change — adult plural',
     acknowledgement: ACKS.adultCount(2),
-    transformed: 'Perfect, 2 adults travelling.',
+    transformed: 'Travelling with 2 adults.',
   },
   {
     label: 'field set/change — child singular',
     acknowledgement: ACKS.childCount(1),
-    transformed: 'Perfect, 1 child travelling.',
+    transformed: "I've noted 1 child.",
   },
   {
     label: 'field set/change — child plural',
     acknowledgement: ACKS.childCount(3),
-    transformed: 'Perfect, 3 children travelling.',
+    transformed: "I've noted 3 children.",
   },
   {
     label: 'field set/change — infant singular',
     acknowledgement: ACKS.infantCount(1),
-    transformed: 'Perfect, 1 infant travelling.',
+    transformed: "I've noted 1 infant.",
   },
   {
     label: 'field set/change — infant plural',
     acknowledgement: ACKS.infantCount(2),
-    transformed: 'Perfect, 2 infants travelling.',
+    transformed: "I've noted 2 infants.",
   },
   {
     label: 'field removal — destination',

@@ -195,7 +195,7 @@ acknowledgement string is rewritten at render time.
 
 | Category | Examples (deterministic → conversational) |
 | --- | --- |
-| field set or changed | `Great — Cairns.` → `Great, Cairns it is.`; `Perfect — departing from Sydney.` → `Perfect, we'll start from Sydney.`; date / passenger count templates similarly |
+| field set or changed | `Great — Cairns.` → `Great, Cairns it is.`; origin/dates/passengers refined in Phase 16D (see Phase 16D note) |
 | field removed | `Destination removed.` → `No problem, I've removed the destination.` (and parallel removal strings) |
 | capability enabled | `I've added flights to your trip requirements.` → `Great, I've added flights to your trip.` |
 | capability disabled | `I've removed flights from your trip requirements.` → `No problem, I've removed flights from your trip.` |
@@ -1027,3 +1027,34 @@ Category bridges (byte-identical trailing canonical neutral preserved):
 
 See `docs/conversation-engine/phase16-conversational-quality-audit.md` for the
 full Phase 16B record.
+
+---
+
+## Phase 16D note — stateless acknowledgement opener refinement
+
+Phase 16D refines openers inside `transformBaselineAcknowledgement` only.
+Catalogue strings, selection, assembly, branch order, and 16B bridges are
+unchanged. Historical Phase 15 examples that showed `Perfect, we'll start…` /
+`Perfect, set to…` / `Perfect, N adults travelling.` are superseded:
+
+| Family | Current transformed acknowledgement |
+| --- | --- |
+| destination | `Great, {destination} it is.` |
+| origin | `We'll start from {origin}.` |
+| departure date | `Departure is set for {date}.` |
+| return date | `Return is set for {date}.` |
+| adult count | `Travelling with {n} adult(s).` |
+| child / infant count | `I've noted {n} child/children/infant(s).` |
+| removals / capabilities / generic | unchanged from Phase 15B |
+
+Representative production sequence after 16D:
+
+```text
+Great, Cairns it is. Where will you be travelling from?
+We'll start from Sydney. When would you like to depart?
+Departure is set for 2026-08-28. When would you like to return?
+Return is set for 2026-09-05. Is there anything else you'd like me to consider? What else should I know about your trip?
+Travelling with 2 adults. Is there anything else you'd like me to consider? What else should I know about your trip?
+```
+
+See `docs/conversation-engine/phase16-acknowledgement-repetition-audit.md`.

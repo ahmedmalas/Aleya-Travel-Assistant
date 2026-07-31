@@ -130,7 +130,7 @@ describe('phase 13H — renderBaselineConversationalLayer', () => {
       }),
     );
     expect(wording).toBe(
-      `Perfect, we'll start from Sydney. ${FOLLOW_UPS.origin}`,
+      `We'll start from Sydney. ${FOLLOW_UPS.origin}`,
     );
   });
 
