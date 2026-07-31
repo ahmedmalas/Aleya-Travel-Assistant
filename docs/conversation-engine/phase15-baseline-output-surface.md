@@ -806,3 +806,90 @@ null-coalesce to the raw canonical neutral string without the 15J lead-in.
 All currently reachable `ConversationReplyPlan` shapes are accounted for in the
 matrix above. No production behaviour was changed in Phase 15K. No ownership
 overlap or production defect was found during the audit.
+
+---
+
+## Phase 15L record — production end-to-end runtime verification
+
+Characterization only. Production wording is unchanged. Accepted tip before this
+phase: Phase 15K `f6c6021f91dcc023ae11074b49b2304ea78a2481`.
+
+### Production entry point
+
+```text
+processConversationTurn()   // sole public turn entry (exported as processTurn surface)
+→ transitionConversationStateFromExtraction()
+→ applyConversationStateUpdate()
+→ generateIntegratedConversationReply()
+→ generateConversationReply()
+→ createConversationReplyPlan() / selectConversationReplyComponents()
+→ renderIntegratedConversationReplyPlan()
+→ mode: 'baseline-conversational'
+→ generateBaselineConversationalReply()
+→ renderBaselineConversationalLayer()
+→ user-facing reply
+```
+
+Primary assertions drive `processConversationTurn` and do not manually construct
+reply plans for expected wording. Plans are inspected after the turn for
+state→classification→components→plan proofs.
+
+### Runtime scenarios covered
+
+| Journey | How reached | Owner | Representative production reply |
+| --- | --- | --- | --- |
+| destination supplied | extract `go to Cairns` | **15C** | `Great, Cairns it is. Where will you be travelling from?` |
+| origin supplied | extract `from Sydney` | **15C** | `Perfect, we'll start from Sydney. When would you like to depart?` |
+| departure date supplied | extract departure date | **15C** | `Perfect, set to depart on 2026-08-28. When would you like to return?` |
+| field removed | explicit `destination: null` | **15C** | `No problem, I've removed the destination. Where would you like to travel?` |
+| capability enabled | extract flights request | **15C** | `Great, I've added flights to your trip. How many adults will be travelling?` |
+| capability disabled | explicit `flightsRequested: false` | **15C** | `No problem, I've removed flights from your trip. What else should I know about your trip?` |
+| activities (with ack) | extract activities request | **15C** | `Great, I've added activities to your trip. What kinds of activities are you interested in?` |
+| restaurants (with ack) | extract restaurants request | **15C** | `Great, I've added restaurants to your trip. What type of dining are you looking for?` |
+| return date → ack + neutral | extract return date | **15C** | `Perfect, set to return on 2026-09-05. What else should I know about your trip?` |
+| missing destination | inert `flightsRequested: true→null` | **15F** | `Let's start with the destination. Where would you like to travel?` |
+| missing origin | same inert clear | **15F** | `Let's begin with where you're travelling from. Where will you be travelling from?` |
+| missing departure date | same inert clear | **15F** | `Now for the timing. When would you like to depart?` |
+| activities follow-up only | inert clear with activities already requested | **15F** | `Let's look at activities. What kinds of activities are you interested in?` |
+| restaurants follow-up only | inert clear with restaurants already requested | **15F** | `Now for dining. What type of dining are you looking for?` |
+| fully satisfied / uninterpreted | `thanks` on complete state | **15J** | `There's just one more thing I'd like to know. What else should I know about your trip?` |
+| unsupported input | `hello there` on empty state | **15J** | same activated neutral |
+
+### State → plan → render proof
+
+For each reachable journey above:
+
+- final authoritative travel fields match the turn intent
+- classification exposes interpreted / acknowledgement-eligible flags as expected
+- selected components match the catalogue acknowledgement and follow-up / continuation
+- assembled plan owner matches the Phase 15K matrix
+- production reply equals the owning helper (`renderBaselineAcknowledgementFollowUp`,
+  `renderBaselineFollowUpOnly`, or `renderBaselineNeutralContinuation`)
+
+### Question-preservation proof
+
+- Phase **15C**: follow-up / neutral string is a byte-identical trailing substring
+- Phase **15F**: supported follow-up question is a byte-identical trailing substring
+- Phase **15J**: canonical neutral question is a byte-identical trailing substring
+- No duplicate acknowledgement or duplicate question substrings
+- Activated replies exclude `\n`, `, Where`, `And When`, `, How`, `, What`, and
+  duplicated 15J lead-ins
+
+### Unreachable requested shapes (production assembly / selection)
+
+| Shape | Why unreachable on the production path |
+| --- | --- |
+| Phase **15B** acknowledgement-only | `assembleConversationReplyPlan` always coalesces `followUpQuestion ?? continuationPrompt`, so production plans never have `followUpQuestion === null` when an acknowledgement is present (neutral fills) |
+| Multi-acknowledgement arrays (`acks.length >= 2`) | `selectConversationAcknowledgement` emits at most one acknowledgement string |
+| Empty / uninterpreted-empty with `followUpQuestion === null` | Uninterpreted turns still receive the continuation prompt; assembled `followUpQuestion` becomes the canonical neutral string and enters **15J** |
+
+These shapes remain covered by Phase 15K plan-level characterisation; they are
+not emitted by the live selector→assembly path.
+
+### Unchanged and fallback cases
+
+- Unsupported / uninterpreted input remains safe (activated neutral, no crash)
+- Phase **14I** fallback remains available: forcing
+  `generateBaselineConversationalReply` to throw during `processConversationTurn`
+  returns `renderConversationReplyPlan(plan)` for the same assembled plan
+  (e.g. destination turn falls back to `Great — Cairns.\nWhere will you be travelling from?`)
