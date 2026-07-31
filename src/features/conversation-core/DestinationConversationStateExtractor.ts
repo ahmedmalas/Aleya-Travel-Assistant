@@ -169,6 +169,9 @@ function isBlockedDestinationMessage(message: string): boolean {
 /**
  * Phase 17B — reject repair captures that are passenger counts, dates,
  * pronouns, clauses, or non-destination tokens (not bare place names).
+ *
+ * Phase 17G: singular "child" must also be rejected so passenger-cued
+ * repairs such as "I meant 1 child" stay passenger-owned.
  */
 function isRejectedRepairDestinationCapture(value: string): boolean {
   if (/^(?:that|this|it|the|i|we|you|a|an)\b/i.test(value)) {
@@ -179,14 +182,14 @@ function isRejectedRepairDestinationCapture(value: string): boolean {
     return true;
   }
   if (
-    /\b(?:adults?|children|kids?|infants?|bab(?:y|ies)|flights?|accommodation|hotel|should|need|sure|about)\b/i.test(
+    /\b(?:adults?|child(?:ren)?|kids?|infants?|bab(?:y|ies)|flights?|accommodation|hotel|should|need|sure|about)\b/i.test(
       value,
     )
   ) {
     return true;
   }
   if (
-    /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:adults?|children|kids?|infants?|bab(?:y|ies))\b/i.test(
+    /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:adults?|child(?:ren)?|kids?|infants?|bab(?:y|ies))\b/i.test(
       value,
     )
   ) {

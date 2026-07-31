@@ -1,3 +1,4 @@
+import { extractPassengerCountRepairToken } from './passengerCountRepairExtraction';
 import type {
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
@@ -11,6 +12,10 @@ import type {
  * in the current message. Phase 8E extends clear adult-count cues only.
  * Deterministic and local — no numeric coercion helpers, child/infant
  * extraction, or currentState inspection.
+ *
+ * Phase 17G: adds Actually / contrast / change-the-adult-count-to repair
+ * families via the shared passenger repair helper. Zero and removal remain
+ * blocked; multi-passenger sentences stay out of scope.
  */
 export class AdultCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -174,6 +179,18 @@ function extractExplicitAdultCount(message: string): number | null {
   if (text.length === 0) {
     return null;
   }
+
+  // Phase 17G repair families are evaluated before the actually/not blocks.
+  const repaired = extractPassengerCountRepairToken(
+    text,
+    'adults?',
+    'adult',
+    parseAdultCountToken,
+  );
+  if (repaired !== null) {
+    return repaired;
+  }
+
   if (isBlockedAdultCountMessage(text)) {
     return null;
   }

@@ -1,3 +1,4 @@
+import { extractPassengerCountRepairToken } from './passengerCountRepairExtraction';
 import type {
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
@@ -11,6 +12,10 @@ import type {
  * in the current message. Phase 8G extends clear infant-count cues only.
  * Deterministic and local — no numeric coercion helpers, adult/child
  * extraction, or currentState inspection.
+ *
+ * Phase 17G: adds Actually / contrast / change-the-infant-count-to repair
+ * families via the shared passenger repair helper. Zero and removal remain
+ * blocked; multi-passenger sentences stay out of scope.
  */
 export class InfantCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -177,6 +182,18 @@ function extractExplicitInfantCount(message: string): number | null {
   if (text.length === 0) {
     return null;
   }
+
+  // Phase 17G repair families are evaluated before the actually/not blocks.
+  const repaired = extractPassengerCountRepairToken(
+    text,
+    'infants?',
+    'infant',
+    parseInfantCountToken,
+  );
+  if (repaired !== null) {
+    return repaired;
+  }
+
   if (isBlockedInfantCountMessage(text)) {
     return null;
   }

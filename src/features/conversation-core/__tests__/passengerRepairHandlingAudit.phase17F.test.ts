@@ -17,8 +17,10 @@ import { ACTIVATED_NEUTRAL_CONTINUATION_REPLY } from '../renderBaselineNeutralCo
 
 /**
  * Phase 17F — passenger-count repair handling characterization.
- * Documents current (including defective) behaviour only.
- * Production code is unchanged.
+ * Originally documented pre-17G defective Actually / Not / change-count-to
+ * behaviour. Phase 17G intentionally repairs those families and the
+ * destination collision on singular "child"; historical zero/removal,
+ * multi-passenger, and contextual false-positive evidence is preserved.
  */
 
 const ROOT = process.cwd();
@@ -147,7 +149,7 @@ describe('Phase 17F — passenger repair handling audit', () => {
     expect(adult).toMatch(/child\|children\|kids\?\|infant/);
   });
 
-  it('adultCount: meant / make that / change that work; Actually / Not / change-count-to fail', () => {
+  it('adultCount: meant / make that / change that work; Phase 17G Actually / Not / change-count-to succeed', () => {
     for (const message of [
       'Sorry, I meant 3 adults',
       'I meant 3 adults',
@@ -181,21 +183,25 @@ describe('Phase 17F — passenger repair handling audit', () => {
       adultCount: 1,
     });
 
-    const failed = [
+    // Phase 17G: formerly failed Actually / Not / change-count-to now succeed.
+    const repaired = [
       'Actually, 3 adults',
       'Not 2 adults, 3 adults',
       'Change the adult count to 3',
     ] as const;
-    for (const message of failed) {
+    for (const message of repaired) {
       const t = trace(message);
-      expect(t.extractedPatch, message).toEqual({});
-      expect(t.finalAdultCount, message).toBe(2);
-      expect(t.acknowledgementEvent, message).toBeNull();
-      expect(t.exactFinalReply, message).toBe(NEUTRAL);
+      expect(t.extractedPatch, message).toEqual({ adultCount: 3 });
+      expect(t.finalAdultCount, message).toBe(3);
+      expect(t.acknowledgementEvent, message).toEqual({
+        kind: 'field-changed',
+        field: 'adultCount',
+      });
+      expect(t.exactFinalReply, message).toContain('Updated to 3 adults.');
     }
   });
 
-  it('childCount: meant / make that / change that work; Actually / Not / change-count-to fail', () => {
+  it('childCount: meant / make that / change that work; Phase 17G Actually / Not / change-count-to succeed', () => {
     const working = trace('I meant 2 children');
     expect(working.childExtractor).toEqual({ childCount: 2 });
     expect(working.extractedPatch).toEqual({ childCount: 2 });
@@ -215,17 +221,22 @@ describe('Phase 17F — passenger repair handling audit', () => {
       childCount: 2,
     });
 
+    // Phase 17G: formerly failed families now succeed.
     for (const message of [
       'Actually, 2 children',
       'Not 1 child, 2 children',
       'Change the child count to 2',
     ] as const) {
-      expect(trace(message).extractedPatch, message).toEqual({});
-      expect(trace(message).exactFinalReply, message).toBe(NEUTRAL);
+      expect(trace(message).extractedPatch, message).toEqual({
+        childCount: 2,
+      });
+      expect(trace(message).exactFinalReply, message).toContain(
+        'Updated to 2 children.',
+      );
     }
   });
 
-  it('infantCount: meant / make that / change that work for value changes; Actually / Not fail', () => {
+  it('infantCount: meant / make that / change that work; Phase 17G Actually / Not / change-count-to succeed', () => {
     const change = trace('I meant 2 infants');
     expect(change.infantExtractor).toEqual({ infantCount: 2 });
     expect(change.extractedPatch).toEqual({ infantCount: 2 });
@@ -245,13 +256,17 @@ describe('Phase 17F — passenger repair handling audit', () => {
     expect(same.acknowledgementEvent).toBeNull();
     expect(same.exactFinalReply).toBe(NEUTRAL);
 
-    for (const message of [
-      'Actually, 1 infant',
-      'Not 1 infant, 2 infants',
-      'Change the infant count to 1',
-    ] as const) {
-      expect(trace(message).extractedPatch, message).toEqual({});
-    }
+    // Phase 17G: formerly failed families now succeed (equal-value Actually stays inert).
+    expect(trace('Actually, 1 infant').extractedPatch).toEqual({
+      infantCount: 1,
+    });
+    expect(trace('Actually, 1 infant').updated).toEqual([]);
+    expect(trace('Not 1 infant, 2 infants').extractedPatch).toEqual({
+      infantCount: 2,
+    });
+    expect(trace('Change the infant count to 1').extractedPatch).toEqual({
+      infantCount: 1,
+    });
   });
 
   it('null-to-value passenger repairs emit field-set acknowledgements', () => {
@@ -293,22 +308,18 @@ describe('Phase 17F — passenger repair handling audit', () => {
     expect(infant.exactFinalReply).toContain('That includes 1 infant.');
   });
 
-  it('characterizes destination collision on meant + singular child', () => {
-    // Phase 17B destination "meant" cue captures "1 child" as a destination.
+  it('Phase 17G: destination collision on meant + singular child is fixed', () => {
+    // Pre-17G: destination "meant" cue captured "1 child" as a destination.
+    // Phase 17G rejects singular child passenger phrases as destinations.
     const t = trace('I meant 1 child');
     expect(t.childExtractor).toEqual({ childCount: 1 });
-    expect(t.extractedPatch).toEqual({
-      destination: '1 child',
-      childCount: 1,
-    });
+    expect(t.extractedPatch).toEqual({ childCount: 1 });
+    expect(t.extractedPatch.destination).toBeUndefined();
     expect(t.finalChildCount).toBe(1);
-    // Equal childCount ⇒ only destination change is classified.
-    expect(t.updated).toEqual(['destination']);
-    expect(t.acknowledgementEvent).toEqual({
-      kind: 'field-changed',
-      field: 'destination',
-    });
-    expect(t.exactFinalReply).toContain('Updated — 1 child it is.');
+    // Equal childCount ⇒ no classified change; destination stays Cairns.
+    expect(t.updated).toEqual([]);
+    expect(t.acknowledgementEvent).toBeNull();
+    expect(t.exactFinalReply).toBe(NEUTRAL);
   });
 
   it('cross-field passenger sentences produce empty or blocked patches', () => {

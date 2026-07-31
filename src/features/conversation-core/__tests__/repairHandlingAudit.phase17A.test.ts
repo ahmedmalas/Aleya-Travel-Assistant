@@ -383,7 +383,7 @@ describe('Phase 17A — repair handling characterization audit', () => {
     expect(cue.final.returnDate).toBe('2026-08-20');
   });
 
-  it('field-by-field: adultCount — meant/count cues succeed; actually/not block', () => {
+  it('field-by-field: adultCount — meant/count cues succeed; Phase 17G Actually/Not succeed', () => {
     const meant = traceRepair('Sorry, I meant 3 adults');
     expect(meant.extractedPatch).toEqual({ adultCount: 3 });
     expect(meant.final.adultCount).toBe(3);
@@ -401,8 +401,16 @@ describe('Phase 17A — repair handling characterization audit', () => {
     expect(changeThat.extractedPatch).toEqual({ adultCount: 3 });
     expect(changeThat.final.adultCount).toBe(3);
 
-    expectUnchangedPopulated(traceRepair('Actually, 3 adults'));
-    expectUnchangedPopulated(traceRepair('Not 2 adults, 3 adults'));
+    // Phase 17G: Actually / contrast passenger repairs now extract.
+    const actually = traceRepair('Actually, 3 adults');
+    expect(actually.extractedPatch).toEqual({ adultCount: 3 });
+    expect(actually.final.adultCount).toBe(3);
+    expect(actually.updated).toEqual(['adultCount']);
+
+    const contrast = traceRepair('Not 2 adults, 3 adults');
+    expect(contrast.extractedPatch).toEqual({ adultCount: 3 });
+    expect(contrast.final.adultCount).toBe(3);
+    expect(contrast.updated).toEqual(['adultCount']);
 
     const nullAdults = traceRepair('Sorry, I meant 3 adults', {
       ...POPULATED,
