@@ -85,6 +85,11 @@ function fieldSetChildQuestion(transformedAck: string): string {
   return `${transformedAck} ${CONVERSATION_REPLY_CATALOGUE.followUps.childCount}`;
 }
 
+/** Phase 16B superseded expression for field set/change + infant-count follow-up. */
+function fieldSetInfantQuestion(transformedAck: string): string {
+  return `${transformedAck} ${CONVERSATION_REPLY_CATALOGUE.followUps.infantCount}`;
+}
+
 /** Phase 16B superseded expression for capability enabled + canonical neutral. */
 function capabilityEnabledNeutral(transformedAck: string): string {
   return `${transformedAck} ${BRIDGE_CAPABILITY_ENABLED} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
@@ -366,7 +371,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
       fieldSetChildQuestion('Travelling with 2 adults.'),
-      fieldSetNeutral("I've noted 1 child."),
+      fieldSetInfantQuestion("I've noted 1 child."),
       fieldSetNeutral('That includes 1 infant.'),
       fieldSetNeutral('Updated to 3 adults.'),
     ]);

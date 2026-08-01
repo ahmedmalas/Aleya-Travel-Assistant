@@ -181,7 +181,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
     ).toBe('What type of dining are you looking for?');
   });
 
-  it('selects child-count after adultCount is known for flights or accommodation', () => {
+  it('selects child then infant after adultCount is known for flights or accommodation', () => {
     expect(
       selectConversationFollowUpQuestion(
         completeCore({
@@ -201,6 +201,18 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
           accommodationRequested: true,
         }),
       ),
+    ).toBe(CONVERSATION_REPLY_CATALOGUE.followUps.infantCount);
+
+    expect(
+      selectConversationFollowUpQuestion(
+        completeCore({
+          adultCount: 2,
+          childCount: 2,
+          infantCount: 1,
+          flightsRequested: true,
+          accommodationRequested: true,
+        }),
+      ),
     ).toBe(NEUTRAL_TRIP_FALLBACK_REPLY);
 
     expect(
@@ -208,6 +220,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
         completeCore({
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           flightsRequested: true,
           accommodationRequested: true,
           restaurantsRequested: true,

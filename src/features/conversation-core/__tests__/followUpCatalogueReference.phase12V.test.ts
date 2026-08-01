@@ -98,6 +98,15 @@ const FOLLOW_UP_CASES: ReadonlyArray<{
     }),
   },
   {
+    key: 'infantCount',
+    state: completeCore({
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    }),
+  },
+  {
     key: 'activities',
     state: completeCore({ adultCount: 2, activitiesRequested: true }),
   },

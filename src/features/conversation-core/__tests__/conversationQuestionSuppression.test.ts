@@ -101,7 +101,7 @@ describe('phase 10E — deterministic question suppression', () => {
   it('falls through suppressed count questions to the next contextual question', () => {
     const toActivities = turn(
       'book flights. book a hotel. book activities',
-      completeCore({ adultCount: 2, childCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
     );
     expect(toActivities.reply).toBe(
       "Great, I've added flights, accommodation and activities to your trip. What kinds of activities are you interested in?",
@@ -111,7 +111,7 @@ describe('phase 10E — deterministic question suppression', () => {
 
     const toDining = turn(
       'book flights. find restaurants',
-      completeCore({ adultCount: 2, childCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
     );
     expect(toDining.reply).toBe(
       "Great, I've added flights and restaurants to your trip. What type of dining are you looking for?",
@@ -123,7 +123,7 @@ describe('phase 10E — deterministic question suppression', () => {
   it('returns the neutral continuation when all contextual questions are satisfied', () => {
     const result = turn(
       'book flights. book a hotel',
-      completeCore({ adultCount: 2, childCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
     );
     expect(result.reply).toBe(
       `Great, I've added flights and accommodation to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
@@ -135,12 +135,14 @@ describe('phase 10E — deterministic question suppression', () => {
         previousState: completeCore({
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           flightsRequested: true,
           accommodationRequested: true,
         }),
         state: completeCore({
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           flightsRequested: true,
           accommodationRequested: true,
           wildlifeRequested: true,
@@ -179,13 +181,13 @@ describe('phase 10E — deterministic question suppression', () => {
     const replies = [
       turn(
         'book flights. book a hotel. book activities. find restaurants',
-        completeCore({ adultCount: 2, childCount: 2 }),
+        completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
       ).reply,
       turn(
         'book flights. book activities',
-        completeCore({ adultCount: 2, childCount: 2 }),
+        completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
       ).reply,
-      turn('book flights', completeCore({ adultCount: 2, childCount: 2 })).reply,
+      turn('book flights', completeCore({ adultCount: 2, childCount: 2, infantCount: 1 })).reply,
     ];
     for (const reply of replies) {
       expect(questionCount(reply), reply).toBe(1);
@@ -209,7 +211,7 @@ describe('phase 10E — deterministic question suppression', () => {
 
     const fallThroughAfterExplicit = turn(
       'book flights. book activities',
-      completeCore({ childCount: 2 }),
+      completeCore({ childCount: 2, infantCount: 1 }),
       { adultCount: 2 },
     );
     expect(fallThroughAfterExplicit.reply).toBe(

@@ -265,7 +265,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       {
         label: 'uninterpreted → continuation coalesced to neutral',
         message: 'thanks',
-        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2 }),
+        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2, infantCount: 1 }),
         expectFollowUp: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
       },
       {
@@ -344,7 +344,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       {
         label: 'neutral',
         message: 'thanks',
-        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2 }),
+        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2, infantCount: 1 }),
       },
       { label: 'uninterpreted', message: 'hello there', previous: createState() },
       {
@@ -452,6 +452,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
       flightsRequested: true,
       adultCount: 2,
       childCount: 2,
+      infantCount: 1,
     });
     const result15J = turn('thanks', previous15J);
     const plan15J = productionPlan(previous15J, result15J).plan;
@@ -463,7 +464,7 @@ describe('phase 15M — production reachability and Phase 15 closure', () => {
   it('proves fully satisfied and uninterpreted safe states receive canonical neutral continuation', () => {
     const satisfied = turn(
       'thanks',
-      completeCore({ flightsRequested: true, adultCount: 2, childCount: 2 }),
+      completeCore({ flightsRequested: true, adultCount: 2, childCount: 2, infantCount: 1 }),
     );
     expect(satisfied.trace.messageInterpreted).toBe(false);
     expect(satisfied.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);

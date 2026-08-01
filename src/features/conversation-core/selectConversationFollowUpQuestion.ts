@@ -67,7 +67,7 @@ function hasSpecificActivityInterest(state: ConversationCoreState): boolean {
 /**
  * Phase 19F — child-count follow-up applies only when passenger counts are
  * relevant (flights or accommodation), adults are already captured, and
- * childCount is still null. Does not solicit infants (Phase 19G).
+ * childCount is still null.
  */
 function needsChildCountFollowUp(state: ConversationCoreState): boolean {
   const passengerServiceRelevant =
@@ -76,6 +76,22 @@ function needsChildCountFollowUp(state: ConversationCoreState): boolean {
     passengerServiceRelevant &&
     state.adultCount !== null &&
     state.childCount === null
+  );
+}
+
+/**
+ * Phase 19G — infant-count follow-up applies only when passenger counts are
+ * relevant (flights or accommodation), adult and child counts are already
+ * captured, and infantCount is still null.
+ */
+function needsInfantCountFollowUp(state: ConversationCoreState): boolean {
+  const passengerServiceRelevant =
+    state.flightsRequested === true || state.accommodationRequested === true;
+  return (
+    passengerServiceRelevant &&
+    state.adultCount !== null &&
+    state.childCount !== null &&
+    state.infantCount === null
   );
 }
 
@@ -93,6 +109,8 @@ function needsChildCountFollowUp(state: ConversationCoreState): boolean {
  * restaurantsRequested is true and restaurantPreference is still null.
  * Phase 19F — child-count follow-up after adult/guest count when flights or
  * accommodation is requested and childCount is still null.
+ * Phase 19G — infant-count follow-up after child count when flights or
+ * accommodation is requested and infantCount is still null.
  *
  * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
@@ -110,6 +128,10 @@ const CONTEXTUAL_QUESTIONS = [
   {
     applies: needsChildCountFollowUp,
     question: CONVERSATION_REPLY_CATALOGUE.followUps.childCount,
+  },
+  {
+    applies: needsInfantCountFollowUp,
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.infantCount,
   },
   {
     applies: (state: ConversationCoreState) =>
@@ -139,6 +161,8 @@ const CONTEXTUAL_QUESTIONS = [
  * restaurantPreference is still null.
  * Phase 19F — after adult/guest count, solicits childCount when flights or
  * accommodation is requested and childCount is still null.
+ * Phase 19G — after child count, solicits infantCount when flights or
+ * accommodation is requested and infantCount is still null.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,

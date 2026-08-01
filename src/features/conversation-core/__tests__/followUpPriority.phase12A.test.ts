@@ -244,6 +244,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
           flightsRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
         }),
       ),
     ).toBe(FOLLOW_UPS.neutralContinuation);
@@ -255,6 +256,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
           accommodationRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           activitiesRequested: true,
         }),
       ),
@@ -266,6 +268,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
           flightsRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           restaurantsRequested: true,
         }),
       ),

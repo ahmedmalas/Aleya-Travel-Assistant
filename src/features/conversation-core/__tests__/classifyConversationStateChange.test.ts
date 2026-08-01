@@ -231,7 +231,7 @@ describe('phase 10F — deterministic change classification', () => {
     expect(
       turn(
         'book flights. book a hotel. book activities',
-        completeCore({ adultCount: 2, childCount: 2 }),
+        completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
       ).reply,
     ).toBe(
       "Great, I've added flights, accommodation and activities to your trip. What kinds of activities are you interested in?",

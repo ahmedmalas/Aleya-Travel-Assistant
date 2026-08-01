@@ -194,7 +194,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
 
     const flightsWithAdults = turn(
       'book flights',
-      completeCore({ adultCount: 2, childCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2, infantCount: 1 }),
     );
     expect(flightsWithAdults.reply).toBe(
       `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
@@ -206,11 +206,13 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
         previousState: completeCore({
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           flightsRequested: true,
         }),
         state: completeCore({
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
           flightsRequested: true,
           wildlifeRequested: true,
         }),

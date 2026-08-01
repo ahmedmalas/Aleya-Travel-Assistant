@@ -271,6 +271,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(CONVERSATION_REPLY_CATALOGUE.followUps.childCount).toBe(
       'How many children will be travelling?',
     );
+    expect(CONVERSATION_REPLY_CATALOGUE.followUps.infantCount).toBe(
+      'How many infants will be travelling?',
+    );
     expect(CONVERSATION_REPLY_CATALOGUE.followUps.activities).toBe(
       'What kinds of activities are you interested in?',
     );

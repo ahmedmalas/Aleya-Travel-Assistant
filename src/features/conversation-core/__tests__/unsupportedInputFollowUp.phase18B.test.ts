@@ -237,6 +237,7 @@ describe('Phase 18B — preserve follow-up for unsupported input', () => {
       returnDate: '2026-09-04',
       adultCount: 2,
       childCount: 2,
+      infantCount: 1,
       flightsRequested: true,
     });
     expect(t.components.messageInterpreted).toBe(false);
@@ -345,6 +346,7 @@ describe('Phase 18B — preserve follow-up for unsupported input', () => {
       returnDate: '2026-09-04',
       adultCount: 2,
       childCount: 2,
+      infantCount: 1,
       flightsRequested: true,
     });
     expect(completeUnchanged.components.messageInterpreted).toBe(false);

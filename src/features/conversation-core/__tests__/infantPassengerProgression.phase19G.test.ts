@@ -13,7 +13,7 @@ import { selectConversationFollowUpQuestion } from '../selectConversationFollowU
 import { selectConversationReplyComponents } from '../selectConversationReplyComponents';
 
 /**
- * Phase 19F — child passenger progression after adult count.
+ * Phase 19G — infant passenger progression after adult and child counts.
  */
 
 const ROOT = process.cwd();
@@ -43,7 +43,7 @@ function createState(
 ): ConversationCoreState {
   return {
     ...createInitialConversationCoreState({
-      conversationId: 'conversation-19f',
+      conversationId: 'conversation-19g',
       now: new Date('2026-07-29T00:00:00.000Z'),
     }),
     status: 'active',
@@ -61,8 +61,8 @@ function turn(message: string, seed: Partial<ConversationCoreState> = {}) {
   const result = processConversationTurn({
     message,
     state: previous,
-    userEntryId: 'user-19f',
-    assistantEntryId: 'assistant-19f',
+    userEntryId: 'user-19g',
+    assistantEntryId: 'assistant-19g',
     userMessageAt: new Date('2026-07-29T00:00:00.000Z'),
     assistantMessageAt: new Date('2026-07-29T00:00:01.000Z'),
   });
@@ -90,31 +90,32 @@ function assertSingleSelectedQuestion(reply: string): void {
   ).toBeLessThanOrEqual(1);
 }
 
-describe('Phase 19F — child passenger progression', () => {
+describe('Phase 19G — infant passenger progression', () => {
   it('locks catalogue wording and selector predicate ownership', () => {
-    expect(CHILD_Q).toBe('How many children will be travelling?');
-    expect(readSrc('src/features/conversation-core/conversationReplyCatalogue.ts')).toContain(
-      "childCount: 'How many children will be travelling?'",
-    );
+    expect(INFANT_Q).toBe('How many infants will be travelling?');
+    expect(
+      readSrc('src/features/conversation-core/conversationReplyCatalogue.ts'),
+    ).toContain("infantCount: 'How many infants will be travelling?'");
 
     const selector = readSrc(
       'src/features/conversation-core/selectConversationFollowUpQuestion.ts',
     );
-    expect(selector).toContain('needsChildCountFollowUp');
-    expect(selector).toContain('followUps.childCount');
-    expect(selector).toMatch(/flightsRequested === true \|\| state\.accommodationRequested === true/);
+    expect(selector).toContain('needsInfantCountFollowUp');
+    expect(selector).toContain('followUps.infantCount');
+    expect(selector).toMatch(
+      /flightsRequested === true \|\| state\.accommodationRequested === true/,
+    );
     expect(selector).toMatch(/adultCount !== null/);
-    expect(selector).toMatch(/childCount === null/);
-    // Wording stays in the catalogue, not the selector.
-    expect(selector).not.toContain('How many children will be travelling?');
+    expect(selector).toMatch(/childCount !== null/);
+    expect(selector).toMatch(/infantCount === null/);
+    expect(selector).not.toContain('How many infants will be travelling?');
   });
 
-  it('flights before adult count → adult question, not child', () => {
+  it('flights before adult count → adult question, not child or infant', () => {
     const state = createState({
       ...COMPLETE_CORE,
       adultCount: null,
       flightsRequested: true,
-      childCount: null,
     });
     expect(selectConversationFollowUpQuestion(state)).toBe(ADULT_Q);
 
@@ -124,17 +125,16 @@ describe('Phase 19F — child passenger progression', () => {
       flightsRequested: true,
     });
     expect(t.components.followUpQuestion).toBe(ADULT_Q);
-    expect(t.reply).toContain(ADULT_Q);
     expect(t.reply).not.toContain(CHILD_Q);
+    expect(t.reply).not.toContain(INFANT_Q);
     assertSingleSelectedQuestion(t.reply);
   });
 
-  it('accommodation before adult count → guest question, not child', () => {
+  it('accommodation before adult count → guest question, not child or infant', () => {
     const state = createState({
       ...COMPLETE_CORE,
       adultCount: null,
       accommodationRequested: true,
-      childCount: null,
     });
     expect(selectConversationFollowUpQuestion(state)).toBe(GUEST_Q);
 
@@ -144,237 +144,34 @@ describe('Phase 19F — child passenger progression', () => {
       accommodationRequested: true,
     });
     expect(t.components.followUpQuestion).toBe(GUEST_Q);
-    expect(t.reply).toContain(GUEST_Q);
     expect(t.reply).not.toContain(CHILD_Q);
+    expect(t.reply).not.toContain(INFANT_Q);
     assertSingleSelectedQuestion(t.reply);
   });
 
-  it('flights after adult count → child-count question', () => {
+  it('child-before-infant priority after adults', () => {
     const state = createState({
       ...COMPLETE_CORE,
       adultCount: 2,
-      flightsRequested: true,
       childCount: null,
-    });
-    expect(selectConversationFollowUpQuestion(state)).toBe(CHILD_Q);
-
-    const t = turn('looking forward to it', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      childCount: null,
-    });
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('accommodation after adult count → child-count question', () => {
-    const state = createState({
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      accommodationRequested: true,
-      childCount: null,
-    });
-    expect(selectConversationFollowUpQuestion(state)).toBe(CHILD_Q);
-
-    const t = turn('looking forward to it', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      accommodationRequested: true,
-      childCount: null,
-    });
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('flights + accommodation after adult count → one child-count question', () => {
-    const state = createState({
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      accommodationRequested: true,
-      childCount: null,
-    });
-    expect(selectConversationFollowUpQuestion(state)).toBe(CHILD_Q);
-
-    const t = turn('looking forward to it', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      accommodationRequested: true,
-      childCount: null,
-    });
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
-    expect(t.reply).not.toContain(ADULT_Q);
-    expect(t.reply).not.toContain(GUEST_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('does not solicit childCount without flights or accommodation', () => {
-    expect(
-      selectConversationFollowUpQuestion(
-        createState({
-          ...COMPLETE_CORE,
-          adultCount: 2,
-          childCount: null,
-        }),
-      ),
-    ).toBe(NEUTRAL);
-
-    expect(
-      selectConversationFollowUpQuestion(
-        createState({
-          ...COMPLETE_CORE,
-          adultCount: 2,
-          childCount: null,
-          carHireRequested: true,
-        }),
-      ),
-    ).toBe(NEUTRAL);
-  });
-
-  it('explicit "2 children" persists, acknowledges, and suppresses child Q', () => {
-    const t = turn('2 children', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      childCount: null,
-    });
-    expect(t.extracted).toEqual({ childCount: 2 });
-    expect(t.state.childCount).toBe(2);
-    expect(t.classification.newlyPopulated).toContain('childCount');
-    expect(t.components.acknowledgement).toMatch(/child/i);
-    // Phase 19G — after child capture, infant question is next.
-    expect(t.components.followUpQuestion).toBe(INFANT_Q);
-    expect(t.reply).not.toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('repeated unchanged child count → no false acknowledgement and no re-request', () => {
-    const t = turn('2 children', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      childCount: 2,
-      infantCount: 1,
-    });
-    expect(t.extracted).toEqual({ childCount: 2 });
-    expect(t.classification.newlyPopulated).not.toContain('childCount');
-    expect(t.classification.updated).not.toContain('childCount');
-    expect(t.components.acknowledgement ?? '').not.toMatch(/child/i);
-    expect(t.components.followUpQuestion).toBe(NEUTRAL);
-    expect(t.reply).not.toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('changed child count → update acknowledgement and no re-request', () => {
-    const t = turn('3 children', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      childCount: 2,
-      infantCount: 1,
-    });
-    expect(t.state.childCount).toBe(3);
-    expect(t.classification.updated).toContain('childCount');
-    expect(t.components.acknowledgement).toMatch(/3 children/i);
-    expect(t.components.followUpQuestion).toBe(NEUTRAL);
-    expect(t.reply).not.toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('unsupported input while child count missing → child Q remains', () => {
-    const t = turn('asdf qwerty', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      flightsRequested: true,
-      childCount: null,
-    });
-    expect(t.classification.hasInterpretedChange).toBe(false);
-    expect(t.components.acknowledgement).toBeNull();
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('childCount captured + another required field missing → next genuine field', () => {
-    const t = turn('2 children', {
-      destination: 'Cairns',
-      origin: 'Sydney',
-      departureDate: '2026-08-28',
-      adultCount: 2,
-      infantCount: 1,
-      flightsRequested: true,
-      childCount: null,
-    });
-    expect(t.state.childCount).toBe(2);
-    expect(t.components.acknowledgement).toMatch(/child/i);
-    expect(t.components.followUpQuestion).toBe(RETURN_Q);
-    expect(t.reply).toContain(RETURN_Q);
-    expect(t.reply).not.toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('childCount captured + otherwise complete trip → infant question then terminal after infants', () => {
-    const t = turn('1 child', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      accommodationRequested: true,
-      childCount: null,
-    });
-    expect(t.state.childCount).toBe(1);
-    // Phase 19G — child completion selects infant question when still open.
-    expect(t.components.followUpQuestion).toBe(INFANT_Q);
-    expect(t.reply).toContain(INFANT_Q);
-    expect(t.reply).not.toContain(CHILD_Q);
-    assertSingleSelectedQuestion(t.reply);
-
-    const afterInfant = turn('1 infant', {
-      ...COMPLETE_CORE,
-      adultCount: 2,
-      childCount: 1,
       infantCount: null,
-      accommodationRequested: true,
+      flightsRequested: true,
     });
-    expect(afterInfant.state.infantCount).toBe(1);
-    expect(afterInfant.components.followUpQuestion).toBe(NEUTRAL);
-    expect(afterInfant.reply).toContain(NEUTRAL);
-  });
+    expect(selectConversationFollowUpQuestion(state)).toBe(CHILD_Q);
 
-  it('zero-child boundary: "0 children" remains unsupported and re-asks child Q', () => {
-    const t = turn('0 children', {
+    const t = turn('looking forward to it', {
       ...COMPLETE_CORE,
       adultCount: 2,
-      flightsRequested: true,
       childCount: null,
+      infantCount: null,
+      flightsRequested: true,
     });
-    expect(t.extracted).toEqual({});
-    expect(t.state.childCount).toBeNull();
-    expect(t.classification.hasInterpretedChange).toBe(false);
-    expect(t.components.acknowledgement).toBeNull();
     expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
+    expect(t.reply).not.toContain(INFANT_Q);
     assertSingleSelectedQuestion(t.reply);
   });
 
-  it('answering adults advances to child question, not neutral', () => {
-    const t = turn('2 adults', {
-      ...COMPLETE_CORE,
-      adultCount: null,
-      flightsRequested: true,
-      childCount: null,
-    });
-    expect(t.state.adultCount).toBe(2);
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
-    expect(t.reply).not.toContain(ADULT_Q);
-    assertSingleSelectedQuestion(t.reply);
-  });
-
-  it('infant count is solicited after child capture (Phase 19G)', () => {
+  it('flights after adult and child counts → infant-count question', () => {
     const state = createState({
       ...COMPLETE_CORE,
       adultCount: 2,
@@ -383,5 +180,236 @@ describe('Phase 19F — child passenger progression', () => {
       flightsRequested: true,
     });
     expect(selectConversationFollowUpQuestion(state)).toBe(INFANT_Q);
+
+    const t = turn('looking forward to it', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('accommodation after adult and child counts → infant-count question', () => {
+    const state = createState({
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 1,
+      infantCount: null,
+      accommodationRequested: true,
+    });
+    expect(selectConversationFollowUpQuestion(state)).toBe(INFANT_Q);
+
+    const t = turn('looking forward to it', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 1,
+      infantCount: null,
+      accommodationRequested: true,
+    });
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('flights + accommodation after adult and child → one infant-count question', () => {
+    const state = createState({
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+      accommodationRequested: true,
+    });
+    expect(selectConversationFollowUpQuestion(state)).toBe(INFANT_Q);
+
+    const t = turn('looking forward to it', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+      accommodationRequested: true,
+    });
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    expect(t.reply).not.toContain(ADULT_Q);
+    expect(t.reply).not.toContain(GUEST_Q);
+    expect(t.reply).not.toContain(CHILD_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('does not solicit infantCount without flights or accommodation', () => {
+    expect(
+      selectConversationFollowUpQuestion(
+        createState({
+          ...COMPLETE_CORE,
+          adultCount: 2,
+          childCount: 2,
+          infantCount: null,
+        }),
+      ),
+    ).toBe(NEUTRAL);
+
+    expect(
+      selectConversationFollowUpQuestion(
+        createState({
+          ...COMPLETE_CORE,
+          adultCount: 2,
+          childCount: 2,
+          infantCount: null,
+          carHireRequested: true,
+        }),
+      ),
+    ).toBe(NEUTRAL);
+  });
+
+  it('explicit "1 infant" persists with singular acknowledgement and suppresses infant Q', () => {
+    const t = turn('1 infant', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.extracted).toEqual({ infantCount: 1 });
+    expect(t.state.infantCount).toBe(1);
+    expect(t.classification.newlyPopulated).toContain('infantCount');
+    expect(t.components.acknowledgement).toMatch(/1 infant/i);
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('explicit "2 infants" persists with plural acknowledgement and suppresses infant Q', () => {
+    const t = turn('2 infants', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      accommodationRequested: true,
+    });
+    expect(t.extracted).toEqual({ infantCount: 2 });
+    expect(t.state.infantCount).toBe(2);
+    expect(t.components.acknowledgement).toMatch(/2 infants/i);
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('repeated unchanged infant count → no false acknowledgement and no re-request', () => {
+    const t = turn('1 infant', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: 1,
+      flightsRequested: true,
+    });
+    expect(t.extracted).toEqual({ infantCount: 1 });
+    expect(t.classification.newlyPopulated).not.toContain('infantCount');
+    expect(t.classification.updated).not.toContain('infantCount');
+    expect(t.components.acknowledgement ?? '').not.toMatch(/infant/i);
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('changed infant count → update acknowledgement and no re-request', () => {
+    const t = turn('2 infants', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: 1,
+      flightsRequested: true,
+    });
+    expect(t.state.infantCount).toBe(2);
+    expect(t.classification.updated).toContain('infantCount');
+    expect(t.components.acknowledgement).toMatch(/2 infants/i);
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('unsupported input while infant count missing → infant Q remains', () => {
+    const t = turn('asdf qwerty', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.classification.hasInterpretedChange).toBe(false);
+    expect(t.components.acknowledgement).toBeNull();
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('infantCount captured + another required field missing → next genuine field', () => {
+    const t = turn('1 infant', {
+      destination: 'Cairns',
+      origin: 'Sydney',
+      departureDate: '2026-08-28',
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.state.infantCount).toBe(1);
+    expect(t.components.acknowledgement).toMatch(/infant/i);
+    expect(t.components.followUpQuestion).toBe(RETURN_Q);
+    expect(t.reply).toContain(RETURN_Q);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('infantCount captured + otherwise complete trip → terminal continuation', () => {
+    const t = turn('1 infant', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 1,
+      infantCount: null,
+      accommodationRequested: true,
+    });
+    expect(t.state.infantCount).toBe(1);
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).toContain(NEUTRAL);
+    expect(t.reply).not.toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('zero-infant boundary: "0 infants" remains unsupported and re-asks infant Q', () => {
+    const t = turn('0 infants', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.extracted).toEqual({});
+    expect(t.state.infantCount).toBeNull();
+    expect(t.classification.hasInterpretedChange).toBe(false);
+    expect(t.components.acknowledgement).toBeNull();
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    assertSingleSelectedQuestion(t.reply);
+  });
+
+  it('answering children advances to infant question, not neutral', () => {
+    const t = turn('2 children', {
+      ...COMPLETE_CORE,
+      adultCount: 2,
+      childCount: null,
+      infantCount: null,
+      flightsRequested: true,
+    });
+    expect(t.state.childCount).toBe(2);
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
+    expect(t.reply).not.toContain(CHILD_Q);
+    assertSingleSelectedQuestion(t.reply);
   });
 });

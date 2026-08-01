@@ -217,6 +217,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
       flightsRequested: true,
       adultCount: 2,
       childCount: 2,
+      infantCount: 1,
     });
     expect(continuation.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
     expect(continuation.reply.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(
@@ -280,6 +281,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
           flightsRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
         }),
         state: createState({
           destination: 'Brisbane',
@@ -289,6 +291,7 @@ describe('phase 14E — integrated reply plan runtime', () => {
           flightsRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
         }),
       },
     ];

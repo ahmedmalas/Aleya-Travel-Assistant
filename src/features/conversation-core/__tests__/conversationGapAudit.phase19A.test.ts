@@ -26,6 +26,7 @@ const NEUTRAL = FOLLOW_UPS.neutralContinuation;
 const ADULT_Q = FOLLOW_UPS.flightsAdultCount;
 const GUEST_Q = FOLLOW_UPS.accommodationGuestCount;
 const CHILD_Q = FOLLOW_UPS.childCount;
+const INFANT_Q = FOLLOW_UPS.infantCount;
 const ORIGIN_Q = FOLLOW_UPS.origin;
 
 const COMPLETE_CORE = {
@@ -240,17 +241,16 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(selectConversationFollowUpQuestion(accommodation)).toBe(GUEST_Q);
   });
 
-  it('characterizes childCount solicited after adults; infant still never solicited', () => {
+  it('characterizes child then infant solicitation after adults (Phase 19F/19G)', () => {
     const followUps = FOLLOW_UPS as Record<string, string>;
-    // Phase 19F — childCount follow-up exists; infant remains unsolicited.
     expect(Object.keys(followUps)).toContain('childCount');
-    expect(Object.keys(followUps)).not.toContain('infantCount');
+    expect(Object.keys(followUps)).toContain('infantCount');
 
     const selector = readSrc(
       'src/features/conversation-core/selectConversationFollowUpQuestion.ts',
     );
     expect(selector).toMatch(/childCount/);
-    expect(selector).not.toMatch(/infantCount/);
+    expect(selector).toMatch(/infantCount/);
 
     const needsChild = createState({
       ...COMPLETE_CORE,
@@ -261,14 +261,23 @@ describe('Phase 19A — conversation flow gap audit', () => {
     });
     expect(selectConversationFollowUpQuestion(needsChild)).toBe(CHILD_Q);
 
-    const afterChild = createState({
+    const needsInfant = createState({
       ...COMPLETE_CORE,
       flightsRequested: true,
       adultCount: 2,
       childCount: 2,
       infantCount: null,
     });
-    expect(selectConversationFollowUpQuestion(afterChild)).toBe(NEUTRAL);
+    expect(selectConversationFollowUpQuestion(needsInfant)).toBe(INFANT_Q);
+
+    const afterInfant = createState({
+      ...COMPLETE_CORE,
+      flightsRequested: true,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: 1,
+    });
+    expect(selectConversationFollowUpQuestion(afterInfant)).toBe(NEUTRAL);
   });
 
   it('characterizes volunteering children while adult count remains open', () => {

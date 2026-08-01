@@ -70,6 +70,7 @@ const COMPLETE_CORE = {
   returnDate: '2026-09-01',
   adultCount: 2,
   childCount: 2,
+  infantCount: 1,
 } as const;
 
 function createState(

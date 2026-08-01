@@ -226,6 +226,7 @@ describe('phase 12I — flights adult-count follow-up characterisation', () => {
           flightsRequested: true,
           adultCount: 2,
           childCount: 2,
+          infantCount: 1,
         }),
       ),
     ).toBe(FOLLOW_UPS.neutralContinuation);
