@@ -456,12 +456,13 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added restaurants to your trip. What type of dining are you looking for?",
-      // Phase 18F: seafood preference persisted; dining follow-up suppressed.
-      "Perfect, got it. Is there anything else you'd like me to consider? What else should I know about your trip?",
+      // Phase 18F + 19E: seafood preference persisted with dedicated acknowledgement;
+      // dining follow-up suppressed.
+      'Great — seafood. What else should I know about your trip?',
     ]);
     expect(turns[5]!.final.restaurantsRequested).toBe(true);
     expect(turns[5]!.final.restaurantPreference).toBe('seafood');
-    expect(turns[5]!.owner).toBe('16B');
+    expect(turns[5]!.followUp).toBe(FOLLOW_UPS.neutralContinuation);
   });
 
   it('characterises unsupported message mid-journey', () => {

@@ -766,7 +766,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
     );
     expect(hiking[1]!.reply).not.toContain(FOLLOW_UPS.activities);
 
-    // Phase 18F: seafood preference persisted; dining follow-up suppressed (16B).
+    // Phase 18F + 19E: seafood preference persisted with dedicated acknowledgement;
+    // dining follow-up suppressed.
     const seafood = runJourney(
       [{ message: 'looking for seafood' }],
       {
@@ -778,9 +779,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
         restaurantsRequested: true,
       },
     );
-    expect(seafood[0]!.reply).not.toMatch(/seafood/i);
+    expect(seafood[0]!.reply).toContain('Great — seafood.');
     expect(seafood[0]!.restaurantsRequested).toBe(true);
-    expect(seafood[0]!.owner).toBe('16B');
     expect(seafood[0]!.followUpOrContinuation).toBe(FOLLOW_UPS.neutralContinuation);
 
     // Phase 17I: origin capture is clean; departureDate is still missed on

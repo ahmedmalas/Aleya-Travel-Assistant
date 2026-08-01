@@ -309,11 +309,11 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(adults.components.followUpQuestion).toBe(NEUTRAL);
   });
 
-  it('characterizes restaurantPreference acknowledgement as generic-only', () => {
+  it('characterizes restaurantPreference acknowledgement as dedicated (Phase 19E)', () => {
     const ackSource = readSrc(
       'src/features/conversation-core/selectConversationAcknowledgement.ts',
     );
-    expect(ackSource).not.toMatch(/restaurantPreference/);
+    expect(ackSource).toMatch(/restaurantPreference/);
 
     const t = turn('looking for seafood', {
       ...COMPLETE_CORE,
@@ -322,6 +322,11 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(t.state.restaurantPreference).toBe('seafood');
     expect(t.components.followUpQuestion).toBe(NEUTRAL);
     expect(t.components.acknowledgement).toBe(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.restaurantPreference(
+        'seafood',
+      ),
+    );
+    expect(t.components.acknowledgement).not.toBe(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
     );
     expect(t.reply).not.toContain(RESTAURANTS_Q);

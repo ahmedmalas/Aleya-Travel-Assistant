@@ -15,7 +15,8 @@ export type AcknowledgementTravelField =
   | 'returnDate'
   | 'adultCount'
   | 'childCount'
-  | 'infantCount';
+  | 'infantCount'
+  | 'restaurantPreference';
 
 /**
  * Semantic event for the single selected acknowledgement of a turn.

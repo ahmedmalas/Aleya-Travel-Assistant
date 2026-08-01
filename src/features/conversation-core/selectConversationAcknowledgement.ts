@@ -137,6 +137,13 @@ const CAPABILITY_LABELS = [
  * child count set or changed → child count removed →
  * infant count set or changed → infant count removed →
  * other travel-field change → null when unchanged.
+ * Phase 19E — restaurant-preference acknowledgement inserted after infant
+ * count and before the generic travel-field fallback:
+ * newly enabled capabilities → newly disabled capabilities →
+ * destination → origin → departure date → return date →
+ * adult count → child count → infant count →
+ * restaurant preference set or changed →
+ * other travel-field change → null when unchanged.
  * Phase 16I — returns catalogue text paired with acknowledgementEvent from
  * the same priority decision. newlyPopulated → field-set; non-null update →
  * field-changed; stored→null → field-removed. Wording unchanged.
@@ -326,6 +333,17 @@ export function selectConversationAcknowledgement(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCountRemoved,
       { kind: 'field-removed', field: 'infantCount' },
     );
+  }
+
+  // Phase 19E — restaurant preference set/changed before generic Perfect.
+  const restaurantPreferenceSetOrChanged = selectFieldSetOrChanged(
+    state,
+    classification,
+    'restaurantPreference',
+    CONVERSATION_REPLY_CATALOGUE.acknowledgements.restaurantPreference,
+  );
+  if (restaurantPreferenceSetOrChanged !== null) {
+    return restaurantPreferenceSetOrChanged;
   }
 
   if (classification.hasAcknowledgementEligibleChange) {

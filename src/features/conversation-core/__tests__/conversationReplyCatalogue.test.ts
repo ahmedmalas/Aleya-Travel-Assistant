@@ -125,6 +125,9 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(catalogueSource).toContain(
       "I've removed ${labelList} from your trip requirements.",
     );
+    expect(catalogueSource).toContain(
+      'Great — ${restaurantPreference}.',
+    );
     expect(catalogueSource).toContain("genericTravelFieldChange: 'Perfect.'");
     expect(catalogueSource).not.toContain(
       "genericTravelFieldChange: 'Got it.'",
@@ -236,6 +239,11 @@ describe('phase 10K — deterministic travel-consultant reply catalogue', () => 
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.infantCount(3),
     ).toBe('Perfect — 3 infants travelling.');
+    expect(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.restaurantPreference(
+        'seafood',
+      ),
+    ).toBe('Great — seafood.');
     expect(
       CONVERSATION_REPLY_CATALOGUE.acknowledgements.genericTravelFieldChange,
     ).toBe('Perfect.');

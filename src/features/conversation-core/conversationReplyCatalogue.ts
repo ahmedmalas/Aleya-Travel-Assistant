@@ -42,6 +42,8 @@
  * "Child count removed."
  * Phase 11P — infant-count removal acknowledgement:
  * "Infant count removed."
+ * Phase 19E — restaurant-preference acknowledgement:
+ * "Great — {restaurantPreference}."
  */
 export const CONVERSATION_REPLY_CATALOGUE = {
   acknowledgements: {
@@ -74,6 +76,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
         ? `Perfect — ${infantCount} infant travelling.`
         : `Perfect — ${infantCount} infants travelling.`,
     infantCountRemoved: 'Infant count removed.',
+    restaurantPreference: (restaurantPreference: string) =>
+      `Great — ${restaurantPreference}.`,
     genericTravelFieldChange: 'Perfect.',
   },
   followUps: {

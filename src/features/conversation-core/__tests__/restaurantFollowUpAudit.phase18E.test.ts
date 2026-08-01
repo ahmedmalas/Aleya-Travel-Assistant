@@ -257,7 +257,8 @@ describe('Phase 18E — restaurant follow-up completion audit', () => {
       expect(t.messageInterpreted, message).toBe(true);
       expect(t.followUpQuestion, message).toBe(NEUTRAL);
       expect(t.exactFinalReply, message).not.toContain(RESTAURANTS_Q);
-      expect(t.exactFinalReply, message).not.toMatch(/seafood/i);
+      // Phase 19E — dedicated preference acknowledgement includes the value.
+      expect(t.exactFinalReply, message).toContain('Great — seafood.');
     }
   });
 

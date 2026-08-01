@@ -8,6 +8,8 @@ import type {
  * Phase 16D — refine cross-field acknowledgement openers (stateless).
  * Phase 16F — distinguish infant opener from child (`That includes`).
  * Phase 16J — event-aware set-versus-changed wording from acknowledgementEvent.
+ * Phase 19E — restaurant-preference set keeps catalogue wording; changed uses
+ * "Great — {preference} instead." Distinguished from destination via event.
  *
  * Pure, deterministic mapping from a completed-plan acknowledgement string
  * (plus optional acknowledgementEvent) to a restrained conversational variant.
@@ -83,12 +85,25 @@ export function transformBaselineAcknowledgement(
     return exact;
   }
 
-  const destination = extractBetween(acknowledgement, 'Great — ', '.');
-  if (destination !== null) {
-    if (isFieldChanged(acknowledgementEvent, 'destination')) {
-      return `Updated — ${destination} it is.`;
+  const greatPrefixed = extractBetween(acknowledgement, 'Great — ', '.');
+  if (greatPrefixed !== null) {
+    // Phase 19E — same catalogue shape as destination; event field owns the
+    // restaurant-preference branch so destination transforms do not steal it.
+    if (
+      acknowledgementEvent !== null &&
+      (acknowledgementEvent.kind === 'field-set' ||
+        acknowledgementEvent.kind === 'field-changed') &&
+      acknowledgementEvent.field === 'restaurantPreference'
+    ) {
+      if (acknowledgementEvent.kind === 'field-changed') {
+        return `Great — ${greatPrefixed} instead.`;
+      }
+      return acknowledgement;
     }
-    return `Great, ${destination} it is.`;
+    if (isFieldChanged(acknowledgementEvent, 'destination')) {
+      return `Updated — ${greatPrefixed} it is.`;
+    }
+    return `Great, ${greatPrefixed} it is.`;
   }
 
   const origin = extractBetween(
