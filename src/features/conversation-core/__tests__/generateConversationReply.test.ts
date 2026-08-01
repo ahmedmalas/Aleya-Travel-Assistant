@@ -26,6 +26,7 @@ import { ToursRequestedConversationStateExtractor } from '../extractors/ToursReq
 import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
 import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
 import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
+import { MultiPassengerCountConversationStateExtractor } from '../MultiPassengerCountConversationStateExtractor';
 import { ExplicitGuestCountConversationStateExtractor } from '../ExplicitGuestCountConversationStateExtractor';
 import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
 
@@ -275,36 +276,36 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
         extractors: readonly unknown[];
       }
     ).extractors;
-    expect(extractors).toHaveLength(37);
+    expect(extractors).toHaveLength(38);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
-    expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
-    expect(extractors[27]).toBeInstanceOf(
+    expect(extractors[8]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(extractors[28]).toBeInstanceOf(
+    expect(extractors[29]).toBeInstanceOf(
       NightlifeRequestedConversationStateExtractor,
     );
-    expect(extractors[29]).toBeInstanceOf(
+    expect(extractors[30]).toBeInstanceOf(
       ShoppingRequestedConversationStateExtractor,
     );
-    expect(extractors[30]).toBeInstanceOf(
+    expect(extractors[31]).toBeInstanceOf(
       WellnessRequestedConversationStateExtractor,
     );
-    expect(extractors[31]).toBeInstanceOf(
+    expect(extractors[32]).toBeInstanceOf(
       ToursRequestedConversationStateExtractor,
     );
-    expect(extractors[32]).toBeInstanceOf(
+    expect(extractors[33]).toBeInstanceOf(
       FamilyActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[33]).toBeInstanceOf(
+    expect(extractors[34]).toBeInstanceOf(
       AccessibleTravelRequestedConversationStateExtractor,
     );
-    expect(extractors[34]).toBeInstanceOf(
+    expect(extractors[35]).toBeInstanceOf(
       BareNumberPassengerCountConversationStateExtractor,
     );
-    expect(extractors[35]).toBeInstanceOf(
+    expect(extractors[36]).toBeInstanceOf(
       ExplicitGuestCountConversationStateExtractor,
     );
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 });

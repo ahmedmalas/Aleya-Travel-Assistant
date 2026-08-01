@@ -16,6 +16,7 @@ import { FlightsRequestedConversationStateExtractor } from './FlightsRequestedCo
 import { FourWheelDrivingRequestedConversationStateExtractor } from './FourWheelDrivingRequestedConversationStateExtractor';
 import { InfantCountConversationStateExtractor } from './InfantCountConversationStateExtractor';
 import { KayakingRequestedConversationStateExtractor } from './KayakingRequestedConversationStateExtractor';
+import { MultiPassengerCountConversationStateExtractor } from './MultiPassengerCountConversationStateExtractor';
 import { NearbyDiscoveryRequestedConversationStateExtractor } from './NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
 import { RestaurantPreferenceConversationStateExtractor } from './RestaurantPreferenceConversationStateExtractor';
@@ -46,6 +47,7 @@ import type { ConversationStateExtractor } from './types';
  * OriginConversationStateExtractor, then a new
  * DepartureDateConversationStateExtractor, then a new
  * ReturnDateConversationStateExtractor, then a new
+ * MultiPassengerCountConversationStateExtractor, then a new
  * AdultCountConversationStateExtractor, then a new
  * ChildCountConversationStateExtractor, then a new
  * InfantCountConversationStateExtractor, then a new
@@ -87,6 +89,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new OriginConversationStateExtractor(),
     new DepartureDateConversationStateExtractor(),
     new ReturnDateConversationStateExtractor(),
+    new MultiPassengerCountConversationStateExtractor(),
     new AdultCountConversationStateExtractor(),
     new ChildCountConversationStateExtractor(),
     new InfantCountConversationStateExtractor(),

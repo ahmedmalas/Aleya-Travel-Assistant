@@ -635,20 +635,20 @@ describe('phase 8J — CarHireRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
+    expect(extractors).toHaveLength(38);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
     expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
-    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
-    expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
-    expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
-    expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
-    expect(extractors[8]).toBeInstanceOf(
+    expect(extractors[5]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[6]).toBeInstanceOf(ChildCountConversationStateExtractor);
+    expect(extractors[7]).toBeInstanceOf(InfantCountConversationStateExtractor);
+    expect(extractors[8]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
+    expect(extractors[9]).toBeInstanceOf(
       AccommodationRequestedConversationStateExtractor,
     );
-    expect(extractors[9]).toBeInstanceOf(CarHireRequestedConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[10]).toBeInstanceOf(CarHireRequestedConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -676,7 +676,7 @@ describe('phase 8J — CarHireRequestedConversationStateExtractor activation', (
       },
     });
 
-    for (let index = 10; index < extractors.length; index += 1) {
+    for (let index = 11; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: carHireActiveMessage,
@@ -687,19 +687,19 @@ describe('phase 8J — CarHireRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[9]?.extract({
+      extractors[10]?.extract({
         message: carHireActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { carHireRequested: true } });
     expect(
-      extractors[8]?.extract({
+      extractors[9]?.extract({
         message: carHireActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { accommodationRequested: true } });
     expect(
-      extractors[7]?.extract({
+      extractors[8]?.extract({
         message: carHireActiveMessage,
         currentState,
       }),
@@ -707,13 +707,13 @@ describe('phase 8J — CarHireRequestedConversationStateExtractor activation', (
 
     const accommodationOnlyMessage = 'book a hotel';
     expect(
-      extractors[8]?.extract({
+      extractors[9]?.extract({
         message: accommodationOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { accommodationRequested: true } });
     expect(
-      extractors[9]?.extract({
+      extractors[10]?.extract({
         message: accommodationOnlyMessage,
         currentState,
       }),

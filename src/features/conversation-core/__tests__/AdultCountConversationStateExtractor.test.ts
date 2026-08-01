@@ -515,13 +515,13 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
+    expect(extractors).toHaveLength(38);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
     expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
-    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[5]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -545,7 +545,8 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
       },
     });
 
-    for (let index = 5; index < extractors.length; index += 1) {
+    // Later than AdultCount (index 5) must stay inactive for the adult cue.
+    for (let index = 6; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: fiveActiveMessage,
@@ -584,6 +585,12 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
         message: fiveActiveMessage,
         currentState,
       }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[5]?.extract({
+        message: fiveActiveMessage,
+        currentState,
+      }),
     ).toEqual({ stateUpdate: { adultCount: 2 } });
 
     const returnActiveMessage = 'Return on 31 August 2026';
@@ -594,12 +601,13 @@ describe('phase 8E — AdultCountConversationStateExtractor activation', () => {
       }),
     ).toEqual({ stateUpdate: { returnDate: '2026-08-31' } });
     expect(
-      extractors[4]?.extract({
+      extractors[5]?.extract({
         message: returnActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
+    // AdultCount and later must stay inactive for a return-date-only cue.
     for (let index = 5; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({

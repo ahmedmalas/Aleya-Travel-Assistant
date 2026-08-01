@@ -845,16 +845,16 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors).toHaveLength(38);
+    expect(extractors[21]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(
+    expect(extractors[22]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[24]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -913,13 +913,13 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
       },
     });
     expect(
-      extractors[10]?.extract({
+      extractors[11]?.extract({
         message: 'book activities',
         currentState,
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 24; index < extractors.length; index += 1) {
+    for (let index = 25; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: divingActiveMessage,
@@ -930,25 +930,25 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
     }
 
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: divingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: divingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: divingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: divingActiveMessage,
         currentState,
       }),
@@ -956,19 +956,19 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
 
     const fishingOnlyMessage = 'fishing options';
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: fishingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: fishingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 24; index < extractors.length; index += 1) {
+    for (let index = 25; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: fishingOnlyMessage,
@@ -980,11 +980,17 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
 
     const divingOnlyMessage = 'diving options';
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: divingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
+    expect(
+      extractors[23]?.extract({
+        message: divingOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractors[22]?.extract({
         message: divingOnlyMessage,
@@ -993,12 +999,6 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
     ).toEqual({ stateUpdate: {} });
     expect(
       extractors[21]?.extract({
-        message: divingOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractors[20]?.extract({
         message: divingOnlyMessage,
         currentState,
       }),

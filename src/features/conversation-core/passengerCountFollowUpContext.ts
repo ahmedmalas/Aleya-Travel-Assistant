@@ -8,7 +8,18 @@ export type PassengerCountField = 'adultCount' | 'childCount' | 'infantCount';
  * Phase 19J: keeps BareNumber (19I) and ExplicitGuest active-question gates
  * aligned with selectConversationFollowUpQuestion passenger priority:
  * flights adult → accommodation guest (adultCount) → child → infant.
+ * Phase 19K: multi-passenger extraction is service-gated via
+ * isPassengerServiceRelevant (flights or accommodation).
  */
+
+/** True when passenger composition is relevant (Phase 19H service gate). */
+export function isPassengerServiceRelevant(
+  state: ConversationCoreState,
+): boolean {
+  return (
+    state.flightsRequested === true || state.accommodationRequested === true
+  );
+}
 
 export function hasCompleteCoreTravelFields(
   state: ConversationCoreState,

@@ -142,7 +142,6 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       ['for three infants', 3],
       ['infant count is 2', 2],
       ['infant count is ten', 10],
-      ['2 adults, 1 child and 1 infant', 1],
       ['flights for 2 infants', 2],
       ['Sydney to Brisbane for one infant', 1],
       // Phase 17G passenger repair families
@@ -165,7 +164,7 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
     }
   });
 
-  it('extracts only infantCount from mixed adult, child and infant wording', () => {
+  it('defers mixed multi-passenger wording to multi-passenger ownership (Phase 19K)', () => {
     const extractor = new InfantCountConversationStateExtractor();
     expect(
       extractor.extract({
@@ -176,7 +175,7 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
           childCount: null,
         }),
       }),
-    ).toEqual({ stateUpdate: { infantCount: 1 } });
+    ).toEqual({ stateUpdate: {} });
   });
 
   it('replaces an existing infantCount when a new explicit count is stated', () => {
@@ -429,7 +428,7 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
         message: '2 adults, 1 child and 1 infant',
         currentState: createState(),
       }),
-    ).toEqual({ stateUpdate: { childCount: 1 } });
+    ).toEqual({ stateUpdate: {} });
   });
 
   it('applies extracted infantCount through the live processor with trusted explicit precedence', () => {
@@ -518,6 +517,7 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
         adultCount: null,
         childCount: null,
         infantCount: null,
+        flightsRequested: true,
       }),
       userEntryId: 'user-8g-h',
       assistantEntryId: 'assistant-8g-h',
@@ -557,9 +557,10 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
     expect(independentOverride.state.infantCount).toBe(2);
     expect(independentOverride.state.origin).toBe('Perth');
     expect(independentOverride.state.destination).toBe('Hobart');
+    // Phase 19K — combined sentence updates all three counts under flights context.
     expect(mixed.state.infantCount).toBe(1);
     expect(mixed.state.childCount).toBe(1);
-    expect(mixed.state.adultCount).toBeNull();
+    expect(mixed.state.adultCount).toBe(2);
     expect(adultOnlyPreserved.state.infantCount).toBe(1);
     expect(childOnlyPreserved.state.infantCount).toBe(1);
     expect(extracted.reply).toBe(extracted.state.transcript.at(-1)?.message);
@@ -578,15 +579,15 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
+    expect(extractors).toHaveLength(38);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
     expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
-    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
-    expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
-    expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[5]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[6]).toBeInstanceOf(ChildCountConversationStateExtractor);
+    expect(extractors[7]).toBeInstanceOf(InfantCountConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -612,7 +613,8 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       },
     });
 
-    for (let index = 7; index < extractors.length; index += 1) {
+    // Later than InfantCount (index 7) must stay inactive for the infant cue.
+    for (let index = 8; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: infantActiveMessage,
@@ -663,23 +665,30 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
         message: infantActiveMessage,
         currentState,
       }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[7]?.extract({
+        message: infantActiveMessage,
+        currentState,
+      }),
     ).toEqual({ stateUpdate: { infantCount: 1 } });
 
     const childActiveMessage = '2 children';
-    expect(
-      extractors[5]?.extract({
-        message: childActiveMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: { childCount: 2 } });
     expect(
       extractors[6]?.extract({
         message: childActiveMessage,
         currentState,
       }),
+    ).toEqual({ stateUpdate: { childCount: 2 } });
+    expect(
+      extractors[7]?.extract({
+        message: childActiveMessage,
+        currentState,
+      }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 7; index < extractors.length; index += 1) {
+    // Later than InfantCount must stay inactive for a child-only cue.
+    for (let index = 8; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: childActiveMessage,
@@ -691,22 +700,36 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
 
     const mixedMessage = '2 adults, 1 child and 1 infant';
     expect(
-      extractors[4]?.extract({
+      extractors[5]?.extract({
         message: mixedMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractors[5]?.extract({
-        message: mixedMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: { childCount: 1 } });
-    expect(
       extractors[6]?.extract({
         message: mixedMessage,
         currentState,
       }),
-    ).toEqual({ stateUpdate: { infantCount: 1 } });
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[7]?.extract({
+        message: mixedMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[4]?.extract({
+        message: mixedMessage,
+        currentState: createState({
+          ...currentState,
+          flightsRequested: true,
+          adultCount: null,
+          childCount: null,
+          infantCount: null,
+        }),
+      }),
+    ).toEqual({
+      stateUpdate: { adultCount: 2, childCount: 1, infantCount: 1 },
+    });
   });
 });

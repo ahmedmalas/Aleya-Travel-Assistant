@@ -111,6 +111,18 @@ function isBlockedInfantCountMessage(message: string): boolean {
   if (/\bhow\s+many\b/i.test(message)) {
     return true;
   }
+  // Phase 19K — combined multi-passenger sentences are owned exclusively by
+  // MultiPassengerCountConversationStateExtractor (atomic accept/reject).
+  if (
+    /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+adults?\b/i.test(
+      message,
+    ) ||
+    /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+child(?:ren)?\b/i.test(
+      message,
+    )
+  ) {
+    return true;
+  }
   if (
     /-\d+\s+infants?\b/i.test(message) ||
     /\d+\.\d+\s+infants?\b/i.test(message)

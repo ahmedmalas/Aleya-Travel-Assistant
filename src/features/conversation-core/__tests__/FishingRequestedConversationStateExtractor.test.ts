@@ -805,15 +805,15 @@ describe('phase 8Y — FishingRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors).toHaveLength(38);
+    expect(extractors[21]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(
+    expect(extractors[22]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -871,13 +871,13 @@ describe('phase 8Y — FishingRequestedConversationStateExtractor activation', (
       },
     });
     expect(
-      extractors[10]?.extract({
+      extractors[11]?.extract({
         message: 'book activities',
         currentState,
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 23; index < extractors.length; index += 1) {
+    for (let index = 24; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: fishingActiveMessage,
@@ -888,19 +888,19 @@ describe('phase 8Y — FishingRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: fishingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: fishingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: fishingActiveMessage,
         currentState,
       }),
@@ -908,19 +908,19 @@ describe('phase 8Y — FishingRequestedConversationStateExtractor activation', (
 
     const hikingOnlyMessage = 'walking track options';
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: hikingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: hikingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 23; index < extractors.length; index += 1) {
+    for (let index = 24; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: hikingOnlyMessage,
@@ -932,19 +932,19 @@ describe('phase 8Y — FishingRequestedConversationStateExtractor activation', (
 
     const fishingOnlyMessage = 'fishing options';
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: fishingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: fishingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: fishingOnlyMessage,
         currentState,
       }),

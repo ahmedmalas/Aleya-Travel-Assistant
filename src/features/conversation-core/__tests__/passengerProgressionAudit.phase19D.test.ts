@@ -356,21 +356,20 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(t.components.followUpQuestion).toBe(NEUTRAL);
   });
 
-  it('characterizes "2 adults and 1 child" → adult blocked; child may extract alone', () => {
+  it('characterizes "2 adults and 1 child" → both counts persist (Phase 19K)', () => {
     const t = turn('2 adults and 1 child', {
       ...COMPLETE_CORE,
       adultCount: null,
       childCount: null,
       flightsRequested: true,
     });
-    // Adult extractor blocks any child/infant mention in the same message.
-    expect(t.extracted.adultCount).toBeUndefined();
-    expect(t.state.adultCount).toBeNull();
-    // Child cue `\b1 child\b` still matches inside the combined sentence.
-    expect(t.extracted.childCount).toBe(1);
+    expect(t.extracted).toEqual({ adultCount: 2, childCount: 1 });
+    expect(t.state.adultCount).toBe(2);
     expect(t.state.childCount).toBe(1);
-    expect(t.components.acknowledgement).toMatch(/child/i);
-    expect(t.components.followUpQuestion).toBe(ADULT_Q);
+    expect(t.state.infantCount).toBeNull();
+    expect(t.classification.hasInterpretedChange).toBe(true);
+    expect(t.components.acknowledgement).toMatch(/adult/i);
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
   });
 
   it('characterizes zero adults / children / infants as non-extracting', () => {

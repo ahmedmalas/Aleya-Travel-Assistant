@@ -342,27 +342,31 @@ describe('Phase 19I — bare-number passenger extraction', () => {
   });
 
   it('bare-number extractor does not claim guest-noun or multi-passenger sentences', () => {
-    // Phase 19J owns explicit guest nouns on the composite path; bare-number
-    // extractor alone must ignore guest wording.
-    const bare = new BareNumberPassengerCountConversationStateExtractor().extract({
-      message: '2 guests',
-      currentState: createState({
-        ...COMPLETE_CORE,
-        adultCount: null,
-        accommodationRequested: true,
-      }),
+    // Phase 19J/19K own guest nouns and combined passenger sentences on the
+    // composite path; bare-number extractor alone must ignore them.
+    const guestActive = createState({
+      ...COMPLETE_CORE,
+      adultCount: null,
+      accommodationRequested: true,
     });
-    expect(bare).toEqual({ stateUpdate: {} });
+    expect(
+      new BareNumberPassengerCountConversationStateExtractor().extract({
+        message: '2 guests',
+        currentState: guestActive,
+      }),
+    ).toEqual({ stateUpdate: {} });
 
-    const multi = turn('2 adults and 1 child', {
+    const flightsActive = createState({
       ...COMPLETE_CORE,
       adultCount: null,
       flightsRequested: true,
     });
-    // Bare-number ownership does not apply to multi-passenger sentences.
-    expect(multi.extracted.adultCount).toBeUndefined();
-    expect(multi.state.adultCount).toBeNull();
-    expect(multi.components.followUpQuestion).toBe(ADULT_Q);
+    expect(
+      new BareNumberPassengerCountConversationStateExtractor().extract({
+        message: '2 adults and 1 child',
+        currentState: flightsActive,
+      }),
+    ).toEqual({ stateUpdate: {} });
   });
 
   it('repeated equal bare number after capture → no false changed event / no duplicate ack', () => {

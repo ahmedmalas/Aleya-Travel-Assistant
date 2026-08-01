@@ -564,16 +564,16 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(37);
+    expect(extractors).toHaveLength(38);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
     expect(extractors[3]).toBeInstanceOf(ReturnDateConversationStateExtractor);
-    expect(extractors[4]).toBeInstanceOf(AdultCountConversationStateExtractor);
-    expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
-    expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
-    expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[5]).toBeInstanceOf(AdultCountConversationStateExtractor);
+    expect(extractors[6]).toBeInstanceOf(ChildCountConversationStateExtractor);
+    expect(extractors[7]).toBeInstanceOf(InfantCountConversationStateExtractor);
+    expect(extractors[8]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -597,7 +597,7 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
       },
     });
 
-    for (let index = 8; index < extractors.length; index += 1) {
+    for (let index = 9; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: flightsActiveMessage,
@@ -608,13 +608,13 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[7]?.extract({
+      extractors[8]?.extract({
         message: flightsActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { flightsRequested: true } });
     expect(
-      extractors[6]?.extract({
+      extractors[7]?.extract({
         message: flightsActiveMessage,
         currentState,
       }),
@@ -622,13 +622,13 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
 
     const infantActiveMessage = '1 infant';
     expect(
-      extractors[6]?.extract({
+      extractors[7]?.extract({
         message: infantActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { infantCount: 1 } });
     expect(
-      extractors[7]?.extract({
+      extractors[8]?.extract({
         message: infantActiveMessage,
         currentState,
       }),
@@ -645,7 +645,7 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[7]?.extract({
+      extractors[8]?.extract({
         message: 'book flights and accommodation',
         currentState,
       }),

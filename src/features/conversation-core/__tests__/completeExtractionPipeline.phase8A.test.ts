@@ -20,6 +20,7 @@ import { DestinationConversationStateExtractor } from '../DestinationConversatio
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { MultiPassengerCountConversationStateExtractor } from '../MultiPassengerCountConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
 import { ExplicitGuestCountConversationStateExtractor } from '../ExplicitGuestCountConversationStateExtractor';
@@ -61,6 +62,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   OriginConversationStateExtractor,
   DepartureDateConversationStateExtractor,
   ReturnDateConversationStateExtractor,
+  MultiPassengerCountConversationStateExtractor,
   AdultCountConversationStateExtractor,
   ChildCountConversationStateExtractor,
   InfantCountConversationStateExtractor,
@@ -101,6 +103,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'OriginConversationStateExtractor',
   'DepartureDateConversationStateExtractor',
   'ReturnDateConversationStateExtractor',
+  'MultiPassengerCountConversationStateExtractor',
   'AdultCountConversationStateExtractor',
   'ChildCountConversationStateExtractor',
   'InfantCountConversationStateExtractor',
@@ -592,14 +595,14 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(independent.state.destination).toBe('Hobart');
   });
 
-  it('keeps EmptyConversationStateExtractor last among 37 production extractors in accepted order', () => {
+  it('keeps EmptyConversationStateExtractor last among 38 production extractors in accepted order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(37);
-    expect(extractors).toHaveLength(37);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(38);
+    expect(extractors).toHaveLength(38);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -608,7 +611,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     }
 
     expect(
-      extractors[36]?.extract({
+      extractors[37]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState: baselineState(),
       }),

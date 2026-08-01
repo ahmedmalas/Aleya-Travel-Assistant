@@ -34,6 +34,7 @@ import { OriginConversationStateExtractor } from '../OriginConversationStateExtr
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
 import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { MultiPassengerCountConversationStateExtractor } from '../MultiPassengerCountConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
@@ -61,6 +62,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   OriginConversationStateExtractor,
   DepartureDateConversationStateExtractor,
   ReturnDateConversationStateExtractor,
+  MultiPassengerCountConversationStateExtractor,
   AdultCountConversationStateExtractor,
   ChildCountConversationStateExtractor,
   InfantCountConversationStateExtractor,
@@ -101,6 +103,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'OriginConversationStateExtractor',
   'DepartureDateConversationStateExtractor',
   'ReturnDateConversationStateExtractor',
+  'MultiPassengerCountConversationStateExtractor',
   'AdultCountConversationStateExtractor',
   'ChildCountConversationStateExtractor',
   'InfantCountConversationStateExtractor',
@@ -340,14 +343,14 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('remains last among 37 production extractors in the accepted composite order', () => {
+  it('remains last among 38 production extractors in the accepted composite order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(37);
-    expect(extractors).toHaveLength(37);
-    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(38);
+    expect(extractors).toHaveLength(38);
+    expect(extractors[37]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -411,122 +414,134 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
         message: 'Return on 31 August 2026',
         expected: { returnDate: '2026-08-31' },
       },
-      { index: 4, message: '2 adults', expected: { adultCount: 2 } },
-      { index: 5, message: '2 children', expected: { childCount: 2 } },
-      { index: 6, message: '1 infant', expected: { infantCount: 1 } },
-      { index: 7, message: 'book flights', expected: { flightsRequested: true } },
       {
-        index: 8,
+        index: 4,
+        message: '2 adults and 1 child',
+        expected: { adultCount: 2, childCount: 1 },
+        state: {
+          ...currentState,
+          flightsRequested: true,
+          adultCount: null,
+          childCount: null,
+          infantCount: null,
+        },
+      },
+      { index: 5, message: '2 adults', expected: { adultCount: 2 } },
+      { index: 6, message: '2 children', expected: { childCount: 2 } },
+      { index: 7, message: '1 infant', expected: { infantCount: 1 } },
+      { index: 8, message: 'book flights', expected: { flightsRequested: true } },
+      {
+        index: 9,
         message: 'book a hotel',
         expected: { accommodationRequested: true },
       },
-      { index: 9, message: 'book car hire', expected: { carHireRequested: true } },
+      { index: 10, message: 'book car hire', expected: { carHireRequested: true } },
       {
-        index: 10,
+        index: 11,
         message: 'book activities',
         expected: { activitiesRequested: true },
       },
       {
-        index: 11,
+        index: 12,
         message: 'find restaurants',
         expected: { restaurantsRequested: true },
       },
       {
-        index: 12,
+        index: 13,
         message: 'Italian',
         expected: { restaurantPreference: 'Italian' },
       },
       {
-        index: 13,
+        index: 14,
         message: 'what is nearby',
         expected: { nearbyDiscoveryRequested: true },
       },
       {
-        index: 14,
+        index: 15,
         message: 'show me beaches',
         expected: { beachesRequested: true },
       },
-      { index: 15, message: 'add camping', expected: { campingRequested: true } },
-      { index: 16, message: 'add kayaking', expected: { kayakingRequested: true } },
+      { index: 16, message: 'add camping', expected: { campingRequested: true } },
+      { index: 17, message: 'add kayaking', expected: { kayakingRequested: true } },
       {
-        index: 17,
+        index: 18,
         message: 'add four-wheel driving',
         expected: { fourWheelDriveRequested: true },
       },
       {
-        index: 18,
+        index: 19,
         message: 'add scenic drives',
         expected: { scenicDrivesRequested: true },
       },
       {
-        index: 19,
+        index: 20,
         message: 'add attractions',
         expected: { attractionsRequested: true },
       },
       {
-        index: 20,
+        index: 21,
         message: 'add snow activities',
         expected: { snowActivitiesRequested: true },
       },
       {
-        index: 21,
+        index: 22,
         message: 'add hiking',
         expected: { hikingWalkingRequested: true },
       },
-      { index: 22, message: 'add fishing', expected: { fishingRequested: true } },
+      { index: 23, message: 'add fishing', expected: { fishingRequested: true } },
       {
-        index: 23,
+        index: 24,
         message: 'add diving',
         expected: { divingSnorkellingRequested: true },
       },
       {
-        index: 24,
+        index: 25,
         message: 'add wineries',
         expected: { wineriesFoodTrailsRequested: true },
       },
       {
-        index: 25,
+        index: 26,
         message: 'add festivals',
         expected: { eventsFestivalsRequested: true },
       },
-      { index: 26, message: 'add wildlife', expected: { wildlifeRequested: true } },
+      { index: 27, message: 'add wildlife', expected: { wildlifeRequested: true } },
       {
-        index: 27,
+        index: 28,
         message: 'add national parks',
         expected: { nationalParksRequested: true },
       },
       {
-        index: 28,
+        index: 29,
         message: 'I want nightlife',
         expected: { nightlifeRequested: true },
       },
       {
-        index: 29,
+        index: 30,
         message: 'Include shopping',
         expected: { shoppingRequested: true },
       },
       {
-        index: 30,
+        index: 31,
         message: 'Add wellness activities',
         expected: { wellnessRequested: true },
       },
       {
-        index: 31,
+        index: 32,
         message: 'Include tours',
         expected: { toursRequested: true },
       },
       {
-        index: 32,
+        index: 33,
         message: 'Add family activities',
         expected: { familyActivitiesRequested: true },
       },
       {
-        index: 33,
+        index: 34,
         message: 'We need accessible travel options',
         expected: { accessibleTravelRequested: true },
       },
       {
-        index: 34,
+        index: 35,
         message: '2',
         expected: { adultCount: 2 },
         state: {
@@ -538,7 +553,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
         },
       },
       {
-        index: 35,
+        index: 36,
         message: '2 guests',
         expected: { adultCount: 2 },
         state: {
@@ -552,7 +567,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       },
     ];
 
-    expect(behaviouralProofs).toHaveLength(36);
+    expect(behaviouralProofs).toHaveLength(37);
 
     for (const proof of behaviouralProofs) {
       expect(
@@ -565,7 +580,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     }
 
     expect(
-      extractors[36]?.extract({
+      extractors[37]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState,
       }),

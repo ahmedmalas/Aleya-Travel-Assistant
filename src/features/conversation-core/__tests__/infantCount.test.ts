@@ -20,6 +20,7 @@ function turn(
     adultCount?: number;
     childCount?: number;
     infantCount?: number;
+    flightsRequested?: boolean;
   } = {},
 ) {
   return processConversationTurn({
@@ -119,32 +120,45 @@ describe('phase 3G — explicit infantCount only', () => {
     expect(written.state.adultCount).toBeNull();
     expect(written.state.childCount).toBeNull();
 
+    // Phase 19K — without flights/accommodation context, combined sentences
+    // do not partially update infantCount via single-category ownership.
     const mixed = turn('2 adults, 1 child and 1 infant', initial, 1);
-    expect(mixed.state.infantCount).toBe(1);
-    expect(mixed.state.childCount).toBe(1);
+    expect(mixed.state.infantCount).toBeNull();
+    expect(mixed.state.childCount).toBeNull();
     expect(mixed.state.adultCount).toBeNull();
+
+    // Service gate is read from currentState at extraction time.
+    const flightsSeeded = turn('Hello', initial, 2, { flightsRequested: true });
+    const mixedInContext = turn(
+      '2 adults, 1 child and 1 infant',
+      flightsSeeded.state,
+      3,
+    );
+    expect(mixedInContext.state.infantCount).toBe(1);
+    expect(mixedInContext.state.childCount).toBe(1);
+    expect(mixedInContext.state.adultCount).toBe(2);
 
     const inRequest = turn(
       'Fly from Sydney to Brisbane for one infant',
       initial,
-      2,
+      4,
     );
     expect(inRequest.state.infantCount).toBe(1);
     expect(inRequest.state.origin).toBe('Sydney');
     expect(inRequest.state.destination).toBe('Brisbane');
 
-    const seeded = turn('Hello', initial, 3, {
+    const seeded = turn('Hello', initial, 5, {
       infantCount: 1,
       adultCount: 2,
       childCount: 1,
     });
-    const adultOnly = turn('2 adults', seeded.state, 4);
+    const adultOnly = turn('2 adults', seeded.state, 6);
     expect(adultOnly.state.infantCount).toBe(1);
-    const childOnly = turn('1 child', seeded.state, 5);
+    const childOnly = turn('1 child', seeded.state, 7);
     expect(childOnly.state.infantCount).toBe(1);
-    const baby = turn('our baby', seeded.state, 6);
+    const baby = turn('our baby', seeded.state, 8);
     expect(baby.state.infantCount).toBe(1);
-    const zero = turn('0 infants', seeded.state, 7);
+    const zero = turn('0 infants', seeded.state, 9);
     expect(zero.state.infantCount).toBe(1);
   });
 
