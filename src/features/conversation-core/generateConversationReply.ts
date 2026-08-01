@@ -32,10 +32,14 @@ export type GenerateConversationReplyInput = {
  * selectConversationContinuationPrompt. Phase 10M: reply-plan object
  * assembly uses assembleConversationReplyPlan. Phase 10N: selector
  * coordination uses selectConversationReplyComponents. Phase 14E: final
- * rendering routes through renderIntegratedConversationReplyPlan while
- * remaining deterministic-only. Invoked solely by processConversationTurn
- * after extraction and explicit stateUpdate precedence. Does not re-extract,
- * inspect message text, call search/itinerary, or use an AI provider.
+ * rendering routes through renderIntegratedConversationReplyPlan.
+ * Phase 20B — freeze: this function remains the production orchestration owner
+ * (classify → plan → expression seam). Expression wording is baseline-
+ * conversational via the render seam; deterministic renderConversationReplyPlan
+ * remains fallback/ineligible-shape only. Invoked solely by
+ * processConversationTurn (via generateIntegratedConversationReply) after
+ * extraction and explicit stateUpdate precedence. Does not re-extract, inspect
+ * message text, call search/itinerary, or use an AI provider.
  */
 export function generateConversationReply(
   input: GenerateConversationReplyInput,

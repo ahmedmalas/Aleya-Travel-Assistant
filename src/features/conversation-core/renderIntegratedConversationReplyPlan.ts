@@ -6,16 +6,14 @@ import {
 
 /**
  * Phase 14D/14E — plan-level reply rendering seam.
- * Phase 14F — explicit deterministic plan-rendering integration mode.
- * Phase 14G — unselected baseline-conversational branch (statically unused).
- * Phase 14H — production wrapper permanently selects `'deterministic'` and
- * delegates to renderConversationReplyPlanByIntegrationMode.
- * Phase 14N — production wrapper statically selects `'baseline-conversational'`
- * (deterministic fallback preserved in the mode-driven renderer).
+ * Phase 14N — production expression mode `'baseline-conversational'`.
+ * Phase 20B — freeze: sole production expression integration seam.
  *
  * Shared internal contract boundary: ConversationReplyPlan → rendered reply.
- * Does not accept a mode argument, read environment variables, or use feature
- * flags.
+ * Statically selects `'baseline-conversational'` and delegates to
+ * renderConversationReplyPlanByIntegrationMode. Deterministic fallback remains
+ * inside the mode-driven renderer. Does not accept a mode argument, read
+ * environment variables, or use feature flags.
  *
  * Not exported from index.ts.
  */
