@@ -229,7 +229,6 @@ Do not begin external API integration.
 | Check | Result |
 | --- | --- |
 | Accepted baseline HEAD | `6f6d7ed4b66ae6eb521c2393484b603002b1e641` |
-| Phase 20C tip commit | `76d5daeb1407bdb3cbba5328da109aec27ec659d` |
 | Phase 20C audit commit | `d5fd2d9a9fcae255a265716aba4207caecf9e665` |
 | Phase 19 passenger + 20A/20B/20C focused | 11 files / 213 tests passed |
 | conversation-core suite | 201 files / 2088 tests passed |
