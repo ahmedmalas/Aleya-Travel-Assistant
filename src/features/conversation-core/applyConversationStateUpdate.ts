@@ -17,6 +17,7 @@ export type AppliedConversationTravelState = {
   carHireRequested: boolean | null;
   activitiesRequested: boolean | null;
   restaurantsRequested: boolean | null;
+  restaurantPreference: string | null;
   nearbyDiscoveryRequested: boolean | null;
   beachesRequested: boolean | null;
   campingRequested: boolean | null;
@@ -100,6 +101,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.restaurantsRequested !== undefined
         ? stateUpdate.restaurantsRequested
         : currentState.restaurantsRequested,
+    restaurantPreference:
+      stateUpdate?.restaurantPreference !== undefined
+        ? stateUpdate.restaurantPreference
+        : currentState.restaurantPreference,
     nearbyDiscoveryRequested:
       stateUpdate?.nearbyDiscoveryRequested !== undefined
         ? stateUpdate.nearbyDiscoveryRequested

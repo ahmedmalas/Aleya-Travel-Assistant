@@ -30,6 +30,7 @@ import { KayakingRequestedConversationStateExtractor } from '../KayakingRequeste
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
@@ -870,7 +871,7 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -890,21 +891,24 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
-    expect(extractors[16]).toBeInstanceOf(
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[17]).toBeInstanceOf(
       FourWheelDrivingRequestedConversationStateExtractor,
     );
-    expect(extractors[17]).toBeInstanceOf(
+    expect(extractors[18]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(extractors[18]).toBeInstanceOf(
+    expect(extractors[19]).toBeInstanceOf(
       AttractionsRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -950,7 +954,7 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
       },
     });
 
-    for (let index = 19; index < extractors.length; index += 1) {
+    for (let index = 20; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: attractionsActiveMessage,
@@ -961,13 +965,13 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
     }
 
     expect(
-      extractors[18]?.extract({
+      extractors[19]?.extract({
         message: attractionsActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
-      extractors[17]?.extract({
+      extractors[18]?.extract({
         message: attractionsActiveMessage,
         currentState,
       }),
@@ -981,7 +985,7 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
 
     const attractionsOnlyMessage = 'attraction options';
     expect(
-      extractors[18]?.extract({
+      extractors[19]?.extract({
         message: attractionsOnlyMessage,
         currentState,
       }),
@@ -994,7 +998,7 @@ describe('phase 8V — AttractionsRequestedConversationStateExtractor activation
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
 
     for (let index = 0; index < extractors.length; index += 1) {
-      if (index === 18) {
+      if (index === 19) {
         continue;
       }
       expect(

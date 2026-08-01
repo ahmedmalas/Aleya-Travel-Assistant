@@ -16,9 +16,12 @@ import { selectConversationReplyComponents } from '../selectConversationReplyCom
 
 /**
  * Phase 18E — restaurant follow-up completion audit.
- * Characterizes current behaviour, including the defective re-ask of the
- * dining preference question after cuisine/seafood answers that are not
- * persisted. Production code unchanged.
+ *
+ * Pre-18F defect (historical evidence preserved in
+ * docs/conversation-engine/phase18E-restaurant-follow-up-audit.md):
+ * cuisine/seafood answers were not persisted and the dining follow-up
+ * re-asked indefinitely. Phase 18F closes that defect via
+ * restaurantPreference + RestaurantPreferenceConversationStateExtractor.
  */
 
 const ROOT = process.cwd();
@@ -28,6 +31,10 @@ const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 const RESTAURANTS_Q = FOLLOW_UPS.restaurants;
 const NEUTRAL = FOLLOW_UPS.neutralContinuation;
 const ACTIVATED_DINING = `Now for dining. ${RESTAURANTS_Q}`;
+
+/** Pre-18F selector contract — retained as regression documentation. */
+const PRE_18F_SELECTOR_CONTRACT =
+  'restaurantsRequested === true (no preference field consulted)';
 
 const COMPLETE_CORE = {
   destination: 'Cairns',
@@ -163,32 +170,38 @@ function journey(
 }
 
 describe('Phase 18E — restaurant follow-up completion audit', () => {
-  it('locks the restaurants follow-up applies contract and absent preference fields', () => {
+  it('locks the restaurants follow-up applies contract and Phase 18F preference field', () => {
     const followUpSource = readFileSync(
       resolve(CORE_SRC, 'selectConversationFollowUpQuestion.ts'),
       'utf8',
     );
-    expect(followUpSource).toContain(
-      'Dining still has no dedicated preference field',
-    );
+    expect(PRE_18F_SELECTOR_CONTRACT).toContain('restaurantsRequested === true');
+    expect(followUpSource).toContain('Phase 18F');
     expect(followUpSource).toMatch(
-      /applies:\s*\(state: ConversationCoreState\) =>\s*state\.restaurantsRequested === true/,
+      /state\.restaurantsRequested === true &&\s*state\.restaurantPreference === null/,
     );
     expect(followUpSource).not.toMatch(/cuisinePreference|diningPreference|seafoodRequested/);
 
     const types = readFileSync(resolve(CORE_SRC, 'types.ts'), 'utf8');
     expect(types).toContain('restaurantsRequested');
-    expect(types).not.toMatch(/cuisinePreference|diningPreference|seafoodRequested|restaurantPreference/);
+    expect(types).toMatch(/restaurantPreference:\s*string \| null/);
+    expect(types).not.toMatch(/cuisinePreference|diningPreference|seafoodRequested/);
 
     const extractor = readFileSync(
       resolve(CORE_SRC, 'RestaurantsRequestedConversationStateExtractor.ts'),
       'utf8',
     );
     expect(extractor).toContain('restaurantsRequested: true');
-    // Extractor owns restaurantsRequested only — no preference patch keys.
     expect(extractor).not.toMatch(
-      /(?:cuisinePreference|diningPreference|seafoodRequested)\s*:/,
+      /(?:cuisinePreference|diningPreference|seafoodRequested|restaurantPreference)\s*:/,
     );
+
+    const preferenceExtractor = readFileSync(
+      resolve(CORE_SRC, 'RestaurantPreferenceConversationStateExtractor.ts'),
+      'utf8',
+    );
+    expect(preferenceExtractor).toContain('restaurantPreference');
+    expect(preferenceExtractor).toContain('input.currentState.restaurantsRequested');
   });
 
   it('characterizes restaurants requested only', () => {
@@ -208,85 +221,91 @@ describe('Phase 18E — restaurant follow-up completion audit', () => {
     );
   });
 
-  it('characterizes cuisine preference answers as unpersisted under restaurantsRequested', () => {
+  it('characterizes cuisine preference answers as persisted under restaurantsRequested (Phase 18F)', () => {
     const seed = { ...COMPLETE_CORE, restaurantsRequested: true as const };
     const cuisineMessages = [
-      'Italian',
-      'I want Italian food',
-      'Japanese cuisine',
-      'we like Thai',
-      'fine dining',
-      'casual dining',
-      'vegetarian',
+      { message: 'Italian', value: 'Italian' },
+      { message: 'I want Italian food', value: 'Italian' },
+      { message: 'Japanese cuisine', value: 'Japanese' },
+      { message: 'we like Thai', value: 'Thai' },
+      { message: 'fine dining', value: 'fine dining' },
+      { message: 'casual dining', value: 'casual dining' },
+      { message: 'vegetarian', value: 'vegetarian food' },
     ];
-    for (const message of cuisineMessages) {
-      const t = trace(message, seed);
-      expect(t.extractedPatch, message).toEqual({});
-      expect(t.final.restaurantsRequested, message).toBe(true);
-      expect(t.messageInterpreted, message).toBe(false);
-      expect(t.acknowledgement, message).toBeNull();
-      expect(t.followUpQuestion, message).toBe(RESTAURANTS_Q);
-      expect(t.exactFinalReply, message).toBe(ACTIVATED_DINING);
-      expect(t.exactFinalReply, message).not.toMatch(/italian|thai|japanese|vegetarian|fine dining/i);
+    for (const entry of cuisineMessages) {
+      const t = trace(entry.message, seed);
+      expect(t.extractedPatch, entry.message).toEqual({
+        restaurantPreference: entry.value,
+      });
+      expect(t.final.restaurantsRequested, entry.message).toBe(true);
+      expect(t.final.restaurantPreference, entry.message).toBe(entry.value);
+      expect(t.messageInterpreted, entry.message).toBe(true);
+      expect(t.followUpQuestion, entry.message).toBe(NEUTRAL);
+      expect(t.exactFinalReply, entry.message).not.toContain(RESTAURANTS_Q);
     }
   });
 
-  it('characterizes seafood preference as unpersisted and non-suppressing', () => {
+  it('characterizes seafood preference as persisted and suppressing dining follow-up (Phase 18F)', () => {
     const seed = { ...COMPLETE_CORE, restaurantsRequested: true as const };
     for (const message of ['looking for seafood', 'seafood']) {
       const t = trace(message, seed);
-      expect(t.extractedPatch, message).toEqual({});
+      expect(t.extractedPatch, message).toEqual({
+        restaurantPreference: 'seafood',
+      });
       expect(t.final.restaurantsRequested, message).toBe(true);
-      expect(t.messageInterpreted, message).toBe(false);
-      expect(t.acknowledgement, message).toBeNull();
-      expect(t.followUpQuestion, message).toBe(RESTAURANTS_Q);
-      expect(t.exactFinalReply, message).toBe(ACTIVATED_DINING);
+      expect(t.final.restaurantPreference, message).toBe('seafood');
+      expect(t.messageInterpreted, message).toBe(true);
+      expect(t.followUpQuestion, message).toBe(NEUTRAL);
+      expect(t.exactFinalReply, message).not.toContain(RESTAURANTS_Q);
       expect(t.exactFinalReply, message).not.toMatch(/seafood/i);
     }
   });
 
-  it('characterizes repeated cuisine and seafood as still re-asking dining', () => {
+  it('characterizes repeated cuisine and seafood as no longer re-asking dining (Phase 18F)', () => {
     const seed = { ...COMPLETE_CORE, restaurantsRequested: true as const };
     const cuisineRepeat = journey(['Italian', 'Italian'], seed);
-    expect(cuisineRepeat[0]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(cuisineRepeat[1]!.followUpQuestion).toBe(RESTAURANTS_Q);
+    expect(cuisineRepeat[0]!.followUpQuestion).toBe(NEUTRAL);
+    expect(cuisineRepeat[0]!.final.restaurantPreference).toBe('Italian');
+    expect(cuisineRepeat[1]!.followUpQuestion).toBe(NEUTRAL);
     expect(cuisineRepeat[1]!.messageInterpreted).toBe(false);
-    expect(cuisineRepeat[1]!.exactFinalReply).toBe(ACTIVATED_DINING);
+    expect(cuisineRepeat[1]!.exactFinalReply).not.toContain(RESTAURANTS_Q);
 
     const seafoodRepeat = journey(
       ['looking for seafood', 'looking for seafood'],
       seed,
     );
-    expect(seafoodRepeat[0]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(seafoodRepeat[1]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(seafoodRepeat[1]!.exactFinalReply).toBe(ACTIVATED_DINING);
+    expect(seafoodRepeat[0]!.followUpQuestion).toBe(NEUTRAL);
+    expect(seafoodRepeat[0]!.final.restaurantPreference).toBe('seafood');
+    expect(seafoodRepeat[1]!.followUpQuestion).toBe(NEUTRAL);
+    expect(seafoodRepeat[1]!.exactFinalReply).not.toContain(RESTAURANTS_Q);
   });
 
-  it('preserves restaurants follow-up for unsupported input after preference attempts', () => {
+  it('preserves neutral follow-up for unsupported input after preference is captured (Phase 18F)', () => {
     const rows = journey(
       ['looking for seafood', "I'm not sure"],
       { ...COMPLETE_CORE, restaurantsRequested: true },
     );
-    expect(rows[0]!.followUpQuestion).toBe(RESTAURANTS_Q);
+    expect(rows[0]!.followUpQuestion).toBe(NEUTRAL);
+    expect(rows[0]!.final.restaurantPreference).toBe('seafood');
     expect(rows[1]!.messageInterpreted).toBe(false);
     expect(rows[1]!.acknowledgement).toBeNull();
-    expect(rows[1]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(rows[1]!.exactFinalReply).toBe(ACTIVATED_DINING);
+    expect(rows[1]!.followUpQuestion).toBe(NEUTRAL);
+    expect(rows[1]!.exactFinalReply).not.toContain(RESTAURANTS_Q);
   });
 
-  it('characterizes restaurants enable then seafood journey', () => {
+  it('characterizes restaurants enable then seafood journey (Phase 18F)', () => {
     const rows = journey(['find restaurants', 'looking for seafood']);
     expect(rows[0]!.extractedPatch).toEqual({ restaurantsRequested: true });
     expect(rows[0]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(rows[1]!.extractedPatch).toEqual({});
+    expect(rows[1]!.extractedPatch).toEqual({ restaurantPreference: 'seafood' });
     expect(rows[1]!.final.restaurantsRequested).toBe(true);
-    expect(rows[1]!.messageInterpreted).toBe(false);
-    expect(rows[1]!.followUpQuestion).toBe(RESTAURANTS_Q);
-    expect(rows[1]!.exactFinalReply).toBe(ACTIVATED_DINING);
+    expect(rows[1]!.final.restaurantPreference).toBe('seafood');
+    expect(rows[1]!.messageInterpreted).toBe(true);
+    expect(rows[1]!.followUpQuestion).toBe(NEUTRAL);
+    expect(rows[1]!.exactFinalReply).not.toContain(RESTAURANTS_Q);
   });
 
   it('characterizes activities + restaurants interaction after Phase 18D', () => {
-    // Activities satisfied by hiking; restaurants still ask dining preference.
     const afterHiking = trace("I'm interested in hiking", {
       ...COMPLETE_CORE,
       activitiesRequested: true,
@@ -304,7 +323,6 @@ describe('Phase 18E — restaurant follow-up completion audit', () => {
       RESTAURANTS_Q,
     );
 
-    // Related food capability does not complete restaurants follow-up.
     const wineries = trace('wineries', {
       ...COMPLETE_CORE,
       restaurantsRequested: true,
@@ -316,12 +334,22 @@ describe('Phase 18E — restaurant follow-up completion audit', () => {
     expect(wineries.followUpQuestion).toBe(RESTAURANTS_Q);
   });
 
-  it('proves selector evidence: only restaurantsRequested selects dining follow-up', () => {
+  it('proves selector evidence: restaurantsRequested with null preference selects dining follow-up', () => {
     expect(
       selectConversationFollowUpQuestion(
         createState({ ...COMPLETE_CORE, restaurantsRequested: true }),
       ),
     ).toBe(RESTAURANTS_Q);
+
+    expect(
+      selectConversationFollowUpQuestion(
+        createState({
+          ...COMPLETE_CORE,
+          restaurantsRequested: true,
+          restaurantPreference: 'seafood',
+        }),
+      ),
+    ).toBe(NEUTRAL);
 
     expect(
       selectConversationFollowUpQuestion(
@@ -335,7 +363,6 @@ describe('Phase 18E — restaurant follow-up completion audit', () => {
       ),
     ).toBe(NEUTRAL);
 
-    // No preference field exists to suppress; wineries flag is irrelevant.
     expect(
       selectConversationFollowUpQuestion(
         createState({

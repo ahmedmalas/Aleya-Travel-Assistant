@@ -64,6 +64,7 @@ type TravelSnapshot = {
   flightsRequested: boolean | null;
   activitiesRequested: boolean | null;
   restaurantsRequested: boolean | null;
+  restaurantPreference: string | null;
   beachesRequested: boolean | null;
 };
 
@@ -120,6 +121,7 @@ function travelSnapshot(state: ConversationCoreState): TravelSnapshot {
     flightsRequested: state.flightsRequested,
     activitiesRequested: state.activitiesRequested,
     restaurantsRequested: state.restaurantsRequested,
+    restaurantPreference: state.restaurantPreference,
     beachesRequested: state.beachesRequested,
   };
 }
@@ -454,12 +456,12 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added restaurants to your trip. What type of dining are you looking for?",
-      // Phase 18B: uninterpreted preference keeps the restaurants follow-up.
-      `Now for dining. ${FOLLOW_UPS.restaurants}`,
+      // Phase 18F: seafood preference persisted; dining follow-up suppressed.
+      "Perfect, got it. Is there anything else you'd like me to consider? What else should I know about your trip?",
     ]);
-    // Dining preference text is not stored; restaurants flag remains true.
     expect(turns[5]!.final.restaurantsRequested).toBe(true);
-    expect(turns[5]!.owner).toBe('15F');
+    expect(turns[5]!.final.restaurantPreference).toBe('seafood');
+    expect(turns[5]!.owner).toBe('16B');
   });
 
   it('characterises unsupported message mid-journey', () => {

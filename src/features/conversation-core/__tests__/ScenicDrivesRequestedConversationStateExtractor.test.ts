@@ -29,6 +29,7 @@ import { KayakingRequestedConversationStateExtractor } from '../KayakingRequeste
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
@@ -864,7 +865,7 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -884,18 +885,21 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
-    expect(extractors[16]).toBeInstanceOf(
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[17]).toBeInstanceOf(
       FourWheelDrivingRequestedConversationStateExtractor,
     );
-    expect(extractors[17]).toBeInstanceOf(
+    expect(extractors[18]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -939,7 +943,7 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
       },
     });
 
-    for (let index = 18; index < extractors.length; index += 1) {
+    for (let index = 19; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: scenicActiveMessage,
@@ -950,19 +954,19 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
     }
 
     expect(
-      extractors[17]?.extract({
+      extractors[18]?.extract({
         message: scenicActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
     expect(
-      extractors[16]?.extract({
+      extractors[17]?.extract({
         message: scenicActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
-      extractors[15]?.extract({
+      extractors[16]?.extract({
         message: scenicActiveMessage,
         currentState,
       }),
@@ -970,7 +974,7 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
 
     const scenicOnlyMessage = 'scenic drive options';
     expect(
-      extractors[17]?.extract({
+      extractors[18]?.extract({
         message: scenicOnlyMessage,
         currentState,
       }),
@@ -983,7 +987,7 @@ describe('phase 8U — ScenicDrivesRequestedConversationStateExtractor activatio
     ).toEqual({ stateUpdate: { scenicDrivesRequested: true } });
 
     for (let index = 0; index < extractors.length; index += 1) {
-      if (index === 17) {
+      if (index === 18) {
         continue;
       }
       expect(

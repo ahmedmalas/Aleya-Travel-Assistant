@@ -64,6 +64,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/carHireRequested\?: boolean \| null/);
     expect(types).toMatch(/activitiesRequested\?: boolean \| null/);
     expect(types).toMatch(/restaurantsRequested\?: boolean \| null/);
+    expect(types).toMatch(/restaurantPreference\?: string \| null/);
     expect(types).toMatch(/nearbyDiscoveryRequested\?: boolean \| null/);
     expect(types).toMatch(/beachesRequested\?: boolean \| null/);
     expect(types).toMatch(/campingRequested\?: boolean \| null/);
@@ -115,6 +116,9 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('CarHireRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('ActivitiesRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('RestaurantsRequestedConversationStateExtractor')).toBe(
+      false,
+    );
+    expect(index.includes('RestaurantPreferenceConversationStateExtractor')).toBe(
       false,
     );
     expect(index.includes('NearbyDiscoveryRequestedConversationStateExtractor')).toBe(
@@ -180,6 +184,9 @@ describe('conversation-core architectural boundary', () => {
       false,
     );
     expect(processTurn.includes('RestaurantsRequestedConversationStateExtractor')).toBe(
+      false,
+    );
+    expect(processTurn.includes('RestaurantPreferenceConversationStateExtractor')).toBe(
       false,
     );
     expect(
@@ -317,6 +324,11 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/restaurantsRequested: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.restaurantsRequested !== undefined[\s\S]*\? stateUpdate\.restaurantsRequested[\s\S]*: currentState\.restaurantsRequested/,
+    );
+    expect(types).toMatch(/restaurantPreference: string \| null/);
+    expect(types).toMatch(/restaurantPreference: null,/);
+    expect(applyUpdate).toMatch(
+      /stateUpdate\?\.restaurantPreference !== undefined[\s\S]*\? stateUpdate\.restaurantPreference[\s\S]*: currentState\.restaurantPreference/,
     );
     expect(types).toMatch(/nearbyDiscoveryRequested: boolean \| null/);
     expect(types).toMatch(/nearbyDiscoveryRequested: null,/);
@@ -462,7 +474,7 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     expect(emptyExtractor).toContain('Phase 7AB');
@@ -723,6 +735,27 @@ describe('conversation-core architectural boundary', () => {
     ).toBe(false);
     expect(
       restaurantsRequestedExtractor.includes('restaurantsRequested: null'),
+    ).toBe(false);
+    const restaurantPreferenceExtractor = readSrc(
+      'src/features/conversation-core/RestaurantPreferenceConversationStateExtractor.ts',
+    );
+    expect(restaurantPreferenceExtractor).toMatch(
+      /export class RestaurantPreferenceConversationStateExtractor/,
+    );
+    expect(restaurantPreferenceExtractor).toContain('Phase 18F');
+    expect(restaurantPreferenceExtractor).toMatch(
+      /input: ConversationStateExtractionInput/,
+    );
+    expect(restaurantPreferenceExtractor).toMatch(/input\.message/);
+    // Phase 18F context gate — sole extractor allowed to read currentState.
+    expect(restaurantPreferenceExtractor.includes('input.currentState')).toBe(
+      true,
+    );
+    expect(restaurantPreferenceExtractor).toMatch(
+      /restaurantPreference:\s*preference/,
+    );
+    expect(
+      restaurantPreferenceExtractor.includes('restaurantPreference: null'),
     ).toBe(false);
     const nearbyDiscoveryRequestedExtractor = readSrc(
       'src/features/conversation-core/NearbyDiscoveryRequestedConversationStateExtractor.ts',

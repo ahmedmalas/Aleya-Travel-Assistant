@@ -30,6 +30,7 @@ import { KayakingRequestedConversationStateExtractor } from '../KayakingRequeste
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
@@ -60,6 +61,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   CarHireRequestedConversationStateExtractor,
   ActivitiesRequestedConversationStateExtractor,
   RestaurantsRequestedConversationStateExtractor,
+  RestaurantPreferenceConversationStateExtractor,
   NearbyDiscoveryRequestedConversationStateExtractor,
   BeachesRequestedConversationStateExtractor,
   CampingRequestedConversationStateExtractor,
@@ -91,6 +93,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'CarHireRequestedConversationStateExtractor',
   'ActivitiesRequestedConversationStateExtractor',
   'RestaurantsRequestedConversationStateExtractor',
+  'RestaurantPreferenceConversationStateExtractor',
   'NearbyDiscoveryRequestedConversationStateExtractor',
   'BeachesRequestedConversationStateExtractor',
   'CampingRequestedConversationStateExtractor',
@@ -313,14 +316,14 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('remains last among 28 production extractors in the accepted composite order', () => {
+  it('remains last among 29 production extractors in the accepted composite order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(28);
-    expect(extractors).toHaveLength(28);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(29);
+    expect(extractors).toHaveLength(29);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -337,7 +340,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     );
   });
 
-  it('keeps all 27 behavioural extractors active and Empty as the sole intentional no-op', () => {
+  it('keeps all 28 behavioural extractors active and Empty as the sole intentional no-op', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
@@ -348,7 +351,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       accommodationRequested: false,
       carHireRequested: false,
       activitiesRequested: false,
-      restaurantsRequested: false,
+      restaurantsRequested: true,
       nearbyDiscoveryRequested: false,
       beachesRequested: false,
       campingRequested: false,
@@ -405,66 +408,71 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       },
       {
         index: 12,
+        message: 'Italian',
+        expected: { restaurantPreference: 'Italian' },
+      },
+      {
+        index: 13,
         message: 'what is nearby',
         expected: { nearbyDiscoveryRequested: true },
       },
       {
-        index: 13,
+        index: 14,
         message: 'show me beaches',
         expected: { beachesRequested: true },
       },
-      { index: 14, message: 'add camping', expected: { campingRequested: true } },
-      { index: 15, message: 'add kayaking', expected: { kayakingRequested: true } },
+      { index: 15, message: 'add camping', expected: { campingRequested: true } },
+      { index: 16, message: 'add kayaking', expected: { kayakingRequested: true } },
       {
-        index: 16,
+        index: 17,
         message: 'add four-wheel driving',
         expected: { fourWheelDriveRequested: true },
       },
       {
-        index: 17,
+        index: 18,
         message: 'add scenic drives',
         expected: { scenicDrivesRequested: true },
       },
       {
-        index: 18,
+        index: 19,
         message: 'add attractions',
         expected: { attractionsRequested: true },
       },
       {
-        index: 19,
+        index: 20,
         message: 'add snow activities',
         expected: { snowActivitiesRequested: true },
       },
       {
-        index: 20,
+        index: 21,
         message: 'add hiking',
         expected: { hikingWalkingRequested: true },
       },
-      { index: 21, message: 'add fishing', expected: { fishingRequested: true } },
+      { index: 22, message: 'add fishing', expected: { fishingRequested: true } },
       {
-        index: 22,
+        index: 23,
         message: 'add diving',
         expected: { divingSnorkellingRequested: true },
       },
       {
-        index: 23,
+        index: 24,
         message: 'add wineries',
         expected: { wineriesFoodTrailsRequested: true },
       },
       {
-        index: 24,
+        index: 25,
         message: 'add events',
         expected: { eventsFestivalsRequested: true },
       },
-      { index: 25, message: 'add wildlife', expected: { wildlifeRequested: true } },
+      { index: 26, message: 'add wildlife', expected: { wildlifeRequested: true } },
       {
-        index: 26,
+        index: 27,
         message: 'add national parks',
         expected: { nationalParksRequested: true },
       },
     ];
 
-    expect(behaviouralProofs).toHaveLength(27);
+    expect(behaviouralProofs).toHaveLength(28);
 
     for (const proof of behaviouralProofs) {
       expect(
@@ -477,7 +485,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     }
 
     expect(
-      extractors[27]?.extract({
+      extractors[28]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState,
       }),

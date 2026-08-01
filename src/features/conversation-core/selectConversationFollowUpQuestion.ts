@@ -74,8 +74,9 @@ function hasSpecificActivityInterest(state: ConversationCoreState): boolean {
  * Traveller/guest counts share adultCount.
  * Phase 18D — activities follow-up remains eligible only while
  * activitiesRequested is true and no specific activity-interest capability
- * is true yet. Dining still has no dedicated preference field, so the
- * restaurants question remains eligible while restaurantsRequested is true.
+ * is true yet.
+ * Phase 18F — restaurants follow-up remains eligible only while
+ * restaurantsRequested is true and restaurantPreference is still null.
  *
  * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
@@ -98,7 +99,8 @@ const CONTEXTUAL_QUESTIONS = [
   },
   {
     applies: (state: ConversationCoreState) =>
-      state.restaurantsRequested === true,
+      state.restaurantsRequested === true &&
+      state.restaurantPreference === null,
     question: CONVERSATION_REPLY_CATALOGUE.followUps.restaurants,
   },
 ] as const;
@@ -113,6 +115,8 @@ const CONTEXTUAL_QUESTIONS = [
  * Phase 10K — selects catalogue entries; does not own literal wording.
  * Phase 18D — activities contextual eligibility also requires that no
  * specific activity-interest capability is already true.
+ * Phase 18F — restaurants contextual eligibility also requires that
+ * restaurantPreference is still null.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,

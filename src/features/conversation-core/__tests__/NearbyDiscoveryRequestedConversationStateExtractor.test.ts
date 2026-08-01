@@ -26,6 +26,7 @@ import { InfantCountConversationStateExtractor } from '../InfantCountConversatio
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -704,7 +705,7 @@ describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activa
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -724,9 +725,12 @@ describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activa
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -760,7 +764,7 @@ describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activa
       },
     });
 
-    for (let index = 13; index < extractors.length; index += 1) {
+    for (let index = 14; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: nearbyActiveMessage,
@@ -771,7 +775,7 @@ describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activa
     }
 
     expect(
-      extractors[12]?.extract({
+      extractors[13]?.extract({
         message: nearbyActiveMessage,
         currentState,
       }),
@@ -797,13 +801,13 @@ describe('phase 8M — NearbyDiscoveryRequestedConversationStateExtractor activa
       }),
     ).toEqual({ stateUpdate: { restaurantsRequested: true } });
     expect(
-      extractors[12]?.extract({
+      extractors[13]?.extract({
         message: restaurantsOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 13; index < extractors.length; index += 1) {
+    for (let index = 14; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: restaurantsOnlyMessage,

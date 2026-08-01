@@ -17,6 +17,7 @@ export const TRAVEL_COMPARE_KEYS = [
   'carHireRequested',
   'activitiesRequested',
   'restaurantsRequested',
+  'restaurantPreference',
   'nearbyDiscoveryRequested',
   'beachesRequested',
   'campingRequested',

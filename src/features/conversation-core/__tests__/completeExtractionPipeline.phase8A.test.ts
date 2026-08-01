@@ -28,6 +28,7 @@ import { AccommodationRequestedConversationStateExtractor } from '../Accommodati
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
 import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
 import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
@@ -60,6 +61,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   CarHireRequestedConversationStateExtractor,
   ActivitiesRequestedConversationStateExtractor,
   RestaurantsRequestedConversationStateExtractor,
+  RestaurantPreferenceConversationStateExtractor,
   NearbyDiscoveryRequestedConversationStateExtractor,
   BeachesRequestedConversationStateExtractor,
   CampingRequestedConversationStateExtractor,
@@ -91,6 +93,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'CarHireRequestedConversationStateExtractor',
   'ActivitiesRequestedConversationStateExtractor',
   'RestaurantsRequestedConversationStateExtractor',
+  'RestaurantPreferenceConversationStateExtractor',
   'NearbyDiscoveryRequestedConversationStateExtractor',
   'BeachesRequestedConversationStateExtractor',
   'CampingRequestedConversationStateExtractor',
@@ -407,7 +410,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(result.reply).not.toMatch(/assembled|unavailable/i);
   });
 
-  it('reaches all 27 behavioural extractors through processConversationTurn with single-field activation', () => {
+  it('reaches all 28 behavioural extractors through processConversationTurn with single-field activation', () => {
     expect(BEHAVIOURAL_RUNTIME_CUES).toHaveLength(27);
 
     // Phase 8K: general activities cues overlap attraction wording, so
@@ -515,14 +518,14 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(independent.state.destination).toBe('Hobart');
   });
 
-  it('keeps EmptyConversationStateExtractor last among 28 production extractors in accepted order', () => {
+  it('keeps EmptyConversationStateExtractor last among 29 production extractors in accepted order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(28);
-    expect(extractors).toHaveLength(28);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(29);
+    expect(extractors).toHaveLength(29);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -531,7 +534,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     }
 
     expect(
-      extractors[27]?.extract({
+      extractors[28]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState: baselineState(),
       }),

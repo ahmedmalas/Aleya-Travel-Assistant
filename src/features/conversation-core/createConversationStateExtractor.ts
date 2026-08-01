@@ -16,6 +16,7 @@ import { InfantCountConversationStateExtractor } from './InfantCountConversation
 import { KayakingRequestedConversationStateExtractor } from './KayakingRequestedConversationStateExtractor';
 import { NearbyDiscoveryRequestedConversationStateExtractor } from './NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from './RestaurantPreferenceConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from './RestaurantsRequestedConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from './ScenicDrivesRequestedConversationStateExtractor';
@@ -45,6 +46,7 @@ import type { ConversationStateExtractor } from './types';
  * CarHireRequestedConversationStateExtractor, then a new
  * ActivitiesRequestedConversationStateExtractor, then a new
  * RestaurantsRequestedConversationStateExtractor, then a new
+ * RestaurantPreferenceConversationStateExtractor, then a new
  * NearbyDiscoveryRequestedConversationStateExtractor, then a new
  * BeachesRequestedConversationStateExtractor, then a new
  * CampingRequestedConversationStateExtractor, then a new
@@ -77,6 +79,7 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new CarHireRequestedConversationStateExtractor(),
     new ActivitiesRequestedConversationStateExtractor(),
     new RestaurantsRequestedConversationStateExtractor(),
+    new RestaurantPreferenceConversationStateExtractor(),
     new NearbyDiscoveryRequestedConversationStateExtractor(),
     new BeachesRequestedConversationStateExtractor(),
     new CampingRequestedConversationStateExtractor(),

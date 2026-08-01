@@ -267,12 +267,12 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
         extractors: readonly unknown[];
       }
     ).extractors;
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
-    expect(extractors[26]).toBeInstanceOf(
+    expect(extractors[27]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 });

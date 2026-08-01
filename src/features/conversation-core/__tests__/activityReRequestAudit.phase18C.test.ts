@@ -188,10 +188,9 @@ describe('Phase 18C — activity re-request selection audit', () => {
       'utf8',
     );
     expect(pre18DContract).toContain('activitiesRequested === true');
-    expect(source).toMatch(
-      /Dining still has no dedicated preference field/,
-    );
     expect(source).toContain('Phase 18D');
+    expect(source).toContain('Phase 18F');
+    expect(source).toMatch(/restaurantPreference === null/);
     expect(source).toContain('SPECIFIC_ACTIVITY_INTEREST_FLAGS');
     expect(source).toContain('hasSpecificActivityInterest');
     expect(source).toMatch(
@@ -494,10 +493,11 @@ describe('Phase 18C — activity re-request selection audit', () => {
       ...COMPLETE_CORE,
       restaurantsRequested: true,
     });
-    expect(seafood.extractedPatch).toEqual({});
+    expect(seafood.extractedPatch).toEqual({ restaurantPreference: 'seafood' });
     expect(seafood.final.restaurantsRequested).toBe(true);
-    expect(seafood.messageInterpreted).toBe(false);
-    expect(seafood.followUpQuestion).toBe(FOLLOW_UPS.restaurants);
+    expect(seafood.final.restaurantPreference).toBe('seafood');
+    expect(seafood.messageInterpreted).toBe(true);
+    expect(seafood.followUpQuestion).toBe(NEUTRAL);
   });
 
   it('shows post-18D selector evidence: specific activity flags suppress activities question', () => {

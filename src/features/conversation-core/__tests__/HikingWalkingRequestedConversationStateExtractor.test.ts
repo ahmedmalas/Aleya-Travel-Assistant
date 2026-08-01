@@ -977,17 +977,17 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
-    expect(extractors[18]).toBeInstanceOf(
+    expect(extractors).toHaveLength(29);
+    expect(extractors[19]).toBeInstanceOf(
       AttractionsRequestedConversationStateExtractor,
     );
-    expect(extractors[19]).toBeInstanceOf(
+    expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors[21]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -1050,7 +1050,7 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 21; index < extractors.length; index += 1) {
+    for (let index = 22; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: hikingActiveMessage,
@@ -1061,19 +1061,19 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
     }
 
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: hikingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: hikingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
-      extractors[18]?.extract({
+      extractors[19]?.extract({
         message: hikingActiveMessage,
         currentState,
       }),
@@ -1081,19 +1081,19 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
 
     const snowOnlyMessage = 'add snow activities';
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: snowOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: snowOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 21; index < extractors.length; index += 1) {
+    for (let index = 22; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: snowOnlyMessage,

@@ -766,9 +766,7 @@ describe('Phase 16K — conversational quality closure audit', () => {
     );
     expect(hiking[1]!.reply).not.toContain(FOLLOW_UPS.activities);
 
-    // Seafood preference ignored — no seafood wording; restaurants flag remains.
-    // Phase 18B: uninterpreted preference text still receives the restaurants
-    // follow-up (15F) rather than activated neutral.
+    // Phase 18F: seafood preference persisted; dining follow-up suppressed (16B).
     const seafood = runJourney(
       [{ message: 'looking for seafood' }],
       {
@@ -782,8 +780,8 @@ describe('Phase 16K — conversational quality closure audit', () => {
     );
     expect(seafood[0]!.reply).not.toMatch(/seafood/i);
     expect(seafood[0]!.restaurantsRequested).toBe(true);
-    expect(seafood[0]!.owner).toBe('15F');
-    expect(seafood[0]!.followUpOrContinuation).toBe(FOLLOW_UPS.restaurants);
+    expect(seafood[0]!.owner).toBe('16B');
+    expect(seafood[0]!.followUpOrContinuation).toBe(FOLLOW_UPS.neutralContinuation);
 
     // Phase 17I: origin capture is clean; departureDate is still missed on
     // this non-repair multi-fact shape (historical departure gap preserved).

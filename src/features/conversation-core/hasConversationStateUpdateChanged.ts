@@ -16,6 +16,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'carHireRequested',
   'activitiesRequested',
   'restaurantsRequested',
+  'restaurantPreference',
   'nearbyDiscoveryRequested',
   'beachesRequested',
   'campingRequested',

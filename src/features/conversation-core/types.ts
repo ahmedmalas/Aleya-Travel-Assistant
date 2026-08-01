@@ -58,6 +58,8 @@ export type ConversationCoreState = {
   activitiesRequested: boolean | null;
   /** Explicitly supplied restaurants request flag only — never detected from message text. */
   restaurantsRequested: boolean | null;
+  /** Explicit dining preference text when restaurants are in scope — never inferred from unrelated mentions. */
+  restaurantPreference: string | null;
   /** Explicitly supplied nearby-discovery request flag only — never detected from message text. */
   nearbyDiscoveryRequested: boolean | null;
   /** Explicitly supplied beaches request flag only — never detected from message text. */
@@ -125,6 +127,7 @@ export type ConversationStateUpdate = {
   carHireRequested?: boolean | null;
   activitiesRequested?: boolean | null;
   restaurantsRequested?: boolean | null;
+  restaurantPreference?: string | null;
   nearbyDiscoveryRequested?: boolean | null;
   beachesRequested?: boolean | null;
   campingRequested?: boolean | null;
@@ -214,6 +217,7 @@ export function createInitialConversationCoreState(
     carHireRequested: null,
     activitiesRequested: null,
     restaurantsRequested: null,
+    restaurantPreference: null,
     nearbyDiscoveryRequested: null,
     beachesRequested: null,
     campingRequested: null,

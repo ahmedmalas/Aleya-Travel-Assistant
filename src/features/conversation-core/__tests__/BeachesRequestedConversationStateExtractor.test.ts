@@ -26,6 +26,7 @@ import { InfantCountConversationStateExtractor } from '../InfantCountConversatio
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -717,7 +718,7 @@ describe('phase 8N — BeachesRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -737,10 +738,13 @@ describe('phase 8N — BeachesRequestedConversationStateExtractor activation', (
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -776,7 +780,7 @@ describe('phase 8N — BeachesRequestedConversationStateExtractor activation', (
       },
     });
 
-    for (let index = 14; index < extractors.length; index += 1) {
+    for (let index = 15; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: beachesActiveMessage,
@@ -787,13 +791,13 @@ describe('phase 8N — BeachesRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[13]?.extract({
+      extractors[14]?.extract({
         message: beachesActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
-      extractors[12]?.extract({
+      extractors[13]?.extract({
         message: beachesActiveMessage,
         currentState,
       }),
@@ -807,19 +811,19 @@ describe('phase 8N — BeachesRequestedConversationStateExtractor activation', (
 
     const nearbyOnlyMessage = 'what is nearby';
     expect(
-      extractors[12]?.extract({
+      extractors[13]?.extract({
         message: nearbyOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { nearbyDiscoveryRequested: true } });
     expect(
-      extractors[13]?.extract({
+      extractors[14]?.extract({
         message: nearbyOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 14; index < extractors.length; index += 1) {
+    for (let index = 15; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: nearbyOnlyMessage,

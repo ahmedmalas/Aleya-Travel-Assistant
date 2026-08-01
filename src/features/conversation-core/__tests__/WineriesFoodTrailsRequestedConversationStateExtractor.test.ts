@@ -844,17 +844,17 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
-    expect(extractors[19]).toBeInstanceOf(
+    expect(extractors).toHaveLength(29);
+    expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors[21]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[22]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
-    expect(extractors[23]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
+    expect(extractors[24]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -920,7 +920,7 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 24; index < extractors.length; index += 1) {
+    for (let index = 25; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: wineriesActiveMessage,
@@ -931,31 +931,31 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
     }
 
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: wineriesActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: wineriesActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: wineriesActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: wineriesActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: wineriesActiveMessage,
         currentState,
       }),
@@ -963,19 +963,19 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
 
     const divingOnlyMessage = 'diving options';
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: divingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: divingOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 24; index < extractors.length; index += 1) {
+    for (let index = 25; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: divingOnlyMessage,
@@ -987,11 +987,17 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
 
     const wineriesOnlyMessage = 'winery options';
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: wineriesOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
+    expect(
+      extractors[23]?.extract({
+        message: wineriesOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractors[22]?.extract({
         message: wineriesOnlyMessage,
@@ -1000,12 +1006,6 @@ describe('phase 9A — WineriesFoodTrailsRequestedConversationStateExtractor act
     ).toEqual({ stateUpdate: {} });
     expect(
       extractors[21]?.extract({
-        message: wineriesOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractors[20]?.extract({
         message: wineriesOnlyMessage,
         currentState,
       }),

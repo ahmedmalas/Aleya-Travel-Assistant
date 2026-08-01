@@ -27,6 +27,7 @@ import { InfantCountConversationStateExtractor } from '../InfantCountConversatio
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -763,7 +764,7 @@ describe('phase 8P — CampingRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -783,11 +784,14 @@ describe('phase 8P — CampingRequestedConversationStateExtractor activation', (
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -825,7 +829,7 @@ describe('phase 8P — CampingRequestedConversationStateExtractor activation', (
       },
     });
 
-    for (let index = 15; index < extractors.length; index += 1) {
+    for (let index = 16; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: campingActiveMessage,
@@ -836,19 +840,19 @@ describe('phase 8P — CampingRequestedConversationStateExtractor activation', (
     }
 
     expect(
-      extractors[14]?.extract({
+      extractors[15]?.extract({
         message: campingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { campingRequested: true } });
     expect(
-      extractors[13]?.extract({
+      extractors[14]?.extract({
         message: campingActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
-      extractors[12]?.extract({
+      extractors[13]?.extract({
         message: campingActiveMessage,
         currentState,
       }),
@@ -856,19 +860,19 @@ describe('phase 8P — CampingRequestedConversationStateExtractor activation', (
 
     const beachesOnlyMessage = 'show me beaches';
     expect(
-      extractors[13]?.extract({
+      extractors[14]?.extract({
         message: beachesOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { beachesRequested: true } });
     expect(
-      extractors[14]?.extract({
+      extractors[15]?.extract({
         message: beachesOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
 
-    for (let index = 15; index < extractors.length; index += 1) {
+    for (let index = 16; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: beachesOnlyMessage,

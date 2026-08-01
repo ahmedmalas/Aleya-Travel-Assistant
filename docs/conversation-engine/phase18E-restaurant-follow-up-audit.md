@@ -1,11 +1,12 @@
 # Phase 18 Restaurant Follow-Up Completion Audit
 
-Investigation and characterization only. Production behaviour unchanged.
+Investigation and characterization. Phase 18F closes the pre-18F dining re-ask defect.
 
 ```text
 PR #29 remains OPEN, Draft, Unmerged and Undeployed.
-Phase 18D baseline preserved exactly.
-No live environment has been changed.
+Phase 18D baseline preserved for activities.
+Phase 18F adds restaurantPreference persistence.
+No live environment has been changed by this audit document.
 ```
 
 ## Scope
@@ -16,126 +17,85 @@ Characterization tests:
 
 ```text
 src/features/conversation-core/__tests__/restaurantFollowUpAudit.phase18E.test.ts
+src/features/conversation-core/__tests__/restaurantPreferenceCompletion.phase18F.test.ts
 ```
 
-This phase does **not** modify production extraction, schema, selection, wording, or rendering.
+## Architecture (post-18F)
 
-## Architecture
-
-Restaurant service enablement and dining preference follow-up are currently a single-flag design:
+Restaurant service enablement and dining preference follow-up:
 
 ```text
 restaurantsRequested (boolean | null)
   → enables restaurants capability acknowledgement
-  → exclusively decides the dining preference follow-up
+restaurantPreference (string | null)
+  → persists cuisine/seafood/style answers
+  → suppresses dining follow-up when non-null
 ```
 
-There is **no** free-text or structured dining preference field on `ConversationCoreState`.
+Selector (Phase 18F):
 
-Related but separate:
+```typescript
+{
+  applies: (state) =>
+    state.restaurantsRequested === true &&
+    state.restaurantPreference === null,
+  question: CONVERSATION_REPLY_CATALOGUE.followUps.restaurants,
+}
+```
 
-| Field | Role relative to restaurants follow-up |
+## Pre-18F defect (historical evidence)
+
+Same architectural class as **pre-18D activities**:
+
+```text
+Defect (pre-18F):
+User answers the dining preference question with cuisine/seafood text
+→ engine did not persist a preference
+→ dining follow-up remained selected
+→ question was asked again (including on repeats and unsupported hedges)
+```
+
+Pre-18F selector contract:
+
+```text
+restaurantsRequested === true (no preference field consulted)
+```
+
+Root cause layers (pre-18F):
+
+| Layer | Finding |
 | --- | --- |
-| `restaurantsRequested` | Broad restaurants service; sole dining follow-up gate |
-| `wineriesFoodTrailsRequested` | Specific activity/food-trail capability; does **not** suppress dining follow-up |
-| cuisine / seafood / dining style | Not present in schema |
+| Schema | No dining preference field |
+| Extraction | Cuisine/seafood not owned |
+| Follow-up selection | Completion depended only on `restaurantsRequested === true` |
+| Assembly / renderer | Not at fault |
 
-## Ownership
+## Ownership (post-18F)
 
 | Concern | Owner |
 | --- | --- |
 | Restaurant service extraction | `RestaurantsRequestedConversationStateExtractor` |
-| Cuisine / seafood preference extraction | **None** |
-| Persistence of restaurant preference | **None** (no field) |
+| Cuisine / seafood preference extraction | `RestaurantPreferenceConversationStateExtractor` |
+| Persistence of restaurant preference | `restaurantPreference` on `ConversationCoreState` |
 | Persistence of restaurants service flag | authoritative state update of `restaurantsRequested` |
 | Dining follow-up selection / completion | `selectConversationFollowUpQuestion` |
 | Acknowledgement of restaurants enable | `selectConversationAcknowledgement` |
 | Reply assembly / render | unchanged; faithfully emit selected follow-up |
 
-## Current selector rule
-
-From `selectConversationFollowUpQuestion.ts`:
-
-```typescript
-{
-  applies: (state) => state.restaurantsRequested === true,
-  question: CONVERSATION_REPLY_CATALOGUE.followUps.restaurants,
-}
-```
-
-Source comment (Phase 18D era):
-
-```text
-Dining still has no dedicated preference field, so the
-restaurants question remains eligible while restaurantsRequested is true.
-```
-
-## Current completion rule
-
-```text
-Select dining follow-up iff:
-  core progression fields are populated
-  AND restaurantsRequested === true
-```
-
-Nothing suppresses the question once `restaurantsRequested` is true:
-
-```text
-cuisine answers → not persisted → question remains
-seafood answers → not persisted → question remains
-wineries/food trails capability → persisted elsewhere → question remains
-unsupported hedges → Phase 18B keeps the dining follow-up
-```
-
-Contrast with activities after Phase 18D:
-
-```text
-activitiesRequested === true
-AND NOT hasSpecificActivityInterest(state)
-```
-
-Restaurants have no equivalent completion predicate.
-
-## Supported restaurant preference fields
+## Supported restaurant preference fields (post-18F)
 
 | Preference concept | Persisted field | Supported today? |
 | --- | --- | --- |
 | Restaurants service requested | `restaurantsRequested` | yes |
-| Free-text dining preference | — | **no** |
-| Cuisine (Italian, Thai, …) | — | **no** |
-| Seafood | — | **no** |
-| Fine / casual dining style | — | **no** |
-| Vegetarian / vegan dining preference | — | **no** |
+| Free-text dining preference | `restaurantPreference` | yes |
+| Cuisine (Italian, Thai, …) | `restaurantPreference` | yes |
+| Seafood | `restaurantPreference` | yes |
+| Fine / casual dining style | `restaurantPreference` | yes |
+| Vegetarian / vegan dining preference | `restaurantPreference` | yes |
 
-`wineriesFoodTrailsRequested` is an activity-interest capability, not a restaurants dining-preference field.
+`wineriesFoodTrailsRequested` remains an activity-interest capability, not a restaurants dining-preference field.
 
-## Required audit answers
-
-1. **Which trip-state fields represent restaurant preferences?**  
-   Only `restaurantsRequested` exists for restaurants. No preference subfields.
-
-2. **Does the engine support free-text restaurant preferences?**  
-   No.
-
-3. **Which extractors populate restaurant preference fields?**  
-   `RestaurantsRequestedConversationStateExtractor` populates `restaurantsRequested` only. No cuisine/seafood extractor. Cuisine/seafood phrases appear in that extractor’s **block** paths (they must not count as a restaurants-service request) and are not written to any preference field.
-
-4. **What condition currently suppresses “What type of dining are you looking for?”**  
-   Only `restaurantsRequested !== true` (or higher-priority missing core / earlier contextual questions). No preference-completion suppression.
-
-5. **Does selecting a specific cuisine prevent the restaurant follow-up?**  
-   No. Cuisine phrases extract `{}` and the dining question remains.
-
-6. **Does selecting seafood prevent the restaurant follow-up?**  
-   No. Seafood phrases extract `{}` and the dining question remains.
-
-7. **Does repeating the same restaurant preference trigger another restaurant question?**  
-   Yes. Repeated cuisine/seafood stays uninterpreted and re-asks dining (Phase 18B preserves the still-incomplete restaurants follow-up).
-
-8. **Does unsupported input after restaurant preference preserve the correct next follow-up?**  
-   With `restaurantsRequested=true`, unsupported input preserves the dining follow-up (Phase 18B). There is no persisted preference that would make a different “next” follow-up correct under today’s completion contract.
-
-## Verified behaviour
+## Verified behaviour (post-18F)
 
 ### Restaurants requested only
 
@@ -149,10 +109,10 @@ User: find restaurants
 
 ```text
 Seed: restaurantsRequested=true
-User: Italian / I want Italian food / Japanese cuisine / we like Thai / …
-→ extracted {}
-→ messageInterpreted=false
-→ Now for dining. What type of dining are you looking for?
+User: Italian / I want Italian food / fine dining / …
+→ restaurantPreference persisted
+→ messageInterpreted=true
+→ neutral continuation (dining follow-up suppressed)
 ```
 
 ### Restaurants + seafood preference
@@ -160,29 +120,30 @@ User: Italian / I want Italian food / Japanese cuisine / we like Thai / …
 ```text
 Seed: restaurantsRequested=true
 User: looking for seafood
-→ extracted {}
+→ restaurantPreference=seafood
 → no seafood wording in reply
-→ Now for dining. What type of dining are you looking for?
+→ neutral continuation (dining follow-up suppressed)
 ```
 
 ### Repeated cuisine / seafood
 
 ```text
-Same dining follow-up every turn; no acknowledgement.
+First answer persists preference and suppresses dining.
+Repeated identical preference: unchanged, no dining re-ask.
 ```
 
-### Unsupported after preference attempt
+### Unsupported after preference captured
 
 ```text
-looking for seafood → dining follow-up
-I'm not sure → dining follow-up (Phase 18B)
+looking for seafood → preference persisted, neutral follow-up
+I'm not sure → neutral follow-up (Phase 18B); no dining re-ask
 ```
 
 ### Activities + restaurants interaction (post-18D)
 
 ```text
-activitiesRequested=true + hikingWalkingRequested=true + restaurantsRequested=true
-→ dining follow-up (activities already satisfied)
+activitiesRequested=true + hikingWalkingRequested=true + restaurantsRequested=true + restaurantPreference=null
+→ dining follow-up
 
 hiking then find restaurants
 → terminal/neutral after hiking, then dining follow-up after restaurants enable
@@ -191,63 +152,41 @@ hiking then find restaurants
 ### Related food capability
 
 ```text
-restaurantsRequested=true + User: wineries
+restaurantsRequested=true + restaurantPreference=null + User: wineries
 → wineriesFoodTrailsRequested=true
 → ack for wineries
 → dining follow-up still selected
 ```
 
-## Verified defects
-
-Same architectural class as **pre-18D activities**:
-
-```text
-Defect:
-User answers the dining preference question with cuisine/seafood text
-→ engine does not persist a preference
-→ dining follow-up remains selected
-→ question is asked again (including on repeats and unsupported hedges)
-```
-
-Root cause layers:
-
-| Layer | Finding |
-| --- | --- |
-| Schema | No dining preference field |
-| Extraction | Cuisine/seafood not owned |
-| Follow-up selection | Completion depends only on `restaurantsRequested === true` |
-| Assembly / renderer | Not at fault |
-
-This audit does **not** propose a fix. Characterization only.
-
-## Runtime path (representative seafood turn)
+## Runtime path (representative seafood turn, post-18F)
 
 ```text
 processConversationTurn()
 ↓
-RestaurantsRequestedConversationStateExtractor / others
-  "looking for seafood" → {}
+RestaurantPreferenceConversationStateExtractor (restaurantsRequested gate)
+  "looking for seafood" → { restaurantPreference: "seafood" }
 ↓
 authoritative state update
-  restaurantsRequested unchanged (true)
+  restaurantPreference=seafood
 ↓
 classifyConversationStateChange()
-  hasInterpretedChange = false
+  hasInterpretedChange = true
 ↓
 selectConversationFollowUpQuestion(state)
-  restaurantsRequested === true → dining follow-up
+  restaurantPreference !== null → dining follow-up suppressed
 ↓
 selectConversationReplyComponents / assemble
-  no ack + dining follow-up
+  generic acknowledgement + neutral continuation
 ↓
 rendered reply
-  Now for dining. What type of dining are you looking for?
+  Perfect, got it. … What else should I know about your trip?
 ```
 
-## Characterization file
+## Characterization files
 
 ```text
 src/features/conversation-core/__tests__/restaurantFollowUpAudit.phase18E.test.ts
+src/features/conversation-core/__tests__/restaurantPreferenceCompletion.phase18F.test.ts
 ```
 
-Preserves current (including defective) behaviour as regression evidence for a later phase.
+Phase 18E preserves pre-18F defect documentation; post-18F behaviour is asserted in both audit tests.

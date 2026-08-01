@@ -30,6 +30,7 @@ import { KayakingRequestedConversationStateExtractor } from '../KayakingRequeste
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
@@ -850,7 +851,7 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -870,24 +871,27 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
-    expect(extractors[16]).toBeInstanceOf(
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[17]).toBeInstanceOf(
       FourWheelDrivingRequestedConversationStateExtractor,
     );
-    expect(extractors[17]).toBeInstanceOf(
+    expect(extractors[18]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(extractors[18]).toBeInstanceOf(
+    expect(extractors[19]).toBeInstanceOf(
       AttractionsRequestedConversationStateExtractor,
     );
-    expect(extractors[19]).toBeInstanceOf(
+    expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -948,7 +952,7 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 20; index < extractors.length; index += 1) {
+    for (let index = 21; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: snowActiveMessage,
@@ -959,19 +963,19 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
     }
 
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: snowActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
     expect(
-      extractors[18]?.extract({
+      extractors[19]?.extract({
         message: snowActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { attractionsRequested: true } });
     expect(
-      extractors[17]?.extract({
+      extractors[18]?.extract({
         message: snowActiveMessage,
         currentState,
       }),
@@ -979,7 +983,7 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
 
     const snowOnlyMessage = 'skiing options';
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: snowOnlyMessage,
         currentState,
       }),
@@ -992,7 +996,7 @@ describe('phase 8W — SnowActivitiesRequestedConversationStateExtractor activat
     ).toEqual({ stateUpdate: { snowActivitiesRequested: true } });
 
     for (let index = 0; index < extractors.length; index += 1) {
-      if (index === 19) {
+      if (index === 20) {
         continue;
       }
       expect(

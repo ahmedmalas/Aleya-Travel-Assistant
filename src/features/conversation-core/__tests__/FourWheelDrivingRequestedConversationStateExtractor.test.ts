@@ -29,6 +29,7 @@ import { KayakingRequestedConversationStateExtractor } from '../KayakingRequeste
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
 import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
@@ -849,7 +850,7 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -869,15 +870,18 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
-    expect(extractors[16]).toBeInstanceOf(
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[17]).toBeInstanceOf(
       FourWheelDrivingRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -919,7 +923,7 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
       },
     });
 
-    for (let index = 17; index < extractors.length; index += 1) {
+    for (let index = 18; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: fourWheelActiveMessage,
@@ -930,19 +934,19 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
     }
 
     expect(
-      extractors[16]?.extract({
+      extractors[17]?.extract({
         message: fourWheelActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
     expect(
-      extractors[15]?.extract({
+      extractors[16]?.extract({
         message: fourWheelActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { kayakingRequested: true } });
     expect(
-      extractors[14]?.extract({
+      extractors[15]?.extract({
         message: fourWheelActiveMessage,
         currentState,
       }),
@@ -950,7 +954,7 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
 
     const fourWheelOnlyMessage = '4wd options';
     expect(
-      extractors[16]?.extract({
+      extractors[17]?.extract({
         message: fourWheelOnlyMessage,
         currentState,
       }),
@@ -963,7 +967,7 @@ describe('phase 8T — FourWheelDrivingRequestedConversationStateExtractor activ
     ).toEqual({ stateUpdate: { fourWheelDriveRequested: true } });
 
     for (let index = 0; index < extractors.length; index += 1) {
-      if (index === 16) {
+      if (index === 17) {
         continue;
       }
       expect(

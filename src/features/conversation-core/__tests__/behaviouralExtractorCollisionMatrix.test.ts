@@ -20,6 +20,7 @@ import { FourWheelDrivingRequestedConversationStateExtractor } from '../FourWhee
 import { KayakingRequestedConversationStateExtractor } from '../KayakingRequestedConversationStateExtractor';
 import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
 import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from '../RestaurantPreferenceConversationStateExtractor';
 import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
 import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
@@ -504,7 +505,7 @@ describe('phase 9E — behavioural extractor collision matrix', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
+    expect(extractors).toHaveLength(29);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -524,41 +525,44 @@ describe('phase 9E — behavioural extractor collision matrix', () => {
       RestaurantsRequestedConversationStateExtractor,
     );
     expect(extractors[12]).toBeInstanceOf(
+      RestaurantPreferenceConversationStateExtractor,
+    );
+    expect(extractors[13]).toBeInstanceOf(
       NearbyDiscoveryRequestedConversationStateExtractor,
     );
-    expect(extractors[13]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
-    expect(extractors[14]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
-    expect(extractors[15]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
-    expect(extractors[16]).toBeInstanceOf(
+    expect(extractors[14]).toBeInstanceOf(BeachesRequestedConversationStateExtractor);
+    expect(extractors[15]).toBeInstanceOf(CampingRequestedConversationStateExtractor);
+    expect(extractors[16]).toBeInstanceOf(KayakingRequestedConversationStateExtractor);
+    expect(extractors[17]).toBeInstanceOf(
       FourWheelDrivingRequestedConversationStateExtractor,
     );
-    expect(extractors[17]).toBeInstanceOf(
+    expect(extractors[18]).toBeInstanceOf(
       ScenicDrivesRequestedConversationStateExtractor,
     );
-    expect(extractors[18]).toBeInstanceOf(
+    expect(extractors[19]).toBeInstanceOf(
       AttractionsRequestedConversationStateExtractor,
     );
-    expect(extractors[19]).toBeInstanceOf(
+    expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors[21]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[22]).toBeInstanceOf(
+    expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(
       DivingSnorkellingRequestedConversationStateExtractor,
     );
-    expect(extractors[23]).toBeInstanceOf(
+    expect(extractors[24]).toBeInstanceOf(
       WineriesFoodTrailsRequestedConversationStateExtractor,
     );
-    expect(extractors[24]).toBeInstanceOf(
+    expect(extractors[25]).toBeInstanceOf(
       EventsFestivalsRequestedConversationStateExtractor,
     );
-    expect(extractors[25]).toBeInstanceOf(WildlifeRequestedConversationStateExtractor);
-    expect(extractors[26]).toBeInstanceOf(
+    expect(extractors[26]).toBeInstanceOf(WildlifeRequestedConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('explicit stateUpdate precedence remains intact over extracted behavioural fields', () => {

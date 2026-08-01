@@ -997,20 +997,20 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(28);
-    expect(extractors[19]).toBeInstanceOf(
+    expect(extractors).toHaveLength(29);
+    expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
-    expect(extractors[20]).toBeInstanceOf(
+    expect(extractors[21]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[21]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
-    expect(extractors[22]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
-    expect(extractors[23]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
-    expect(extractors[24]).toBeInstanceOf(EventsFestivalsRequestedConversationStateExtractor);
-    expect(extractors[25]).toBeInstanceOf(WildlifeRequestedConversationStateExtractor);
-    expect(extractors[26]).toBeInstanceOf(NationalParksRequestedConversationStateExtractor);
-    expect(extractors[27]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
+    expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
+    expect(extractors[24]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
+    expect(extractors[25]).toBeInstanceOf(EventsFestivalsRequestedConversationStateExtractor);
+    expect(extractors[26]).toBeInstanceOf(WildlifeRequestedConversationStateExtractor);
+    expect(extractors[27]).toBeInstanceOf(NationalParksRequestedConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -1079,7 +1079,7 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: { activitiesRequested: true } });
 
-    for (let index = 27; index < extractors.length; index += 1) {
+    for (let index = 28; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: nationalParksActiveMessage,
@@ -1090,49 +1090,49 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
     }
 
     expect(
-      extractors[26]?.extract({
+      extractors[27]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { nationalParksRequested: true } });
     expect(
-      extractors[25]?.extract({
+      extractors[26]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { wildlifeRequested: true } });
     expect(
-      extractors[24]?.extract({
+      extractors[25]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
-      extractors[23]?.extract({
+      extractors[24]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { wineriesFoodTrailsRequested: true } });
     expect(
-      extractors[22]?.extract({
+      extractors[23]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { divingSnorkellingRequested: true } });
     expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { fishingRequested: true } });
     expect(
-      extractors[20]?.extract({
+      extractors[21]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { hikingWalkingRequested: true } });
     expect(
-      extractors[19]?.extract({
+      extractors[20]?.extract({
         message: nationalParksActiveMessage,
         currentState,
       }),
@@ -1140,13 +1140,13 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
 
     const wildlifeOnlyMessage = 'wildlife options';
     expect(
-      extractors[25]?.extract({
+      extractors[26]?.extract({
         message: wildlifeOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { wildlifeRequested: true } });
     expect(
-      extractors[26]?.extract({
+      extractors[27]?.extract({
         message: wildlifeOnlyMessage,
         currentState,
       }),
@@ -1154,25 +1154,25 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
 
     const eventsOnlyMessage = 'festival options';
     expect(
-      extractors[24]?.extract({
-        message: eventsOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
-    expect(
       extractors[25]?.extract({
         message: eventsOnlyMessage,
         currentState,
       }),
-    ).toEqual({ stateUpdate: {} });
+    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
       extractors[26]?.extract({
         message: eventsOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: {} });
+    expect(
+      extractors[27]?.extract({
+        message: eventsOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
 
-    for (let index = 27; index < extractors.length; index += 1) {
+    for (let index = 28; index < extractors.length; index += 1) {
       expect(
         extractors[index]?.extract({
           message: eventsOnlyMessage,
@@ -1184,11 +1184,17 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
 
     const parksOnlyMessage = 'park options';
     expect(
-      extractors[26]?.extract({
+      extractors[27]?.extract({
         message: parksOnlyMessage,
         currentState,
       }),
     ).toEqual({ stateUpdate: { nationalParksRequested: true } });
+    expect(
+      extractors[26]?.extract({
+        message: parksOnlyMessage,
+        currentState,
+      }),
+    ).toEqual({ stateUpdate: {} });
     expect(
       extractors[25]?.extract({
         message: parksOnlyMessage,
@@ -1196,13 +1202,7 @@ describe('phase 9D — NationalParksRequestedConversationStateExtractor activati
       }),
     ).toEqual({ stateUpdate: {} });
     expect(
-      extractors[24]?.extract({
-        message: parksOnlyMessage,
-        currentState,
-      }),
-    ).toEqual({ stateUpdate: {} });
-    expect(
-      extractors[21]?.extract({
+      extractors[22]?.extract({
         message: parksOnlyMessage,
         currentState,
       }),
