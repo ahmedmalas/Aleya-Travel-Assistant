@@ -1,7 +1,11 @@
 # Phase 21A — Origin bare-answer progression failure audit
 
-Investigation and characterization only. No production behaviour change.
-No deploy. No UI patch. No wording workaround.
+Investigation and characterization only (at time of audit). No deploy.
+
+**Status update:** Phase 21B repaired bare-origin follow-up extraction at
+`OriginConversationStateExtractor`. Characterization tests in this phase were
+updated to assert the corrected production behaviour while retaining the root
+cause history below. See `phase21B-origin-bare-answer-progression-fix.md`.
 
 Characterization tests:
 

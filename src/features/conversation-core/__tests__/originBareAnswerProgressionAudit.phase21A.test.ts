@@ -75,7 +75,7 @@ function turn(message: string, state: ConversationCoreState, index: number) {
 }
 
 describe('Phase 21A — origin bare-answer progression failure audit', () => {
-  it('locks origin extractor ownership: registered, cue-only, no currentState bare path', () => {
+  it('locks origin extractor ownership: registered; Phase 21B adds active-origin bare path', () => {
     const factory = readSrc(
       'src/features/conversation-core/createConversationStateExtractor.ts',
     );
@@ -89,10 +89,14 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
       /new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\)/,
     );
 
-    expect(originSource).toMatch(/no[\s\S]*currentState inspection/i);
+    // Phase 21A root cause: cue-only extraction. Phase 21B repaired bare
+    // answers via isOriginFollowUpActive — history retained in phase21A doc.
+    expect(originSource).toMatch(/Phase 21B/);
+    expect(originSource).toMatch(/isOriginFollowUpActive/);
     expect(originSource).toMatch(/\\bfrom\\s\+\(\.\+\)\$\/i/);
-    expect(originSource).not.toMatch(/selectConversationFollowUpQuestion/);
-    expect(originSource).not.toMatch(/BarePlace/);
+    expect(originSource).not.toMatch(
+      /import \{[^}]*selectConversationFollowUpQuestion/,
+    );
 
     // Active panel uses processConversationTurn with in-memory state hydration.
     expect(panel).toMatch(/processConversationTurn\(/);
@@ -102,7 +106,9 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
     expect(panel).not.toMatch(/persistenceUsed/);
   });
 
-  it('Melbourne → Sydney: bare origin does not extract; origin follow-up loops', () => {
+  it('Melbourne → Sydney.: Phase 21B corrected — bare origin extracts and advances', () => {
+    // Phase 21A characterized the pre-fix loop (origin stayed null; origin
+    // question repeated). Phase 21B replaces that production expectation.
     let s = createState();
     let t = turn('I want to go to Melbourne.', s, 0);
     expect(t.result.state.destination).toBe('Melbourne');
@@ -112,42 +118,24 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
     expect(t.result.trace.persistenceUsed).toBe(false);
     expect(t.result.trace.turnCount).toBe(1);
 
-    // Canonical state into first Sydney turn: destination set, origin null.
     s = t.result.state;
     expect(s.destination).toBe('Melbourne');
     expect(s.origin).toBeNull();
 
     t = turn('Sydney.', s, 1);
-    // Extractor invocation: registered origin extractor returns empty update.
-    expect(t.isolatedOrigin).toEqual({ stateUpdate: {} });
-    expect(t.compositeExtraction.stateUpdate.origin).toBeUndefined();
-    expect(t.extractionTransition.extractionResult.stateUpdate.origin).toBeUndefined();
-    expect(t.extractionTransition.hasStateChanged).toBe(false);
-    expect(t.extractionTransition.nextState.origin).toBeNull();
+    expect(t.isolatedOrigin).toEqual({ stateUpdate: { origin: 'Sydney' } });
+    expect(t.compositeExtraction.stateUpdate.origin).toBe('Sydney');
+    expect(t.extractionTransition.hasStateChanged).toBe(true);
+    expect(t.extractionTransition.nextState.origin).toBe('Sydney');
     expect(t.extractionTransition.nextState.destination).toBe('Melbourne');
 
-    // End-of-turn state: destination preserved; origin still null.
-    expect(t.result.state.origin).toBeNull();
+    expect(t.result.state.origin).toBe('Sydney');
     expect(t.result.state.destination).toBe('Melbourne');
-    expect(t.result.trace.messageInterpreted).toBe(false);
+    expect(t.result.trace.messageInterpreted).toBe(true);
     expect(t.result.trace.turnCount).toBe(2);
-    expect(t.result.reply).toContain(ORIGIN_Q);
-    expect(selectConversationFollowUpQuestion(t.result.state)).toBe(ORIGIN_Q);
-    // Observed production loop wording (baseline lead-in + catalogue).
-    expect(t.result.reply).toBe(
-      "Let's begin with where you're travelling from. Where will you be travelling from?",
-    );
-
-    // Following turn receives same canonical travel fields.
-    s = t.result.state;
-    t = turn('Sydney.', s, 2);
-    expect(t.previous.origin).toBeNull();
-    expect(t.previous.destination).toBe('Melbourne');
-    expect(t.result.state.origin).toBeNull();
-    expect(t.result.trace.turnCount).toBe(3);
-    expect(t.result.reply).toBe(
-      "Let's begin with where you're travelling from. Where will you be travelling from?",
-    );
+    expect(t.result.reply).toContain(DEPARTURE_Q);
+    expect(t.result.reply).not.toContain(ORIGIN_Q);
+    expect(selectConversationFollowUpQuestion(t.result.state)).toBe(DEPARTURE_Q);
   });
 
   it('Melbourne → from Sydney / travelling-from cue: origin advances to departure', () => {
@@ -172,18 +160,21 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
     expect(t.result.reply).toContain(DEPARTURE_Q);
   });
 
-  it('Melbourne → Sydney → Sydney: repeated bare origin remains uninterpreted', () => {
+  it('Melbourne → Sydney → Sydney: first bare sets origin; second does not overwrite', () => {
+    // Phase 21A expected both turns uninterpreted (loop). Phase 21B: first
+    // bare succeeds; once origin is set, bare place no longer owns the field.
     let s = createState();
     let t = turn('I want to go to Melbourne.', s, 0);
     s = t.result.state;
     t = turn('Sydney', s, 1);
-    expect(t.result.state.origin).toBeNull();
-    expect(t.result.trace.messageInterpreted).toBe(false);
+    expect(t.result.state.origin).toBe('Sydney');
+    expect(t.result.trace.messageInterpreted).toBe(true);
+    expect(selectConversationFollowUpQuestion(t.result.state)).toBe(DEPARTURE_Q);
     s = t.result.state;
     t = turn('Sydney', s, 2);
-    expect(t.result.state.origin).toBeNull();
+    expect(t.result.state.origin).toBe('Sydney');
     expect(t.result.trace.messageInterpreted).toBe(false);
-    expect(selectConversationFollowUpQuestion(t.result.state)).toBe(ORIGIN_Q);
+    expect(selectConversationFollowUpQuestion(t.result.state)).toBe(DEPARTURE_Q);
   });
 
   it('blast radius: bare destination/date answers also fail; bare passenger counts succeed', () => {
@@ -268,11 +259,18 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
       currentState: createState({ destination: 'Melbourne' }),
     });
     expect(withCue.stateUpdate.origin).toBe('Hobart');
-    const bare = extractConversationState({
+    // Phase 21B: bare place when origin follow-up is active.
+    const bareActive = extractConversationState({
       message: 'Hobart',
-      currentState: createState({ destination: 'Melbourne' }),
+      currentState: createState({ destination: 'Melbourne', origin: null }),
     });
-    expect(bare.stateUpdate.origin).toBeUndefined();
+    expect(bareActive.stateUpdate.origin).toBe('Hobart');
+    // Guard: bare place when destination still required stays empty.
+    const bareInactive = extractConversationState({
+      message: 'Hobart',
+      currentState: createState({ destination: null, origin: null }),
+    });
+    expect(bareInactive.stateUpdate.origin).toBeUndefined();
     void composite;
   });
 });

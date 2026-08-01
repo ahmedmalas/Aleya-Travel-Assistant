@@ -523,12 +523,11 @@ describe('conversation-core architectural boundary', () => {
     expect(originExtractor).toContain('Phase 8B');
     expect(originExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(originExtractor).toMatch(/input\.message/);
-    expect(originExtractor.includes('input.currentState')).toBe(false);
+    // Phase 21B: currentState is read only for the active-origin bare gate.
+    expect(originExtractor).toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
     expect(originExtractor.includes('.trim(')).toBe(false);
     expect(originExtractor.includes('.toLowerCase(')).toBe(false);
-    expect(originExtractor.includes('input.currentState')).toBe(false);
-    expect(originExtractor).toMatch(/origin:\s*origin/);
-    expect(originExtractor.includes('origin: null')).toBe(false);
+    expect(originExtractor).toMatch(/origin:\s*(?:cuedOrigin|bareOrigin|origin)/);
     expect(originExtractor.includes('origin: ""')).toBe(false);
     const departureDateExtractor = readSrc(
       'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',

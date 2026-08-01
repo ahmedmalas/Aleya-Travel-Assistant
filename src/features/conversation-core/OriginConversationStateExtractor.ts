@@ -1,5 +1,6 @@
 import { trimRepairPlaceCaptureAtSiblingClause } from './repairPlaceClauseBoundary';
 import type {
+  ConversationCoreState,
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
   ConversationStateExtractor,
@@ -10,7 +11,7 @@ import type {
  *
  * Phase 7B / Phase 8B: recognises only narrow, explicit origin statements in
  * the current message. Deterministic and local — no external lookup,
- * geographic validation, destination extraction, or currentState inspection.
+ * geographic validation, or destination extraction.
  *
  * Phase 17C: adds explicit origin-cued repair forms (meant from / Actually,
  * from / make that from / change origin|departure location / from … instead).
@@ -18,6 +19,11 @@ import type {
  *
  * Phase 17I: repair place captures trim at following date/passenger clauses;
  * destination-contrast messages may keep a trailing from-origin cue.
+ *
+ * Phase 21B: when origin is the canonical next required core field
+ * (destination complete, origin null), a whole-message bare place answer may
+ * emit origin. Explicit cue ownership is unchanged and always tried first.
+ * currentState is read only for that active-origin gate — never copied.
  */
 export class OriginConversationStateExtractor
   implements ConversationStateExtractor
@@ -25,18 +31,48 @@ export class OriginConversationStateExtractor
   extract(
     input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
-    const origin = extractExplicitOrigin(input.message);
-    if (origin === null) {
+    const cuedOrigin = extractExplicitOrigin(input.message);
+    if (cuedOrigin !== null) {
+      return {
+        stateUpdate: {
+          origin: cuedOrigin,
+        },
+      };
+    }
+
+    if (!isOriginFollowUpActive(input.currentState)) {
       return {
         stateUpdate: {},
       };
     }
+
+    const bareOrigin = extractBareOriginPlace(
+      input.message,
+      input.currentState.destination,
+    );
+    if (bareOrigin === null) {
+      return {
+        stateUpdate: {},
+      };
+    }
+
     return {
       stateUpdate: {
-        origin: origin,
+        origin: bareOrigin,
       },
     };
   }
+}
+
+/**
+ * True when origin is the next required core travel field.
+ *
+ * Mirrors core progression priority (destination → origin → departureDate →
+ * returnDate). Does not import the follow-up selector; destination complete
+ * + origin null is sufficient for origin to own the active follow-up.
+ */
+function isOriginFollowUpActive(state: ConversationCoreState): boolean {
+  return state.destination !== null && state.origin === null;
 }
 
 /** Trim edges without String.prototype.trim (architecture boundary). */
@@ -229,4 +265,130 @@ function extractExplicitOrigin(message: string): string | null {
     return origin;
   }
   return null;
+}
+
+/**
+ * Conversational fillers that must not become origin when origin is active.
+ * Compared with ASCII case-folding (no String#toLowerCase).
+ */
+const BARE_ORIGIN_FILLERS: readonly string[] = [
+  'ok',
+  'okay',
+  'thanks',
+  'thank',
+  'hello',
+  'hi',
+  'hey',
+  'yes',
+  'no',
+  'sure',
+  'yep',
+  'nope',
+  'good',
+  'great',
+  'fine',
+  'cool',
+  'maybe',
+  'perhaps',
+  'please',
+  'weather',
+  'friend',
+  'there',
+  'here',
+  'what',
+  'who',
+  'why',
+  'how',
+  'when',
+  'where',
+  'let',
+  'think',
+  'help',
+  'colour',
+  'color',
+  'blue',
+  'favourite',
+  'favorite',
+  'flexible',
+  'budget',
+  'recommend',
+  'recommendation',
+  'recommendations',
+];
+
+function equalsIgnoreAsciiCase(left: string, right: string): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    let leftCode = left.charCodeAt(index);
+    let rightCode = right.charCodeAt(index);
+    if (leftCode >= 65 && leftCode <= 90) {
+      leftCode += 32;
+    }
+    if (rightCode >= 65 && rightCode <= 90) {
+      rightCode += 32;
+    }
+    if (leftCode !== rightCode) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isBareOriginFiller(value: string): boolean {
+  return BARE_ORIGIN_FILLERS.some((filler) =>
+    equalsIgnoreAsciiCase(value, filler),
+  );
+}
+
+/**
+ * Phase 21B — whole-message bare place when origin follow-up is active.
+ *
+ * Single place token only (optional internal hyphen/apostrophe). Multi-word
+ * places keep using explicit from-cues. Reuses normaliseCapturedOrigin.
+ * Rejects fillers and a bare repeat of the completed destination.
+ */
+function extractBareOriginPlace(
+  message: string,
+  destination: string | null,
+): string | null {
+  const text = edgeTrim(message);
+  if (text.length === 0) {
+    return null;
+  }
+  if (/\?/.test(text)) {
+    return null;
+  }
+  if (/\d/.test(text)) {
+    return null;
+  }
+
+  const origin = normaliseCapturedOrigin(text);
+  if (origin === null) {
+    return null;
+  }
+  if (isRejectedRepairOriginCapture(origin)) {
+    return null;
+  }
+
+  // Whole-message bare: normalisation may only strip trailing punctuation.
+  const punctStripped = edgeTrim(text.replace(/[.!?,;:]+$/g, ''));
+  if (origin !== punctStripped) {
+    return null;
+  }
+
+  // Single place token — keeps "Sydney" / "Sydney." working without opening
+  // multi-word chatter ("Hello there", "asdfgh nonsense") as origin.
+  if (!/^[A-Za-z]+(?:['\-][A-Za-z]+)*$/.test(origin)) {
+    return null;
+  }
+  if (isBareOriginFiller(origin)) {
+    return null;
+  }
+  if (destination !== null && equalsIgnoreAsciiCase(origin, destination)) {
+    return null;
+  }
+
+  return origin;
 }

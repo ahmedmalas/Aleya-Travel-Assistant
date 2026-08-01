@@ -521,11 +521,6 @@ describe('Phase 18A — unsupported input selection audit', () => {
         expectedPatch: { destination: 'Cairns' },
       },
       {
-        label: 'unknown destination-like text',
-        message: 'Xyzzyville',
-        expectedPatch: {},
-      },
-      {
         label: 'unsupported hedge',
         message: "I'm not sure yet",
         expectedPatch: {},
@@ -543,6 +538,14 @@ describe('Phase 18A — unsupported input selection audit', () => {
         activatedFollowUp(FOLLOW_UPS.origin),
       );
     }
+
+    // Phase 21B: a bare unknown place while origin is active is interpreted as
+    // origin (no gazetteer). Pre-21B this path was empty / uninterpreted.
+    const bareUnknown = trace('Xyzzyville', seed);
+    expect(bareUnknown.extractedPatch).toEqual({ origin: 'Xyzzyville' });
+    expect(bareUnknown.messageInterpreted).toBe(true);
+    expect(bareUnknown.followUpIfCalled).toBe(FOLLOW_UPS.departureDate);
+    expect(bareUnknown.followUpQuestion).toBe(FOLLOW_UPS.departureDate);
   });
 
   it('shows required follow-up after a prior turn just set a field, and when prior state is unchanged', () => {

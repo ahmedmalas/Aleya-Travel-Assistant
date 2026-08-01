@@ -279,13 +279,16 @@ describe('phase 8B — OriginConversationStateExtractor activation', () => {
     expect(second).toEqual({ stateUpdate: { origin: 'Cairns' } });
   });
 
-  it('contains no trim/toLowerCase, currentState inspection, or provider imports', () => {
+  it('contains no trim/toLowerCase or provider imports; currentState is gate-only', () => {
     const source = readFileSync(ORIGIN_SOURCE, 'utf8');
 
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
-    expect(source).not.toMatch(/input\.currentState/);
-    expect(source).not.toMatch(/currentState\./);
+    // Phase 21B: currentState used only for active-origin follow-up gate.
+    expect(source).toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
+    expect(source).toMatch(/state\.destination !== null && state\.origin === null/);
+    expect(source).not.toMatch(/state\.origin\s*=(?!=)/);
+    expect(source).not.toMatch(/currentState\.origin/);
     expect(source).toMatch(/origin\s*:/);
     expect(source).not.toMatch(/\.trim\(/);
     expect(source).not.toMatch(/\.toLowerCase\(/);

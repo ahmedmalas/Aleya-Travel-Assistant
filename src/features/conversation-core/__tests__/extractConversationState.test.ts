@@ -202,12 +202,20 @@ describe('phase 5F — extractConversationState execution only', () => {
     expect(second).toEqual({ stateUpdate: { destination: 'Cairns' } });
     expect(second.stateUpdate).not.toBe(first.stateUpdate);
 
-    const unsupported = extractConversationState({
+    // Phase 21B: bare place while origin follow-up is active sets origin.
+    const bareOrigin = extractConversationState({
       message: 'Brisbane',
-      currentState: createState({ destination: 'Perth' }),
+      currentState: createState({ destination: 'Perth', origin: null }),
     });
-    expect(unsupported).toEqual({ stateUpdate: {} });
-    expect(unsupported.stateUpdate).not.toHaveProperty('destination');
+    expect(bareOrigin).toEqual({ stateUpdate: { origin: 'Brisbane' } });
+    expect(bareOrigin.stateUpdate).not.toHaveProperty('destination');
+    expect(bareOrigin.stateUpdate).not.toBe(first.stateUpdate);
+
+    const stillUnsupported = extractConversationState({
+      message: 'Okay',
+      currentState: createState({ destination: 'Perth', origin: null }),
+    });
+    expect(stillUnsupported).toEqual({ stateUpdate: {} });
   });
 
   it('delegates through createConversationStateExtractor without duplicating empty logic', () => {
