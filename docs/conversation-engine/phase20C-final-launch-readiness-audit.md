@@ -221,3 +221,24 @@ Do not deploy.
 Do not remove Draft status.
 Do not begin external API integration.
 ```
+
+---
+
+## Validation evidence (Phase 20C close-out)
+
+| Check | Result |
+| --- | --- |
+| Accepted baseline HEAD | `6f6d7ed4b66ae6eb521c2393484b603002b1e641` |
+| Phase 20C commit | `d5fd2d9a9fcae255a265716aba4207caecf9e665` (plus validation-evidence follow-up if present) |
+| Phase 19 passenger + 20A/20B/20C focused | 11 files / 213 tests passed |
+| conversation-core suite | 201 files / 2088 tests passed |
+| Full repository suite | 258 files / 2301 tests passed |
+| Typecheck (`tsc -b`) | pass |
+| Clean production build | pass |
+| Production bundle | `dist/assets/conversation-core-HhEirSkd.js` |
+| SHA-256 | `9250f22c4fac102e96dc0aa11842d396d4f0c659865682c1156b740b10bb277f` |
+| Bundle reproducible (second clean build) | yes (identical SHA-256) |
+| Working tree after validation | clean (`dist/` gitignored, untracked) |
+| PR #29 | OPEN, Draft, Unmerged, Undeployed |
+
+Focused Phase 19 passenger suites included: 19D, 19F, 19G, 19H, 19I, 19J, 19K, 19L plus Phase 20A, 20B, and 20C.
