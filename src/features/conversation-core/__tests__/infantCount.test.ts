@@ -158,8 +158,9 @@ describe('phase 3G — explicit infantCount only', () => {
     expect(childOnly.state.infantCount).toBe(1);
     const baby = turn('our baby', seeded.state, 8);
     expect(baby.state.infantCount).toBe(1);
+    // Phase 19L — explicit zero updates infantCount.
     const zero = turn('0 infants', seeded.state, 9);
-    expect(zero.state.infantCount).toBe(1);
+    expect(zero.state.infantCount).toBe(0);
   });
 
   it('trusted explicit stateUpdate.infantCount overrides an extracted infantCount', () => {

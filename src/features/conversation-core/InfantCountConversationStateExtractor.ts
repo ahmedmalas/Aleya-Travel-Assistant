@@ -14,8 +14,12 @@ import type {
  * extraction, or currentState inspection.
  *
  * Phase 17G: adds Actually / contrast / change-the-infant-count-to repair
- * families via the shared passenger repair helper. Zero and removal remain
- * blocked; multi-passenger sentences stay out of scope.
+ * families via the shared passenger repair helper. Multi-passenger sentences
+ * stay out of scope (Phase 19K ownership).
+ *
+ * Phase 19L: accepts explicit zero answers (`0 infants`, `no infants`,
+ * `There are no infants`, `We have no infants`) in domain 0–99. Repair
+ * families still reject zero so Phase 17G inertness is preserved.
  */
 export class InfantCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -85,6 +89,7 @@ function wordTokenToCount(token: string): number | null {
   return null;
 }
 
+/** Phase 19L domain: 0–99 for digit tokens; word tokens remain 1–10. */
 function parseInfantCountToken(raw: string): number | null {
   const token = edgeTrim(raw);
   if (token.length === 0) {
@@ -92,7 +97,8 @@ function parseInfantCountToken(raw: string): number | null {
   }
   const fromDigits = parseUnsignedDigits(token);
   if (fromDigits !== null) {
-    if (fromDigits < 1 || fromDigits > 99) {
+    // Phase 19L domain: 0–99 (unsigned parser cannot yield negatives).
+    if (fromDigits > 99) {
       return null;
     }
     return fromDigits;
@@ -104,6 +110,15 @@ function parseInfantCountToken(raw: string): number | null {
   return fromWord;
 }
 
+/** Repair path keeps ≥1 so Phase 17G zero/removal inertness is preserved. */
+function parseInfantCountRepairToken(raw: string): number | null {
+  const value = parseInfantCountToken(raw);
+  if (value === null || value < 1) {
+    return null;
+  }
+  return value;
+}
+
 function isBlockedInfantCountMessage(message: string): boolean {
   if (/\?/.test(message)) {
     return true;
@@ -111,15 +126,17 @@ function isBlockedInfantCountMessage(message: string): boolean {
   if (/\bhow\s+many\b/i.test(message)) {
     return true;
   }
-  // Phase 19K — combined multi-passenger sentences are owned exclusively by
-  // MultiPassengerCountConversationStateExtractor (atomic accept/reject).
+  // Phase 19K / 19L — combined multi-passenger sentences (including zero /
+  // "no …" segments) are owned exclusively by MultiPassenger.
   if (
     /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+adults?\b/i.test(
       message,
     ) ||
     /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+child(?:ren)?\b/i.test(
       message,
-    )
+    ) ||
+    /\bno\s+adults?\b/i.test(message) ||
+    /\bno\s+child(?:ren)?\b/i.test(message)
   ) {
     return true;
   }
@@ -169,7 +186,12 @@ function isBlockedInfantCountMessage(message: string): boolean {
   ) {
     return true;
   }
-  if (/\bno\s+infants?\b/i.test(message) || /\bnot\b/i.test(message)) {
+  // Whole-message "no infants" is accepted earlier; any other "no infants"
+  // context (repair fragments, policy text) stays blocked.
+  if (/\bno\s+infants?\b/i.test(message)) {
+    return true;
+  }
+  if (/\bnot\b/i.test(message)) {
     return true;
   }
   if (/\bremove\b/i.test(message)) {
@@ -189,6 +211,10 @@ const EXPLICIT_INFANT_COUNT_CUES: readonly RegExp[] = [
   new RegExp(String.raw`\b${COUNT_TOKEN}\s+infants?\b`, 'i'),
 ];
 
+/** Phase 19L — whole-message explicit zero infant answers only. */
+const ZERO_INFANT_COUNT_MESSAGE =
+  /^(?:(?:we\s+have|there\s+are)\s+)?no\s+infants?[.!]*$/i;
+
 function extractExplicitInfantCount(message: string): number | null {
   const text = edgeTrim(message);
   if (text.length === 0) {
@@ -200,10 +226,14 @@ function extractExplicitInfantCount(message: string): number | null {
     text,
     'infants?',
     'infant',
-    parseInfantCountToken,
+    parseInfantCountRepairToken,
   );
   if (repaired !== null) {
     return repaired;
+  }
+
+  if (ZERO_INFANT_COUNT_MESSAGE.test(text)) {
+    return 0;
   }
 
   if (isBlockedInfantCountMessage(text)) {

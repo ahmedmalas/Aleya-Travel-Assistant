@@ -12,12 +12,15 @@ type PassengerCategory = 'adult' | 'child' | 'infant';
  * Internal multi-passenger count extraction boundary.
  *
  * Phase 19K: one whole-message combined passenger sentence with two or three
- * explicit digit counts maps to a single stateUpdate owning every captured
- * field (adultCount / childCount / infantCount). Service-gated to flights or
+ * explicit counts maps to a single stateUpdate owning every captured field
+ * (adultCount / childCount / infantCount). Service-gated to flights or
  * accommodation (Phase 19H). Atomic — any invalid category rejects the entire
- * message. Does not invent omitted categories or zeros. Alternate category
- * order is supported when each segment is an explicit digit+noun phrase.
+ * message. Does not invent omitted categories. Alternate category order is
+ * supported when each segment is an explicit count+noun phrase.
  * Single-category and guest/bare-number ownership remain with their extractors.
+ *
+ * Phase 19L: child/infant segments may be `0 …` or `no …` (domain 0–99).
+ * Adult remains 1–99; `0 adults` / `no adults` rejects the entire extraction.
  */
 export class MultiPassengerCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -86,12 +89,20 @@ function parseUnsignedDigits(raw: string): number | null {
   return value;
 }
 
-function parsePassengerCountToken(raw: string): number | null {
+/**
+ * Category-aware digit domain (Phase 19L):
+ * adult → 1–99; child / infant → 0–99.
+ */
+function parsePassengerCountToken(
+  raw: string,
+  category: PassengerCategory,
+): number | null {
   const fromDigits = parseUnsignedDigits(edgeTrim(raw));
   if (fromDigits === null) {
     return null;
   }
-  if (fromDigits < 1 || fromDigits > 99) {
+  const minimum = category === 'adult' ? 1 : 0;
+  if (fromDigits < minimum || fromDigits > 99) {
     return null;
   }
   return fromDigits;
@@ -140,10 +151,54 @@ function isBlockedMultiPassengerMessage(message: string): boolean {
 const OPTIONAL_PREFIX =
   /^(?:we\s+have|there\s+will\s+be|travell?ing\s+with)\s+/i;
 
-const SEGMENT_PATTERN = /^(\d+)\s+(adults?|children|child|infants?)$/i;
+const DIGIT_SEGMENT_PATTERN = /^(\d+)\s+(adults?|children|child|infants?)$/i;
+const ZERO_SEGMENT_PATTERN = /^no\s+(adults?|children|child|infants?)$/i;
+
+type SegmentParse =
+  | { ok: true; category: PassengerCategory; value: number }
+  | { ok: false };
+
+function parseMultiPassengerSegment(part: string): SegmentParse {
+  const zeroMatch = part.match(ZERO_SEGMENT_PATTERN);
+  if (zeroMatch !== null) {
+    const noun = zeroMatch[1];
+    if (typeof noun !== 'string') {
+      return { ok: false };
+    }
+    const category = nounToCategory(noun);
+    if (category === null) {
+      return { ok: false };
+    }
+    // "no adults" is adultCount=0 → invalid; reject atomically upstream.
+    if (category === 'adult') {
+      return { ok: false };
+    }
+    return { ok: true, category, value: 0 };
+  }
+
+  const digitMatch = part.match(DIGIT_SEGMENT_PATTERN);
+  if (digitMatch === null) {
+    return { ok: false };
+  }
+  const rawCount = digitMatch[1];
+  const noun = digitMatch[2];
+  if (typeof rawCount !== 'string' || typeof noun !== 'string') {
+    return { ok: false };
+  }
+  const category = nounToCategory(noun);
+  if (category === null) {
+    return { ok: false };
+  }
+  const value = parsePassengerCountToken(rawCount, category);
+  if (value === null) {
+    return { ok: false };
+  }
+  return { ok: true, category, value };
+}
 
 /**
- * Parse two or three digit+noun passenger segments joined by commas and "and".
+ * Parse two or three count+noun passenger segments joined by commas and "and".
+ * Supports digit counts and Phase 19L `no {noun}` zeros for child/infant.
  * Supports any explicit category order. Returns null when the message is not a
  * clear multi-passenger answer or any category is invalid.
  */
@@ -181,27 +236,14 @@ function extractMultiPassengerCounts(
     if (part.length === 0) {
       return null;
     }
-    const match = part.match(SEGMENT_PATTERN);
-    if (match === null) {
+    const parsed = parseMultiPassengerSegment(part);
+    if (!parsed.ok) {
       return null;
     }
-    const rawCount = match[1];
-    const noun = match[2];
-    if (typeof rawCount !== 'string' || typeof noun !== 'string') {
+    if (counts[parsed.category] !== undefined) {
       return null;
     }
-    const category = nounToCategory(noun);
-    if (category === null) {
-      return null;
-    }
-    if (counts[category] !== undefined) {
-      return null;
-    }
-    const value = parsePassengerCountToken(rawCount);
-    if (value === null) {
-      return null;
-    }
-    counts[category] = value;
+    counts[parsed.category] = parsed.value;
   }
 
   if (Object.keys(counts).length < 2) {

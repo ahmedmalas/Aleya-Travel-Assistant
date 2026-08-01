@@ -10,9 +10,12 @@ import type {
  *
  * Phase 19I: when exactly one passenger-count follow-up is active (same
  * priority as the passenger follow-up selector), a whole-message unsigned
- * integer in 1–99 updates that field. Does not own guest nouns, word numbers,
- * multi-passenger sentences, or zeros. Explicit noun cues remain owned by the
+ * integer updates that field. Explicit noun cues remain owned by the
  * Adult / Child / Infant extractors; explicit guest nouns are Phase 19J.
+ *
+ * Phase 19L: bare `0` is accepted only when the active field is childCount
+ * or infantCount (domain 0–99). Adult / guest (adultCount) remains 1–99;
+ * bare `0` never mutates adultCount.
  */
 export class BareNumberPassengerCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -27,7 +30,7 @@ export class BareNumberPassengerCountConversationStateExtractor
       };
     }
 
-    const count = parseBarePassengerCount(input.message);
+    const count = parseBarePassengerCount(input.message, field);
     if (count === null) {
       return {
         stateUpdate: {},
@@ -63,9 +66,13 @@ function digitCharToValue(ch: string): number | null {
 
 /**
  * Whole-message bare unsigned integer only. Rejects words, signs, decimals,
- * trailing punctuation, and values outside 1–99.
+ * and trailing punctuation. Domain is field-aware (Phase 19L):
+ * adultCount → 1–99; childCount / infantCount → 0–99.
  */
-function parseBarePassengerCount(message: string): number | null {
+function parseBarePassengerCount(
+  message: string,
+  field: 'adultCount' | 'childCount' | 'infantCount',
+): number | null {
   const text = edgeTrim(message);
   if (text.length === 0) {
     return null;
@@ -80,7 +87,8 @@ function parseBarePassengerCount(message: string): number | null {
     value = value * 10 + digit;
   }
 
-  if (value < 1 || value > 99) {
+  const minimum = field === 'adultCount' ? 1 : 0;
+  if (value < minimum || value > 99) {
     return null;
   }
   return value;

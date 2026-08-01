@@ -372,7 +372,7 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(t.components.followUpQuestion).toBe(INFANT_Q);
   });
 
-  it('characterizes zero adults / children / infants as non-extracting', () => {
+  it('characterizes zero adults as rejected; zero children/infants as Phase 19L support', () => {
     const zeroAdults = turn('0 adults', {
       ...COMPLETE_CORE,
       adultCount: null,
@@ -382,15 +382,16 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(zeroAdults.state.adultCount).toBeNull();
     expect(zeroAdults.components.followUpQuestion).toBe(ADULT_Q);
 
+    // Phase 19L — explicit zero child/infant answers are accepted.
     const zeroChildren = turn('0 children', {
       ...COMPLETE_CORE,
       adultCount: 2,
       childCount: null,
       flightsRequested: true,
     });
-    expect(zeroChildren.extracted).toEqual({});
-    expect(zeroChildren.state.childCount).toBeNull();
-    expect(zeroChildren.components.followUpQuestion).toBe(CHILD_Q);
+    expect(zeroChildren.extracted).toEqual({ childCount: 0 });
+    expect(zeroChildren.state.childCount).toBe(0);
+    expect(zeroChildren.components.followUpQuestion).toBe(INFANT_Q);
 
     const zeroInfants = turn('0 infants', {
       ...COMPLETE_CORE,
@@ -399,9 +400,9 @@ describe('Phase 19D — passenger progression audit', () => {
       infantCount: null,
       flightsRequested: true,
     });
-    expect(zeroInfants.extracted).toEqual({});
-    expect(zeroInfants.state.infantCount).toBeNull();
-    expect(zeroInfants.components.followUpQuestion).toBe(INFANT_Q);
+    expect(zeroInfants.extracted).toEqual({ infantCount: 0 });
+    expect(zeroInfants.state.infantCount).toBe(0);
+    expect(zeroInfants.components.followUpQuestion).toBe(NEUTRAL);
   });
 
   it('characterizes unsupported input during passenger progression → re-asks active count Q', () => {

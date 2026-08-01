@@ -10,6 +10,8 @@ export type PassengerCountField = 'adultCount' | 'childCount' | 'infantCount';
  * flights adult → accommodation guest (adultCount) → child → infant.
  * Phase 19K: multi-passenger extraction is service-gated via
  * isPassengerServiceRelevant (flights or accommodation).
+ * Phase 19L: childCount / infantCount of 0 are completed fields (null-only
+ * outstanding checks); adultCount remains non-zero.
  */
 
 /** True when passenger composition is relevant (Phase 19H service gate). */

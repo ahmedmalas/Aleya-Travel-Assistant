@@ -356,17 +356,15 @@ describe('Phase 17G — passenger repair extraction', () => {
     ).toBe(2);
   });
 
-  it('preserves zero and removal as no passenger-count patch', () => {
+  it('preserves adult-zero, word-zero, removal, and repair-no phrasing as no patch', () => {
+    // Phase 19L intentionally accepts "no/0 children|infants"; those are covered
+    // elsewhere. Repair-family and adult-zero inertness remain locked here.
     for (const message of [
       'No adults',
-      'No children',
-      'No infants',
       'Zero adults',
       'Zero children',
       'Zero infants',
       '0 adults',
-      '0 children',
-      '0 infants',
       'Remove the adults',
       'Remove the children',
       'Remove the infants',

@@ -143,8 +143,13 @@ describe('Phase 17F — passenger repair handling audit', () => {
       expect(source).toMatch(/\\bactually\\b/);
       expect(source).toMatch(/\\bnot\\b/);
       expect(source).toMatch(/\\bremove\\b/);
-      expect(source).toMatch(/fromDigits < 1/);
     }
+    // Adult remains 1–99; child/infant accept 0–99 (Phase 19L).
+    expect(adult).toMatch(/fromDigits < 1/);
+    expect(child).toContain('Phase 19L');
+    expect(child).toMatch(/fromDigits > 99/);
+    expect(infant).toContain('Phase 19L');
+    expect(infant).toMatch(/fromDigits > 99/);
     // Adult uniquely blocks sibling passenger nouns in the same message.
     expect(adult).toMatch(/child\|children\|kids\?\|infant/);
   });
@@ -339,17 +344,15 @@ describe('Phase 17F — passenger repair handling audit', () => {
     }
   });
 
-  it('zero and removal phrasing produce no passenger patch', () => {
+  it('adult-zero, word-zero, removal, and repair-no phrasing produce no passenger patch', () => {
+    // Phase 19L accepts explicit "no/0 children|infants"; keep adult-zero and
+    // repair/removal inertness locked here.
     const removals = [
       'No adults',
-      'No children',
-      'No infants',
       'Zero adults',
       'Zero children',
       'Zero infants',
       '0 adults',
-      '0 children',
-      '0 infants',
       'Remove the adults',
       'Remove the children',
       'Remove the infants',

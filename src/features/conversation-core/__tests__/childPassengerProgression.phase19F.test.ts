@@ -19,6 +19,7 @@ import { selectConversationReplyComponents } from '../selectConversationReplyCom
 const ROOT = process.cwd();
 const COMPOSITE = createConversationStateExtractor();
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
+const ACKS = CONVERSATION_REPLY_CATALOGUE.acknowledgements;
 const ADULT_Q = FOLLOW_UPS.flightsAdultCount;
 const GUEST_Q = FOLLOW_UPS.accommodationGuestCount;
 const CHILD_Q = FOLLOW_UPS.childCount;
@@ -344,19 +345,19 @@ describe('Phase 19F — child passenger progression', () => {
     expect(afterInfant.reply).toContain(NEUTRAL);
   });
 
-  it('zero-child boundary: "0 children" remains unsupported and re-asks child Q', () => {
+  it('zero-child support (Phase 19L): "0 children" completes child and asks infant Q', () => {
     const t = turn('0 children', {
       ...COMPLETE_CORE,
       adultCount: 2,
       flightsRequested: true,
       childCount: null,
     });
-    expect(t.extracted).toEqual({});
-    expect(t.state.childCount).toBeNull();
-    expect(t.classification.hasInterpretedChange).toBe(false);
-    expect(t.components.acknowledgement).toBeNull();
-    expect(t.components.followUpQuestion).toBe(CHILD_Q);
-    expect(t.reply).toContain(CHILD_Q);
+    expect(t.extracted).toEqual({ childCount: 0 });
+    expect(t.state.childCount).toBe(0);
+    expect(t.classification.hasInterpretedChange).toBe(true);
+    expect(t.components.acknowledgement).toBe(ACKS.childCount(0));
+    expect(t.components.followUpQuestion).toBe(INFANT_Q);
+    expect(t.reply).toContain(INFANT_Q);
     assertSingleSelectedQuestion(t.reply);
   });
 

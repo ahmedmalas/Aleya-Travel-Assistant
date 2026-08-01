@@ -421,9 +421,12 @@ describe('Phase 17J — repair handling closure audit', () => {
   });
 
   it('preserves intentional limitations and unsupported/ambiguous repairs', () => {
+    // Phase 19L accepts whole-message "No children"; keep adult-zero and
+    // repair/ambiguous limitations locked here.
     for (const message of [
       '0 adults',
-      'No children',
+      'Zero children',
+      'Actually, no children',
       'Actually, 2 adults and 1 child',
       'Sorry, I meant somewhere',
       'I meant Cairns or Hobart',

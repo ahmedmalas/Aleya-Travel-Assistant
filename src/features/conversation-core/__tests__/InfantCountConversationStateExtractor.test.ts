@@ -188,7 +188,25 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
     ).toEqual({ stateUpdate: { infantCount: 2 } });
   });
 
-  it('returns empty for adult-only, child-only, baby, fare, zero, negative, decimal, and vague wording', () => {
+  it('phase 19L accepts explicit zero infant answers', () => {
+    const extractor = new InfantCountConversationStateExtractor();
+    const currentState = createState();
+    for (const message of [
+      '0 infants',
+      '0 infant',
+      'no infants',
+      'There are no infants',
+      'We have no infants',
+      'no infants.',
+    ]) {
+      expect(
+        extractor.extract({ message, currentState }),
+        message,
+      ).toEqual({ stateUpdate: { infantCount: 0 } });
+    }
+  });
+
+  it('returns empty for adult-only, child-only, baby, fare, negative, decimal, and vague wording', () => {
     const extractor = new InfantCountConversationStateExtractor();
     const unsupported = [
       'baby',
@@ -205,7 +223,6 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       '1 child',
       '3 travellers',
       '2 passengers',
-      '0 infants',
       '-1 infant',
       '2.5 infants',
       'how many infants',
@@ -226,7 +243,6 @@ describe('phase 8G — InfantCountConversationStateExtractor activation', () => 
       'a one-year-old',
       'my wife and our baby',
       'remove the infant',
-      'no infants',
       'Do not change the infant count',
       'Keep my infant count',
       'Forget the infants',
