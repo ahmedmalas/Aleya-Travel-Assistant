@@ -26,6 +26,7 @@ import { ToursRequestedConversationStateExtractor } from '../extractors/ToursReq
 import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
 import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
 import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
+import { ExplicitGuestCountConversationStateExtractor } from '../ExplicitGuestCountConversationStateExtractor';
 import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -274,7 +275,7 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
         extractors: readonly unknown[];
       }
     ).extractors;
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(37);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
     expect(extractors[27]).toBeInstanceOf(
@@ -301,6 +302,9 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
     expect(extractors[34]).toBeInstanceOf(
       BareNumberPassengerCountConversationStateExtractor,
     );
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[35]).toBeInstanceOf(
+      ExplicitGuestCountConversationStateExtractor,
+    );
+    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 });

@@ -977,7 +977,7 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(37);
     expect(extractors[19]).toBeInstanceOf(
       AttractionsRequestedConversationStateExtractor,
     );
@@ -987,7 +987,7 @@ describe('phase 8X — HikingWalkingRequestedConversationStateExtractor activati
     expect(extractors[21]).toBeInstanceOf(
       HikingWalkingRequestedConversationStateExtractor,
     );
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',

@@ -312,14 +312,14 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(cued.components.followUpQuestion).toBe(CHILD_Q);
   });
 
-  it('characterizes guest-question answers that lack adult cues', () => {
+  it('characterizes guest-question answers with explicit guest cues (Phase 19J)', () => {
     const guests = turn('2 guests', {
       ...COMPLETE_CORE,
       adultCount: null,
       accommodationRequested: true,
     });
-    expect(guests.state.adultCount).toBeNull();
-    expect(guests.components.followUpQuestion).toBe(GUEST_Q);
+    expect(guests.state.adultCount).toBe(2);
+    expect(guests.components.followUpQuestion).toBe(CHILD_Q);
 
     const adults = turn('2 adults', {
       ...COMPLETE_CORE,

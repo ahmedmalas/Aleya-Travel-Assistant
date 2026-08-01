@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
 import { classifyConversationStateChange } from '../classifyConversationStateChange';
 import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import { createConversationStateExtractor } from '../createConversationStateExtractor';
@@ -340,15 +341,18 @@ describe('Phase 19I — bare-number passenger extraction', () => {
     assertSingleSelectedQuestion(infant.reply);
   });
 
-  it('does not claim guest-noun or multi-passenger sentences', () => {
-    const guests = turn('2 guests', {
-      ...COMPLETE_CORE,
-      adultCount: null,
-      accommodationRequested: true,
+  it('bare-number extractor does not claim guest-noun or multi-passenger sentences', () => {
+    // Phase 19J owns explicit guest nouns on the composite path; bare-number
+    // extractor alone must ignore guest wording.
+    const bare = new BareNumberPassengerCountConversationStateExtractor().extract({
+      message: '2 guests',
+      currentState: createState({
+        ...COMPLETE_CORE,
+        adultCount: null,
+        accommodationRequested: true,
+      }),
     });
-    expect(guests.extracted).toEqual({});
-    expect(guests.state.adultCount).toBeNull();
-    expect(guests.components.followUpQuestion).toBe(GUEST_Q);
+    expect(bare).toEqual({ stateUpdate: {} });
 
     const multi = turn('2 adults and 1 child', {
       ...COMPLETE_CORE,

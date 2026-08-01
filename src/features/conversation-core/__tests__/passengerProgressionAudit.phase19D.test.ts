@@ -262,17 +262,19 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(guests.components.followUpQuestion).toBe(CHILD_Q);
   });
 
-  it('characterizes "2 guests" → adultCount stays null; guest Q re-asked', () => {
+  it('characterizes "2 guests" → adultCount=2 and advances to child follow-up (Phase 19J)', () => {
     const t = turn('2 guests', {
       ...COMPLETE_CORE,
       adultCount: null,
       accommodationRequested: true,
     });
-    expect(t.extracted).toEqual({});
-    expect(t.state.adultCount).toBeNull();
-    expect(t.classification.hasInterpretedChange).toBe(false);
-    expect(t.components.followUpQuestion).toBe(GUEST_Q);
-    expect(t.reply).toContain(GUEST_Q);
+    expect(t.extracted).toEqual({ adultCount: 2 });
+    expect(t.state.adultCount).toBe(2);
+    expect(t.classification.hasInterpretedChange).toBe(true);
+    expect(t.classification.newlyPopulated).toContain('adultCount');
+    expect(t.components.acknowledgement).toMatch(/adult/i);
+    expect(t.components.followUpQuestion).toBe(CHILD_Q);
+    expect(t.reply).toContain(CHILD_Q);
   });
 
   it('characterizes "2 children" → childCount set; adult Q still open when needed', () => {

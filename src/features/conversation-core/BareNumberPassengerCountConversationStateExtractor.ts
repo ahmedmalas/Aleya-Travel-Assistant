@@ -1,11 +1,9 @@
+import { resolveActivePassengerCountField } from './passengerCountFollowUpContext';
 import type {
-  ConversationCoreState,
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
   ConversationStateExtractor,
 } from './types';
-
-type PassengerCountField = 'adultCount' | 'childCount' | 'infantCount';
 
 /**
  * Internal contextual bare-number passenger extraction boundary.
@@ -14,7 +12,7 @@ type PassengerCountField = 'adultCount' | 'childCount' | 'infantCount';
  * priority as the passenger follow-up selector), a whole-message unsigned
  * integer in 1–99 updates that field. Does not own guest nouns, word numbers,
  * multi-passenger sentences, or zeros. Explicit noun cues remain owned by the
- * Adult / Child / Infant extractors.
+ * Adult / Child / Infant extractors; explicit guest nouns are Phase 19J.
  */
 export class BareNumberPassengerCountConversationStateExtractor
   implements ConversationStateExtractor
@@ -86,48 +84,4 @@ function parseBarePassengerCount(message: string): number | null {
     return null;
   }
   return value;
-}
-
-/**
- * Mirrors follow-up passenger priority after core travel fields are complete:
- * flights adult → accommodation guest (adultCount) → child → infant.
- */
-function resolveActivePassengerCountField(
-  state: ConversationCoreState,
-): PassengerCountField | null {
-  if (
-    state.destination === null ||
-    state.origin === null ||
-    state.departureDate === null ||
-    state.returnDate === null
-  ) {
-    return null;
-  }
-
-  if (state.flightsRequested === true && state.adultCount === null) {
-    return 'adultCount';
-  }
-  if (state.accommodationRequested === true && state.adultCount === null) {
-    return 'adultCount';
-  }
-
-  const passengerServiceRelevant =
-    state.flightsRequested === true || state.accommodationRequested === true;
-  if (
-    passengerServiceRelevant &&
-    state.adultCount !== null &&
-    state.childCount === null
-  ) {
-    return 'childCount';
-  }
-  if (
-    passengerServiceRelevant &&
-    state.adultCount !== null &&
-    state.childCount !== null &&
-    state.infantCount === null
-  ) {
-    return 'infantCount';
-  }
-
-  return null;
 }

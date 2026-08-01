@@ -22,6 +22,7 @@ import { DepartureDateConversationStateExtractor } from '../DepartureDateConvers
 import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
+import { ExplicitGuestCountConversationStateExtractor } from '../ExplicitGuestCountConversationStateExtractor';
 import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
 import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
 import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
@@ -91,6 +92,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   FamilyActivitiesRequestedConversationStateExtractor,
   AccessibleTravelRequestedConversationStateExtractor,
   BareNumberPassengerCountConversationStateExtractor,
+  ExplicitGuestCountConversationStateExtractor,
   EmptyConversationStateExtractor,
 ] as const;
 
@@ -130,6 +132,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'FamilyActivitiesRequestedConversationStateExtractor',
   'AccessibleTravelRequestedConversationStateExtractor',
   'BareNumberPassengerCountConversationStateExtractor',
+  'ExplicitGuestCountConversationStateExtractor',
   'EmptyConversationStateExtractor',
   'CompositeConversationStateExtractor',
   'createConversationStateExtractor',
@@ -412,7 +415,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(extract).toMatch(/extractor\.extract\(input\)/);
     expect(factory).toMatch(/new CompositeConversationStateExtractor\(\[/);
     expect(factory).toMatch(
-      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new BareNumberPassengerCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new BareNumberPassengerCountConversationStateExtractor\(\),\s*new ExplicitGuestCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     const order: string[] = [];
@@ -589,14 +592,14 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(independent.state.destination).toBe('Hobart');
   });
 
-  it('keeps EmptyConversationStateExtractor last among 36 production extractors in accepted order', () => {
+  it('keeps EmptyConversationStateExtractor last among 37 production extractors in accepted order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(36);
-    expect(extractors).toHaveLength(36);
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(37);
+    expect(extractors).toHaveLength(37);
+    expect(extractors[36]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -605,7 +608,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     }
 
     expect(
-      extractors[35]?.extract({
+      extractors[36]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState: baselineState(),
       }),
