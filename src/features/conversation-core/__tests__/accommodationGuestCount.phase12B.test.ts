@@ -81,7 +81,7 @@ describe('phase 12B — accommodation guest-count follow-up characterisation', (
           adultCount: 2,
         }),
       ),
-    ).toBe(FOLLOW_UPS.neutralContinuation);
+    ).toBe(FOLLOW_UPS.childCount);
   });
 
   it('lets higher-priority missing travel requirements win before accommodation', () => {

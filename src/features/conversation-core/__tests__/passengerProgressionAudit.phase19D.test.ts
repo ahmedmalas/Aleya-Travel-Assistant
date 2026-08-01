@@ -22,6 +22,7 @@ const COMPOSITE = createConversationStateExtractor();
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 const ADULT_Q = FOLLOW_UPS.flightsAdultCount;
 const GUEST_Q = FOLLOW_UPS.accommodationGuestCount;
+const CHILD_Q = FOLLOW_UPS.childCount;
 const NEUTRAL = FOLLOW_UPS.neutralContinuation;
 
 const COMPLETE_CORE = {
@@ -87,7 +88,7 @@ function turn(
 }
 
 describe('Phase 19D — passenger progression audit', () => {
-  it('locks architecture: three passenger extractors; adultCount is the only count follow-up gate', () => {
+  it('locks architecture: three passenger extractors; adult then child follow-up gates', () => {
     const factory = readSrc(
       'src/features/conversation-core/createConversationStateExtractor.ts',
     );
@@ -102,7 +103,8 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(selector).toMatch(
       /accommodationRequested === true && state\.adultCount === null/,
     );
-    expect(selector).not.toMatch(/childCount/);
+    // Phase 19F — childCount is now a follow-up gate; infant remains unsolicited.
+    expect(selector).toMatch(/childCount/);
     expect(selector).not.toMatch(/infantCount/);
 
     const followUps = FOLLOW_UPS as Record<string, string>;
@@ -112,7 +114,7 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(followUps.accommodationGuestCount).toBe(
       'How many guests will be staying?',
     );
-    expect(Object.keys(followUps)).not.toContain('childCount');
+    expect(followUps.childCount).toBe('How many children will be travelling?');
     expect(Object.keys(followUps)).not.toContain('infantCount');
   });
 
@@ -164,7 +166,7 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(selectConversationFollowUpQuestion(state)).toBe(ADULT_Q);
   });
 
-  it('characterizes childCount null after adult count captured → never solicited', () => {
+  it('characterizes childCount null after adult count captured → child question (Phase 19F)', () => {
     const state = createState({
       ...COMPLETE_CORE,
       flightsRequested: true,
@@ -172,7 +174,7 @@ describe('Phase 19D — passenger progression audit', () => {
       childCount: null,
       infantCount: null,
     });
-    expect(selectConversationFollowUpQuestion(state)).toBe(NEUTRAL);
+    expect(selectConversationFollowUpQuestion(state)).toBe(CHILD_Q);
 
     const t = turn('looking forward to it', {
       ...COMPLETE_CORE,
@@ -181,17 +183,17 @@ describe('Phase 19D — passenger progression audit', () => {
       childCount: null,
     });
     expect(t.state.childCount).toBeNull();
-    expect(t.components.followUpQuestion).toBe(NEUTRAL);
-    expect(t.reply).not.toMatch(/child/i);
+    expect(t.components.followUpQuestion).toBe(CHILD_Q);
+    expect(t.reply).toContain(CHILD_Q);
   });
 
-  it('characterizes infantCount null after adult count captured → never solicited', () => {
+  it('characterizes infantCount null after adult+child captured → never solicited', () => {
     const state = createState({
       ...COMPLETE_CORE,
       accommodationRequested: true,
       adultCount: 2,
+      childCount: 2,
       infantCount: null,
-      childCount: null,
     });
     expect(selectConversationFollowUpQuestion(state)).toBe(NEUTRAL);
 
@@ -199,6 +201,7 @@ describe('Phase 19D — passenger progression audit', () => {
       ...COMPLETE_CORE,
       accommodationRequested: true,
       adultCount: 2,
+      childCount: 2,
       infantCount: null,
     });
     expect(t.state.infantCount).toBeNull();
@@ -232,7 +235,7 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(t.reply).toContain(GUEST_Q);
   });
 
-  it('characterizes "2 adults" → adultCount=2 and suppresses count follow-up', () => {
+  it('characterizes "2 adults" → adultCount=2 and advances to child follow-up (Phase 19F)', () => {
     const flights = turn('2 adults', {
       ...COMPLETE_CORE,
       adultCount: null,
@@ -243,7 +246,7 @@ describe('Phase 19D — passenger progression audit', () => {
     expect(flights.classification.hasInterpretedChange).toBe(true);
     expect(flights.classification.newlyPopulated).toContain('adultCount');
     expect(flights.components.acknowledgement).toMatch(/adult/i);
-    expect(flights.components.followUpQuestion).toBe(NEUTRAL);
+    expect(flights.components.followUpQuestion).toBe(CHILD_Q);
 
     const guests = turn('2 adults', {
       ...COMPLETE_CORE,
@@ -251,7 +254,7 @@ describe('Phase 19D — passenger progression audit', () => {
       accommodationRequested: true,
     });
     expect(guests.state.adultCount).toBe(2);
-    expect(guests.components.followUpQuestion).toBe(NEUTRAL);
+    expect(guests.components.followUpQuestion).toBe(CHILD_Q);
   });
 
   it('characterizes "2 guests" → adultCount stays null; guest Q re-asked', () => {
@@ -305,6 +308,7 @@ describe('Phase 19D — passenger progression audit', () => {
     const afterAdults = turn('1 infant', {
       ...COMPLETE_CORE,
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
       infantCount: null,
     });
@@ -316,6 +320,7 @@ describe('Phase 19D — passenger progression audit', () => {
     const t = turn('2 adults', {
       ...COMPLETE_CORE,
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
     });
     expect(t.extracted).toEqual({ adultCount: 2 });
@@ -330,6 +335,7 @@ describe('Phase 19D — passenger progression audit', () => {
     const t = turn('3 adults', {
       ...COMPLETE_CORE,
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
     });
     expect(t.extracted).toEqual({ adultCount: 3 });
@@ -375,10 +381,12 @@ describe('Phase 19D — passenger progression audit', () => {
     });
     expect(zeroChildren.extracted).toEqual({});
     expect(zeroChildren.state.childCount).toBeNull();
+    expect(zeroChildren.components.followUpQuestion).toBe(CHILD_Q);
 
     const zeroInfants = turn('0 infants', {
       ...COMPLETE_CORE,
       adultCount: 2,
+      childCount: 2,
       infantCount: null,
       flightsRequested: true,
     });

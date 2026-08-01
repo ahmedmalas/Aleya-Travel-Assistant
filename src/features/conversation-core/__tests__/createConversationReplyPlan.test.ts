@@ -377,9 +377,10 @@ describe('phase 10G — deterministic reply planning boundary', () => {
   });
 
   it('plans suppression of traveller questions when adultCount is known', () => {
-    const previous = completeCore({ adultCount: 2 });
+    const previous = completeCore({ adultCount: 2, childCount: 2 });
     const state = completeCore({
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
       accommodationRequested: true,
       restaurantsRequested: true,

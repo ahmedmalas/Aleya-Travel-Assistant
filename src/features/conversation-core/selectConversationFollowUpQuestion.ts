@@ -65,6 +65,21 @@ function hasSpecificActivityInterest(state: ConversationCoreState): boolean {
 }
 
 /**
+ * Phase 19F — child-count follow-up applies only when passenger counts are
+ * relevant (flights or accommodation), adults are already captured, and
+ * childCount is still null. Does not solicit infants (Phase 19G).
+ */
+function needsChildCountFollowUp(state: ConversationCoreState): boolean {
+  const passengerServiceRelevant =
+    state.flightsRequested === true || state.accommodationRequested === true;
+  return (
+    passengerServiceRelevant &&
+    state.adultCount !== null &&
+    state.childCount === null
+  );
+}
+
+/**
  * Fixed contextual follow-up priority after core fields are complete.
  * Phase 10D/10E — deterministic; derived only from final canonical state.
  *
@@ -76,6 +91,8 @@ function hasSpecificActivityInterest(state: ConversationCoreState): boolean {
  * is true yet.
  * Phase 18F — restaurants follow-up remains eligible only while
  * restaurantsRequested is true and restaurantPreference is still null.
+ * Phase 19F — child-count follow-up after adult/guest count when flights or
+ * accommodation is requested and childCount is still null.
  *
  * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
@@ -89,6 +106,10 @@ const CONTEXTUAL_QUESTIONS = [
     applies: (state: ConversationCoreState) =>
       state.accommodationRequested === true && state.adultCount === null,
     question: CONVERSATION_REPLY_CATALOGUE.followUps.accommodationGuestCount,
+  },
+  {
+    applies: needsChildCountFollowUp,
+    question: CONVERSATION_REPLY_CATALOGUE.followUps.childCount,
   },
   {
     applies: (state: ConversationCoreState) =>
@@ -116,6 +137,8 @@ const CONTEXTUAL_QUESTIONS = [
  * specific activity-interest capability is already true.
  * Phase 18F — restaurants contextual eligibility also requires that
  * restaurantPreference is still null.
+ * Phase 19F — after adult/guest count, solicits childCount when flights or
+ * accommodation is requested and childCount is still null.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,

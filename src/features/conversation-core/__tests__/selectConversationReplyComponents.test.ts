@@ -203,9 +203,10 @@ describe('phase 10N — deterministic reply-component selection boundary', () =>
     );
 
     const suppressed = componentsFor(
-      completeCore({ adultCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2 }),
       completeCore({
         adultCount: 2,
+        childCount: 2,
         flightsRequested: true,
         accommodationRequested: true,
         restaurantsRequested: true,

@@ -264,7 +264,7 @@ describe('phase 15L — production runtime conversational output', () => {
       {
         label: 'capability disabled',
         message: 'update requirements',
-        previous: completeCore({ flightsRequested: true, adultCount: 2 }),
+        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2 }),
         stateUpdate: { flightsRequested: false },
         assertState: (state) => {
           expect(state.flightsRequested).toBe(false);
@@ -472,7 +472,7 @@ describe('phase 15L — production runtime conversational output', () => {
       {
         label: 'fully satisfied uninterpreted',
         message: 'thanks',
-        previous: completeCore({ flightsRequested: true, adultCount: 2 }),
+        previous: completeCore({ flightsRequested: true, adultCount: 2, childCount: 2 }),
         interpreted: false,
         followUp: CANONICAL_NEUTRAL_CONTINUATION_PROMPT,
         expectedReply: ACTIVATED_NEUTRAL_CONTINUATION_REPLY,
@@ -549,6 +549,7 @@ describe('phase 15L — production runtime conversational output', () => {
     const uninterpretedPrevious = completeCore({
       flightsRequested: true,
       adultCount: 2,
+      childCount: 2,
     });
     const uninterpreted = turn('noise', uninterpretedPrevious);
     const inspected = inspectTurn(uninterpretedPrevious, uninterpreted);

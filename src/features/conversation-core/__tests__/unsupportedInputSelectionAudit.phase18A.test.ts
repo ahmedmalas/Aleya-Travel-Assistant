@@ -335,6 +335,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
       departureDate: '2026-08-28',
       returnDate: '2026-09-04',
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
     });
     expect(complete.followUpIfCalled).toBe(NEUTRAL);
@@ -472,6 +473,7 @@ describe('Phase 18A — unsupported input selection audit', () => {
           departureDate: '2026-08-28',
           returnDate: '2026-09-04',
           adultCount: 2,
+          childCount: 2,
           flightsRequested: true,
         },
         expectedFollowUp: NEUTRAL,

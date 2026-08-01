@@ -69,6 +69,7 @@ const COMPLETE_CORE = {
   departureDate: '2026-08-28',
   returnDate: '2026-09-01',
   adultCount: 2,
+  childCount: 2,
 } as const;
 
 function createState(

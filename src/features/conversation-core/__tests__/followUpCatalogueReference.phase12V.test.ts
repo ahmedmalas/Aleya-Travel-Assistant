@@ -90,6 +90,14 @@ const FOLLOW_UP_CASES: ReadonlyArray<{
     state: completeCore({ accommodationRequested: true, adultCount: null }),
   },
   {
+    key: 'childCount',
+    state: completeCore({
+      adultCount: 2,
+      childCount: null,
+      flightsRequested: true,
+    }),
+  },
+  {
     key: 'activities',
     state: completeCore({ adultCount: 2, activitiesRequested: true }),
   },

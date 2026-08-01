@@ -80,6 +80,11 @@ function fieldSetNeutral(transformedAck: string): string {
   return `${transformedAck} ${BRIDGE_FIELD_SET} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
 }
 
+/** Phase 16B superseded expression for field set/change + child-count follow-up. */
+function fieldSetChildQuestion(transformedAck: string): string {
+  return `${transformedAck} ${CONVERSATION_REPLY_CATALOGUE.followUps.childCount}`;
+}
+
 /** Phase 16B superseded expression for capability enabled + canonical neutral. */
 function capabilityEnabledNeutral(transformedAck: string): string {
   return `${transformedAck} ${BRIDGE_CAPABILITY_ENABLED} ${CANONICAL_NEUTRAL_CONTINUATION_PROMPT}`;
@@ -360,7 +365,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      fieldSetNeutral('Travelling with 2 adults.'),
+      fieldSetChildQuestion('Travelling with 2 adults.'),
       fieldSetNeutral("I've noted 1 child."),
       fieldSetNeutral('That includes 1 infant.'),
       fieldSetNeutral('Updated to 3 adults.'),
@@ -410,7 +415,7 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added flights to your trip. How many adults will be travelling?",
-      fieldSetNeutral('Travelling with 2 adults.'),
+      fieldSetChildQuestion('Travelling with 2 adults.'),
       capabilityDisabledNeutral(
         "No problem, I've removed flights from your trip.",
       ),

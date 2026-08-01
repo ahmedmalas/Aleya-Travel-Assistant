@@ -10,6 +10,7 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   generateConversationReply,
 } from '../generateConversationReply';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 
 const ROOT = process.cwd();
 const FOLLOW_UP_SOURCE = resolve(
@@ -193,7 +194,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
 
     const flightsWithAdults = turn(
       'book flights',
-      completeCore({ adultCount: 2 }),
+      completeCore({ adultCount: 2, childCount: 2 }),
     );
     expect(flightsWithAdults.reply).toBe(
       `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
@@ -204,10 +205,12 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
         message: 'ignored',
         previousState: completeCore({
           adultCount: 2,
+          childCount: 2,
           flightsRequested: true,
         }),
         state: completeCore({
           adultCount: 2,
+          childCount: 2,
           flightsRequested: true,
           wildlifeRequested: true,
         }),
@@ -230,7 +233,7 @@ describe('phase 10D — deterministic requirement-aware questions', () => {
     });
     expect(adultsSatisfied.state.adultCount).toBe(3);
     expect(adultsSatisfied.reply).toBe(
-      `Great, I've added flights to your trip. Tell me anything else that matters for this trip. ${NEUTRAL_TRIP_FALLBACK_REPLY}`,
+      `Great, I've added flights to your trip. ${CONVERSATION_REPLY_CATALOGUE.followUps.childCount}`,
     );
 
     const forcedActivities = turn(

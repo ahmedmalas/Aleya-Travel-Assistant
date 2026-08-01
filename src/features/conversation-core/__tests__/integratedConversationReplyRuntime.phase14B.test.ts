@@ -149,6 +149,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
         ...core,
         flightsRequested: true,
         adultCount: 2,
+        childCount: 2,
       },
       { flightsRequested: false },
     );
@@ -166,6 +167,7 @@ describe('phase 14B — integrated conversation reply runtime', () => {
       ...core,
       flightsRequested: true,
       adultCount: 2,
+      childCount: 2,
     });
     expect(continuation.reply).toBe(ACTIVATED_NEUTRAL_CONTINUATION_REPLY);
     expect(continuation.reply.endsWith(FOLLOW_UPS.neutralContinuation)).toBe(

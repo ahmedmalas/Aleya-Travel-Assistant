@@ -25,6 +25,7 @@ const RESTAURANTS_Q = FOLLOW_UPS.restaurants;
 const NEUTRAL = FOLLOW_UPS.neutralContinuation;
 const ADULT_Q = FOLLOW_UPS.flightsAdultCount;
 const GUEST_Q = FOLLOW_UPS.accommodationGuestCount;
+const CHILD_Q = FOLLOW_UPS.childCount;
 const ORIGIN_Q = FOLLOW_UPS.origin;
 
 const COMPLETE_CORE = {
@@ -239,25 +240,35 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(selectConversationFollowUpQuestion(accommodation)).toBe(GUEST_Q);
   });
 
-  it('characterizes childCount and infantCount as never solicited by the selector', () => {
+  it('characterizes childCount solicited after adults; infant still never solicited', () => {
     const followUps = FOLLOW_UPS as Record<string, string>;
-    expect(Object.keys(followUps)).not.toContain('childCount');
+    // Phase 19F — childCount follow-up exists; infant remains unsolicited.
+    expect(Object.keys(followUps)).toContain('childCount');
     expect(Object.keys(followUps)).not.toContain('infantCount');
 
     const selector = readSrc(
       'src/features/conversation-core/selectConversationFollowUpQuestion.ts',
     );
-    expect(selector).not.toMatch(/childCount/);
+    expect(selector).toMatch(/childCount/);
     expect(selector).not.toMatch(/infantCount/);
 
-    const state = createState({
+    const needsChild = createState({
       ...COMPLETE_CORE,
       flightsRequested: true,
       adultCount: 2,
       childCount: null,
       infantCount: null,
     });
-    expect(selectConversationFollowUpQuestion(state)).toBe(NEUTRAL);
+    expect(selectConversationFollowUpQuestion(needsChild)).toBe(CHILD_Q);
+
+    const afterChild = createState({
+      ...COMPLETE_CORE,
+      flightsRequested: true,
+      adultCount: 2,
+      childCount: 2,
+      infantCount: null,
+    });
+    expect(selectConversationFollowUpQuestion(afterChild)).toBe(NEUTRAL);
   });
 
   it('characterizes volunteering children while adult count remains open', () => {
@@ -288,7 +299,8 @@ describe('Phase 19A — conversation flow gap audit', () => {
       flightsRequested: true,
     });
     expect(cued.state.adultCount).toBe(2);
-    expect(cued.components.followUpQuestion).toBe(NEUTRAL);
+    // Phase 19F — adults complete then child-count question.
+    expect(cued.components.followUpQuestion).toBe(CHILD_Q);
   });
 
   it('characterizes guest-question answers that lack adult cues', () => {
@@ -306,7 +318,8 @@ describe('Phase 19A — conversation flow gap audit', () => {
       accommodationRequested: true,
     });
     expect(adults.state.adultCount).toBe(2);
-    expect(adults.components.followUpQuestion).toBe(NEUTRAL);
+    // Phase 19F — adults complete then child-count question.
+    expect(adults.components.followUpQuestion).toBe(CHILD_Q);
   });
 
   it('characterizes restaurantPreference acknowledgement as dedicated (Phase 19E)', () => {

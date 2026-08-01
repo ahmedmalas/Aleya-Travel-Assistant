@@ -87,6 +87,7 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     returnDate: 'When would you like to return?',
     flightsAdultCount: 'How many adults will be travelling?',
     accommodationGuestCount: 'How many guests will be staying?',
+    childCount: 'How many children will be travelling?',
     activities: 'What kinds of activities are you interested in?',
     restaurants: 'What type of dining are you looking for?',
     neutralContinuation: 'What else should I know about your trip?',

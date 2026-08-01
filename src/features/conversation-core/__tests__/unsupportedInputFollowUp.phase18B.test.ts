@@ -236,6 +236,7 @@ describe('Phase 18B — preserve follow-up for unsupported input', () => {
       departureDate: '2026-08-28',
       returnDate: '2026-09-04',
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
     });
     expect(t.components.messageInterpreted).toBe(false);
@@ -314,11 +315,8 @@ describe('Phase 18B — preserve follow-up for unsupported input', () => {
     });
     expect(completeSet.components.messageInterpreted).toBe(true);
     expect(completeSet.components.acknowledgement).not.toBeNull();
-    expect(completeSet.components.followUpQuestion).toBe(NEUTRAL);
-    expect(completeSet.reply).toContain(NEUTRAL);
-    expect(completeSet.reply).toContain(
-      "Is there anything else you'd like me to consider?",
-    );
+    expect(completeSet.components.followUpQuestion).toBe(FOLLOW_UPS.childCount);
+    expect(completeSet.reply).toContain(FOLLOW_UPS.childCount);
   });
 
   it('preserves same-value and unchanged-repair paths with specific follow-up', () => {
@@ -346,6 +344,7 @@ describe('Phase 18B — preserve follow-up for unsupported input', () => {
       departureDate: '2026-08-28',
       returnDate: '2026-09-04',
       adultCount: 2,
+      childCount: 2,
       flightsRequested: true,
     });
     expect(completeUnchanged.components.messageInterpreted).toBe(false);

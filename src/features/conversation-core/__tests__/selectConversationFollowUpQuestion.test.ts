@@ -11,6 +11,7 @@ import {
   NEUTRAL_TRIP_FALLBACK_REPLY,
   createConversationReplyPlan,
 } from '../createConversationReplyPlan';
+import { CONVERSATION_REPLY_CATALOGUE } from '../conversationReplyCatalogue';
 import {
   generateConversationReply,
   renderConversationReplyPlan,
@@ -180,11 +181,22 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
     ).toBe('What type of dining are you looking for?');
   });
 
-  it('suppresses count questions when adultCount is known', () => {
+  it('selects child-count after adultCount is known for flights or accommodation', () => {
     expect(
       selectConversationFollowUpQuestion(
         completeCore({
           adultCount: 2,
+          flightsRequested: true,
+          accommodationRequested: true,
+        }),
+      ),
+    ).toBe(CONVERSATION_REPLY_CATALOGUE.followUps.childCount);
+
+    expect(
+      selectConversationFollowUpQuestion(
+        completeCore({
+          adultCount: 2,
+          childCount: 2,
           flightsRequested: true,
           accommodationRequested: true,
         }),
@@ -195,6 +207,7 @@ describe('phase 10H — deterministic follow-up selection boundary', () => {
       selectConversationFollowUpQuestion(
         completeCore({
           adultCount: 2,
+          childCount: 2,
           flightsRequested: true,
           accommodationRequested: true,
           restaurantsRequested: true,

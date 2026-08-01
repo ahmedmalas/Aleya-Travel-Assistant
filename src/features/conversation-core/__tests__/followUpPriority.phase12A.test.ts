@@ -243,6 +243,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
           returnDate: '2026-09-05',
           flightsRequested: true,
           adultCount: 2,
+          childCount: 2,
         }),
       ),
     ).toBe(FOLLOW_UPS.neutralContinuation);
@@ -253,6 +254,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
           flightsRequested: true,
           accommodationRequested: true,
           adultCount: 2,
+          childCount: 2,
           activitiesRequested: true,
         }),
       ),
@@ -263,6 +265,7 @@ describe('phase 12A — follow-up priority characterisation', () => {
         completeCore({
           flightsRequested: true,
           adultCount: 2,
+          childCount: 2,
           restaurantsRequested: true,
         }),
       ),
