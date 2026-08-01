@@ -14,6 +14,7 @@ import { AccommodationRequestedConversationStateExtractor } from '../Accommodati
 import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
 import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
 import { AttractionsRequestedConversationStateExtractor } from '../AttractionsRequestedConversationStateExtractor';
+import { BareNumberPassengerCountConversationStateExtractor } from '../BareNumberPassengerCountConversationStateExtractor';
 import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
 import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
 import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
@@ -89,6 +90,7 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   ToursRequestedConversationStateExtractor,
   FamilyActivitiesRequestedConversationStateExtractor,
   AccessibleTravelRequestedConversationStateExtractor,
+  BareNumberPassengerCountConversationStateExtractor,
   EmptyConversationStateExtractor,
 ] as const;
 
@@ -127,6 +129,7 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'ToursRequestedConversationStateExtractor',
   'FamilyActivitiesRequestedConversationStateExtractor',
   'AccessibleTravelRequestedConversationStateExtractor',
+  'BareNumberPassengerCountConversationStateExtractor',
   'EmptyConversationStateExtractor',
   'CompositeConversationStateExtractor',
   'createConversationStateExtractor',
@@ -334,14 +337,14 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('remains last among 35 production extractors in the accepted composite order', () => {
+  it('remains last among 36 production extractors in the accepted composite order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(35);
-    expect(extractors).toHaveLength(35);
-    expect(extractors[34]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(36);
+    expect(extractors).toHaveLength(36);
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -354,11 +357,11 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       'utf8',
     );
     expect(factorySource).toMatch(
-      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new BareNumberPassengerCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
   });
 
-  it('keeps all 34 behavioural extractors active and Empty as the sole intentional no-op', () => {
+  it('keeps behavioural extractors active, contextual bare-number wired, Empty as sole no-op', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
@@ -391,6 +394,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       index: number;
       message: string;
       expected: Record<string, unknown>;
+      state?: ConversationCoreState;
     }> = [
       { index: 0, message: 'go to Cairns', expected: { destination: 'Cairns' } },
       { index: 1, message: 'from Sydney', expected: { origin: 'Sydney' } },
@@ -518,22 +522,34 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
         message: 'We need accessible travel options',
         expected: { accessibleTravelRequested: true },
       },
+      {
+        index: 34,
+        message: '2',
+        expected: { adultCount: 2 },
+        state: {
+          ...currentState,
+          flightsRequested: true,
+          adultCount: null,
+          childCount: null,
+          infantCount: null,
+        },
+      },
     ];
 
-    expect(behaviouralProofs).toHaveLength(34);
+    expect(behaviouralProofs).toHaveLength(35);
 
     for (const proof of behaviouralProofs) {
       expect(
         extractors[proof.index]?.extract({
           message: proof.message,
-          currentState,
+          currentState: proof.state ?? currentState,
         }),
         `behavioural extractor ${proof.index}`,
       ).toEqual({ stateUpdate: proof.expected });
     }
 
     expect(
-      extractors[34]?.extract({
+      extractors[35]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState,
       }),

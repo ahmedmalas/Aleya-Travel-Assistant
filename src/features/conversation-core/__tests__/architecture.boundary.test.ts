@@ -109,6 +109,9 @@ describe('conversation-core architectural boundary', () => {
     expect(index.includes('AdultCountConversationStateExtractor')).toBe(false);
     expect(index.includes('ChildCountConversationStateExtractor')).toBe(false);
     expect(index.includes('InfantCountConversationStateExtractor')).toBe(false);
+    expect(index.includes('BareNumberPassengerCountConversationStateExtractor')).toBe(
+      false,
+    );
     expect(index.includes('FlightsRequestedConversationStateExtractor')).toBe(false);
     expect(index.includes('AccommodationRequestedConversationStateExtractor')).toBe(
       false,
@@ -171,6 +174,9 @@ describe('conversation-core architectural boundary', () => {
     expect(processTurn.includes('AdultCountConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('ChildCountConversationStateExtractor')).toBe(false);
     expect(processTurn.includes('InfantCountConversationStateExtractor')).toBe(false);
+    expect(
+      processTurn.includes('BareNumberPassengerCountConversationStateExtractor'),
+    ).toBe(false);
     expect(processTurn.includes('FlightsRequestedConversationStateExtractor')).toBe(
       false,
     );
@@ -472,7 +478,7 @@ describe('conversation-core architectural boundary', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(extractorFactory).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new BareNumberPassengerCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(emptyExtractor).toMatch(/export class EmptyConversationStateExtractor/);
     expect(emptyExtractor).toContain('Phase 7AB');
@@ -745,10 +751,24 @@ describe('conversation-core architectural boundary', () => {
       /input: ConversationStateExtractionInput/,
     );
     expect(restaurantPreferenceExtractor).toMatch(/input\.message/);
-    // Phase 18F context gate — sole extractor allowed to read currentState.
+    // Phase 18F / 19I — contextual extractors may read currentState.
     expect(restaurantPreferenceExtractor.includes('input.currentState')).toBe(
       true,
     );
+    const bareNumberPassengerCountExtractor = readSrc(
+      'src/features/conversation-core/BareNumberPassengerCountConversationStateExtractor.ts',
+    );
+    expect(bareNumberPassengerCountExtractor).toMatch(
+      /export class BareNumberPassengerCountConversationStateExtractor/,
+    );
+    expect(bareNumberPassengerCountExtractor).toContain('Phase 19I');
+    expect(bareNumberPassengerCountExtractor).toMatch(
+      /input: ConversationStateExtractionInput/,
+    );
+    expect(bareNumberPassengerCountExtractor).toMatch(/input\.message/);
+    expect(
+      bareNumberPassengerCountExtractor.includes('input.currentState'),
+    ).toBe(true);
     expect(restaurantPreferenceExtractor).toMatch(
       /restaurantPreference:\s*preference/,
     );

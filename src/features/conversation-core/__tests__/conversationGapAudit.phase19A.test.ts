@@ -292,15 +292,15 @@ describe('Phase 19A — conversation flow gap audit', () => {
     expect(t.components.followUpQuestion).toBe(ADULT_Q);
   });
 
-  it('characterizes bare numeric adult answers as non-extracting', () => {
+  it('characterizes bare numeric adult answers as extracting when adult Q is active (Phase 19I)', () => {
     const bare = turn('2', {
       ...COMPLETE_CORE,
       adultCount: null,
       flightsRequested: true,
     });
-    expect(bare.extracted).toEqual({});
-    expect(bare.state.adultCount).toBeNull();
-    expect(bare.components.followUpQuestion).toBe(ADULT_Q);
+    expect(bare.extracted).toEqual({ adultCount: 2 });
+    expect(bare.state.adultCount).toBe(2);
+    expect(bare.components.followUpQuestion).toBe(CHILD_Q);
 
     const cued = turn('2 adults', {
       ...COMPLETE_CORE,
