@@ -21,14 +21,61 @@ const PROGRESSION_QUESTIONS = [
 >;
 
 /**
+ * Specific activity-interest capability flags that satisfy the general
+ * activities preference follow-up once any one is true.
+ *
+ * Phase 18D — excludes broad travel services (flights, accommodation,
+ * car hire, activities, restaurants). Includes discovery / activity /
+ * experience flags already present on ConversationCoreState.
+ */
+const SPECIFIC_ACTIVITY_INTEREST_FLAGS = [
+  'nearbyDiscoveryRequested',
+  'accessibleTravelRequested',
+  'beachesRequested',
+  'campingRequested',
+  'kayakingRequested',
+  'fourWheelDriveRequested',
+  'scenicDrivesRequested',
+  'attractionsRequested',
+  'snowActivitiesRequested',
+  'hikingWalkingRequested',
+  'fishingRequested',
+  'divingSnorkellingRequested',
+  'wineriesFoodTrailsRequested',
+  'eventsFestivalsRequested',
+  'wildlifeRequested',
+  'nationalParksRequested',
+  'toursRequested',
+  'eventsRequested',
+  'nightlifeRequested',
+  'shoppingRequested',
+  'wellnessRequested',
+  'familyActivitiesRequested',
+] as const satisfies ReadonlyArray<keyof ConversationCoreState>;
+
+/**
+ * True when at least one supported specific activity interest is already set.
+ *
+ * Phase 18D — used only by the activities contextual follow-up eligibility
+ * rule. Does not inspect message text or mutate state.
+ */
+function hasSpecificActivityInterest(state: ConversationCoreState): boolean {
+  return SPECIFIC_ACTIVITY_INTEREST_FLAGS.some(
+    (field) => state[field] === true,
+  );
+}
+
+/**
  * Fixed contextual follow-up priority after core fields are complete.
  * Phase 10D/10E — deterministic; derived only from final canonical state.
  *
  * Phase 10E suppression: skip any contextual question whose required
  * information already exists, then continue to the next eligible question.
- * Traveller/guest counts share adultCount. Activity/dining interest has no
- * dedicated state field yet, so those questions remain eligible while the
- * capability stays requested.
+ * Traveller/guest counts share adultCount.
+ * Phase 18D — activities follow-up remains eligible only while
+ * activitiesRequested is true and no specific activity-interest capability
+ * is true yet. Dining still has no dedicated preference field, so the
+ * restaurants question remains eligible while restaurantsRequested is true.
  *
  * Phase 10K — wording comes from CONVERSATION_REPLY_CATALOGUE.
  */
@@ -44,7 +91,9 @@ const CONTEXTUAL_QUESTIONS = [
     question: CONVERSATION_REPLY_CATALOGUE.followUps.accommodationGuestCount,
   },
   {
-    applies: (state: ConversationCoreState) => state.activitiesRequested === true,
+    applies: (state: ConversationCoreState) =>
+      state.activitiesRequested === true &&
+      !hasSpecificActivityInterest(state),
     question: CONVERSATION_REPLY_CATALOGUE.followUps.activities,
   },
   {
@@ -62,6 +111,8 @@ const CONTEXTUAL_QUESTIONS = [
  * null only when no follow-up should be emitted (unused by current planners,
  * which treat the neutral continuation as the terminal selection).
  * Phase 10K — selects catalogue entries; does not own literal wording.
+ * Phase 18D — activities contextual eligibility also requires that no
+ * specific activity-interest capability is already true.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,

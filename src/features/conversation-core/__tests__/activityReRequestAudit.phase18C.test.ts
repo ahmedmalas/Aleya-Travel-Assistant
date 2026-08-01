@@ -16,9 +16,15 @@ import { selectConversationReplyComponents } from '../selectConversationReplyCom
 
 /**
  * Phase 18C — activity re-request selection audit.
- * Characterizes current behaviour, including the defective re-ask of the
- * general activities follow-up after specific activity capabilities are set.
- * Production code unchanged.
+ *
+ * Preserves historical evidence of the pre-18D defect: activities follow-up
+ * applied whenever `activitiesRequested === true`, even after specific activity
+ * capability flags were set.
+ *
+ * Post-18D (Phase 18D fix in selectConversationFollowUpQuestion): activities
+ * follow-up applies only when `activitiesRequested === true &&
+ * !hasSpecificActivityInterest(state)`. Expectations below reflect post-18D
+ * completion behaviour while documenting the earlier failure mode.
  */
 
 const ROOT = process.cwd();
@@ -27,6 +33,10 @@ const COMPOSITE = createConversationStateExtractor();
 const FOLLOW_UPS = CONVERSATION_REPLY_CATALOGUE.followUps;
 const ACTIVITIES_Q = FOLLOW_UPS.activities;
 const NEUTRAL = FOLLOW_UPS.neutralContinuation;
+const BRIDGE =
+  "Is there anything else you'd like me to consider? What else should I know about your trip?";
+const CAPABILITY_BRIDGE =
+  'Tell me anything else that matters for this trip. What else should I know about your trip?';
 
 const COMPLETE_CORE = {
   destination: 'Cairns',
@@ -168,19 +178,26 @@ function journey(
 }
 
 describe('Phase 18C — activity re-request selection audit', () => {
-  it('locks the current activities follow-up applies contract (no preference field)', () => {
+  it('documents pre-18D defect contract and locks post-18D completion predicate', () => {
+    // Pre-18D defect: activities follow-up applied on activitiesRequested alone.
+    const pre18DContract =
+      'activitiesRequested === true (specific activity flags not consulted)';
+
     const source = readFileSync(
       resolve(CORE_SRC, 'selectConversationFollowUpQuestion.ts'),
       'utf8',
     );
+    expect(pre18DContract).toContain('activitiesRequested === true');
     expect(source).toMatch(
-      /Activity\/dining interest has no\s*\n\s*\*\s*dedicated state field yet/,
+      /Dining still has no dedicated preference field/,
     );
+    expect(source).toContain('Phase 18D');
+    expect(source).toContain('SPECIFIC_ACTIVITY_INTEREST_FLAGS');
+    expect(source).toContain('hasSpecificActivityInterest');
     expect(source).toMatch(
-      /applies:\s*\(state: ConversationCoreState\) =>\s*state\.activitiesRequested === true/,
+      /state\.activitiesRequested === true &&\s*!hasSpecificActivityInterest\(state\)/,
     );
     expect(source).toContain('CONVERSATION_REPLY_CATALOGUE.followUps.activities');
-    expect(source).not.toMatch(/hikingWalkingRequested/);
     expect(source).not.toMatch(/activityPreference/);
 
     const types = readFileSync(resolve(CORE_SRC, 'types.ts'), 'utf8');
@@ -276,10 +293,11 @@ describe('Phase 18C — activity re-request selection audit', () => {
       expect(t.extractedPatch, entry.message).toEqual(entry.expectedPatch);
       expect(t.final[entry.expectedFlag], entry.message).toBe(true);
       expect(t.final.activitiesRequested, entry.message).toBe(true);
-      expect(t.followUpQuestion, entry.message).toBe(ACTIVITIES_Q);
+      expect(t.followUpQuestion, entry.message).toBe(NEUTRAL);
       expect(t.continuation, entry.message).toBeNull();
-      expect(t.assembledPlanFollowUp, entry.message).toBe(ACTIVITIES_Q);
-      expect(t.exactFinalReply, entry.message).toContain(ACTIVITIES_Q);
+      expect(t.assembledPlanFollowUp, entry.message).toBe(NEUTRAL);
+      expect(t.exactFinalReply, entry.message).not.toContain(ACTIVITIES_Q);
+      expect(t.exactFinalReply, entry.message).toContain(CAPABILITY_BRIDGE);
     }
   });
 
@@ -300,7 +318,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
     }
   });
 
-  it('proves hiking is extracted and persisted but does not satisfy activities follow-up completion', () => {
+  it('proves hiking is extracted and persisted and post-18D satisfies activities follow-up', () => {
     const t = trace("I'm interested in hiking", {
       ...COMPLETE_CORE,
       activitiesRequested: true,
@@ -315,11 +333,11 @@ describe('Phase 18C — activity re-request selection audit', () => {
       kind: 'capability-enabled',
       capabilities: ['hiking and walking'],
     });
-    expect(selectConversationFollowUpQuestion(t.final)).toBe(ACTIVITIES_Q);
-    expect(t.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(selectConversationFollowUpQuestion(t.final)).toBe(NEUTRAL);
+    expect(t.followUpQuestion).toBe(NEUTRAL);
     expect(t.continuation).toBeNull();
     expect(t.exactFinalReply).toBe(
-      `Great, I've added hiking and walking to your trip. ${ACTIVITIES_Q}`,
+      `Great, I've added hiking and walking to your trip. ${CAPABILITY_BRIDGE}`,
     );
   });
 
@@ -342,7 +360,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
     expect(already.newlyEnabledRequestFlags).toEqual([]);
     expect(already.messageInterpreted).toBe(false);
     expect(already.acknowledgement).toBeNull();
-    expect(already.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(already.followUpQuestion).toBe(NEUTRAL);
 
     // activities disabled — hiking enables specific flag; no activities question
     const disabled = trace("I'm interested in hiking", {
@@ -361,13 +379,13 @@ describe('Phase 18C — activity re-request selection audit', () => {
     expect(incomplete.final.hikingWalkingRequested).toBe(true);
     expect(incomplete.followUpQuestion).toBe(FOLLOW_UPS.origin);
 
-    // restaurants also enabled — activities still precedes restaurants
+    // restaurants also enabled — post-18D activities satisfied; restaurants next
     const both = trace("I'm interested in hiking", {
       ...COMPLETE_CORE,
       activitiesRequested: true,
       restaurantsRequested: true,
     });
-    expect(both.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(both.followUpQuestion).toBe(FOLLOW_UPS.restaurants);
 
     // multiple capabilities in one message while activities enabled
     const multi = trace('I want hiking and kayaking', {
@@ -380,7 +398,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
     });
     expect(multi.final.hikingWalkingRequested).toBe(true);
     expect(multi.final.kayakingRequested).toBe(true);
-    expect(multi.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(multi.followUpQuestion).toBe(NEUTRAL);
   });
 
   it('captures the multi-turn journey matrix with exact replies', () => {
@@ -393,9 +411,9 @@ describe('Phase 18C — activity re-request selection audit', () => {
     expect(j1[1]!.extractedPatch).toEqual({ hikingWalkingRequested: true });
     expect(j1[1]!.final.activitiesRequested).toBe(true);
     expect(j1[1]!.final.hikingWalkingRequested).toBe(true);
-    expect(j1[1]!.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(j1[1]!.followUpQuestion).toBe(NEUTRAL);
     expect(j1[1]!.exactFinalReply).toBe(
-      `Great, I've added hiking and walking to your trip. ${ACTIVITIES_Q}`,
+      `Great, I've added hiking and walking to your trip. ${CAPABILITY_BRIDGE}`,
     );
 
     // Hiking alone does not enable activitiesRequested → no activities question.
@@ -420,12 +438,12 @@ describe('Phase 18C — activity re-request selection audit', () => {
     const j4 = journey(['I want activities', 'Hiking', 'I also like kayaking']);
     expect(j4[0]!.followUpQuestion).toBe(ACTIVITIES_Q);
     expect(j4[1]!.final.hikingWalkingRequested).toBe(true);
-    expect(j4[1]!.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(j4[1]!.followUpQuestion).toBe(NEUTRAL);
     expect(j4[2]!.final.kayakingRequested).toBe(true);
     expect(j4[2]!.final.hikingWalkingRequested).toBe(true);
-    expect(j4[2]!.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(j4[2]!.followUpQuestion).toBe(NEUTRAL);
     expect(j4[2]!.exactFinalReply).toBe(
-      `Great, I've added kayaking to your trip. ${ACTIVITIES_Q}`,
+      `Great, I've added kayaking to your trip. ${CAPABILITY_BRIDGE}`,
     );
 
     const j5 = journey(['I want hiking', "I don't know"]);
@@ -442,19 +460,19 @@ describe('Phase 18C — activity re-request selection audit', () => {
     expect(without[0]!.followUpQuestion).toBe(NEUTRAL);
     expect(without[1]!.followUpQuestion).toBe(NEUTRAL);
 
-    // With activitiesRequested: hiking sets specific flag but activities follow-up remains;
-    // unsupported after Phase 18B still reselects the activities follow-up.
+    // With activitiesRequested: post-18D suppresses activities after hiking;
+    // unsupported after Phase 18B activates terminal neutral (not activities re-ask).
     const withActivities = journey(
       ["I'm interested in hiking", "I don't know"],
       { ...COMPLETE_CORE, activitiesRequested: true },
     );
     expect(withActivities[0]!.final.hikingWalkingRequested).toBe(true);
-    expect(withActivities[0]!.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(withActivities[0]!.followUpQuestion).toBe(NEUTRAL);
     expect(withActivities[1]!.messageInterpreted).toBe(false);
     expect(withActivities[1]!.acknowledgement).toBeNull();
-    expect(withActivities[1]!.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(withActivities[1]!.followUpQuestion).toBe(NEUTRAL);
     expect(withActivities[1]!.exactFinalReply).toBe(
-      `Let's look at activities. ${ACTIVITIES_Q}`,
+      `There's just one more thing I'd like to know. ${NEUTRAL}`,
     );
   });
 
@@ -470,7 +488,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
       activitiesRequested: true,
     });
     expect(withCapability.final.kayakingRequested).toBe(true);
-    expect(withCapability.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(withCapability.followUpQuestion).toBe(NEUTRAL);
 
     const seafood = trace('looking for seafood', {
       ...COMPLETE_CORE,
@@ -482,7 +500,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
     expect(seafood.followUpQuestion).toBe(FOLLOW_UPS.restaurants);
   });
 
-  it('proves selector evidence: specific activity flags do not stop activities question', () => {
+  it('shows post-18D selector evidence: specific activity flags suppress activities question', () => {
     const withHiking = createState({
       ...COMPLETE_CORE,
       activitiesRequested: true,
@@ -490,7 +508,7 @@ describe('Phase 18C — activity re-request selection audit', () => {
       kayakingRequested: true,
       divingSnorkellingRequested: true,
     });
-    expect(selectConversationFollowUpQuestion(withHiking)).toBe(ACTIVITIES_Q);
+    expect(selectConversationFollowUpQuestion(withHiking)).toBe(NEUTRAL);
 
     const withoutActivitiesFlag = createState({
       ...COMPLETE_CORE,

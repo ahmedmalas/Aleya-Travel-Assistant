@@ -353,3 +353,65 @@ Defer:
 | 6 | Repeated same activity input is uninterpreted (`messageInterpreted=false`) when the flag is already true. |
 | 7 | Unsupported after hiking: preserves neutral if activities were never enabled; reselects activities follow-up if `activitiesRequested` remains true (Phase 18B). |
 | 8 | Single deterministic 18D owner: **follow-up selection** (`selectConversationFollowUpQuestion`). |
+
+## Phase 18D Resolution
+
+Phase 18D implements the recommended narrow fix in `selectConversationFollowUpQuestion.ts` without altering extraction, schema, catalogue wording, acknowledgement selection, or Phase 18B uninterpreted follow-up preservation.
+
+### Predicate change
+
+Pre-18D (documented above as the defect):
+
+```typescript
+{
+  applies: (state) => state.activitiesRequested === true,
+  question: CONVERSATION_REPLY_CATALOGUE.followUps.activities,
+}
+```
+
+Post-18D:
+
+```typescript
+{
+  applies: (state) =>
+    state.activitiesRequested === true &&
+    !hasSpecificActivityInterest(state),
+  question: CONVERSATION_REPLY_CATALOGUE.followUps.activities,
+}
+```
+
+`hasSpecificActivityInterest(state)` returns true when any member of `SPECIFIC_ACTIVITY_INTEREST_FLAGS` is `true` on canonical state. That flag list is owned alongside the helper in `selectConversationFollowUpQuestion.ts` and covers all supported specific activity-interest capability fields (hiking/walking, kayaking, diving/snorkelling, fishing, wildlife, national parks, scenic drives, beaches, and the remaining canonical activity flags). Unrelated service flags (`flightsRequested`, `accommodationRequested`, `carHireRequested`, `restaurantsRequested`) do **not** satisfy activities completion.
+
+### Behaviour after fix
+
+| State | Pre-18D activities question? | Post-18D activities question? |
+| --- | --- | --- |
+| `activitiesRequested=true`, no specific flags | yes | yes |
+| `activitiesRequested=true`, one or more specific flags true | **yes (defect)** | **no** → neutral continuation or next contextual priority (e.g. restaurants) |
+| `activitiesRequested=true`, unsupported phrase (shopping/nightlife) with no flag set | yes | yes |
+| `activitiesRequested=null/false`, specific flag true | no | no |
+| Incomplete core fields | core follow-up wins | unchanged |
+
+Representative post-18D journey (Journey A Turn 2):
+
+```text
+Turn 2: I'm interested in hiking
+→ hikingWalkingRequested=true (activitiesRequested remains true)
+→ Great, I've added hiking and walking to your trip.
+   Tell me anything else that matters for this trip. What else should I know about your trip?
+```
+
+Unsupported after hiking while `activitiesRequested=true` (previously reselected activities follow-up):
+
+```text
+Turn 2: I don't know
+→ messageInterpreted=false
+→ There's just one more thing I'd like to know. What else should I know about your trip?
+```
+
+### Test ownership
+
+- **Phase 18C audit** (`activityReRequestAudit.phase18C.test.ts`) — retains historical defect evidence in comments and Observed Failure / Root-Cause sections above; runtime expectations updated to post-18D completion behaviour.
+- **Phase 18D completion** (`activityFollowUpCompletion.phase18D.test.ts`) — locks the new predicate, canonical flag set, suppression matrix, and journey regressions.
+
+The Observed Failure and Root-Cause sections document what **was** broken before 18D; they are intentionally preserved as audit history, not rewritten as if the defect never existed.

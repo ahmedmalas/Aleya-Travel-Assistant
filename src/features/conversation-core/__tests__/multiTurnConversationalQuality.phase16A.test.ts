@@ -432,11 +432,11 @@ describe('phase 16A — multi-turn conversational quality audit', () => {
       'Departure is set for 2026-08-28. When would you like to return?',
       fieldSetNeutral('Return is set for 2026-09-05.'),
       "Great, I've added activities to your trip. What kinds of activities are you interested in?",
-      "Great, I've added hiking and walking to your trip. What kinds of activities are you interested in?",
+      // Phase 18D: specific activity interest completes the activities follow-up.
+      "Great, I've added hiking and walking to your trip. Tell me anything else that matters for this trip. What else should I know about your trip?",
     ]);
-    // Interest clarification does not suppress the activities follow-up.
-    expect(turns[5]!.followUp).toBe(FOLLOW_UPS.activities);
-    expect(turns[5]!.owner).toBe('15C');
+    expect(turns[5]!.followUp).toBe(FOLLOW_UPS.neutralContinuation);
+    expect(turns[5]!.owner).toBe('16B');
   });
 
   it('characterises restaurants enabled and clarified', () => {

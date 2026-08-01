@@ -744,7 +744,7 @@ describe('Phase 16K — conversational quality closure audit', () => {
       `Updated — Cairns it is. ${FOLLOW_UPS.origin}`,
     );
 
-    // Activities re-asked after hiking interest clarification.
+    // Phase 18D: hiking interest completes activities; no general re-ask.
     const hiking = runJourney(
       [
         { message: 'book activities' },
@@ -761,7 +761,10 @@ describe('Phase 16K — conversational quality closure audit', () => {
     expect(hiking[1]!.reply).toContain(
       "Great, I've added hiking and walking to your trip.",
     );
-    expect(hiking[1]!.followUpOrContinuation).toBe(FOLLOW_UPS.activities);
+    expect(hiking[1]!.followUpOrContinuation).toBe(
+      FOLLOW_UPS.neutralContinuation,
+    );
+    expect(hiking[1]!.reply).not.toContain(FOLLOW_UPS.activities);
 
     // Seafood preference ignored — no seafood wording; restaurants flag remains.
     // Phase 18B: uninterpreted preference text still receives the restaurants
