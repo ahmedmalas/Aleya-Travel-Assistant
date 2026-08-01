@@ -1,13 +1,10 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
-  isSearchActive,
-  resetTravelConversation,
-  sendTravelMessage,
-  useTravelConversation,
-  type TravelServiceKind,
-} from '../../features/travel-conversation';
-import { RequirementsSummary } from '../../features/travel-conversation/ui/RequirementsSummary';
+  createInitialConversationCoreState,
+  processConversationTurn,
+  type ConversationCoreState,
+} from '../../features/conversation-core';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
 
@@ -20,12 +17,21 @@ type ChatMessage = {
 };
 
 const PROFILE_STORAGE_KEY = 'aleya-travel:user-profile:v1';
-const createId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+const createId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`;
 
 const readSavedProfile = () => {
   try {
     const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as { fullName?: string; preferredName?: string; currency?: string }) : {};
+    return stored
+      ? (JSON.parse(stored) as {
+          fullName?: string;
+          preferredName?: string;
+          currency?: string;
+        })
+      : {};
   } catch {
     return {};
   }
@@ -39,26 +45,22 @@ const getTravellerName = () => {
   return fullName ? fullName.split(/\s+/)[0] : '';
 };
 
-const STARTERS = [
-  'I want to visit Japan next April',
-  'Find me affordable flights to Bali',
-  'I need a hotel in Singapore next weekend',
-  'Plan a family trip to Queenstown with car hire',
-];
-
-export type AiPlanningPanelProps = {
-  /** Called when a search session starts or continues. */
-  onActivateSearch?: (services: TravelServiceKind[]) => void;
-};
-
-export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {}) {
-  const { trip, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } = useSharedTripStore();
-  const travelState = useTravelConversation();
+export function AiPlanningPanel() {
+  const { trip, applyAiTravelPlan, saveItineraryVersion, restoreItineraryVersion, canEditTrip } =
+    useSharedTripStore();
   const travellerName = getTravellerName();
-  const greeting = travellerName ? `Hi ${travellerName}. How can I help with your travel today?` : 'Hi. How can I help with your travel today?';
+  const greeting = travellerName
+    ? `Hi ${travellerName}. How can I help with your travel today?`
+    : 'Hi. How can I help with your travel today?';
   const [input, setInput] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [coreState, setCoreState] = useState<ConversationCoreState>(() =>
+    createInitialConversationCoreState({
+      conversationId: createId(),
+      now: new Date(),
+    }),
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
@@ -68,42 +70,75 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     },
   ]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const pendingScrollMessageIdRef = useRef<string | null>(null);
   const versions = useMemo(() => trip.itineraryVersions ?? [], [trip.itineraryVersions]);
-  const searchReady =
-    (travelState.phase === 'ready' || travelState.phase === 'locked') && !isSearchActive();
-  const sessionActive = isSearchActive();
 
-  /** Keep the user in chat — scroll only inside the chat pane, never the page. */
-  const scrollChatToEnd = () => {
+  useLayoutEffect(() => {
+    const messageId = pendingScrollMessageIdRef.current;
+    if (!messageId) return;
     const pane = chatScrollRef.current;
     if (!pane) return;
-    pane.scrollTo({ top: pane.scrollHeight, behavior: 'smooth' });
-  };
+
+    const alignNewestReply = () => {
+      const target = pane.querySelector(
+        `[data-message-id="${messageId}"]`,
+      ) as HTMLElement | null;
+      if (!target) return false;
+      const paneRect = pane.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = pane.scrollTop + (targetRect.top - paneRect.top) - 8;
+      pane.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+      return true;
+    };
+
+    alignNewestReply();
+    const raf = window.requestAnimationFrame(() => {
+      alignNewestReply();
+      pendingScrollMessageIdRef.current = null;
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [messages]);
 
   const reply = (text: string, plan?: AiTravelPlan) => {
-    setMessages((current) => [...current, { id: createId(), role: 'aleya', text, createdAt: new Date().toISOString(), plan }]);
-    window.setTimeout(scrollChatToEnd, 0);
+    const id = createId();
+    pendingScrollMessageIdRef.current = id;
+    setMessages((current) => [
+      ...current,
+      {
+        id,
+        role: 'aleya',
+        text,
+        createdAt: new Date().toISOString(),
+        plan,
+      },
+    ]);
   };
 
   const runEngineTurn = (request: string) => {
-    const result = sendTravelMessage({
+    const userMessageAt = new Date();
+    const assistantMessageAt = new Date();
+    const result = processConversationTurn({
       message: request,
-      travellerName,
+      state: coreState,
+      userEntryId: createId(),
+      assistantEntryId: createId(),
+      userMessageAt,
+      assistantMessageAt,
     });
-    if (result.activateSearch || result.continueSearch) {
-      onActivateSearch?.(result.servicesToSearch);
-    }
+    setCoreState(result.state);
     reply(result.reply);
     return result;
   };
 
-  const sendMessage = async (event?: FormEvent) => {
+  const sendMessage = (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
     if (!request || busy) return;
 
-    setMessages((current) => [...current, { id: createId(), role: 'user', text: request, createdAt: new Date().toISOString() }]);
+    setMessages((current) => [
+      ...current,
+      { id: createId(), role: 'user', text: request, createdAt: new Date().toISOString() },
+    ]);
     setInput('');
     setFeedback(null);
     setBusy(true);
@@ -111,7 +146,11 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
     try {
       runEngineTurn(request);
     } catch (error) {
-      reply(error instanceof Error ? error.message : 'Something went wrong while processing your request.');
+      reply(
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong while processing your request.',
+      );
     } finally {
       setBusy(false);
     }
@@ -122,24 +161,32 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
       className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950/50 shadow-2xl shadow-sky-950/30"
       aria-labelledby="aleya-assistant-title"
       data-testid="aleya-planning-panel"
+      data-conversation-boundary="conversation-core"
     >
       <header className="border-b border-white/10 px-5 py-5 md:px-7">
-        <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">Aleya AI Assistant</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Every request goes through the travel conversation engine — one shared requirements state for chat, summary, and search. Itineraries only when you ask.</p>
+        <h2 id="aleya-assistant-title" className="text-3xl font-bold text-white">
+          Aleya AI Assistant
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Conversation intelligence is being rebuilt from first principles. The previous engine has
+          been removed; this panel talks only to the empty conversation-core boundary.
+        </p>
+        <aside
+          className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"
+          data-testid="conversation-core-boundary"
+          aria-label="Conversation core boundary"
+        >
+          <p>Boundary: conversation-core</p>
+          <p>Status: {coreState.status}</p>
+          <p>Turn count: {coreState.turnCount}</p>
+          <p>Conversation: {coreState.conversationId}</p>
+          <p>Persistence: disabled</p>
+        </aside>
       </header>
 
-      {feedback ? <div className="px-5 pt-4 md:px-7"><StatusBanner kind="info" message={feedback} /></div> : null}
-
-      <RequirementsSummary />
-
-      {sessionActive ? (
-        <div
-          className="border-b border-white/10 bg-emerald-950/30 px-5 py-2 md:px-7"
-          data-testid="search-session-active-banner"
-        >
-          <p className="text-xs font-medium text-emerald-200">
-            Live search in progress — ask naturally to refine hotels, flights, or cars.
-          </p>
+      {feedback ? (
+        <div className="px-5 pt-4 md:px-7">
+          <StatusBanner kind="info" message={feedback} />
         </div>
       ) : null}
 
@@ -152,79 +199,130 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
         {messages.map((message) => (
           <article
             key={message.id}
+            data-message-id={message.id}
             data-testid={message.role === 'aleya' ? 'aleya-message' : 'user-message'}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-3xl ${message.role === 'user' ? 'rounded-3xl rounded-br-md bg-sky-400 px-5 py-3 text-slate-950' : 'rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-5 py-4 text-slate-100'}`}>
-              {message.role === 'aleya' ? <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Aleya</p> : null}
-              <p className="whitespace-pre-wrap text-sm leading-6" data-testid="chat-bubble-text">{message.text}</p>
+            <div
+              className={`max-w-3xl ${
+                message.role === 'user'
+                  ? 'rounded-3xl rounded-br-md bg-sky-400 px-5 py-3 text-slate-950'
+                  : 'rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-5 py-4 text-slate-100'
+              }`}
+            >
+              {message.role === 'aleya' ? (
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                  Aleya
+                </p>
+              ) : null}
+              <p className="whitespace-pre-wrap text-sm leading-6" data-testid="chat-bubble-text">
+                {message.text}
+              </p>
               {message.plan ? (
                 <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Days</p><p className="mt-1 text-xl font-semibold text-white">{message.plan.days.length}</p></div>
-                    <div className="rounded-2xl bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Estimated budget</p><p className="mt-1 font-semibold text-white">{message.plan.budgetSuggestion.amount.toLocaleString('en-AU')} {message.plan.budgetSuggestion.currency}</p></div>
-                    <div className="rounded-2xl bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Plan style</p><p className="mt-1 font-semibold capitalize text-white">{message.plan.label}</p></div>
+                    <div className="rounded-2xl bg-slate-950/50 p-3">
+                      <p className="text-xs text-slate-400">Days</p>
+                      <p className="mt-1 text-xl font-semibold text-white">
+                        {message.plan.days.length}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-950/50 p-3">
+                      <p className="text-xs text-slate-400">Estimated budget</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {message.plan.budgetSuggestion.amount.toLocaleString('en-AU')}{' '}
+                        {message.plan.budgetSuggestion.currency}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-950/50 p-3">
+                      <p className="text-xs text-slate-400">Plan style</p>
+                      <p className="mt-1 font-semibold capitalize text-white">
+                        {message.plan.label}
+                      </p>
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    {message.plan.days.slice(0, 4).map((day) => <div key={day.day} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"><p className="font-medium text-white">{day.title}</p><p className="mt-1 text-xs text-slate-400">{day.items.map((item) => item.title).join(' · ')}</p></div>)}
+                    {message.plan.days.slice(0, 4).map((day) => (
+                      <div
+                        key={day.day}
+                        className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                      >
+                        <p className="font-medium text-white">{day.title}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {day.items.map((item) => item.title).join(' · ')}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <PrimaryButton type="button" disabled={!canEditTrip} onClick={() => setFeedback(applyAiTravelPlan(message.plan!, { replaceUnlocked: true, saveVersion: true }).message)}>Add this plan to my trip</PrimaryButton>
-                    <SecondaryButton type="button" onClick={() => { setInput('Please revise this plan: '); document.getElementById('aleya-chat-input')?.focus(); }}>Ask for changes</SecondaryButton>
+                    <PrimaryButton
+                      type="button"
+                      disabled={!canEditTrip}
+                      onClick={() =>
+                        setFeedback(
+                          applyAiTravelPlan(message.plan!, {
+                            replaceUnlocked: true,
+                            saveVersion: true,
+                          }).message,
+                        )
+                      }
+                    >
+                      Add this plan to my trip
+                    </PrimaryButton>
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => {
+                        setInput('Please revise this plan: ');
+                        document.getElementById('aleya-chat-input')?.focus();
+                      }}
+                    >
+                      Ask for changes
+                    </SecondaryButton>
                   </div>
                 </div>
               ) : null}
             </div>
           </article>
         ))}
-        <div ref={chatEndRef} />
       </div>
 
-      {messages.length === 1 ? <div className="px-5 pb-4 md:px-7"><p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-400">Try asking</p><div className="flex flex-wrap gap-2">{STARTERS.map((starter) => <button key={starter} type="button" onClick={() => { setInput(starter); window.setTimeout(() => document.getElementById('aleya-chat-input')?.focus(), 0); }} className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs text-slate-200 hover:border-sky-300 hover:text-white">{starter}</button>)}</div></div> : null}
-
-      {searchReady ? (
-        <div className="border-t border-white/10 px-5 py-3 md:px-7" data-testid="search-handoff-actions">
-          <p className="mb-2 text-xs text-slate-400">
-            Requirements are ready. Stay in chat, or continue to search when you want.
-          </p>
-          <PrimaryButton
-            type="button"
-            data-testid="continue-to-search"
-            disabled={busy}
-            onClick={() => {
-              setBusy(true);
-              try {
-                setMessages((current) => [
-                  ...current,
-                  {
-                    id: createId(),
-                    role: 'user',
-                    text: 'Yes please',
-                    createdAt: new Date().toISOString(),
-                  },
-                ]);
-                runEngineTurn('Yes please');
-              } finally {
-                setBusy(false);
+      <form onSubmit={sendMessage} className="border-t border-white/10 bg-slate-950/70 p-4 md:p-5">
+        <label className="sr-only" htmlFor="aleya-chat-input">
+          Message Aleya
+        </label>
+        <div className="flex items-end gap-3 rounded-3xl border border-white/15 bg-slate-950 px-4 py-3 focus-within:border-sky-300/70 focus-within:ring-2 focus-within:ring-sky-300/20">
+          <textarea
+            id="aleya-chat-input"
+            rows={2}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
               }
             }}
+            placeholder="Message Aleya…"
+            className="min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-slate-500"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || busy}
+            className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Continue to search
-          </PrimaryButton>
-        </div>
-      ) : null}
-
-      <form onSubmit={sendMessage} className="border-t border-white/10 bg-slate-950/70 p-4 md:p-5">
-        <label className="sr-only" htmlFor="aleya-chat-input">Message Aleya</label>
-        <div className="flex items-end gap-3 rounded-3xl border border-white/15 bg-slate-950 px-4 py-3 focus-within:border-sky-300/70 focus-within:ring-2 focus-within:ring-sky-300/20">
-          <textarea id="aleya-chat-input" rows={2} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Message Aleya…" className="min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-slate-500" />
-          <button type="submit" disabled={!input.trim() || busy} className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-40">{busy ? '…' : 'Send'}</button>
+            {busy ? '…' : 'Send'}
+          </button>
         </div>
         <button
           type="button"
           className="mt-2 text-xs text-slate-500 hover:text-sky-200"
           onClick={() => {
-            resetTravelConversation();
+            setCoreState(
+              createInitialConversationCoreState({
+                conversationId: createId(),
+                now: new Date(),
+              }),
+            );
             setMessages([
               {
                 id: createId(),
@@ -233,14 +331,57 @@ export function AiPlanningPanel({ onActivateSearch }: AiPlanningPanelProps = {})
                 createdAt: new Date().toISOString(),
               },
             ]);
-            setFeedback('Started a fresh requirements conversation.');
+            setFeedback('Started a fresh empty conversation-core session.');
           }}
         >
-          Clear saved requirements
+          Reset conversation session
         </button>
       </form>
 
-      {versions.length > 0 ? <details className="border-t border-white/10 px-5 py-4 md:px-7"><summary className="cursor-pointer text-sm font-medium text-slate-300">Previous itinerary versions ({versions.length})</summary><ul className="mt-3 space-y-2">{versions.map((version) => <li key={version.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-300"><span>{version.label} · {new Date(version.createdAt).toLocaleString('en-AU')} · {version.stops.length} items</span><SecondaryButton type="button" disabled={!canEditTrip} onClick={() => { restoreItineraryVersion(version.id); setFeedback(`Restored ${version.label}.`); }}>Restore</SecondaryButton></li>)}</ul></details> : <div className="border-t border-white/10 px-5 py-3 text-right md:px-7"><button type="button" disabled={!canEditTrip} onClick={() => { saveItineraryVersion('Saved by traveller'); setFeedback('Your current itinerary has been saved.'); }} className="text-xs text-slate-400 hover:text-sky-200 disabled:opacity-40">Save current itinerary</button></div>}
+      {versions.length > 0 ? (
+        <details className="border-t border-white/10 px-5 py-4 md:px-7">
+          <summary className="cursor-pointer text-sm font-medium text-slate-300">
+            Previous itinerary versions ({versions.length})
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {versions.map((version) => (
+              <li
+                key={version.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-300"
+              >
+                <span>
+                  {version.label} · {new Date(version.createdAt).toLocaleString('en-AU')} ·{' '}
+                  {version.stops.length} items
+                </span>
+                <SecondaryButton
+                  type="button"
+                  disabled={!canEditTrip}
+                  onClick={() => {
+                    restoreItineraryVersion(version.id);
+                    setFeedback(`Restored ${version.label}.`);
+                  }}
+                >
+                  Restore
+                </SecondaryButton>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : (
+        <div className="border-t border-white/10 px-5 py-3 text-right md:px-7">
+          <button
+            type="button"
+            disabled={!canEditTrip}
+            onClick={() => {
+              saveItineraryVersion('Saved by traveller');
+              setFeedback('Your current itinerary has been saved.');
+            }}
+            className="text-xs text-slate-400 hover:text-sky-200 disabled:opacity-40"
+          >
+            Save current itinerary
+          </button>
+        </div>
+      )}
     </section>
   );
 }

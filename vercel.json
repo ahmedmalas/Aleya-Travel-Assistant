@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "mkdir -p dist && true",
-  "installCommand": "true",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "outputDirectory": "dist"
 }

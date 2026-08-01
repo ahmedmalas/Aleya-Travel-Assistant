@@ -1,8 +1,4 @@
-import { useEffect, useState } from 'react';
-import {
-  projectCanonicalSearch,
-  useTravelConversation,
-} from '../../features/travel-conversation';
+import { useState } from 'react';
 import { searchFlights, type FlightOffer } from '../../providers';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import {
@@ -74,38 +70,9 @@ export function FlightsPanel() {
     { origin: '', destination: '', date: '' },
     { origin: '', destination: '', date: '' },
   ]);
-  // Adults come only from canonical search projection — never vault travellerCount defaults.
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
-  const travelState = useTravelConversation();
-  const searchProjection = projectCanonicalSearch(travelState);
-
-  useEffect(() => {
-    setPlanOrigin(
-      searchProjection.origin.airportCode
-        ? `${searchProjection.origin.label ?? ''} (${searchProjection.origin.airportCode})`.trim()
-        : (searchProjection.origin.label ?? ''),
-    );
-    setPlanDestination(
-      searchProjection.destination.airportCode
-        ? `${searchProjection.destination.label ?? ''} (${searchProjection.destination.airportCode})`.trim()
-        : (searchProjection.destination.label ?? ''),
-    );
-    setPlanDepart(searchProjection.departureDate ?? '');
-    setPlanReturn(searchProjection.returnDate ?? '');
-    setAdults(searchProjection.adults);
-  }, [
-    searchProjection.origin.label,
-    searchProjection.origin.airportCode,
-    searchProjection.destination.label,
-    searchProjection.destination.airportCode,
-    searchProjection.departureDate,
-    searchProjection.returnDate,
-    searchProjection.adults,
-    travelState.conversationId,
-    travelState.turnCount,
-  ]);
   const [planCabin, setPlanCabin] = useState('Economy');
   const [directOnly, setDirectOnly] = useState(false);
   const [maxStops, setMaxStops] = useState(2);

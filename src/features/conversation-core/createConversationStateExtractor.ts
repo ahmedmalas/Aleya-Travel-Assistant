@@ -1,0 +1,127 @@
+import { AccommodationRequestedConversationStateExtractor } from './AccommodationRequestedConversationStateExtractor';
+import { ActivitiesRequestedConversationStateExtractor } from './ActivitiesRequestedConversationStateExtractor';
+import { AdultCountConversationStateExtractor } from './AdultCountConversationStateExtractor';
+import { AttractionsRequestedConversationStateExtractor } from './AttractionsRequestedConversationStateExtractor';
+import { BareNumberPassengerCountConversationStateExtractor } from './BareNumberPassengerCountConversationStateExtractor';
+import { BeachesRequestedConversationStateExtractor } from './BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from './CampingRequestedConversationStateExtractor';
+import { CarHireRequestedConversationStateExtractor } from './CarHireRequestedConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from './ChildCountConversationStateExtractor';
+import { CompositeConversationStateExtractor } from './CompositeConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from './DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from './DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from './emptyConversationStateExtractor';
+import { ExplicitGuestCountConversationStateExtractor } from './ExplicitGuestCountConversationStateExtractor';
+import { FlightsRequestedConversationStateExtractor } from './FlightsRequestedConversationStateExtractor';
+import { FourWheelDrivingRequestedConversationStateExtractor } from './FourWheelDrivingRequestedConversationStateExtractor';
+import { InfantCountConversationStateExtractor } from './InfantCountConversationStateExtractor';
+import { KayakingRequestedConversationStateExtractor } from './KayakingRequestedConversationStateExtractor';
+import { MultiPassengerCountConversationStateExtractor } from './MultiPassengerCountConversationStateExtractor';
+import { NearbyDiscoveryRequestedConversationStateExtractor } from './NearbyDiscoveryRequestedConversationStateExtractor';
+import { OriginConversationStateExtractor } from './OriginConversationStateExtractor';
+import { RestaurantPreferenceConversationStateExtractor } from './RestaurantPreferenceConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from './RestaurantsRequestedConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from './ReturnDateConversationStateExtractor';
+import { ScenicDrivesRequestedConversationStateExtractor } from './ScenicDrivesRequestedConversationStateExtractor';
+import { SnowActivitiesRequestedConversationStateExtractor } from './SnowActivitiesRequestedConversationStateExtractor';
+import { HikingWalkingRequestedConversationStateExtractor } from './extractors/HikingWalkingRequestedConversationStateExtractor';
+import { FishingRequestedConversationStateExtractor } from './extractors/FishingRequestedConversationStateExtractor';
+import { DivingSnorkellingRequestedConversationStateExtractor } from './extractors/DivingSnorkellingRequestedConversationStateExtractor';
+import { WineriesFoodTrailsRequestedConversationStateExtractor } from './extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
+import { EventsFestivalsRequestedConversationStateExtractor } from './extractors/EventsFestivalsRequestedConversationStateExtractor';
+import { WildlifeRequestedConversationStateExtractor } from './extractors/WildlifeRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from './extractors/NationalParksRequestedConversationStateExtractor';
+import { NightlifeRequestedConversationStateExtractor } from './extractors/NightlifeRequestedConversationStateExtractor';
+import { ShoppingRequestedConversationStateExtractor } from './extractors/ShoppingRequestedConversationStateExtractor';
+import { WellnessRequestedConversationStateExtractor } from './extractors/WellnessRequestedConversationStateExtractor';
+import { ToursRequestedConversationStateExtractor } from './extractors/ToursRequestedConversationStateExtractor';
+import { FamilyActivitiesRequestedConversationStateExtractor } from './extractors/FamilyActivitiesRequestedConversationStateExtractor';
+import { AccessibleTravelRequestedConversationStateExtractor } from './extractors/AccessibleTravelRequestedConversationStateExtractor';
+import type { ConversationStateExtractor } from './types';
+
+/**
+ * Internal construction boundary for conversation-state extractors.
+ *
+ * Always returns a new CompositeConversationStateExtractor containing a new
+ * DestinationConversationStateExtractor, then a new
+ * OriginConversationStateExtractor, then a new
+ * DepartureDateConversationStateExtractor, then a new
+ * ReturnDateConversationStateExtractor, then a new
+ * MultiPassengerCountConversationStateExtractor, then a new
+ * AdultCountConversationStateExtractor, then a new
+ * ChildCountConversationStateExtractor, then a new
+ * InfantCountConversationStateExtractor, then a new
+ * FlightsRequestedConversationStateExtractor, then a new
+ * AccommodationRequestedConversationStateExtractor, then a new
+ * CarHireRequestedConversationStateExtractor, then a new
+ * ActivitiesRequestedConversationStateExtractor, then a new
+ * RestaurantsRequestedConversationStateExtractor, then a new
+ * RestaurantPreferenceConversationStateExtractor, then a new
+ * NearbyDiscoveryRequestedConversationStateExtractor, then a new
+ * BeachesRequestedConversationStateExtractor, then a new
+ * CampingRequestedConversationStateExtractor, then a new
+ * KayakingRequestedConversationStateExtractor, then a new
+ * FourWheelDrivingRequestedConversationStateExtractor, then a new
+ * ScenicDrivesRequestedConversationStateExtractor, then a new
+ * AttractionsRequestedConversationStateExtractor, then a new
+ * SnowActivitiesRequestedConversationStateExtractor, then a new
+ * HikingWalkingRequestedConversationStateExtractor, then a new
+ * FishingRequestedConversationStateExtractor, then a new
+ * DivingSnorkellingRequestedConversationStateExtractor, then a new
+ * WineriesFoodTrailsRequestedConversationStateExtractor, then a new
+ * EventsFestivalsRequestedConversationStateExtractor, then a new
+ * WildlifeRequestedConversationStateExtractor, then a new
+ * NationalParksRequestedConversationStateExtractor, then a new
+ * NightlifeRequestedConversationStateExtractor, then a new
+ * ShoppingRequestedConversationStateExtractor, then a new
+ * WellnessRequestedConversationStateExtractor, then a new
+ * ToursRequestedConversationStateExtractor, then a new
+ * FamilyActivitiesRequestedConversationStateExtractor, then a new
+ * AccessibleTravelRequestedConversationStateExtractor, then a new
+ * BareNumberPassengerCountConversationStateExtractor, then a new
+ * ExplicitGuestCountConversationStateExtractor, then a new
+ * EmptyConversationStateExtractor. No configuration, selection, caching, or
+ * runtime wiring.
+ */
+export function createConversationStateExtractor(): ConversationStateExtractor {
+  return new CompositeConversationStateExtractor([
+    new DestinationConversationStateExtractor(),
+    new OriginConversationStateExtractor(),
+    new DepartureDateConversationStateExtractor(),
+    new ReturnDateConversationStateExtractor(),
+    new MultiPassengerCountConversationStateExtractor(),
+    new AdultCountConversationStateExtractor(),
+    new ChildCountConversationStateExtractor(),
+    new InfantCountConversationStateExtractor(),
+    new FlightsRequestedConversationStateExtractor(),
+    new AccommodationRequestedConversationStateExtractor(),
+    new CarHireRequestedConversationStateExtractor(),
+    new ActivitiesRequestedConversationStateExtractor(),
+    new RestaurantsRequestedConversationStateExtractor(),
+    new RestaurantPreferenceConversationStateExtractor(),
+    new NearbyDiscoveryRequestedConversationStateExtractor(),
+    new BeachesRequestedConversationStateExtractor(),
+    new CampingRequestedConversationStateExtractor(),
+    new KayakingRequestedConversationStateExtractor(),
+    new FourWheelDrivingRequestedConversationStateExtractor(),
+    new ScenicDrivesRequestedConversationStateExtractor(),
+    new AttractionsRequestedConversationStateExtractor(),
+    new SnowActivitiesRequestedConversationStateExtractor(),
+    new HikingWalkingRequestedConversationStateExtractor(),
+    new FishingRequestedConversationStateExtractor(),
+    new DivingSnorkellingRequestedConversationStateExtractor(),
+    new WineriesFoodTrailsRequestedConversationStateExtractor(),
+    new EventsFestivalsRequestedConversationStateExtractor(),
+    new WildlifeRequestedConversationStateExtractor(),
+    new NationalParksRequestedConversationStateExtractor(),
+    new NightlifeRequestedConversationStateExtractor(),
+    new ShoppingRequestedConversationStateExtractor(),
+    new WellnessRequestedConversationStateExtractor(),
+    new ToursRequestedConversationStateExtractor(),
+    new FamilyActivitiesRequestedConversationStateExtractor(),
+    new AccessibleTravelRequestedConversationStateExtractor(),
+    new BareNumberPassengerCountConversationStateExtractor(),
+    new ExplicitGuestCountConversationStateExtractor(),
+    new EmptyConversationStateExtractor(),
+  ]);
+}

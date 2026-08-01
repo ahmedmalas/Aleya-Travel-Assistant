@@ -1,0 +1,742 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
+import * as conversationCore from '../index';
+import {
+  createInitialConversationCoreState,
+  processConversationTurn,
+  type ConversationCoreState,
+  type ConversationStateExtractionInput,
+  type ConversationStateExtractionResult,
+  type ConversationStateExtractor,
+  type ConversationStateUpdate,
+} from '../index';
+import { CompositeConversationStateExtractor } from '../CompositeConversationStateExtractor';
+import { createConversationStateExtractor } from '../createConversationStateExtractor';
+import { AccommodationRequestedConversationStateExtractor } from '../AccommodationRequestedConversationStateExtractor';
+import { CarHireRequestedConversationStateExtractor } from '../CarHireRequestedConversationStateExtractor';
+import { ActivitiesRequestedConversationStateExtractor } from '../ActivitiesRequestedConversationStateExtractor';
+import { NearbyDiscoveryRequestedConversationStateExtractor } from '../NearbyDiscoveryRequestedConversationStateExtractor';
+import { RestaurantsRequestedConversationStateExtractor } from '../RestaurantsRequestedConversationStateExtractor';
+import { AdultCountConversationStateExtractor } from '../AdultCountConversationStateExtractor';
+import { AttractionsRequestedConversationStateExtractor } from '../AttractionsRequestedConversationStateExtractor';
+import { BeachesRequestedConversationStateExtractor } from '../BeachesRequestedConversationStateExtractor';
+import { CampingRequestedConversationStateExtractor } from '../CampingRequestedConversationStateExtractor';
+import { ChildCountConversationStateExtractor } from '../ChildCountConversationStateExtractor';
+import { DepartureDateConversationStateExtractor } from '../DepartureDateConversationStateExtractor';
+import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
+import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
+import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
+import { FourWheelDrivingRequestedConversationStateExtractor } from '../FourWheelDrivingRequestedConversationStateExtractor';
+import { InfantCountConversationStateExtractor } from '../InfantCountConversationStateExtractor';
+import { KayakingRequestedConversationStateExtractor } from '../KayakingRequestedConversationStateExtractor';
+import { OriginConversationStateExtractor } from '../OriginConversationStateExtractor';
+import { ReturnDateConversationStateExtractor } from '../ReturnDateConversationStateExtractor';
+import { ScenicDrivesRequestedConversationStateExtractor } from '../ScenicDrivesRequestedConversationStateExtractor';
+import { SnowActivitiesRequestedConversationStateExtractor } from '../SnowActivitiesRequestedConversationStateExtractor';
+import { HikingWalkingRequestedConversationStateExtractor } from '../extractors/HikingWalkingRequestedConversationStateExtractor';
+import { FishingRequestedConversationStateExtractor } from '../extractors/FishingRequestedConversationStateExtractor';
+import { DivingSnorkellingRequestedConversationStateExtractor } from '../extractors/DivingSnorkellingRequestedConversationStateExtractor';
+import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
+import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
+import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
+import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
+
+const ROOT = process.cwd();
+const COMPOSITE_SOURCE = resolve(
+  ROOT,
+  'src/features/conversation-core/CompositeConversationStateExtractor.ts',
+);
+
+function createState(
+  overrides: Partial<ConversationCoreState> = {},
+): ConversationCoreState {
+  return {
+    ...createInitialConversationCoreState({
+      conversationId: 'conversation-5j',
+      now: new Date('2026-07-29T00:00:00.000Z'),
+    }),
+    status: 'active',
+    turnCount: 1,
+    destination: 'Brisbane',
+    origin: 'Melbourne',
+    transcript: [
+      {
+        id: 'user-0',
+        role: 'user',
+        message: 'seed',
+        timestamp: '2026-07-29T00:00:00.000Z',
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function stubExtractor(
+  stateUpdate: ConversationStateUpdate,
+  onExtract?: (input: ConversationStateExtractionInput) => void,
+): ConversationStateExtractor {
+  return {
+    extract(input) {
+      onExtract?.(input);
+      return { stateUpdate: { ...stateUpdate } };
+    },
+  };
+}
+
+function readExtractors(
+  composite: CompositeConversationStateExtractor,
+): readonly ConversationStateExtractor[] {
+  return (
+    composite as unknown as {
+      extractors: readonly ConversationStateExtractor[];
+    }
+  ).extractors;
+}
+
+function listSourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir);
+  const files: string[] = [];
+  for (const entry of entries) {
+    const full = join(dir, entry);
+    const stats = statSync(full);
+    if (stats.isDirectory()) {
+      if (entry === 'node_modules' || entry === 'dist' || entry === '__tests__') {
+        continue;
+      }
+      files.push(...listSourceFiles(full));
+      continue;
+    }
+    if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+describe('phase 5J — CompositeConversationStateExtractor boundary', () => {
+  it('implements ConversationStateExtractor and accepts a readonly sequence', () => {
+    expectTypeOf<CompositeConversationStateExtractor>().toMatchTypeOf<ConversationStateExtractor>();
+    expectTypeOf<CompositeConversationStateExtractor['extract']>().parameters.toEqualTypeOf<
+      [ConversationStateExtractionInput]
+    >();
+    expectTypeOf<CompositeConversationStateExtractor['extract']>().returns.toEqualTypeOf<ConversationStateExtractionResult>();
+
+    const extractors: readonly ConversationStateExtractor[] = [
+      new EmptyConversationStateExtractor(),
+    ];
+    const composite = new CompositeConversationStateExtractor(extractors);
+    expect(composite).toBeInstanceOf(CompositeConversationStateExtractor);
+    expect(readExtractors(composite)).toBe(extractors);
+  });
+
+  it('returns empty update for empty sequence and for a single empty extractor', () => {
+    const input: ConversationStateExtractionInput = {
+      message: 'Plan a trip',
+      currentState: createState(),
+    };
+
+    expect(new CompositeConversationStateExtractor([]).extract(input)).toEqual({
+      stateUpdate: {},
+    });
+    expect(
+      new CompositeConversationStateExtractor([
+        new EmptyConversationStateExtractor(),
+      ]).extract(input),
+    ).toEqual({ stateUpdate: {} });
+  });
+
+  it('calls every configured extractor once in order with the original input', () => {
+    const input: ConversationStateExtractionInput = {
+      message: 'order probe',
+      currentState: createState(),
+    };
+    const order: string[] = [];
+    const first = stubExtractor({ destination: 'Brisbane' }, (received) => {
+      order.push('first');
+      expect(received).toBe(input);
+    });
+    const second = stubExtractor({ origin: 'Sydney' }, (received) => {
+      order.push('second');
+      expect(received).toBe(input);
+    });
+    const firstExtract = vi.spyOn(first, 'extract');
+    const secondExtract = vi.spyOn(second, 'extract');
+
+    const result = new CompositeConversationStateExtractor([
+      first,
+      second,
+    ]).extract(input);
+
+    expect(order).toEqual(['first', 'second']);
+    expect(firstExtract).toHaveBeenCalledTimes(1);
+    expect(secondExtract).toHaveBeenCalledTimes(1);
+    expect(firstExtract).toHaveBeenCalledWith(input);
+    expect(secondExtract).toHaveBeenCalledWith(input);
+    expect(result).toEqual({
+      stateUpdate: {
+        destination: 'Brisbane',
+        origin: 'Sydney',
+      },
+    });
+  });
+
+  it('merges updates with later-extractor precedence including null and false', () => {
+    const input: ConversationStateExtractionInput = {
+      message: 'merge probe',
+      currentState: createState(),
+    };
+
+    const merged = new CompositeConversationStateExtractor([
+      stubExtractor({
+        destination: 'Brisbane',
+        origin: 'Melbourne',
+        departureDate: '2026-09-01',
+        returnDate: '2026-09-08',
+        adultCount: 2,
+        childCount: 1,
+        flightsRequested: true,
+        accommodationRequested: false,
+        nearbyDiscoveryRequested: true,
+        beachesRequested: true,
+      }),
+      stubExtractor({
+        destination: 'Sydney',
+        origin: 'Hobart',
+        departureDate: '2026-10-01',
+        returnDate: '2026-10-10',
+        adultCount: 3,
+        childCount: 0,
+        flightsRequested: false,
+        accommodationRequested: true,
+        nearbyDiscoveryRequested: false,
+        beachesRequested: false,
+        carHireRequested: true,
+      }),
+    ]).extract(input);
+
+    expect(merged.stateUpdate).toEqual({
+      destination: 'Sydney',
+      origin: 'Hobart',
+      departureDate: '2026-10-01',
+      returnDate: '2026-10-10',
+      adultCount: 3,
+      childCount: 0,
+      flightsRequested: false,
+      accommodationRequested: true,
+      nearbyDiscoveryRequested: false,
+      beachesRequested: false,
+      carHireRequested: true,
+    });
+
+    const nullAndFalse = new CompositeConversationStateExtractor([
+      stubExtractor({
+        destination: 'Brisbane',
+        flightsRequested: true,
+      }),
+      stubExtractor({
+        destination: null,
+        flightsRequested: false,
+      }),
+    ]).extract(input);
+
+    expect(nullAndFalse.stateUpdate).toEqual({
+      destination: null,
+      flightsRequested: false,
+    });
+
+    const omittedPreservesEarlier = new CompositeConversationStateExtractor([
+      stubExtractor({
+        destination: 'Brisbane',
+        flightsRequested: true,
+        accommodationRequested: true,
+      }),
+      stubExtractor({
+        destination: 'Sydney',
+      }),
+    ]).extract(input);
+
+    expect(omittedPreservesEarlier.stateUpdate).toEqual({
+      destination: 'Sydney',
+      flightsRequested: true,
+      accommodationRequested: true,
+    });
+  });
+
+  it('does not apply updates to canonical state or call apply/change-detection helpers', () => {
+    const source = readFileSync(COMPOSITE_SOURCE, 'utf8');
+    const currentState = createState({
+      destination: 'Brisbane',
+      transcript: [
+        {
+          id: 'user-0',
+          role: 'user',
+          message: 'seed',
+          timestamp: '2026-07-29T00:00:00.000Z',
+        },
+      ],
+    });
+    const input: ConversationStateExtractionInput = {
+      message: 'Do not mutate',
+      currentState,
+    };
+    const before = structuredClone(input);
+    const childUpdate: ConversationStateUpdate = { destination: 'Cairns' };
+    const childResult: ConversationStateExtractionResult = {
+      stateUpdate: childUpdate,
+    };
+    const child: ConversationStateExtractor = {
+      extract: () => childResult,
+    };
+
+    Object.freeze(currentState.transcript[0]);
+    Object.freeze(currentState.transcript);
+    Object.freeze(currentState);
+    Object.freeze(input);
+    Object.freeze(childUpdate);
+    Object.freeze(childResult);
+
+    const result = new CompositeConversationStateExtractor([child]).extract(input);
+
+    expect(result.stateUpdate).toEqual({ destination: 'Cairns' });
+    expect(result.stateUpdate).not.toBe(childUpdate);
+    expect(input).toEqual(before);
+    expect(currentState).toEqual(before.currentState);
+    expect(currentState.transcript).toEqual(before.currentState.transcript);
+    expect(childResult).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(childUpdate).toEqual({ destination: 'Cairns' });
+    expect(currentState.destination).toBe('Brisbane');
+
+    expect(source).not.toMatch(/applyConversationStateUpdate/);
+    expect(source).not.toMatch(/hasConversationStateUpdateChanged/);
+    expect(source).not.toMatch(/metadata|confidence|warnings/);
+  });
+
+  it('returns separate result objects and retains no shared extraction state', () => {
+    const composite = new CompositeConversationStateExtractor([
+      stubExtractor({ destination: 'Brisbane' }),
+    ]);
+    const input: ConversationStateExtractionInput = {
+      message: 'separate',
+      currentState: createState(),
+    };
+
+    const first = composite.extract(input);
+    const second = composite.extract(input);
+    first.stateUpdate.destination = 'mutated';
+
+    expect(first).not.toBe(second);
+    expect(first.stateUpdate).not.toBe(second.stateUpdate);
+    expect(second).toEqual({ stateUpdate: { destination: 'Brisbane' } });
+
+    const other = new CompositeConversationStateExtractor([
+      stubExtractor({ destination: 'Sydney' }),
+    ]);
+    expect(other.extract(input)).toEqual({
+      stateUpdate: { destination: 'Sydney' },
+    });
+    expect(composite.extract(input)).toEqual({
+      stateUpdate: { destination: 'Brisbane' },
+    });
+  });
+
+  it('is not exported from the public index and is only constructed by the factory', () => {
+    const index = readFileSync(
+      resolve(ROOT, 'src/features/conversation-core/index.ts'),
+      'utf8',
+    );
+    const factorySource = readFileSync(
+      resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
+      'utf8',
+    );
+    const allowedConstruct = new Set([
+      resolve(ROOT, 'src/features/conversation-core/createConversationStateExtractor.ts'),
+      COMPOSITE_SOURCE,
+    ]);
+    const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
+      (path) => !allowedConstruct.has(path),
+    );
+
+    expect(index).not.toMatch(/CompositeConversationStateExtractor/);
+    expect(conversationCore).not.toHaveProperty('CompositeConversationStateExtractor');
+    expect(factorySource).toMatch(
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new MultiPassengerCountConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new BareNumberPassengerCountConversationStateExtractor\(\),\s*new ExplicitGuestCountConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+    );
+
+    for (const file of srcFiles) {
+      const src = readFileSync(file, 'utf8');
+      expect(src.includes('new CompositeConversationStateExtractor'), file).toBe(
+        false,
+      );
+      expect(src.includes('CompositeConversationStateExtractor'), file).toBe(false);
+    }
+  });
+
+  it('production destination-origin-departure-return-adult-child-infant-flights-accommodation-car-hire-activities-restaurants-nearby-beaches-camping-kayaking-4wd-scenic-attractions-snow-hiking-fishing-diving-wineries-events-wildlife-national-parks-empty sequence stays empty without altering merge behaviour', () => {
+    const input: ConversationStateExtractionInput = {
+      message:
+        'Flying from Melbourne to Cairns next Friday, back Sunday, 2 adults, 1 child, 1 infant, need flights, hotel, car hire, activities, restaurants, nearby discovery, beaches, camping, kayaking, 4WD, scenic drives, attractions, snow activities, hiking, fishing, diving, wineries, festivals, wildlife and national parks',
+      currentState: createState(),
+    };
+    const received: ConversationStateExtractionInput[] = [];
+    const destination = new DestinationConversationStateExtractor();
+    const origin = new OriginConversationStateExtractor();
+    const departureDate = new DepartureDateConversationStateExtractor();
+    const returnDate = new ReturnDateConversationStateExtractor();
+    const adultCount = new AdultCountConversationStateExtractor();
+    const childCount = new ChildCountConversationStateExtractor();
+    const infantCount = new InfantCountConversationStateExtractor();
+    const flightsRequested = new FlightsRequestedConversationStateExtractor();
+    const accommodationRequested =
+      new AccommodationRequestedConversationStateExtractor();
+    const carHireRequested = new CarHireRequestedConversationStateExtractor();
+    const activitiesRequested = new ActivitiesRequestedConversationStateExtractor();
+    const restaurantsRequested = new RestaurantsRequestedConversationStateExtractor();
+    const nearbyDiscoveryRequested =
+      new NearbyDiscoveryRequestedConversationStateExtractor();
+    const beachesRequested = new BeachesRequestedConversationStateExtractor();
+    const campingRequested = new CampingRequestedConversationStateExtractor();
+    const kayakingRequested = new KayakingRequestedConversationStateExtractor();
+    const fourWheelDrivingRequested =
+      new FourWheelDrivingRequestedConversationStateExtractor();
+    const scenicDrivesRequested = new ScenicDrivesRequestedConversationStateExtractor();
+    const attractionsRequested = new AttractionsRequestedConversationStateExtractor();
+    const snowActivitiesRequested =
+      new SnowActivitiesRequestedConversationStateExtractor();
+    const hikingWalkingRequested =
+      new HikingWalkingRequestedConversationStateExtractor();
+    const fishingRequested = new FishingRequestedConversationStateExtractor();
+    const divingSnorkellingRequested =
+      new DivingSnorkellingRequestedConversationStateExtractor();
+    const wineriesFoodTrailsRequested =
+      new WineriesFoodTrailsRequestedConversationStateExtractor();
+    const eventsFestivalsRequested =
+      new EventsFestivalsRequestedConversationStateExtractor();
+    const wildlifeRequested = new WildlifeRequestedConversationStateExtractor();
+    const nationalParksRequested =
+      new NationalParksRequestedConversationStateExtractor();
+    const empty = new EmptyConversationStateExtractor();
+    const destinationExtract = vi
+      .spyOn(destination, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const originExtract = vi
+      .spyOn(origin, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const departureDateExtract = vi
+      .spyOn(departureDate, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const returnDateExtract = vi
+      .spyOn(returnDate, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const adultCountExtract = vi
+      .spyOn(adultCount, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const childCountExtract = vi
+      .spyOn(childCount, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const infantCountExtract = vi
+      .spyOn(infantCount, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const flightsRequestedExtract = vi
+      .spyOn(flightsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const accommodationRequestedExtract = vi
+      .spyOn(accommodationRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const carHireRequestedExtract = vi
+      .spyOn(carHireRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const activitiesRequestedExtract = vi
+      .spyOn(activitiesRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const restaurantsRequestedExtract = vi
+      .spyOn(restaurantsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const nearbyDiscoveryRequestedExtract = vi
+      .spyOn(nearbyDiscoveryRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const beachesRequestedExtract = vi
+      .spyOn(beachesRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const campingRequestedExtract = vi
+      .spyOn(campingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const kayakingRequestedExtract = vi
+      .spyOn(kayakingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const fourWheelDrivingRequestedExtract = vi
+      .spyOn(fourWheelDrivingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const scenicDrivesRequestedExtract = vi
+      .spyOn(scenicDrivesRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const attractionsRequestedExtract = vi
+      .spyOn(attractionsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const snowActivitiesRequestedExtract = vi
+      .spyOn(snowActivitiesRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const hikingWalkingRequestedExtract = vi
+      .spyOn(hikingWalkingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const fishingRequestedExtract = vi
+      .spyOn(fishingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const divingSnorkellingRequestedExtract = vi
+      .spyOn(divingSnorkellingRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const wineriesFoodTrailsRequestedExtract = vi
+      .spyOn(wineriesFoodTrailsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const eventsFestivalsRequestedExtract = vi
+      .spyOn(eventsFestivalsRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const wildlifeRequestedExtract = vi
+      .spyOn(wildlifeRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const nationalParksRequestedExtract = vi
+      .spyOn(nationalParksRequested, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+    const emptyExtract = vi
+      .spyOn(empty, 'extract')
+      .mockImplementation((receivedInput) => {
+        received.push(receivedInput);
+        return { stateUpdate: {} };
+      });
+
+    const production = new CompositeConversationStateExtractor([
+      destination,
+      origin,
+      departureDate,
+      returnDate,
+      adultCount,
+      childCount,
+      infantCount,
+      flightsRequested,
+      accommodationRequested,
+      carHireRequested,
+      activitiesRequested,
+      restaurantsRequested,
+      nearbyDiscoveryRequested,
+      beachesRequested,
+      campingRequested,
+      kayakingRequested,
+      fourWheelDrivingRequested,
+      scenicDrivesRequested,
+      attractionsRequested,
+      snowActivitiesRequested,
+      hikingWalkingRequested,
+      fishingRequested,
+      divingSnorkellingRequested,
+      wineriesFoodTrailsRequested,
+      eventsFestivalsRequested,
+      wildlifeRequested,
+      nationalParksRequested,
+      empty,
+    ]);
+    const first = production.extract(input);
+    const second = production.extract(input);
+
+    expect(first).toEqual({ stateUpdate: {} });
+    expect(second).toEqual({ stateUpdate: {} });
+    expect(first).not.toBe(second);
+    expect(first.stateUpdate).not.toBe(second.stateUpdate);
+    expect(destinationExtract).toHaveBeenCalledTimes(2);
+    expect(originExtract).toHaveBeenCalledTimes(2);
+    expect(departureDateExtract).toHaveBeenCalledTimes(2);
+    expect(returnDateExtract).toHaveBeenCalledTimes(2);
+    expect(adultCountExtract).toHaveBeenCalledTimes(2);
+    expect(childCountExtract).toHaveBeenCalledTimes(2);
+    expect(infantCountExtract).toHaveBeenCalledTimes(2);
+    expect(flightsRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(accommodationRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(carHireRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(activitiesRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(restaurantsRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(nearbyDiscoveryRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(beachesRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(campingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(kayakingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(fourWheelDrivingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(scenicDrivesRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(attractionsRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(snowActivitiesRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(hikingWalkingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(fishingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(divingSnorkellingRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(wineriesFoodTrailsRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(eventsFestivalsRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(wildlifeRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(nationalParksRequestedExtract).toHaveBeenCalledTimes(2);
+    expect(emptyExtract).toHaveBeenCalledTimes(2);
+    expect(received).toHaveLength(56);
+    expect(received.every((value) => value === input)).toBe(true);
+
+    const mergeStillWorks = new CompositeConversationStateExtractor([
+      stubExtractor({ destination: 'Brisbane', origin: 'Melbourne' }),
+      stubExtractor({ origin: 'Sydney' }),
+      stubExtractor({ departureDate: '2026-10-15' }),
+      stubExtractor({ returnDate: '2026-10-22' }),
+      stubExtractor({ adultCount: 3 }),
+      stubExtractor({ childCount: 2 }),
+      stubExtractor({ infantCount: 1 }),
+      stubExtractor({ flightsRequested: true }),
+      stubExtractor({ accommodationRequested: true }),
+      stubExtractor({ carHireRequested: true }),
+      stubExtractor({ activitiesRequested: true }),
+      stubExtractor({ restaurantsRequested: true }),
+      stubExtractor({ nearbyDiscoveryRequested: true }),
+      stubExtractor({ beachesRequested: true }),
+      stubExtractor({ campingRequested: true }),
+      stubExtractor({ kayakingRequested: true }),
+      stubExtractor({ fourWheelDriveRequested: true }),
+      stubExtractor({ scenicDrivesRequested: true }),
+      stubExtractor({ attractionsRequested: true }),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+      stubExtractor({}),
+    ]).extract(input);
+    expect(mergeStillWorks.stateUpdate).toEqual({
+      destination: 'Brisbane',
+      origin: 'Sydney',
+      departureDate: '2026-10-15',
+      returnDate: '2026-10-22',
+      adultCount: 3,
+      childCount: 2,
+      infantCount: 1,
+      flightsRequested: true,
+      accommodationRequested: true,
+      carHireRequested: true,
+      activitiesRequested: true,
+      restaurantsRequested: true,
+      nearbyDiscoveryRequested: true,
+      beachesRequested: true,
+      campingRequested: true,
+      kayakingRequested: true,
+      fourWheelDriveRequested: true,
+      scenicDrivesRequested: true,
+      attractionsRequested: true,
+    });
+  });
+
+  it('keeps live processor behaviour unchanged under the composite factory', () => {
+    const currentState = createState({
+      destination: 'Brisbane',
+      flightsRequested: true,
+    });
+    const result = processConversationTurn({
+      message: 'Go to Cairns with no flights',
+      state: currentState,
+      userEntryId: 'user-5j',
+      assistantEntryId: 'assistant-5j',
+      userMessageAt: new Date('2026-07-29T00:00:10.000Z'),
+      assistantMessageAt: new Date('2026-07-29T00:00:11.000Z'),
+      stateUpdate: { destination: 'Sydney', flightsRequested: false },
+    });
+
+    expect(createConversationStateExtractor().extract({
+      message: 'Go to Cairns',
+      currentState,
+    })).toEqual({ stateUpdate: { destination: 'Cairns' } });
+    expect(result.state.destination).toBe('Sydney');
+    expect(result.state.flightsRequested).toBe(false);
+    expect(result.state.origin).toBe('Melbourne');
+    expect(result.reply).toBe(result.state.transcript.at(-1)?.message);
+    expect(result.reply).not.toMatch(/assembled|unavailable/i);
+    expect(Object.keys(result).sort()).toEqual(['reply', 'state', 'trace']);
+    expect(
+      Object.keys(conversationCore).filter(
+        (name) =>
+          typeof (conversationCore as Record<string, unknown>)[name] ===
+            'function' && name !== 'createInitialConversationCoreState',
+      ),
+    ).toEqual(['processConversationTurn']);
+  });
+});
