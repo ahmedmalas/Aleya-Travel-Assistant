@@ -50,7 +50,6 @@ const SPECIFIC_ACTIVITY_FLAGS = [
   'wildlifeRequested',
   'nationalParksRequested',
   'toursRequested',
-  'eventsRequested',
   'nightlifeRequested',
   'shoppingRequested',
   'wellnessRequested',

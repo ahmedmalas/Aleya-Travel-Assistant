@@ -25,7 +25,6 @@ export type TrueRequestedCapabilityField = Extract<
   | 'toursRequested'
   | 'familyActivitiesRequested'
   | 'accessibleTravelRequested'
-  | 'eventsRequested'
 >;
 
 export type TrueRequestedCapabilityDefinition = {

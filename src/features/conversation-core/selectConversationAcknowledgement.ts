@@ -46,7 +46,6 @@ const CAPABILITY_LABELS = [
   ['wildlifeRequested', 'wildlife'],
   ['nationalParksRequested', 'national parks'],
   ['toursRequested', 'tours'],
-  ['eventsRequested', 'events'],
   ['nightlifeRequested', 'nightlife'],
   ['shoppingRequested', 'shopping'],
   ['wellnessRequested', 'wellness'],

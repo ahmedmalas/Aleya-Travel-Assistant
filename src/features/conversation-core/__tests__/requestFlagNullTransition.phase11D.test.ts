@@ -235,7 +235,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(concierge.includes('stateUpdate')).toBe(false);
   });
 
-  it('factory-wired request extractors include tours/events/nightlife/shopping/wellness/family/accessible (Phase 19B)', () => {
+  it('factory-wired request extractors include tours/nightlife/shopping/wellness/family/accessible (Phase 19B/19C)', () => {
     const factory = readFileSync(FACTORY_SOURCE, 'utf8');
     expect(factory).toMatch(/FlightsRequestedConversationStateExtractor/);
     expect(factory).toMatch(/NationalParksRequestedConversationStateExtractor/);
@@ -246,7 +246,7 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(factory.includes('FamilyActivitiesRequested')).toBe(true);
     expect(factory.includes('AccessibleTravelRequested')).toBe(true);
     expect(factory.includes('EventsRequestedConversationStateExtractor')).toBe(
-      true,
+      false,
     );
   });
 

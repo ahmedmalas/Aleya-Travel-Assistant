@@ -33,7 +33,6 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'wildlifeRequested',
   'nationalParksRequested',
   'toursRequested',
-  'eventsRequested',
   'nightlifeRequested',
   'shoppingRequested',
   'wellnessRequested',

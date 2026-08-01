@@ -50,7 +50,6 @@ import { WellnessRequestedConversationStateExtractor } from '../extractors/Welln
 import { ToursRequestedConversationStateExtractor } from '../extractors/ToursRequestedConversationStateExtractor';
 import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
 import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
-import { EventsRequestedConversationStateExtractor } from '../extractors/EventsRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from '../types';
 
 const ROOT = process.cwd();
@@ -90,7 +89,6 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   ToursRequestedConversationStateExtractor,
   FamilyActivitiesRequestedConversationStateExtractor,
   AccessibleTravelRequestedConversationStateExtractor,
-  EventsRequestedConversationStateExtractor,
   EmptyConversationStateExtractor,
 ] as const;
 
@@ -129,7 +127,6 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'ToursRequestedConversationStateExtractor',
   'FamilyActivitiesRequestedConversationStateExtractor',
   'AccessibleTravelRequestedConversationStateExtractor',
-  'EventsRequestedConversationStateExtractor',
   'EmptyConversationStateExtractor',
   'CompositeConversationStateExtractor',
   'createConversationStateExtractor',
@@ -174,7 +171,6 @@ const TRAVEL_FIELDS = [
   'toursRequested',
   'familyActivitiesRequested',
   'accessibleTravelRequested',
-  'eventsRequested',
 ] as const satisfies ReadonlyArray<keyof ConversationCoreState>;
 
 type TravelField = (typeof TRAVEL_FIELDS)[number];
@@ -287,11 +283,6 @@ const BEHAVIOURAL_RUNTIME_CUES: readonly BehaviouralRuntimeCue[] = [
   {
     message: 'We need accessible travel options',
     field: 'accessibleTravelRequested',
-    expected: true,
-  },
-  {
-    message: 'Add events',
-    field: 'eventsRequested',
     expected: true,
   },
 ];
@@ -418,7 +409,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(extract).toMatch(/extractor\.extract\(input\)/);
     expect(factory).toMatch(/new CompositeConversationStateExtractor\(\[/);
     expect(factory).toMatch(
-      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EventsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
 
     const order: string[] = [];
@@ -479,8 +470,8 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(result.reply).not.toMatch(/assembled|unavailable/i);
   });
 
-  it('reaches all 35 behavioural extractors through processConversationTurn with single-field activation', () => {
-    expect(BEHAVIOURAL_RUNTIME_CUES).toHaveLength(35);
+  it('reaches all 34 behavioural extractors through processConversationTurn with single-field activation', () => {
+    expect(BEHAVIOURAL_RUNTIME_CUES).toHaveLength(34);
 
     // Phase 8K: general activities cues overlap attraction wording, so
     // "add attractions" may also set activitiesRequested.
@@ -595,14 +586,14 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     expect(independent.state.destination).toBe('Hobart');
   });
 
-  it('keeps EmptyConversationStateExtractor last among 36 production extractors in accepted order', () => {
+  it('keeps EmptyConversationStateExtractor last among 35 production extractors in accepted order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(36);
-    expect(extractors).toHaveLength(36);
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(35);
+    expect(extractors).toHaveLength(35);
+    expect(extractors[34]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -611,7 +602,7 @@ describe('phase 8A — complete extraction pipeline verification', () => {
     }
 
     expect(
-      extractors[35]?.extract({
+      extractors[34]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState: baselineState(),
       }),

@@ -62,8 +62,7 @@ function createState(
     wildlifeRequested: false,
     nationalParksRequested: false,
     toursRequested: true,
-    eventsRequested: false,
-    nightlifeRequested: true,
+        nightlifeRequested: true,
     shoppingRequested: false,
     wellnessRequested: true,
     familyActivitiesRequested: false,
@@ -184,8 +183,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     expect(result.scenicDrivesRequested).toBe(true);
     expect(result.attractionsRequested).toBe(false);
     expect(result.toursRequested).toBe(true);
-    expect(result.eventsRequested).toBe(false);
-    expect(result.nightlifeRequested).toBe(true);
+        expect(result.nightlifeRequested).toBe(true);
     expect(result.shoppingRequested).toBe(false);
     expect(result.wellnessRequested).toBe(true);
     expect(result.familyActivitiesRequested).toBe(false);
@@ -288,7 +286,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       wildlifeRequested: currentState.wildlifeRequested,
       nationalParksRequested: currentState.nationalParksRequested,
       toursRequested: currentState.toursRequested,
-      eventsRequested: currentState.eventsRequested,
+
       nightlifeRequested: currentState.nightlifeRequested,
       shoppingRequested: currentState.shoppingRequested,
       wellnessRequested: currentState.wellnessRequested,

@@ -41,7 +41,6 @@ import { WellnessRequestedConversationStateExtractor } from '../extractors/Welln
 import { ToursRequestedConversationStateExtractor } from '../extractors/ToursRequestedConversationStateExtractor';
 import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
 import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
-import { EventsRequestedConversationStateExtractor } from '../extractors/EventsRequestedConversationStateExtractor';
 import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
 import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extractors/WineriesFoodTrailsRequestedConversationStateExtractor';
 
@@ -508,7 +507,7 @@ describe('phase 9E — behavioural extractor collision matrix', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(35);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -583,10 +582,7 @@ describe('phase 9E — behavioural extractor collision matrix', () => {
     expect(extractors[33]).toBeInstanceOf(
       AccessibleTravelRequestedConversationStateExtractor,
     );
-    expect(extractors[34]).toBeInstanceOf(
-      EventsRequestedConversationStateExtractor,
-    );
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[34]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 
   it('explicit stateUpdate precedence remains intact over extracted behavioural fields', () => {

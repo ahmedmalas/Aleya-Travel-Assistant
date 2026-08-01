@@ -34,7 +34,6 @@ import { WellnessRequestedConversationStateExtractor } from './extractors/Wellne
 import { ToursRequestedConversationStateExtractor } from './extractors/ToursRequestedConversationStateExtractor';
 import { FamilyActivitiesRequestedConversationStateExtractor } from './extractors/FamilyActivitiesRequestedConversationStateExtractor';
 import { AccessibleTravelRequestedConversationStateExtractor } from './extractors/AccessibleTravelRequestedConversationStateExtractor';
-import { EventsRequestedConversationStateExtractor } from './extractors/EventsRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -75,7 +74,6 @@ import type { ConversationStateExtractor } from './types';
  * ToursRequestedConversationStateExtractor, then a new
  * FamilyActivitiesRequestedConversationStateExtractor, then a new
  * AccessibleTravelRequestedConversationStateExtractor, then a new
- * EventsRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -115,7 +113,6 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new ToursRequestedConversationStateExtractor(),
     new FamilyActivitiesRequestedConversationStateExtractor(),
     new AccessibleTravelRequestedConversationStateExtractor(),
-    new EventsRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }

@@ -33,8 +33,8 @@ function turn(
     scenicDrivesRequested?: boolean;
     attractionsRequested?: boolean;
     toursRequested?: boolean;
-    eventsRequested?: boolean;
-    nightlifeRequested?: boolean;
+    eventsFestivalsRequested?: boolean;
+        nightlifeRequested?: boolean;
     shoppingRequested?: boolean;
     wellnessRequested?: boolean;
     familyActivitiesRequested?: boolean;
@@ -195,7 +195,8 @@ describe('phase 3Z — explicit accessibleTravelRequested only', () => {
       scenicDrivesRequested: true,
       attractionsRequested: true,
       toursRequested: true,
-      eventsRequested: true,
+      eventsFestivalsRequested: true,
+
       nightlifeRequested: true,
       shoppingRequested: true,
       wellnessRequested: true,
@@ -207,7 +208,7 @@ describe('phase 3Z — explicit accessibleTravelRequested only', () => {
     expect(first.state.wellnessRequested).toBe(true);
     expect(first.state.shoppingRequested).toBe(true);
     expect(first.state.nightlifeRequested).toBe(true);
-    expect(first.state.eventsRequested).toBe(true);
+    expect(first.state.eventsFestivalsRequested).toBe(true);
     expect(first.state.toursRequested).toBe(true);
     expect(first.state.attractionsRequested).toBe(true);
     expect(first.state.scenicDrivesRequested).toBe(true);
@@ -243,7 +244,7 @@ describe('phase 3Z — explicit accessibleTravelRequested only', () => {
     expect(second.state.wellnessRequested).toBe(true);
     expect(second.state.shoppingRequested).toBe(true);
     expect(second.state.nightlifeRequested).toBe(true);
-    expect(second.state.eventsRequested).toBe(true);
+    expect(second.state.eventsFestivalsRequested).toBe(true);
     expect(second.state.toursRequested).toBe(true);
     expect(second.state.attractionsRequested).toBe(true);
     expect(second.state.scenicDrivesRequested).toBe(true);

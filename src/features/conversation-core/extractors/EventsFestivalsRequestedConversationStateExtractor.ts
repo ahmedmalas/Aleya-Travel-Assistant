@@ -14,10 +14,9 @@ import type {
  * emits only true, never false or null, and ignores prior conversation state.
  * Does not use a blanket question-mark block. Named events alone do not emit.
  *
- * Phase 19B: events-only affirmative requests (no festival / what's-on /
- * things-happening cue) are owned by the eventsRequested capability extractor.
- * This extractor keeps festival-oriented and compound events-and-festivals
- * paths. Dual-model consolidation is deferred to Phase 19C.
+ * Phase 19C: single canonical events capability (`eventsFestivalsRequested`).
+ * Events-only and festival-oriented affirmative requests both populate this
+ * field. The legacy `eventsRequested` field has been removed.
  */
 export class EventsFestivalsRequestedConversationStateExtractor
   implements ConversationStateExtractor
@@ -135,33 +134,7 @@ function hasClearEventsFestivalsServiceCue(message: string): boolean {
   );
 }
 
-/**
- * Phase 19B — bare / local / upcoming events without festival-oriented cues
- * belong to `eventsRequested`, not `eventsFestivalsRequested`.
- */
-function isEventsOnlyOwnedByEventsRequested(message: string): boolean {
-  if (!/\bevents?\b/i.test(message)) {
-    return false;
-  }
-  if (/\bfestivals?\b/i.test(message)) {
-    return false;
-  }
-  if (hasWhatsOnCue(message) || hasThingsHappeningCue(message)) {
-    return false;
-  }
-  if (hasNamedEventOrFestival(message)) {
-    return false;
-  }
-  if (/\b(?:music|food|cultural|community)\s+festivals?\b/i.test(message)) {
-    return false;
-  }
-  return true;
-}
-
 function isBlockedEventsFestivalsRequestMessage(message: string): boolean {
-  if (isEventsOnlyOwnedByEventsRequested(message)) {
-    return true;
-  }
   if (
     /\?/.test(message) &&
     !hasActionEventsFestivalsServiceCue(message) &&
@@ -224,6 +197,9 @@ function isBlockedEventsFestivalsRequestMessage(message: string): boolean {
       message,
     ) ||
     /\b(?:hotel|hotels|accommodation)\s+(?:near|for)\s+(?:a\s+)?(?:event|festival|events|festivals)\b/i.test(
+      message,
+    ) ||
+    /\b(?:hotel|hotels|the\s+hotel|accommodation)\s+hosts?\s+(?:events?|festivals?)\b/i.test(
       message,
     ) ||
     /\b(?:permit|permits|licen[cs]e|licen[cs]es|law|laws|regulation|regulations)\b/i.test(

@@ -64,8 +64,7 @@ function createState(
     wildlifeRequested: false,
     nationalParksRequested: false,
     toursRequested: true,
-    eventsRequested: false,
-    nightlifeRequested: true,
+        nightlifeRequested: true,
     shoppingRequested: false,
     wellnessRequested: true,
     familyActivitiesRequested: false,
@@ -119,7 +118,7 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
     wildlifeRequested: state.wildlifeRequested,
     nationalParksRequested: state.nationalParksRequested,
     toursRequested: state.toursRequested,
-    eventsRequested: state.eventsRequested,
+
     nightlifeRequested: state.nightlifeRequested,
     shoppingRequested: state.shoppingRequested,
     wellnessRequested: state.wellnessRequested,
@@ -239,8 +238,7 @@ describe('phase 5H — transitionConversationStateFromExtraction only', () => {
     expect(nextState.scenicDrivesRequested).toBe(true);
     expect(nextState.attractionsRequested).toBe(false);
     expect(nextState.toursRequested).toBe(true);
-    expect(nextState.eventsRequested).toBe(false);
-    expect(nextState.nightlifeRequested).toBe(true);
+        expect(nextState.nightlifeRequested).toBe(true);
     expect(nextState.shoppingRequested).toBe(false);
     expect(nextState.wellnessRequested).toBe(true);
     expect(nextState.familyActivitiesRequested).toBe(false);

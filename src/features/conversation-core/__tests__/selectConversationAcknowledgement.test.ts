@@ -133,7 +133,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
     expect(selectorSource).toMatch(/infantCountRemoved/);
     expect(selectorSource).toMatch(/CAPABILITY_LABELS/);
     expect(selectorSource).toMatch(/\['toursRequested', 'tours'\]/);
-    expect(selectorSource).toMatch(/\['eventsRequested', 'events'\]/);
+    expect(selectorSource).not.toMatch(/\['eventsRequested'/);
     expect(selectorSource).toMatch(/\['nightlifeRequested', 'nightlife'\]/);
     expect(selectorSource).toMatch(/\['shoppingRequested', 'shopping'\]/);
     expect(selectorSource).toMatch(/\['wellnessRequested', 'wellness'\]/);
@@ -1338,7 +1338,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
       const previous = filled();
       const expected: Record<string, string> = {
         toursRequested: "I've added tours to your trip requirements.",
-        eventsRequested: "I've added events to your trip requirements.",
+        eventsFestivalsRequested: "I've added events and festivals to your trip requirements.",
         nightlifeRequested: "I've added nightlife to your trip requirements.",
         shoppingRequested: "I've added shopping to your trip requirements.",
         wellnessRequested: "I've added wellness to your trip requirements.",
@@ -1550,8 +1550,8 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
         acknowledgementFor(filled(), filled({ toursRequested: true })),
       ).toBe("I've added tours to your trip requirements.");
       expect(
-        acknowledgementFor(filled(), filled({ eventsRequested: true })),
-      ).toBe("I've added events to your trip requirements.");
+        acknowledgementFor(filled(), filled({ eventsFestivalsRequested: true })),
+      ).toBe("I've added events and festivals to your trip requirements.");
       expect(
         acknowledgementFor(filled(), filled({ nightlifeRequested: true })),
       ).toBe("I've added nightlife to your trip requirements.");
@@ -1575,7 +1575,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           filled(),
           filled({
             toursRequested: true,
-            eventsRequested: true,
+
             nightlifeRequested: true,
             shoppingRequested: true,
             wellnessRequested: true,
@@ -1583,7 +1583,7 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           }),
         ),
       ).toBe(
-        "I've added tours, events, nightlife, shopping, wellness and family activities to your trip requirements.",
+        "I've added tours, nightlife, shopping, wellness and family activities to your trip requirements.",
       );
     });
 
@@ -1604,11 +1604,11 @@ describe('phase 10I — deterministic acknowledgement selection boundary', () =>
           filled({ origin: 'Sydney' }),
           filled({
             origin: 'Melbourne',
-            eventsRequested: true,
+            eventsFestivalsRequested: true,
             childCount: 2,
           }),
         ),
-      ).toBe("I've added events to your trip requirements.");
+      ).toBe("I've added events and festivals to your trip requirements.");
 
       expect(
         acknowledgementFor(

@@ -237,7 +237,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
   });
 
-  it('does not extract events-only requests owned by eventsRequested (Phase 19B)', () => {
+  it('extracts events-only requests onto the canonical field (Phase 19C)', () => {
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     for (const message of [
       'events',
@@ -258,7 +258,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
           currentState: createState({ eventsFestivalsRequested: null }),
         }),
         message,
-      ).toEqual({ stateUpdate: {} });
+      ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     }
   });
 
@@ -905,7 +905,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(35);
     expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
@@ -916,7 +916,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
     expect(extractors[24]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
     expect(extractors[25]).toBeInstanceOf(EventsFestivalsRequestedConversationStateExtractor);
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[34]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',

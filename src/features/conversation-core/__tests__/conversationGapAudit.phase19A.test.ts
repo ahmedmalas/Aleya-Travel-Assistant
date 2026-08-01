@@ -39,7 +39,6 @@ const COMPLETE_CORE = {
 const NON_EXTRACTABLE_ACTIVITY_FLAGS = [
   'accessibleTravelRequested',
   'toursRequested',
-  'eventsRequested',
   'nightlifeRequested',
   'shoppingRequested',
   'wellnessRequested',
@@ -113,7 +112,6 @@ describe('Phase 19A — conversation flow gap audit', () => {
       'WellnessRequestedConversationStateExtractor',
       'FamilyActivitiesRequestedConversationStateExtractor',
       'AccessibleTravelRequestedConversationStateExtractor',
-      'EventsRequestedConversationStateExtractor',
     ]) {
       expect(factory, name).toContain(name);
     }
@@ -181,13 +179,12 @@ describe('Phase 19A — conversation flow gap audit', () => {
     }
   });
 
-  it('characterizes dual events model boundary after Phase 19B', () => {
+  it('characterizes unified events model after Phase 19C', () => {
     const localEvents = turn('find local events', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    expect(localEvents.state.eventsRequested).toBe(true);
-    expect(localEvents.state.eventsFestivalsRequested).toBeNull();
+    expect(localEvents.state.eventsFestivalsRequested).toBe(true);
     expect(localEvents.components.followUpQuestion).toBe(NEUTRAL);
 
     const festivals = turn('I want festivals', {
@@ -195,7 +192,6 @@ describe('Phase 19A — conversation flow gap audit', () => {
       activitiesRequested: true,
     });
     expect(festivals.state.eventsFestivalsRequested).toBe(true);
-    expect(festivals.state.eventsRequested).toBeNull();
     expect(festivals.components.followUpQuestion).toBe(NEUTRAL);
   });
 

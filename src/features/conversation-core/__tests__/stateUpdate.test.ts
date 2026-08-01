@@ -60,7 +60,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
       wildlifeRequested: true,
       nationalParksRequested: true,
       toursRequested: false,
-      eventsRequested: true,
+
       nightlifeRequested: false,
       shoppingRequested: true,
       wellnessRequested: false,
@@ -89,7 +89,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(omitted.state.scenicDrivesRequested).toBe(true);
     expect(omitted.state.attractionsRequested).toBe(true);
     expect(omitted.state.toursRequested).toBe(false);
-    expect(omitted.state.eventsRequested).toBe(true);
+    expect(omitted.state.eventsFestivalsRequested).toBe(true);
     expect(omitted.state.nightlifeRequested).toBe(false);
     expect(omitted.state.shoppingRequested).toBe(true);
     expect(omitted.state.wellnessRequested).toBe(false);
@@ -140,8 +140,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
       wildlifeRequested: false,
       nationalParksRequested: false,
       toursRequested: true,
-      eventsRequested: false,
-      nightlifeRequested: true,
+            nightlifeRequested: true,
       shoppingRequested: false,
       wellnessRequested: true,
       familyActivitiesRequested: false,
@@ -168,7 +167,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(result.state.scenicDrivesRequested).toBe(true);
     expect(result.state.attractionsRequested).toBe(false);
     expect(result.state.toursRequested).toBe(true);
-    expect(result.state.eventsRequested).toBe(false);
+    expect(result.state.eventsFestivalsRequested).toBe(false);
     expect(result.state.nightlifeRequested).toBe(true);
     expect(result.state.shoppingRequested).toBe(false);
     expect(result.state.wellnessRequested).toBe(true);

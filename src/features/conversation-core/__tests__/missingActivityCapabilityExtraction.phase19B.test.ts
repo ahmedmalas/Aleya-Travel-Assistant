@@ -35,8 +35,7 @@ type CapabilityFlag =
   | 'wellnessRequested'
   | 'toursRequested'
   | 'familyActivitiesRequested'
-  | 'accessibleTravelRequested'
-  | 'eventsRequested';
+  | 'accessibleTravelRequested';
 
 const FLAG_ROWS: Array<{
   flag: CapabilityFlag;
@@ -86,13 +85,6 @@ const FLAG_ROWS: Array<{
     clearEnable: 'We need accessible travel options',
     naturalEnable: 'Include wheelchair-accessible activities',
     clearRemoval: 'Remove accessible travel',
-  },
-  {
-    flag: 'eventsRequested',
-    label: 'events',
-    clearEnable: 'Add events',
-    naturalEnable: 'Show me local events',
-    clearRemoval: 'Remove events',
   },
 ];
 
@@ -173,12 +165,11 @@ describe('Phase 19B — missing activity capability extraction', () => {
       'ToursRequestedConversationStateExtractor',
       'FamilyActivitiesRequestedConversationStateExtractor',
       'AccessibleTravelRequestedConversationStateExtractor',
-      'EventsRequestedConversationStateExtractor',
     ]) {
       expect(factory).toContain(name);
     }
     expect(factory).toMatch(
-      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EventsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),/,
+      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),/,
     );
   });
 
@@ -261,27 +252,29 @@ describe('Phase 19B — missing activity capability extraction', () => {
     expect(t.components.followUpQuestion).toBe(ACTIVITIES_Q);
   });
 
-  it('keeps festivals on eventsFestivalsRequested and events-only on eventsRequested', () => {
+  it('defers events/festivals unification to Phase 19C canonical field', () => {
+    // Phase 19C unifies both phrases onto eventsFestivalsRequested.
     const festivals = turn('I want festivals', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
     expect(festivals.state.eventsFestivalsRequested).toBe(true);
-    expect(festivals.state.eventsRequested).toBeNull();
     expect(festivals.components.followUpQuestion).toBe(NEUTRAL);
 
     const events = turn('I want events', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    expect(events.state.eventsRequested).toBe(true);
-    expect(events.state.eventsFestivalsRequested).toBeNull();
-    expect(events.components.acknowledgement).toContain('events');
+    expect(events.state.eventsFestivalsRequested).toBe(true);
+    expect(events.components.acknowledgement).toContain('events and festivals');
     expect(events.components.followUpQuestion).toBe(NEUTRAL);
   });
 
   it('rejects additional conservative false positives', () => {
-    const cases: Array<{ message: string; flag: CapabilityFlag }> = [
+    const cases: Array<{
+      message: string;
+      flag: CapabilityFlag | 'eventsFestivalsRequested';
+    }> = [
       { message: 'Is the nightlife safe?', flag: 'nightlifeRequested' },
       {
         message: 'The hotel offers wellness facilities',
@@ -291,7 +284,7 @@ describe('Phase 19B — missing activity capability extraction', () => {
         message: 'Are accessible rooms available?',
         flag: 'accessibleTravelRequested',
       },
-      { message: 'What events are happening?', flag: 'eventsRequested' },
+      { message: 'What events are happening?', flag: 'eventsFestivalsRequested' },
     ];
     for (const entry of cases) {
       const t = turn(entry.message, {

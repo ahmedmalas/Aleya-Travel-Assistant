@@ -845,7 +845,7 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(35);
     expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
@@ -854,7 +854,7 @@ describe('phase 8Z — DivingSnorkellingRequestedConversationStateExtractor acti
     );
     expect(extractors[22]).toBeInstanceOf(FishingRequestedConversationStateExtractor);
     expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
-    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[34]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',

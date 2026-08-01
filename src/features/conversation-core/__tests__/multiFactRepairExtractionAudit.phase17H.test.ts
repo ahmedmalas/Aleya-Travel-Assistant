@@ -161,7 +161,7 @@ describe('Phase 17H — multi-fact repair extraction audit', () => {
     const extractors = readExtractors(
       COMPOSITE as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(36);
+    expect(extractors).toHaveLength(35);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);

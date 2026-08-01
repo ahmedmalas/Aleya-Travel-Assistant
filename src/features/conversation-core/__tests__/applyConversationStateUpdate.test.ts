@@ -49,7 +49,7 @@ function seededState(): ConversationCoreState {
     wildlifeRequested: true,
     nationalParksRequested: true,
     toursRequested: true,
-    eventsRequested: true,
+
     nightlifeRequested: true,
     shoppingRequested: true,
     wellnessRequested: true,
@@ -100,7 +100,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wildlifeRequested: true,
       nationalParksRequested: true,
       toursRequested: true,
-      eventsRequested: true,
+
       nightlifeRequested: true,
       shoppingRequested: true,
       wellnessRequested: true,
@@ -142,7 +142,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wildlifeRequested: true,
       nationalParksRequested: true,
       toursRequested: true,
-      eventsRequested: true,
+
       nightlifeRequested: true,
       shoppingRequested: true,
       wellnessRequested: true,
