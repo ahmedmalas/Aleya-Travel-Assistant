@@ -153,12 +153,11 @@ describe('phase 3Y/7Y/9B — explicit eventsFestivalsRequested with extraction a
   it('user message text sets eventsFestivalsRequested from clear event/festival discovery wording', () => {
     const phrases = [
       'show me festivals',
-      'local events',
       'music festivals',
       'festival options',
       'what is on',
       'things happening nearby',
-      'events near me',
+      'events and festivals',
       'show me Sydney Festival',
     ];
 

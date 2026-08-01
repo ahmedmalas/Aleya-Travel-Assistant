@@ -564,7 +564,7 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(29);
+    expect(extractors).toHaveLength(36);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(extractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -573,7 +573,7 @@ describe('phase 8H — FlightsRequestedConversationStateExtractor activation', (
     expect(extractors[5]).toBeInstanceOf(ChildCountConversationStateExtractor);
     expect(extractors[6]).toBeInstanceOf(InfantCountConversationStateExtractor);
     expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
-    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',

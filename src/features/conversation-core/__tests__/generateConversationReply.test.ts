@@ -19,6 +19,13 @@ import { createConversationStateExtractor } from '../createConversationStateExtr
 import { EmptyConversationStateExtractor } from '../emptyConversationStateExtractor';
 import { DestinationConversationStateExtractor } from '../DestinationConversationStateExtractor';
 import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
+import { NightlifeRequestedConversationStateExtractor } from '../extractors/NightlifeRequestedConversationStateExtractor';
+import { ShoppingRequestedConversationStateExtractor } from '../extractors/ShoppingRequestedConversationStateExtractor';
+import { WellnessRequestedConversationStateExtractor } from '../extractors/WellnessRequestedConversationStateExtractor';
+import { ToursRequestedConversationStateExtractor } from '../extractors/ToursRequestedConversationStateExtractor';
+import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
+import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
+import { EventsRequestedConversationStateExtractor } from '../extractors/EventsRequestedConversationStateExtractor';
 import { FlightsRequestedConversationStateExtractor } from '../FlightsRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
@@ -267,12 +274,33 @@ describe('phase 10B/10C — generateConversationReply boundary', () => {
         extractors: readonly unknown[];
       }
     ).extractors;
-    expect(extractors).toHaveLength(29);
+    expect(extractors).toHaveLength(36);
     expect(extractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(extractors[7]).toBeInstanceOf(FlightsRequestedConversationStateExtractor);
     expect(extractors[27]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[28]).toBeInstanceOf(
+      NightlifeRequestedConversationStateExtractor,
+    );
+    expect(extractors[29]).toBeInstanceOf(
+      ShoppingRequestedConversationStateExtractor,
+    );
+    expect(extractors[30]).toBeInstanceOf(
+      WellnessRequestedConversationStateExtractor,
+    );
+    expect(extractors[31]).toBeInstanceOf(
+      ToursRequestedConversationStateExtractor,
+    );
+    expect(extractors[32]).toBeInstanceOf(
+      FamilyActivitiesRequestedConversationStateExtractor,
+    );
+    expect(extractors[33]).toBeInstanceOf(
+      AccessibleTravelRequestedConversationStateExtractor,
+    );
+    expect(extractors[34]).toBeInstanceOf(
+      EventsRequestedConversationStateExtractor,
+    );
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
   });
 });

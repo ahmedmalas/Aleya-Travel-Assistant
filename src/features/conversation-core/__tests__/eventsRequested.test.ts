@@ -110,33 +110,28 @@ describe('phase 3U — explicit eventsRequested only', () => {
     });
     expect(first.state.eventsRequested).toBe(false);
 
-    const second = turn('event', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.eventsRequested).toBe(false);
   });
 
-  it('user message text cannot set eventsRequested', () => {
+  it('user message text can set eventsRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'event',
-      'events',
-      'festival',
-      'concert',
-      'show',
-      'what is happening',
+      'Add events',
+      'I want events',
+      'Show me local events',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.eventsRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.eventsRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -146,7 +141,7 @@ describe('phase 3U — explicit eventsRequested only', () => {
     });
     expect(withTrue.state.eventsRequested).toBe(true);
 
-    const afterWords = turn('event events festival', withTrue.state, 1);
+    const afterWords = turn('Add events', withTrue.state, 1);
     expect(afterWords.state.eventsRequested).toBe(true);
 
     const withFalse = turn('change', afterWords.state, 2, {
@@ -154,12 +149,8 @@ describe('phase 3U — explicit eventsRequested only', () => {
     });
     expect(withFalse.state.eventsRequested).toBe(false);
 
-    const afterMoreWords = turn(
-      'concert show what is happening',
-      withFalse.state,
-      3,
-    );
-    expect(afterMoreWords.state.eventsRequested).toBe(false);
+    const afterMoreWords = turn('I want events', withFalse.state, 3);
+    expect(afterMoreWords.state.eventsRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

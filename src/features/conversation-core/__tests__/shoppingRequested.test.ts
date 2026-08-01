@@ -116,33 +116,28 @@ describe('phase 3W — explicit shoppingRequested only', () => {
     });
     expect(first.state.shoppingRequested).toBe(false);
 
-    const second = turn('shopping', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.shoppingRequested).toBe(false);
   });
 
-  it('user message text cannot set shoppingRequested', () => {
+  it('user message text can set shoppingRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
       'shopping',
-      'shops',
-      'shopping centres',
-      'markets',
-      'outlets',
-      'places to shop',
+      'Include shopping',
+      'I want to go shopping',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.shoppingRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.shoppingRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -165,7 +160,7 @@ describe('phase 3W — explicit shoppingRequested only', () => {
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.shoppingRequested).toBe(false);
+    expect(afterMoreWords.state.shoppingRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

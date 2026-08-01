@@ -231,61 +231,66 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     expect(
       extractor.extract({
-        message: 'add events',
+        message: 'add festivals',
         currentState: createState({ eventsFestivalsRequested: null }),
       }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+  });
+
+  it('does not extract events-only requests owned by eventsRequested (Phase 19B)', () => {
+    const extractor = new EventsFestivalsRequestedConversationStateExtractor();
+    for (const message of [
+      'events',
+      'event',
+      'add events',
+      'I want events',
+      'show me events',
+      'find events',
+      'local events',
+      'upcoming events',
+      'events near me',
+      'show me local events',
+      'events in Sydney',
+    ]) {
+      expect(
+        extractor.extract({
+          message,
+          currentState: createState({ eventsFestivalsRequested: null }),
+        }),
+        message,
+      ).toEqual({ stateUpdate: {} });
+    }
   });
 
   it('extracts supported explicit events/festivals-request forms as true', () => {
     const extractor = new EventsFestivalsRequestedConversationStateExtractor();
     const cases = [
       'events and festivals',
-      'events',
-      'event',
       'festivals',
       'festival',
-      'show events',
       'show festivals',
-      'show me events',
       'show me festivals',
-      'find events',
       'find festivals',
-      'I need events',
       'I need festivals',
-      'include events',
       'include festivals',
-      'add events',
       'add festivals',
-      'need events',
       'need festivals',
-      'book events',
       'book festivals',
-      'local events',
-      'upcoming events',
       'music festivals',
       'food festivals',
       'cultural festivals',
       'community festivals',
-      'events near me',
       'festival options',
-      'event listings',
       'things happening nearby',
       'what is on',
       "what's on",
-      'places hosting events',
       'places hosting festivals',
       'search festivals',
-      'recommend local events',
       'attend festivals',
-      'visit events',
       'explore festivals',
-      'discover events',
-      'nearby events',
       'nearby festivals',
       'festivals in Melbourne',
-      'events in Sydney',
-      'show me events and restaurants',
+      'festivals and events',
     ];
 
     for (const message of cases) {
@@ -419,7 +424,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     expect(blocked.stateUpdate).not.toHaveProperty('eventsFestivalsRequested');
 
     const update = extractor.extract({
-      message: 'add events',
+      message: 'add festivals',
       currentState: createState({ eventsFestivalsRequested: null }),
     }).stateUpdate;
     expect(update.eventsFestivalsRequested).toBe(true);
@@ -441,7 +446,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       ],
     });
     const input: ConversationStateExtractionInput = {
-      message: 'show me events',
+      message: 'show me festivals',
       currentState,
     };
     const before = structuredClone(input);
@@ -473,7 +478,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     expect(other.retained).toBeUndefined();
     expect(
       other.extract({
-        message: 'events',
+        message: 'festivals',
         currentState: createState(),
       }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
@@ -758,7 +763,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       destination: 'Brisbane',
     });
     const extracted = processConversationTurn({
-      message: 'add events',
+      message: 'add festivals',
       state: currentState,
       userEntryId: 'user-7y-a',
       assistantEntryId: 'assistant-7y-a',
@@ -775,7 +780,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       stateUpdate: { eventsFestivalsRequested: true },
     });
     const overriddenFalse = processConversationTurn({
-      message: 'add events',
+      message: 'add festivals',
       state: currentState,
       userEntryId: 'user-7y-c',
       assistantEntryId: 'assistant-7y-c',
@@ -784,7 +789,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       stateUpdate: { eventsFestivalsRequested: false },
     });
     const nullOverride = processConversationTurn({
-      message: 'add events',
+      message: 'add festivals',
       state: currentState,
       userEntryId: 'user-7y-d',
       assistantEntryId: 'assistant-7y-d',
@@ -801,7 +806,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       assistantMessageAt: new Date('2026-07-29T00:00:19.000Z'),
     });
     const composed = processConversationTurn({
-      message: 'add events. Fly from Sydney to Cairns',
+      message: 'add festivals. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -832,7 +837,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
       assistantMessageAt: new Date('2026-07-29T00:00:21.000Z'),
     });
     const independentOverride = processConversationTurn({
-      message: 'add events. Fly from Sydney to Cairns',
+      message: 'add festivals. Fly from Sydney to Cairns',
       state: createState({
         origin: null,
         destination: null,
@@ -900,7 +905,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(29);
+    expect(extractors).toHaveLength(36);
     expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
@@ -911,7 +916,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     expect(extractors[23]).toBeInstanceOf(DivingSnorkellingRequestedConversationStateExtractor);
     expect(extractors[24]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
     expect(extractors[25]).toBeInstanceOf(EventsFestivalsRequestedConversationStateExtractor);
-    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -941,7 +946,7 @@ describe('phase 9B — EventsFestivalsRequestedConversationStateExtractor activa
     // ActivitiesRequested intentionally ignores messages that also mention snow
     // activities, so this composed cue set omits an activities emission.
     const eventsActiveMessage =
-      'add events. add wineries. add diving. add fishing. add hiking. add snow activities. add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+      'add festivals. add wineries. add diving. add fishing. add hiking. add snow activities. add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
     expect(
       createConversationStateExtractor().extract({
         message: eventsActiveMessage,

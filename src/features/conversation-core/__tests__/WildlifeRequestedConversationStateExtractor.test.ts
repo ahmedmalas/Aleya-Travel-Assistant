@@ -877,7 +877,7 @@ describe('phase 9C — WildlifeRequestedConversationStateExtractor activation', 
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
-    expect(extractors).toHaveLength(29);
+    expect(extractors).toHaveLength(36);
     expect(extractors[20]).toBeInstanceOf(
       SnowActivitiesRequestedConversationStateExtractor,
     );
@@ -889,7 +889,7 @@ describe('phase 9C — WildlifeRequestedConversationStateExtractor activation', 
     expect(extractors[24]).toBeInstanceOf(WineriesFoodTrailsRequestedConversationStateExtractor);
     expect(extractors[25]).toBeInstanceOf(EventsFestivalsRequestedConversationStateExtractor);
     expect(extractors[26]).toBeInstanceOf(WildlifeRequestedConversationStateExtractor);
-    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     const currentState = createState({
       origin: 'Hobart',
@@ -919,7 +919,7 @@ describe('phase 9C — WildlifeRequestedConversationStateExtractor activation', 
     // ActivitiesRequested intentionally ignores messages that also mention snow
     // activities, so this composed cue set omits an activities emission.
     const wildlifeActiveMessage =
-      'add wildlife. add events. add wineries. add diving. add fishing. add hiking. add snow activities. add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
+      'add wildlife. add festivals. add wineries. add diving. add fishing. add hiking. add snow activities. add attractions. add scenic drives. add four-wheel driving. add kayaking. add camping. show me beaches. find nearby. find restaurants. book activities. book car hire. book a hotel. book flights. Depart on 28 August 2026. Fly from Sydney to Cairns';
     expect(
       createConversationStateExtractor().extract({
         message: wildlifeActiveMessage,

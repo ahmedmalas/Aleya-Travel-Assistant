@@ -226,7 +226,7 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(preserved.state.carHireRequested).toBe(false);
   });
 
-  it('user message text only activates currently live extractors through the update boundary', () => {
+  it('user message text activates currently live extractors through the update boundary (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -240,9 +240,9 @@ describe('phase 4A — explicit ConversationStateUpdate boundary only', () => {
     expect(result.state.accommodationRequested).toBe(true);
     expect(result.state.carHireRequested).toBe(true);
     expect(result.state.beachesRequested).toBe(true);
-    expect(result.state.nightlifeRequested).toBeNull();
-    expect(result.state.shoppingRequested).toBeNull();
-    expect(result.state.wellnessRequested).toBeNull();
+    expect(result.state.nightlifeRequested).toBe(true);
+    expect(result.state.shoppingRequested).toBe(true);
+    expect(result.state.wellnessRequested).toBe(true);
     expect(result.state.destination).toBeNull();
   });
 });

@@ -115,33 +115,28 @@ describe('phase 3V — explicit nightlifeRequested only', () => {
     });
     expect(first.state.nightlifeRequested).toBe(false);
 
-    const second = turn('nightlife', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.nightlifeRequested).toBe(false);
   });
 
-  it('user message text cannot set nightlifeRequested', () => {
+  it('user message text can set nightlifeRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
       'nightlife',
-      'bars',
-      'clubs',
-      'nightclubs',
-      'late-night venues',
-      'places to go tonight',
+      'I want nightlife',
+      'We would like bars and clubs',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.nightlifeRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.nightlifeRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -164,7 +159,7 @@ describe('phase 3V — explicit nightlifeRequested only', () => {
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.nightlifeRequested).toBe(false);
+    expect(afterMoreWords.state.nightlifeRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

@@ -118,33 +118,27 @@ describe('phase 3Y — explicit familyActivitiesRequested only', () => {
     });
     expect(first.state.familyActivitiesRequested).toBe(false);
 
-    const second = turn('things to do with children', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.familyActivitiesRequested).toBe(false);
   });
 
-  it('user message text cannot set familyActivitiesRequested', () => {
+  it('user message text can set familyActivitiesRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'family activities',
-      'things to do with children',
-      'kid-friendly',
-      'family-friendly',
-      'activities for kids',
-      'children’s attractions',
+      'Add family activities',
+      'We need family-friendly activities',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.familyActivitiesRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.familyActivitiesRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -171,7 +165,7 @@ describe('phase 3Y — explicit familyActivitiesRequested only', () => {
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.familyActivitiesRequested).toBe(false);
+    expect(afterMoreWords.state.familyActivitiesRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

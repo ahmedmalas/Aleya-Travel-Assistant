@@ -109,32 +109,28 @@ describe('phase 3T — explicit toursRequested only', () => {
     });
     expect(first.state.toursRequested).toBe(false);
 
-    const second = turn('tour', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.toursRequested).toBe(false);
   });
 
-  it('user message text cannot set toursRequested', () => {
+  it('user message text can set toursRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'tour',
       'tours',
-      'guided tour',
-      'day tour',
-      'sightseeing tour',
+      'Include tours',
+      'We want guided tours',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.toursRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.toursRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -153,7 +149,7 @@ describe('phase 3T — explicit toursRequested only', () => {
     expect(withFalse.state.toursRequested).toBe(false);
 
     const afterMoreWords = turn('day tour sightseeing tour', withFalse.state, 3);
-    expect(afterMoreWords.state.toursRequested).toBe(false);
+    expect(afterMoreWords.state.toursRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

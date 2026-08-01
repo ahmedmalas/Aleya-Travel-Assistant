@@ -13,6 +13,11 @@ import type {
  * listings, what is on, things happening nearby). Deterministic and local —
  * emits only true, never false or null, and ignores prior conversation state.
  * Does not use a blanket question-mark block. Named events alone do not emit.
+ *
+ * Phase 19B: events-only affirmative requests (no festival / what's-on /
+ * things-happening cue) are owned by the eventsRequested capability extractor.
+ * This extractor keeps festival-oriented and compound events-and-festivals
+ * paths. Dual-model consolidation is deferred to Phase 19C.
  */
 export class EventsFestivalsRequestedConversationStateExtractor
   implements ConversationStateExtractor
@@ -130,7 +135,33 @@ function hasClearEventsFestivalsServiceCue(message: string): boolean {
   );
 }
 
+/**
+ * Phase 19B — bare / local / upcoming events without festival-oriented cues
+ * belong to `eventsRequested`, not `eventsFestivalsRequested`.
+ */
+function isEventsOnlyOwnedByEventsRequested(message: string): boolean {
+  if (!/\bevents?\b/i.test(message)) {
+    return false;
+  }
+  if (/\bfestivals?\b/i.test(message)) {
+    return false;
+  }
+  if (hasWhatsOnCue(message) || hasThingsHappeningCue(message)) {
+    return false;
+  }
+  if (hasNamedEventOrFestival(message)) {
+    return false;
+  }
+  if (/\b(?:music|food|cultural|community)\s+festivals?\b/i.test(message)) {
+    return false;
+  }
+  return true;
+}
+
 function isBlockedEventsFestivalsRequestMessage(message: string): boolean {
+  if (isEventsOnlyOwnedByEventsRequested(message)) {
+    return true;
+  }
   if (
     /\?/.test(message) &&
     !hasActionEventsFestivalsServiceCue(message) &&

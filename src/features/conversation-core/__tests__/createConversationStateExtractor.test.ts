@@ -32,6 +32,13 @@ import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extrac
 import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
 import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
 import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
+import { NightlifeRequestedConversationStateExtractor } from '../extractors/NightlifeRequestedConversationStateExtractor';
+import { ShoppingRequestedConversationStateExtractor } from '../extractors/ShoppingRequestedConversationStateExtractor';
+import { WellnessRequestedConversationStateExtractor } from '../extractors/WellnessRequestedConversationStateExtractor';
+import { ToursRequestedConversationStateExtractor } from '../extractors/ToursRequestedConversationStateExtractor';
+import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
+import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
+import { EventsRequestedConversationStateExtractor } from '../extractors/EventsRequestedConversationStateExtractor';
 import {
   createInitialConversationCoreState,
   type ConversationCoreState,
@@ -156,8 +163,8 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     );
 
     expect(firstExtractors).not.toBe(secondExtractors);
-    expect(firstExtractors).toHaveLength(29);
-    expect(secondExtractors).toHaveLength(29);
+    expect(firstExtractors).toHaveLength(36);
+    expect(secondExtractors).toHaveLength(36);
     expect(firstExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(firstExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(firstExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -221,7 +228,28 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(firstExtractors[27]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(firstExtractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(firstExtractors[28]).toBeInstanceOf(
+      NightlifeRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[29]).toBeInstanceOf(
+      ShoppingRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[30]).toBeInstanceOf(
+      WellnessRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[31]).toBeInstanceOf(
+      ToursRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[32]).toBeInstanceOf(
+      FamilyActivitiesRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[33]).toBeInstanceOf(
+      AccessibleTravelRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[34]).toBeInstanceOf(
+      EventsRequestedConversationStateExtractor,
+    );
+    expect(firstExtractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(secondExtractors[0]).toBeInstanceOf(DestinationConversationStateExtractor);
     expect(secondExtractors[1]).toBeInstanceOf(OriginConversationStateExtractor);
     expect(secondExtractors[2]).toBeInstanceOf(DepartureDateConversationStateExtractor);
@@ -285,7 +313,28 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(secondExtractors[27]).toBeInstanceOf(
       NationalParksRequestedConversationStateExtractor,
     );
-    expect(secondExtractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(secondExtractors[28]).toBeInstanceOf(
+      NightlifeRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[29]).toBeInstanceOf(
+      ShoppingRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[30]).toBeInstanceOf(
+      WellnessRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[31]).toBeInstanceOf(
+      ToursRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[32]).toBeInstanceOf(
+      FamilyActivitiesRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[33]).toBeInstanceOf(
+      AccessibleTravelRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[34]).toBeInstanceOf(
+      EventsRequestedConversationStateExtractor,
+    );
+    expect(secondExtractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
     expect(firstExtractors[0]).not.toBe(secondExtractors[0]);
     expect(firstExtractors[1]).not.toBe(secondExtractors[1]);
     expect(firstExtractors[2]).not.toBe(secondExtractors[2]);
@@ -370,7 +419,7 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       /export function createConversationStateExtractor\(\): ConversationStateExtractor/,
     );
     expect(factorySource).toMatch(
-      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /return new CompositeConversationStateExtractor\(\[\s*new DestinationConversationStateExtractor\(\),\s*new OriginConversationStateExtractor\(\),\s*new DepartureDateConversationStateExtractor\(\),\s*new ReturnDateConversationStateExtractor\(\),\s*new AdultCountConversationStateExtractor\(\),\s*new ChildCountConversationStateExtractor\(\),\s*new InfantCountConversationStateExtractor\(\),\s*new FlightsRequestedConversationStateExtractor\(\),\s*new AccommodationRequestedConversationStateExtractor\(\),\s*new CarHireRequestedConversationStateExtractor\(\),\s*new ActivitiesRequestedConversationStateExtractor\(\),\s*new RestaurantsRequestedConversationStateExtractor\(\),\s*new RestaurantPreferenceConversationStateExtractor\(\),\s*new NearbyDiscoveryRequestedConversationStateExtractor\(\),\s*new BeachesRequestedConversationStateExtractor\(\),\s*new CampingRequestedConversationStateExtractor\(\),\s*new KayakingRequestedConversationStateExtractor\(\),\s*new FourWheelDrivingRequestedConversationStateExtractor\(\),\s*new ScenicDrivesRequestedConversationStateExtractor\(\),\s*new AttractionsRequestedConversationStateExtractor\(\),\s*new SnowActivitiesRequestedConversationStateExtractor\(\),\s*new HikingWalkingRequestedConversationStateExtractor\(\),\s*new FishingRequestedConversationStateExtractor\(\),\s*new DivingSnorkellingRequestedConversationStateExtractor\(\),\s*new WineriesFoodTrailsRequestedConversationStateExtractor\(\),\s*new EventsFestivalsRequestedConversationStateExtractor\(\),\s*new WildlifeRequestedConversationStateExtractor\(\),\s*new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EventsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
     expect(factorySource).not.toMatch(/let |var |cache|singleton|Map\(|WeakMap|registry/);
     expect(factorySource).not.toMatch(/process\.env|import\.meta\.env|featureFlag/);
@@ -649,6 +698,38 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
       resolve(
         ROOT,
         'src/features/conversation-core/extractors/NationalParksRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/trueRequestedCapabilityExtraction.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/NightlifeRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/ShoppingRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/WellnessRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/ToursRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/FamilyActivitiesRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/AccessibleTravelRequestedConversationStateExtractor.ts',
+      ),
+      resolve(
+        ROOT,
+        'src/features/conversation-core/extractors/EventsRequestedConversationStateExtractor.ts',
       ),
       resolve(ROOT, 'src/features/conversation-core/extractConversationState.ts'),
     ]);
@@ -1262,10 +1343,10 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
     expect(
       extractor.extract({ message: 'events', currentState }),
-    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    ).toEqual({ stateUpdate: { eventsRequested: true } });
     expect(
       extractor.extract({ message: 'local events', currentState }),
-    ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });
+    ).toEqual({ stateUpdate: { eventsRequested: true } });
     expect(
       extractor.extract({ message: 'festival options', currentState }),
     ).toEqual({ stateUpdate: { eventsFestivalsRequested: true } });

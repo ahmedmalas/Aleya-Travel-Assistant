@@ -113,33 +113,27 @@ describe('phase 3X — explicit wellnessRequested only', () => {
     });
     expect(first.state.wellnessRequested).toBe(false);
 
-    const second = turn('wellness', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.wellnessRequested).toBe(false);
   });
 
-  it('user message text cannot set wellnessRequested', () => {
+  it('user message text can set wellnessRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'wellness',
-      'spa',
-      'massage',
-      'retreat',
-      'relaxation',
-      'health resort',
+      'Add wellness activities',
+      'We would like spa and wellness options',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.wellnessRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.wellnessRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -158,11 +152,11 @@ describe('phase 3X — explicit wellnessRequested only', () => {
     expect(withFalse.state.wellnessRequested).toBe(false);
 
     const afterMoreWords = turn(
-      'retreat relaxation health resort',
+      'Add wellness activities',
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.wellnessRequested).toBe(false);
+    expect(afterMoreWords.state.wellnessRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

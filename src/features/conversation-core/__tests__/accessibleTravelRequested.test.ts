@@ -119,33 +119,27 @@ describe('phase 3Z — explicit accessibleTravelRequested only', () => {
     });
     expect(first.state.accessibleTravelRequested).toBe(false);
 
-    const second = turn('mobility access', first.state, 1);
+    const second = turn('Hello', first.state, 1);
     expect(second.state.accessibleTravelRequested).toBe(false);
   });
 
-  it('user message text cannot set accessibleTravelRequested', () => {
+  it('user message text can set accessibleTravelRequested (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
     const phrases = [
-      'accessible travel',
-      'wheelchair accessible',
-      'mobility access',
-      'step-free',
-      'accessible accommodation',
-      'disability access',
+      'We need accessible travel options',
+      'Include wheelchair-accessible activities',
     ];
 
-    let state = initial;
     phrases.forEach((message, index) => {
-      const result = turn(message, state, index);
-      expect(result.state.accessibleTravelRequested).toBeNull();
-      state = result.state;
+      const result = turn(message, initial, index);
+      expect(result.state.accessibleTravelRequested).toBe(true);
     });
   });
 
-  it('user message text cannot clear or change an existing value', () => {
+  it('user message text can re-enable but cannot clear via removal wording (Phase 19B)', () => {
     const initial = createInitialConversationCoreState({
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
@@ -172,7 +166,7 @@ describe('phase 3Z — explicit accessibleTravelRequested only', () => {
       withFalse.state,
       3,
     );
-    expect(afterMoreWords.state.accessibleTravelRequested).toBe(false);
+    expect(afterMoreWords.state.accessibleTravelRequested).toBe(true);
   });
 
   it('all previous request flags and canonical fields are preserved', () => {

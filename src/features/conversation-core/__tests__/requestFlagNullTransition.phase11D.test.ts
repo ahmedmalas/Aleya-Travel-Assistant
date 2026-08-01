@@ -235,18 +235,18 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     expect(concierge.includes('stateUpdate')).toBe(false);
   });
 
-  it('factory-wired request extractors do not include tours/events/nightlife/shopping/wellness/family/accessible', () => {
+  it('factory-wired request extractors include tours/events/nightlife/shopping/wellness/family/accessible (Phase 19B)', () => {
     const factory = readFileSync(FACTORY_SOURCE, 'utf8');
     expect(factory).toMatch(/FlightsRequestedConversationStateExtractor/);
     expect(factory).toMatch(/NationalParksRequestedConversationStateExtractor/);
-    expect(factory.includes('ToursRequested')).toBe(false);
-    expect(factory.includes('NightlifeRequested')).toBe(false);
-    expect(factory.includes('ShoppingRequested')).toBe(false);
-    expect(factory.includes('WellnessRequested')).toBe(false);
-    expect(factory.includes('FamilyActivitiesRequested')).toBe(false);
-    expect(factory.includes('AccessibleTravelRequested')).toBe(false);
+    expect(factory.includes('ToursRequested')).toBe(true);
+    expect(factory.includes('NightlifeRequested')).toBe(true);
+    expect(factory.includes('ShoppingRequested')).toBe(true);
+    expect(factory.includes('WellnessRequested')).toBe(true);
+    expect(factory.includes('FamilyActivitiesRequested')).toBe(true);
+    expect(factory.includes('AccessibleTravelRequested')).toBe(true);
     expect(factory.includes('EventsRequestedConversationStateExtractor')).toBe(
-      false,
+      true,
     );
   });
 

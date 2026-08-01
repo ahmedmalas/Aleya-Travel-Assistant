@@ -300,20 +300,33 @@ describe('Phase 18C — activity re-request selection audit', () => {
     }
   });
 
-  it('characterizes unsupported or non-persisting broad phrases under activitiesRequested=true', () => {
+  it('characterizes former unsupported broad phrases now completed by Phase 19B extractors', () => {
     const seed = { ...COMPLETE_CORE, activitiesRequested: true as const };
-    for (const message of ['Shopping', 'Nightlife', 'Wellness activities']) {
-      const t = trace(message, seed);
-      expect(t.final.shoppingRequested, message).toBeNull();
-      expect(t.final.nightlifeRequested, message).toBeNull();
-      expect(t.final.wellnessRequested, message).toBeNull();
-      expect(t.final.activitiesRequested, message).toBe(true);
-      expect(t.messageInterpreted, message).toBe(false);
-      expect(t.acknowledgement, message).toBeNull();
-      expect(t.followUpQuestion, message).toBe(ACTIVITIES_Q);
-      expect(t.exactFinalReply, message).toBe(
-        `Let's look at activities. ${ACTIVITIES_Q}`,
-      );
+    const cases = [
+      {
+        message: 'Shopping',
+        flag: 'shoppingRequested' as const,
+        label: 'shopping',
+      },
+      {
+        message: 'Nightlife',
+        flag: 'nightlifeRequested' as const,
+        label: 'nightlife',
+      },
+      {
+        message: 'Wellness activities',
+        flag: 'wellnessRequested' as const,
+        label: 'wellness',
+      },
+    ];
+    for (const entry of cases) {
+      const t = trace(entry.message, seed);
+      expect(t.final[entry.flag], entry.message).toBe(true);
+      expect(t.final.activitiesRequested, entry.message).toBe(true);
+      expect(t.messageInterpreted, entry.message).toBe(true);
+      expect(t.acknowledgement, entry.message).toContain(entry.label);
+      expect(t.followUpQuestion, entry.message).toBe(NEUTRAL);
+      expect(t.exactFinalReply, entry.message).not.toContain(ACTIVITIES_Q);
     }
   });
 

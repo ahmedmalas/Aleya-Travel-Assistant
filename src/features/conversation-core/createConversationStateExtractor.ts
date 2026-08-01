@@ -28,6 +28,13 @@ import { WineriesFoodTrailsRequestedConversationStateExtractor } from './extract
 import { EventsFestivalsRequestedConversationStateExtractor } from './extractors/EventsFestivalsRequestedConversationStateExtractor';
 import { WildlifeRequestedConversationStateExtractor } from './extractors/WildlifeRequestedConversationStateExtractor';
 import { NationalParksRequestedConversationStateExtractor } from './extractors/NationalParksRequestedConversationStateExtractor';
+import { NightlifeRequestedConversationStateExtractor } from './extractors/NightlifeRequestedConversationStateExtractor';
+import { ShoppingRequestedConversationStateExtractor } from './extractors/ShoppingRequestedConversationStateExtractor';
+import { WellnessRequestedConversationStateExtractor } from './extractors/WellnessRequestedConversationStateExtractor';
+import { ToursRequestedConversationStateExtractor } from './extractors/ToursRequestedConversationStateExtractor';
+import { FamilyActivitiesRequestedConversationStateExtractor } from './extractors/FamilyActivitiesRequestedConversationStateExtractor';
+import { AccessibleTravelRequestedConversationStateExtractor } from './extractors/AccessibleTravelRequestedConversationStateExtractor';
+import { EventsRequestedConversationStateExtractor } from './extractors/EventsRequestedConversationStateExtractor';
 import type { ConversationStateExtractor } from './types';
 
 /**
@@ -62,6 +69,13 @@ import type { ConversationStateExtractor } from './types';
  * EventsFestivalsRequestedConversationStateExtractor, then a new
  * WildlifeRequestedConversationStateExtractor, then a new
  * NationalParksRequestedConversationStateExtractor, then a new
+ * NightlifeRequestedConversationStateExtractor, then a new
+ * ShoppingRequestedConversationStateExtractor, then a new
+ * WellnessRequestedConversationStateExtractor, then a new
+ * ToursRequestedConversationStateExtractor, then a new
+ * FamilyActivitiesRequestedConversationStateExtractor, then a new
+ * AccessibleTravelRequestedConversationStateExtractor, then a new
+ * EventsRequestedConversationStateExtractor, then a new
  * EmptyConversationStateExtractor. No configuration, selection, caching, or
  * runtime wiring.
  */
@@ -95,6 +109,13 @@ export function createConversationStateExtractor(): ConversationStateExtractor {
     new EventsFestivalsRequestedConversationStateExtractor(),
     new WildlifeRequestedConversationStateExtractor(),
     new NationalParksRequestedConversationStateExtractor(),
+    new NightlifeRequestedConversationStateExtractor(),
+    new ShoppingRequestedConversationStateExtractor(),
+    new WellnessRequestedConversationStateExtractor(),
+    new ToursRequestedConversationStateExtractor(),
+    new FamilyActivitiesRequestedConversationStateExtractor(),
+    new AccessibleTravelRequestedConversationStateExtractor(),
+    new EventsRequestedConversationStateExtractor(),
     new EmptyConversationStateExtractor(),
   ]);
 }

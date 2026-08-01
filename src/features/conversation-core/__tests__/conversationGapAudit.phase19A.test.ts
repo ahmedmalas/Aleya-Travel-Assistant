@@ -35,6 +35,7 @@ const COMPLETE_CORE = {
   adultCount: 2,
 } as const;
 
+/** Former Phase 19A gap flags — still in the activity completion set. */
 const NON_EXTRACTABLE_ACTIVITY_FLAGS = [
   'accessibleTravelRequested',
   'toursRequested',
@@ -101,7 +102,7 @@ function turn(
 }
 
 describe('Phase 19A — conversation flow gap audit', () => {
-  it('locks registry mismatch: completion flags without registered extractors', () => {
+  it('locks that former gap flags remain in the activity completion set and are now registered', () => {
     const factory = readSrc(
       'src/features/conversation-core/createConversationStateExtractor.ts',
     );
@@ -114,7 +115,7 @@ describe('Phase 19A — conversation flow gap audit', () => {
       'AccessibleTravelRequestedConversationStateExtractor',
       'EventsRequestedConversationStateExtractor',
     ]) {
-      expect(factory, name).not.toContain(name);
+      expect(factory, name).toContain(name);
     }
 
     const selector = readSrc(
@@ -125,42 +126,38 @@ describe('Phase 19A — conversation flow gap audit', () => {
     }
   });
 
-  it('characterizes shopping under open activities follow-up (no extraction)', () => {
+  it('characterizes shopping under open activities follow-up (Phase 19B extraction)', () => {
     const t = turn('Shopping', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    expect(t.extracted).toEqual({});
-    expect(t.state.shoppingRequested).toBeNull();
-    expect(t.components.acknowledgement).toBeNull();
-    expect(t.components.followUpQuestion).toBe(ACTIVITIES_Q);
-    expect(t.reply).toContain(ACTIVITIES_Q);
+    expect(t.state.shoppingRequested).toBe(true);
+    expect(t.components.acknowledgement).toContain('shopping');
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
+    expect(t.reply).not.toContain(ACTIVITIES_Q);
   });
 
-  it('characterizes nightlife under open activities follow-up (no extraction)', () => {
+  it('characterizes nightlife under open activities follow-up (Phase 19B extraction)', () => {
     const t = turn('Nightlife', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    expect(t.extracted).toEqual({});
-    expect(t.state.nightlifeRequested).toBeNull();
-    expect(t.components.acknowledgement).toBeNull();
-    expect(t.components.followUpQuestion).toBe(ACTIVITIES_Q);
+    expect(t.state.nightlifeRequested).toBe(true);
+    expect(t.components.acknowledgement).toContain('nightlife');
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
   });
 
-  it('characterizes wellness under open activities follow-up (no wellness extraction)', () => {
+  it('characterizes wellness under open activities follow-up (Phase 19B extraction)', () => {
     const t = turn('Wellness activities', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    // "activities" may re-assert activitiesRequested; wellness itself is not owned.
-    expect(t.extracted).not.toHaveProperty('wellnessRequested');
-    expect(t.state.wellnessRequested).toBeNull();
-    expect(t.components.followUpQuestion).toBe(ACTIVITIES_Q);
-    expect(t.reply).toContain(ACTIVITIES_Q);
+    expect(t.state.wellnessRequested).toBe(true);
+    expect(t.components.acknowledgement).toContain('wellness');
+    expect(t.components.followUpQuestion).toBe(NEUTRAL);
   });
 
-  it('characterizes tours / family / accessible travel as unset from message text', () => {
+  it('characterizes tours / family / accessible travel as extractable from message text (Phase 19B)', () => {
     for (const entry of [
       {
         message: 'I want tours',
@@ -179,20 +176,27 @@ describe('Phase 19A — conversation flow gap audit', () => {
         ...COMPLETE_CORE,
         activitiesRequested: true,
       });
-      expect(t.state[entry.flag], entry.message).toBeNull();
-      expect(t.components.followUpQuestion, entry.message).toBe(ACTIVITIES_Q);
+      expect(t.state[entry.flag], entry.message).toBe(true);
+      expect(t.components.followUpQuestion, entry.message).toBe(NEUTRAL);
     }
   });
 
-  it('characterizes dual events model: festivals extract; legacy events stay null', () => {
-    const t = turn('find local events', {
+  it('characterizes dual events model boundary after Phase 19B', () => {
+    const localEvents = turn('find local events', {
       ...COMPLETE_CORE,
       activitiesRequested: true,
     });
-    expect(t.state.eventsFestivalsRequested).toBe(true);
-    expect(t.state.eventsRequested).toBeNull();
-    expect(t.components.followUpQuestion).toBe(NEUTRAL);
-    expect(t.reply).not.toContain(ACTIVITIES_Q);
+    expect(localEvents.state.eventsRequested).toBe(true);
+    expect(localEvents.state.eventsFestivalsRequested).toBeNull();
+    expect(localEvents.components.followUpQuestion).toBe(NEUTRAL);
+
+    const festivals = turn('I want festivals', {
+      ...COMPLETE_CORE,
+      activitiesRequested: true,
+    });
+    expect(festivals.state.eventsFestivalsRequested).toBe(true);
+    expect(festivals.state.eventsRequested).toBeNull();
+    expect(festivals.components.followUpQuestion).toBe(NEUTRAL);
   });
 
   it('characterizes explicit-only tours path still completes activities when trusted', () => {

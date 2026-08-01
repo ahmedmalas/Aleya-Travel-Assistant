@@ -41,6 +41,13 @@ import { WineriesFoodTrailsRequestedConversationStateExtractor } from '../extrac
 import { EventsFestivalsRequestedConversationStateExtractor } from '../extractors/EventsFestivalsRequestedConversationStateExtractor';
 import { WildlifeRequestedConversationStateExtractor } from '../extractors/WildlifeRequestedConversationStateExtractor';
 import { NationalParksRequestedConversationStateExtractor } from '../extractors/NationalParksRequestedConversationStateExtractor';
+import { NightlifeRequestedConversationStateExtractor } from '../extractors/NightlifeRequestedConversationStateExtractor';
+import { ShoppingRequestedConversationStateExtractor } from '../extractors/ShoppingRequestedConversationStateExtractor';
+import { WellnessRequestedConversationStateExtractor } from '../extractors/WellnessRequestedConversationStateExtractor';
+import { ToursRequestedConversationStateExtractor } from '../extractors/ToursRequestedConversationStateExtractor';
+import { FamilyActivitiesRequestedConversationStateExtractor } from '../extractors/FamilyActivitiesRequestedConversationStateExtractor';
+import { AccessibleTravelRequestedConversationStateExtractor } from '../extractors/AccessibleTravelRequestedConversationStateExtractor';
+import { EventsRequestedConversationStateExtractor } from '../extractors/EventsRequestedConversationStateExtractor';
 
 const ROOT = process.cwd();
 const EMPTY_SOURCE = resolve(
@@ -77,6 +84,13 @@ const PRODUCTION_EXTRACTOR_ORDER = [
   EventsFestivalsRequestedConversationStateExtractor,
   WildlifeRequestedConversationStateExtractor,
   NationalParksRequestedConversationStateExtractor,
+  NightlifeRequestedConversationStateExtractor,
+  ShoppingRequestedConversationStateExtractor,
+  WellnessRequestedConversationStateExtractor,
+  ToursRequestedConversationStateExtractor,
+  FamilyActivitiesRequestedConversationStateExtractor,
+  AccessibleTravelRequestedConversationStateExtractor,
+  EventsRequestedConversationStateExtractor,
   EmptyConversationStateExtractor,
 ] as const;
 
@@ -109,6 +123,13 @@ const PUBLIC_EXTRACTOR_NAMES = [
   'EventsFestivalsRequestedConversationStateExtractor',
   'WildlifeRequestedConversationStateExtractor',
   'NationalParksRequestedConversationStateExtractor',
+  'NightlifeRequestedConversationStateExtractor',
+  'ShoppingRequestedConversationStateExtractor',
+  'WellnessRequestedConversationStateExtractor',
+  'ToursRequestedConversationStateExtractor',
+  'FamilyActivitiesRequestedConversationStateExtractor',
+  'AccessibleTravelRequestedConversationStateExtractor',
+  'EventsRequestedConversationStateExtractor',
   'EmptyConversationStateExtractor',
   'CompositeConversationStateExtractor',
   'createConversationStateExtractor',
@@ -316,14 +337,14 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     ).toEqual({ stateUpdate: {} });
   });
 
-  it('remains last among 29 production extractors in the accepted composite order', () => {
+  it('remains last among 36 production extractors in the accepted composite order', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
 
-    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(29);
-    expect(extractors).toHaveLength(29);
-    expect(extractors[28]).toBeInstanceOf(EmptyConversationStateExtractor);
+    expect(PRODUCTION_EXTRACTOR_ORDER).toHaveLength(36);
+    expect(extractors).toHaveLength(36);
+    expect(extractors[35]).toBeInstanceOf(EmptyConversationStateExtractor);
 
     for (let index = 0; index < PRODUCTION_EXTRACTOR_ORDER.length; index += 1) {
       expect(extractors[index], `extractor ${index}`).toBeInstanceOf(
@@ -336,11 +357,11 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       'utf8',
     );
     expect(factorySource).toMatch(
-      /new NationalParksRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
+      /new NationalParksRequestedConversationStateExtractor\(\),\s*new NightlifeRequestedConversationStateExtractor\(\),\s*new ShoppingRequestedConversationStateExtractor\(\),\s*new WellnessRequestedConversationStateExtractor\(\),\s*new ToursRequestedConversationStateExtractor\(\),\s*new FamilyActivitiesRequestedConversationStateExtractor\(\),\s*new AccessibleTravelRequestedConversationStateExtractor\(\),\s*new EventsRequestedConversationStateExtractor\(\),\s*new EmptyConversationStateExtractor\(\),\s*\]\);/,
     );
   });
 
-  it('keeps all 28 behavioural extractors active and Empty as the sole intentional no-op', () => {
+  it('keeps all 35 behavioural extractors active and Empty as the sole intentional no-op', () => {
     const extractors = readExtractors(
       createConversationStateExtractor() as CompositeConversationStateExtractor,
     );
@@ -461,7 +482,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
       },
       {
         index: 25,
-        message: 'add events',
+        message: 'add festivals',
         expected: { eventsFestivalsRequested: true },
       },
       { index: 26, message: 'add wildlife', expected: { wildlifeRequested: true } },
@@ -470,9 +491,44 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
         message: 'add national parks',
         expected: { nationalParksRequested: true },
       },
+      {
+        index: 28,
+        message: 'I want nightlife',
+        expected: { nightlifeRequested: true },
+      },
+      {
+        index: 29,
+        message: 'Include shopping',
+        expected: { shoppingRequested: true },
+      },
+      {
+        index: 30,
+        message: 'Add wellness activities',
+        expected: { wellnessRequested: true },
+      },
+      {
+        index: 31,
+        message: 'Include tours',
+        expected: { toursRequested: true },
+      },
+      {
+        index: 32,
+        message: 'Add family activities',
+        expected: { familyActivitiesRequested: true },
+      },
+      {
+        index: 33,
+        message: 'We need accessible travel options',
+        expected: { accessibleTravelRequested: true },
+      },
+      {
+        index: 34,
+        message: 'Add events',
+        expected: { eventsRequested: true },
+      },
     ];
 
-    expect(behaviouralProofs).toHaveLength(28);
+    expect(behaviouralProofs).toHaveLength(35);
 
     for (const proof of behaviouralProofs) {
       expect(
@@ -485,7 +541,7 @@ describe('phase 7AB — EmptyConversationStateExtractor finalisation', () => {
     }
 
     expect(
-      extractors[28]?.extract({
+      extractors[35]?.extract({
         message: 'add national parks. add wildlife. book flights',
         currentState,
       }),
