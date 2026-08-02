@@ -1241,8 +1241,17 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(
       extractor.extract({ message: 'sightseeing', currentState }),
     ).toEqual({ stateUpdate: {} });
+    // Place-shaped bare answers are destination-owned when destination is null;
+    // with destination set they must not invent attraction state.
     expect(
-      extractor.extract({ message: 'Sydney Opera House', currentState }),
+      extractor.extract({
+        message: 'Sydney Opera House',
+        currentState: createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          attractionsRequested: false,
+        }),
+      }),
     ).toEqual({ stateUpdate: {} });
   });
 
@@ -1262,8 +1271,16 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(
       extractor.extract({ message: 'no snow activities', currentState }),
     ).toEqual({ stateUpdate: {} });
+    // Bare place with destination set must not invent snow-activity state.
     expect(
-      extractor.extract({ message: 'Thredbo', currentState }),
+      extractor.extract({
+        message: 'Thredbo',
+        currentState: createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          snowActivitiesRequested: false,
+        }),
+      }),
     ).toEqual({ stateUpdate: {} });
     expect(
       extractor.extract({ message: 'ski hire', currentState }),
@@ -1430,8 +1447,16 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(
       extractor.extract({ message: 'concerts', currentState }),
     ).toEqual({ stateUpdate: {} });
+    // Bare place with destination+origin set must not invent festival state.
     expect(
-      extractor.extract({ message: 'Brisbane', currentState }),
+      extractor.extract({
+        message: 'Brisbane',
+        currentState: createState({
+          destination: 'Cairns',
+          origin: 'Sydney',
+          eventsFestivalsRequested: false,
+        }),
+      }),
     ).toEqual({ stateUpdate: {} });
   });
 
@@ -1508,8 +1533,16 @@ describe('phase 5E/5J — createConversationStateExtractor factory', () => {
     expect(
       extractor.extract({ message: 'parks', currentState }),
     ).toEqual({ stateUpdate: {} });
+    // Bare place with destination+origin set must not invent park state.
     expect(
-      extractor.extract({ message: 'Sydney', currentState }),
+      extractor.extract({
+        message: 'Sydney',
+        currentState: createState({
+          destination: 'Cairns',
+          origin: 'Melbourne',
+          nationalParksRequested: false,
+        }),
+      }),
     ).toEqual({ stateUpdate: {} });
   });
 });

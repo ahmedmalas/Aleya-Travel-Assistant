@@ -1,5 +1,6 @@
 import { trimRepairPlaceCaptureAtSiblingClause } from './repairPlaceClauseBoundary';
 import type {
+  ConversationCoreState,
   ConversationStateExtractionInput,
   ConversationStateExtractionResult,
   ConversationStateExtractor,
@@ -11,7 +12,7 @@ import type {
  * Phase 7A / 7A.1: recognises only narrow, explicit destination statements,
  * destination-replacement instructions, and explicit origin+destination route
  * forms in the current message. Deterministic and local — no external lookup,
- * geographic validation, origin extraction, or currentState inspection.
+ * geographic validation, or origin extraction.
  *
  * Phase 17B: adds explicit single-fact destination repair cues (meant /
  * Actually, Place / make that / change that / Not X, Y). Does not inspect
@@ -22,6 +23,12 @@ import type {
  *
  * Phase 17I: repair place captures trim at following origin/date/passenger
  * clauses via the shared clause-boundary helper.
+ *
+ * Phase 21D: when destination is the canonical next required core field
+ * (destination null), a whole-message bare place answer may emit destination.
+ * Explicit cue ownership is unchanged and always tried first. currentState is
+ * read only for that active-destination gate — never copied. Does not broaden
+ * travel grammar (e.g. missing-"to" "go Melbourne" remains cue-unsupported).
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -29,18 +36,45 @@ export class DestinationConversationStateExtractor
   extract(
     input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
-    const destination = extractExplicitDestination(input.message);
-    if (destination === null) {
+    const cuedDestination = extractExplicitDestination(input.message);
+    if (cuedDestination !== null) {
+      return {
+        stateUpdate: {
+          destination: cuedDestination,
+        },
+      };
+    }
+
+    if (!isDestinationFollowUpActive(input.currentState)) {
       return {
         stateUpdate: {},
       };
     }
+
+    const bareDestination = extractBareDestinationPlace(input.message);
+    if (bareDestination === null) {
+      return {
+        stateUpdate: {},
+      };
+    }
+
     return {
       stateUpdate: {
-        destination: destination,
+        destination: bareDestination,
       },
     };
   }
+}
+
+/**
+ * True when destination is the next required core travel field.
+ *
+ * Mirrors core progression priority (destination → origin → departureDate →
+ * returnDate). destination null is sufficient for destination to own the
+ * active follow-up; does not import the follow-up selector.
+ */
+function isDestinationFollowUpActive(state: ConversationCoreState): boolean {
+  return state.destination === null;
 }
 
 /** Trim edges without String.prototype.trim (architecture boundary). */
@@ -352,4 +386,255 @@ function extractExplicitDestination(message: string): string | null {
     return destination;
   }
   return null;
+}
+
+/**
+ * Conversational fillers that must not become destination when destination is
+ * active. Compared with ASCII case-folding (no String#toLowerCase).
+ */
+const BARE_DESTINATION_FILLERS: readonly string[] = [
+  'ok',
+  'okay',
+  'thanks',
+  'thank',
+  'hello',
+  'hi',
+  'hey',
+  'yes',
+  'no',
+  'sure',
+  'yep',
+  'nope',
+  'good',
+  'great',
+  'fine',
+  'cool',
+  'maybe',
+  'perhaps',
+  'please',
+  'weather',
+  'friend',
+  'there',
+  'here',
+  'what',
+  'who',
+  'why',
+  'how',
+  'when',
+  'where',
+  'let',
+  'think',
+  'help',
+  'me',
+  'you',
+  'can',
+  'do',
+  'not',
+  'warm',
+  'surprise',
+  // Route / function words — block "Sydney to Brisbane" style bare chatter.
+  'to',
+  'from',
+  'of',
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'for',
+  'with',
+  'in',
+  'on',
+  'at',
+  'instead',
+  'change',
+  'colour',
+  'color',
+  'blue',
+  'favourite',
+  'favorite',
+  'flexible',
+  'budget',
+  'recommend',
+  'recommendation',
+  'recommendations',
+  // Capability / activity / schedule tokens must not become destinations.
+  'cancel',
+  'everything',
+  'anything',
+  'fresh',
+  'call',
+  'flying',
+  'friday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'saturday',
+  'sunday',
+  'sightseeing',
+  'nearest',
+  'station',
+  'add',
+  'go',
+  'going',
+  'four',
+  'wheel',
+  'driving',
+  'track',
+  'tracks',
+  'wine',
+  'wineries',
+  'food',
+  'trails',
+  'snow',
+  'concert',
+  'concerts',
+  'vivid',
+  'local',
+  'show',
+  'is',
+  'options',
+  'option',
+  'events',
+  'event',
+  'festivals',
+  'festival',
+  'wildlife',
+  'national',
+  'park',
+  'parks',
+  'camping',
+  'kayaking',
+  'beaches',
+  'beach',
+  'hiking',
+  'fishing',
+  'diving',
+  'snorkelling',
+  'snorkeling',
+  'skiing',
+  'walking',
+  'scenic',
+  'drive',
+  'drives',
+  'attraction',
+  'attractions',
+  'nightlife',
+  'shopping',
+  'wellness',
+  'tours',
+  'tour',
+  'family',
+  'accessible',
+  'restaurants',
+  'restaurant',
+  'accommodation',
+  'hotel',
+  'hotels',
+  'flights',
+  'flight',
+  'activities',
+  'activity',
+  'nearby',
+  'discovery',
+  'next',
+];
+
+/** Multi-word bare phrases that must stay uninterpreted. */
+const BARE_DESTINATION_PHRASE_FILLERS: readonly string[] = [
+  'not sure',
+  'surprise me',
+  'somewhere warm',
+  'what can you do',
+  'help me',
+  'hi aleya',
+  'hello aleya',
+];
+
+function equalsIgnoreAsciiCase(left: string, right: string): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    let leftCode = left.charCodeAt(index);
+    let rightCode = right.charCodeAt(index);
+    if (leftCode >= 65 && leftCode <= 90) {
+      leftCode += 32;
+    }
+    if (rightCode >= 65 && rightCode <= 90) {
+      rightCode += 32;
+    }
+    if (leftCode !== rightCode) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isBareDestinationFiller(value: string): boolean {
+  if (
+    BARE_DESTINATION_PHRASE_FILLERS.some((filler) =>
+      equalsIgnoreAsciiCase(value, filler),
+    )
+  ) {
+    return true;
+  }
+  const words = value.split(/\s+/);
+  return words.some((word) =>
+    BARE_DESTINATION_FILLERS.some((filler) =>
+      equalsIgnoreAsciiCase(word, filler),
+    ),
+  );
+}
+
+/**
+ * Phase 21D — whole-message bare place when destination follow-up is active.
+ *
+ * Allows one to three place tokens (optional internal hyphen/apostrophe) so
+ * multi-word destinations such as "Gold Coast" work. Reuses
+ * normaliseCapturedDestination. Rejects conversational fillers and phrases.
+ * Does not broaden explicit travel cues.
+ */
+function extractBareDestinationPlace(message: string): string | null {
+  const text = edgeTrim(message);
+  if (text.length === 0) {
+    return null;
+  }
+  if (/\?/.test(text)) {
+    return null;
+  }
+  if (/\d/.test(text)) {
+    return null;
+  }
+
+  const destination = normaliseCapturedDestination(text);
+  if (destination === null) {
+    return null;
+  }
+  if (isRejectedRepairDestinationCapture(destination)) {
+    return null;
+  }
+
+  // Whole-message bare: normalisation may only strip trailing punctuation.
+  const punctStripped = edgeTrim(text.replace(/[.!?,;:]+$/g, ''));
+  if (destination !== punctStripped) {
+    return null;
+  }
+
+  // One to three Title-Case place tokens — "Melbourne", "Gold Coast",
+  // "Alice Springs". Lowercase capability words ("wildlife", "events") and
+  // mixed-case chatter ("Flying next Friday") stay uninterpreted.
+  if (
+    !/^[A-Z][A-Za-z]*(?:['\-][A-Za-z]+)*(?:\s+[A-Z][A-Za-z]*(?:['\-][A-Za-z]+)*){0,2}$/.test(
+      destination,
+    )
+  ) {
+    return null;
+  }
+  if (isBareDestinationFiller(destination)) {
+    return null;
+  }
+
+  return destination;
 }

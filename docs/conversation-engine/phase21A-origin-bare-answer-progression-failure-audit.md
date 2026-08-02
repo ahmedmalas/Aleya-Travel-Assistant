@@ -7,6 +7,10 @@ Investigation and characterization only (at time of audit). No deploy.
 updated to assert the corrected production behaviour while retaining the root
 cause history below. See `phase21B-origin-bare-answer-progression-fix.md`.
 
+**Further status:** Phase 21D repaired bare-destination follow-up extraction
+(blast-radius item from this audit). Bare departure/return dates remain open.
+See `phase21D-bare-destination-follow-up-fix.md`.
+
 Characterization tests:
 
 ```text

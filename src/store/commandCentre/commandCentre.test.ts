@@ -9,7 +9,7 @@ describe('commandCentre', () => {
         id: 't1',
         tripName: 'Current',
         destination: 'Rome',
-        departureDate: '2026-08-01',
+        departureDate: '2026-08-15',
         status: 'active',
         favourite: true,
         budget: 1000,
@@ -20,7 +20,7 @@ describe('commandCentre', () => {
             category: 'transport',
             amount: 120,
             currency: 'USD',
-            date: '2026-08-01',
+            date: '2026-08-15',
             paid: true,
             notes: '',
 

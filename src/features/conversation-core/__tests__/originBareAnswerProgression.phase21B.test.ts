@@ -159,10 +159,11 @@ describe('Phase 21B — bare origin follow-up extraction', () => {
   });
 
   it('production path guards: bare place does not set origin incorrectly', () => {
-    // destination still required
+    // destination still required — Phase 21D may set destination; origin stays null
     let result = turn('Sydney', createState(), 0);
     expect(result.state.origin).toBeNull();
-    expect(result.trace.messageInterpreted).toBe(false);
+    expect(result.state.destination).toBe('Sydney');
+    expect(result.trace.messageInterpreted).toBe(true);
 
     // origin already set; departure active
     result = turn(

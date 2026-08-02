@@ -144,13 +144,18 @@ Sydney.          → origin = Sydney; ask departure date
 ## Known related gaps left untouched (future phases)
 
 ```text
-bare destination follow-up extraction
 bare departure-date follow-up extraction
 bare return-date follow-up extraction
+missing-"to" destination travel cues (go Melbourne)
 ```
+
+**Status update:** Phase 21D repaired bare-destination follow-up extraction at
+`DestinationConversationStateExtractor`. See
+`phase21D-bare-destination-follow-up-fix.md`.
 
 ---
 
 ## Stop condition
 
-PR #31 remains Draft. No merge. No deploy. No destination/date bare fixes.
+PR #31 remains Draft. No merge. No deploy. No missing-"to" / date bare fixes
+from this phase.

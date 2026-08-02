@@ -75,6 +75,7 @@ describe('phase 5F — extractConversationState execution only', () => {
   it('returns the same empty value for different message text', () => {
     const currentState = createState();
 
+    // Route chatter / non-bare shapes stay empty (Phase 21D does not claim them).
     expect(
       extractConversationState({ message: 'Sydney to Brisbane', currentState }),
     ).toEqual({ stateUpdate: {} });
@@ -336,8 +337,9 @@ describe('phase 5F — extractConversationState execution only', () => {
     }
 
     // Real empty extractor path still works when factory is not mocked.
+    // Use a filler (not a bare place) so Phase 21D destination path stays empty.
     const live = extractConversationState({
-      message: 'live path',
+      message: 'Okay',
       currentState: createState(),
     });
     expect(live).toEqual({ stateUpdate: {} });

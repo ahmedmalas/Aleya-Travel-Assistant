@@ -512,7 +512,10 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(destinationExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(destinationExtractor).toMatch(/input\.message/);
-    expect(destinationExtractor.includes('input.currentState')).toBe(false);
+    // Phase 21D: currentState is read only for the active-destination bare gate.
+    expect(destinationExtractor).toMatch(
+      /isDestinationFollowUpActive\(input\.currentState\)/,
+    );
     expect(destinationExtractor.includes('.trim(')).toBe(false);
     expect(destinationExtractor.includes('.toLowerCase(')).toBe(false);
     const originExtractor = readSrc(

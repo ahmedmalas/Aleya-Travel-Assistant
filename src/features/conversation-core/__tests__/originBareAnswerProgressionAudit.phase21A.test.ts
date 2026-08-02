@@ -177,11 +177,11 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
     expect(selectConversationFollowUpQuestion(t.result.state)).toBe(DEPARTURE_Q);
   });
 
-  it('blast radius: bare destination/date answers also fail; bare passenger counts succeed', () => {
-    // Bare destination (no cue) — same ownership gap class.
+  it('blast radius: bare destination fixed in 21D; bare dates still fail; bare passengers succeed', () => {
+    // Bare destination (no cue) — Phase 21D repairs this path.
     let t = turn('Melbourne', createState(), 0);
-    expect(t.result.state.destination).toBeNull();
-    expect(t.result.trace.messageInterpreted).toBe(false);
+    expect(t.result.state.destination).toBe('Melbourne');
+    expect(t.result.trace.messageInterpreted).toBe(true);
 
     // Bare departure date when origin complete.
     t = turn(
@@ -265,12 +265,14 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
       currentState: createState({ destination: 'Melbourne', origin: null }),
     });
     expect(bareActive.stateUpdate.origin).toBe('Hobart');
-    // Guard: bare place when destination still required stays empty.
+    // Guard: bare place when destination still required does not set origin.
+    // Phase 21D: destination extractor may claim the bare place instead.
     const bareInactive = extractConversationState({
       message: 'Hobart',
       currentState: createState({ destination: null, origin: null }),
     });
     expect(bareInactive.stateUpdate.origin).toBeUndefined();
+    expect(bareInactive.stateUpdate.destination).toBe('Hobart');
     void composite;
   });
 });
