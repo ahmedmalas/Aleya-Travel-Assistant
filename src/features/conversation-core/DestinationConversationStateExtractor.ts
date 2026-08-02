@@ -29,6 +29,10 @@ import type {
  * Explicit cue ownership is unchanged and always tried first. currentState is
  * read only for that active-destination gate — never copied. Does not broaden
  * travel grammar (e.g. missing-"to" "go Melbourne" remains cue-unsupported).
+ *
+ * Phase 21F: bare place tokens are accepted regardless of user-entered casing;
+ * the bare path emits deterministic Title-Case display forms. Explicit cue
+ * value casing is unchanged. Missing-"to" cues remain out of scope.
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -539,6 +543,31 @@ const BARE_DESTINATION_FILLERS: readonly string[] = [
   'nearby',
   'discovery',
   'next',
+  'car',
+  'hire',
+  // Additional capability / activity tokens that become place-shaped when
+  // casing is normalised (Phase 21F). Keep destination from claiming them.
+  'kayak',
+  'gear',
+  'road',
+  'trip',
+  'trips',
+  'bushwalking',
+  'seafood',
+  'dive',
+  'vineyard',
+  'vineyards',
+  'birdwatching',
+  'nature',
+  'reserve',
+  'reserves',
+  'kangaroo',
+  'kangaroos',
+  'remember',
+  'this',
+  'clear',
+  'mobility',
+  'access',
 ];
 
 /** Multi-word bare phrases that must stay uninterpreted. */
@@ -589,12 +618,14 @@ function isBareDestinationFiller(value: string): boolean {
 }
 
 /**
- * Phase 21D — whole-message bare place when destination follow-up is active.
+ * Phase 21D / 21F — whole-message bare place when destination follow-up is active.
  *
- * Allows one to three place tokens (optional internal hyphen/apostrophe) so
- * multi-word destinations such as "Gold Coast" work. Reuses
- * normaliseCapturedDestination. Rejects conversational fillers and phrases.
- * Does not broaden explicit travel cues.
+ * Allows one to three alphabetic place tokens (optional internal
+ * hyphen/apostrophe) so multi-word destinations such as "Gold Coast" /
+ * "gold coast" work. Reuses normaliseCapturedDestination, then emits a
+ * deterministic Title-Case display form (Phase 21F). Rejects conversational
+ * fillers and capability tokens via the existing deny-lists. Does not broaden
+ * explicit travel cues or missing-"to" grammar.
  */
 function extractBareDestinationPlace(message: string): string | null {
   const text = edgeTrim(message);
@@ -622,11 +653,10 @@ function extractBareDestinationPlace(message: string): string | null {
     return null;
   }
 
-  // One to three Title-Case place tokens — "Melbourne", "Gold Coast",
-  // "Alice Springs". Lowercase capability words ("wildlife", "events") and
-  // mixed-case chatter ("Flying next Friday") stay uninterpreted.
+  // One to three place tokens — casing-insensitive shape; fillers/capability
+  // words still rejected by deny-list (ASCII case-fold compare).
   if (
-    !/^[A-Z][A-Za-z]*(?:['\-][A-Za-z]+)*(?:\s+[A-Z][A-Za-z]*(?:['\-][A-Za-z]+)*){0,2}$/.test(
+    !/^[A-Za-z]+(?:['\-][A-Za-z]+)*(?:\s+[A-Za-z]+(?:['\-][A-Za-z]+)*){0,2}$/.test(
       destination,
     )
   ) {
@@ -636,5 +666,48 @@ function extractBareDestinationPlace(message: string): string | null {
     return null;
   }
 
-  return destination;
+  return toTitleCasePlace(destination);
+}
+
+/**
+ * Deterministic Title-Case for bare destination display (no String#toLowerCase).
+ * Capitalises the first letter of each whitespace-separated token and each
+ * segment after hyphen/apostrophe; lowercases other ASCII letters.
+ */
+function toTitleCasePlace(value: string): string {
+  const words = value.split(/\s+/);
+  const titled: string[] = [];
+  for (const word of words) {
+    titled.push(toTitleCaseToken(word));
+  }
+  return titled.join(' ');
+}
+
+function toTitleCaseToken(token: string): string {
+  let result = '';
+  let capitalizeNext = true;
+  for (let index = 0; index < token.length; index += 1) {
+    const code = token.charCodeAt(index);
+    const char = token.charAt(index);
+    if (char === '-' || char === "'") {
+      result += char;
+      capitalizeNext = true;
+      continue;
+    }
+    if (capitalizeNext) {
+      if (code >= 97 && code <= 122) {
+        result += String.fromCharCode(code - 32);
+      } else {
+        result += char;
+      }
+      capitalizeNext = false;
+      continue;
+    }
+    if (code >= 65 && code <= 90) {
+      result += String.fromCharCode(code + 32);
+    } else {
+      result += char;
+    }
+  }
+  return result;
 }

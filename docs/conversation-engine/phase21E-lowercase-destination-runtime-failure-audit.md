@@ -1,6 +1,13 @@
 # Phase 21E — Lowercase destination runtime failure audit
 
-Investigation and characterization only. No production fix. No deploy.
+Investigation and characterization only at time of audit. No deploy.
+
+**Status update:** Phase 21F implements the confirmed lowercase bare-path fix
+(`toTitleCasePlace` emit; casing-insensitive shape). Characterization tests in
+this phase were updated to assert the corrected bare behaviour while retaining
+audit history and the still-open missing-`"to"` gap. The lowercase fix is
+**implemented but not yet accepted** pending Ahmed’s physical runtime
+verification. See `phase21F-lowercase-bare-destination-fix.md`.
 
 Characterization tests:
 

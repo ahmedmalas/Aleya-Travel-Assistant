@@ -4,6 +4,11 @@ Fixes the Phase 21C root cause for bare destination answers at the canonical
 destination extractor boundary. No UI, wording, hydration, persistence, merge,
 origin, date, or travel-grammar broadening changes. No deploy.
 
+**Status update:** Phase 21D originally required Title-Case bare tokens.
+Phase 21F implements casing-insensitive bare acceptance with Title-Case emit.
+That lowercase fix is **implemented but not yet accepted** pending Ahmed’s
+physical runtime verification. See `phase21F-lowercase-bare-destination-fix.md`.
+
 Focused tests:
 
 ```text
