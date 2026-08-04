@@ -254,9 +254,7 @@ export function validateAndMapSemanticInterpretation(
 
   const isAmendmentTurn =
     semantic.reopenFields.length > 0 ||
-    semantic.amendmentResumeSearchReady === true ||
-    (semantic.removals.length > 0 &&
-      semantic.amendmentResumeSearchReady === true);
+    semantic.amendmentResumeSearchReady === true;
 
   if (semantic.conversationComplete === true) {
     stateUpdate.conversationComplete = true;
