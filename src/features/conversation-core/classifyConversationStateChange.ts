@@ -45,6 +45,7 @@ export const TRAVEL_COMPARE_KEYS = [
   'conversationComplete',
   'searchExecutionRequested',
   'amendmentResumeSearchReady',
+  'openClarification',
   'destinationResolutionStatus',
   'originResolutionStatus',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
@@ -58,6 +59,7 @@ export type TravelCompareKey = (typeof TRAVEL_COMPARE_KEYS)[number];
 const ACKNOWLEDGEMENT_INERT_KEYS = new Set<TravelCompareKey>([
   'searchExecutionRequested',
   'amendmentResumeSearchReady',
+  'openClarification',
   'destinationResolutionStatus',
   'originResolutionStatus',
   'tripStructure',

@@ -26,6 +26,7 @@ export {
   type ConversationTranscriptEntry,
   type ConversationTripLeg,
   type CreateInitialConversationCoreStateInput,
+  type OpenClarification,
   type TripStructureKind,
 } from './types';
 

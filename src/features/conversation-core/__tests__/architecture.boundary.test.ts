@@ -28,9 +28,8 @@ describe('conversation-core architectural boundary', () => {
     expect(panel).toMatch(
       /from ['"]\.\.\/\.\.\/features\/conversation-core['"]/,
     );
-    expect(panel).toMatch(/processConversationTurn/);
-    expect(panel).toMatch(/interpretTravelUtterance/);
-    expect(panel).toMatch(/skipExtraction:\s*true/);
+    expect(panel).toMatch(/from ['"]\.\.\/\.\.\/features\/conversation-consultant['"]/);
+    expect(panel).toMatch(/runConsultantTurn/);
     expect(panel).toMatch(/createInitialConversationCoreState/);
     expect(panel.includes('processTurn')).toBe(false);
     expect(panel.includes("from '../../features/conversation-core/types'")).toBe(
@@ -461,6 +460,8 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/searchExecutionRequested\?: boolean \| null/);
     expect(types).toMatch(/amendmentResumeSearchReady: null,/);
     expect(types).toMatch(/amendmentResumeSearchReady\?: boolean \| null/);
+    expect(types).toMatch(/openClarification: null,/);
+    expect(types).toMatch(/openClarification\?: OpenClarification \| null/);
     expect(types).toMatch(/tripStructure: null,/);
     expect(types).toMatch(/destinationStops: null,/);
     expect(types).toMatch(/tripLegs: null,/);

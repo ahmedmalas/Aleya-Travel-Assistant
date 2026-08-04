@@ -98,8 +98,8 @@ describe('Phase 21A — origin bare-answer progression failure audit', () => {
       /import \{[^}]*selectConversationFollowUpQuestion/,
     );
 
-    // Active panel uses processConversationTurn with in-memory state hydration.
-    expect(panel).toMatch(/processConversationTurn\(/);
+    // Active panel uses Consultant Turn Governor with in-memory state hydration.
+    expect(panel).toMatch(/runConsultantTurn\(/);
     expect(panel).toMatch(/state:\s*coreState/);
     expect(panel).toMatch(/setCoreState\(result\.state\)/);
     expect(panel).toMatch(/Persistence:\s*disabled/);

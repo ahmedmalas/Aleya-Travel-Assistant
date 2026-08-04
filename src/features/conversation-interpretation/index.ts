@@ -1,8 +1,9 @@
 /**
  * conversation-interpretation — authoritative semantic travel utterance boundary.
  *
- * Production panel calls interpretTravelUtterance, then passes the validated
- * ConversationStateUpdate into processConversationTurn with skipExtraction.
+ * The Consultant Turn Governor calls interpretTravelUtterance, then applies
+ * clarify-before-write and commits a validated ConversationStateUpdate through
+ * processConversationTurn with skipExtraction.
  */
 
 export {

@@ -130,6 +130,7 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
     conversationComplete: state.conversationComplete,
     searchExecutionRequested: state.searchExecutionRequested,
     amendmentResumeSearchReady: state.amendmentResumeSearchReady,
+    openClarification: state.openClarification,
     destinationResolutionStatus: state.destinationResolutionStatus,
     originResolutionStatus: state.originResolutionStatus,
   };

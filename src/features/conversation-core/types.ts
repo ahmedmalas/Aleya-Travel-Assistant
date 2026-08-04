@@ -21,6 +21,20 @@ export type ConversationTripLeg = {
   departureDate: string | null;
 };
 
+/**
+ * First-class blocking clarification held on canonical state until answered.
+ * Distinct from forbidden legacy `pendingClarification`.
+ */
+export type OpenClarification = {
+  id: string;
+  type: 'place_role' | 'trip_structure' | 'date_anchor' | 'generic';
+  subject: string;
+  prompt: string;
+  options: string[];
+  blocking: boolean;
+  placesInOrder?: string[];
+};
+
 /** Chronological transcript memory only — not intelligence. */
 export type ConversationTranscriptEntry =
   | {
@@ -145,6 +159,11 @@ export type ConversationCoreState = {
    */
   amendmentResumeSearchReady: boolean | null;
   /**
+   * Blocking clarification the consultant is waiting on. While set, the
+   * turn governor prefers resolving this over ladder-style asks.
+   */
+  openClarification: OpenClarification | null;
+  /**
    * TLI enrichment status for destination. Unresolved/ambiguous places
    * remain in `destination` but are unsafe for provider search.
    */
@@ -209,6 +228,7 @@ export type ConversationStateUpdate = {
   conversationComplete?: boolean | null;
   searchExecutionRequested?: boolean | null;
   amendmentResumeSearchReady?: boolean | null;
+  openClarification?: OpenClarification | null;
   destinationResolutionStatus?:
     | 'resolved'
     | 'unresolved'
@@ -310,6 +330,7 @@ export function createInitialConversationCoreState(
     conversationComplete: null,
     searchExecutionRequested: null,
     amendmentResumeSearchReady: null,
+    openClarification: null,
     destinationResolutionStatus: null,
     originResolutionStatus: null,
     transcript: [],

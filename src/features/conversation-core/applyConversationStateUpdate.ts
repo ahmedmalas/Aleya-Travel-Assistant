@@ -2,6 +2,7 @@ import type {
   ConversationCoreState,
   ConversationStateUpdate,
   ConversationTripLeg,
+  OpenClarification,
   TripStructureKind,
 } from './types';
 
@@ -47,6 +48,7 @@ export type AppliedConversationTravelState = {
   conversationComplete: boolean | null;
   searchExecutionRequested: boolean | null;
   amendmentResumeSearchReady: boolean | null;
+  openClarification: OpenClarification | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -226,6 +228,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.amendmentResumeSearchReady !== undefined
         ? stateUpdate.amendmentResumeSearchReady
         : currentState.amendmentResumeSearchReady,
+    openClarification:
+      stateUpdate?.openClarification !== undefined
+        ? stateUpdate.openClarification
+        : currentState.openClarification,
     destinationResolutionStatus:
       stateUpdate?.destinationResolutionStatus !== undefined
         ? stateUpdate.destinationResolutionStatus

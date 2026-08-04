@@ -229,11 +229,13 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
   it('current UI callers never pass stateUpdate (false/null only via public API)', () => {
     const aiPanel = readFileSync(AI_PANEL_SOURCE, 'utf8');
     const concierge = readFileSync(CONCIERGE_PANEL_SOURCE, 'utf8');
-    expect(aiPanel).toMatch(/processConversationTurn\(/);
+    // Production AI panel uses the Consultant Turn Governor (authoritative path).
+    expect(aiPanel).toMatch(/runConsultantTurn\(/);
+    expect(aiPanel).toMatch(/from ['"].*conversation-consultant['"]/);
     expect(concierge).toMatch(/processConversationTurn\(/);
-    // Semantic interpretation path injects validated stateUpdate + skipExtraction.
-    expect(aiPanel).toMatch(/stateUpdate:\s*interpretation\.stateUpdate/);
-    expect(aiPanel).toMatch(/skipExtraction:\s*true/);
+    // Governor owns interpretation + commits; panel does not inject stateUpdate.
+    expect(aiPanel.includes('stateUpdate:')).toBe(false);
+    expect(aiPanel.includes('skipExtraction')).toBe(false);
     expect(concierge.includes('stateUpdate')).toBe(false);
   });
 

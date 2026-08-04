@@ -42,6 +42,11 @@ export type ProcessConversationTurnInput = {
    * preserves extractor-based tests and fallback callers.
    */
   skipExtraction?: boolean;
+  /**
+   * When provided, use this reply instead of the form-wizard reply planner.
+   * Used by the Consultant Turn Governor production path.
+   */
+  replyOverride?: string;
 };
 
 export type ProcessConversationTurnResult = {
@@ -103,11 +108,14 @@ export function processConversationTurn(
     transcript: base.transcript,
   };
 
-  const reply = generateIntegratedConversationReply({
-    message: input.message,
-    state: provisionalState,
-    previousState: base,
-  });
+  const reply =
+    input.replyOverride !== undefined
+      ? input.replyOverride
+      : generateIntegratedConversationReply({
+          message: input.message,
+          state: provisionalState,
+          previousState: base,
+        });
   const messageInterpreted = hasSupportedTravelFieldChange(base, provisionalState);
 
   const userEntry: ConversationTranscriptEntry = {

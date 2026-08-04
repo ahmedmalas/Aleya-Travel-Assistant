@@ -2,10 +2,9 @@ import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'reac
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
   createInitialConversationCoreState,
-  processConversationTurn,
   type ConversationCoreState,
 } from '../../features/conversation-core';
-import { interpretTravelUtterance } from '../../features/conversation-interpretation';
+import { runConsultantTurn } from '../../features/conversation-consultant';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
 
@@ -118,21 +117,13 @@ export function AiPlanningPanel() {
   const runEngineTurn = async (request: string) => {
     const userMessageAt = new Date();
     const assistantMessageAt = new Date();
-    const interpretation = await interpretTravelUtterance({
-      message: request,
-      currentState: coreState,
-      recentHistory: coreState.transcript,
-      mode: 'auto',
-    });
-    const result = processConversationTurn({
+    const result = await runConsultantTurn({
       message: request,
       state: coreState,
       userEntryId: createId(),
       assistantEntryId: createId(),
       userMessageAt,
       assistantMessageAt,
-      stateUpdate: interpretation.stateUpdate,
-      skipExtraction: true,
     });
     setCoreState(result.state);
     reply(result.reply);
@@ -177,16 +168,16 @@ export function AiPlanningPanel() {
           Aleya AI Assistant
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Semantic interpretation reads your message, trip state, and active
-          missing requirement, then deterministic controls merge and progress
-          the conversation.
+          Semantic interpretation builds a SituationModel; the Consultant Turn
+          Governor commits only unambiguous facts, clarifies when needed, and
+          chooses one goal-driven act — not a fixed form ladder.
         </p>
         <aside
           className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"
           data-testid="conversation-core-boundary"
           aria-label="Conversation core boundary"
         >
-          <p>Boundary: conversation-core</p>
+          <p>Boundary: conversation-consultant (Turn Governor)</p>
           <p>Status: {coreState.status}</p>
           <p>Turn count: {coreState.turnCount}</p>
           <p>Conversation: {coreState.conversationId}</p>
