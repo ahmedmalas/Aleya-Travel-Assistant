@@ -31,3 +31,6 @@ export {
   type RunConsultantTurnInput,
   type RunConsultantTurnResult,
 } from './runConsultantTurn';
+
+/** Phase 1 architecture schemas/traces — diagnostic only; behaviour switch off. */
+export type { ArchitectureTurnTrace } from '../conversation-architecture';

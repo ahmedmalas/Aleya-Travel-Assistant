@@ -1,4 +1,8 @@
 import {
+  buildArchitectureTurnTrace,
+  type ArchitectureTurnTrace,
+} from '../conversation-architecture';
+import {
   processConversationTurn,
   type ConversationCoreState,
   type ConversationStateUpdate,
@@ -34,6 +38,11 @@ export type RunConsultantTurnResult = {
   situation: SituationModel;
   act: ConsultantAct;
   stateUpdate: ConversationStateUpdate;
+  /**
+   * Phase 1 diagnostic architecture trace only.
+   * Never used for commits, act selection, or UI. behaviourSwitchActive is false.
+   */
+  architectureTrace: ArchitectureTurnTrace;
 };
 
 /**
@@ -156,11 +165,18 @@ export async function runConsultantTurn(
     replyOverride: reply,
   });
 
+  // Phase 1: diagnostic trace only — does not influence state, reply, or act.
+  const architectureTrace = buildArchitectureTurnTrace({
+    message: input.message,
+    currentState: previousState,
+  });
+
   return {
     state: result.state,
     reply: result.reply,
     situation,
     act,
     stateUpdate,
+    architectureTrace,
   };
 }

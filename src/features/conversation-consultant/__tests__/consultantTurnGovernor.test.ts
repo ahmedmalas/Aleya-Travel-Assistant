@@ -140,4 +140,23 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
     expect(panel).not.toMatch(/selectConversationFollowUpQuestion/);
     expect(panel).not.toMatch(/interpretTravelUtterance/);
   });
+
+  it('attaches Phase 1 diagnostic architectureTrace without changing act/reply', async () => {
+    const r = await turn(
+      'I want to go Sydney Bangkok Beirut',
+      createState(),
+      0,
+    );
+    expect(r.act.kind).toBe('clarify');
+    expect(r.reply).toBe(
+      'Are you starting from Sydney, or is Sydney your first destination?',
+    );
+    expect(r.architectureTrace).toMatchObject({
+      phase: 1,
+      diagnosticOnly: true,
+      behaviourSwitchActive: false,
+      committer: { active: false, appliedOperationCount: 0 },
+      planner: { operations: [] },
+    });
+  });
 });
