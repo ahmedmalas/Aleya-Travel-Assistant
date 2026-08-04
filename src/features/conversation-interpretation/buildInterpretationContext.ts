@@ -17,6 +17,7 @@ export type InterpretationTravelSnapshot = {
   restaurantPreference: string | null;
   conversationComplete: boolean | null;
   searchExecutionRequested: boolean | null;
+  amendmentResumeSearchReady: boolean | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -65,7 +66,7 @@ const REQUIREMENT_MEANING: Record<ActiveTravelRequirement, string> = {
   infantCount:
     'Traveller still needs infant count. Zero-quantity language (none / no / zero) means 0 infants for this active slot — not conversation completion.',
   services: 'Traveller still needs which services to search (flights, hotel, car).',
-  none: 'Core trip slots are filled; interpret corrections, preferences, extras, conversation-complete, or confirm-to-search signals.',
+  none: 'Core trip slots are filled; interpret corrections, amendments (reopen/replace fields or add/remove services), extras, conversation-complete, or confirm-to-search signals.',
 };
 
 function snapshotTravelState(state: ConversationCoreState): InterpretationTravelSnapshot {
@@ -85,6 +86,7 @@ function snapshotTravelState(state: ConversationCoreState): InterpretationTravel
     restaurantPreference: state.restaurantPreference,
     conversationComplete: state.conversationComplete,
     searchExecutionRequested: state.searchExecutionRequested,
+    amendmentResumeSearchReady: state.amendmentResumeSearchReady,
     destinationResolutionStatus: state.destinationResolutionStatus,
     originResolutionStatus: state.originResolutionStatus,
   };

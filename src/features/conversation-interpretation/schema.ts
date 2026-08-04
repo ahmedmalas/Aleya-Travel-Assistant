@@ -55,6 +55,24 @@ export const travelSemanticInterpretationSchema = z.object({
       ]),
     )
     .default([]),
+  /**
+   * Fields to reopen (clear to null) for amendment without a replacement
+   * value. Mapping exits search-ready terminal state and asks only for
+   * these slots while preserving unaffected trip details.
+   */
+  reopenFields: z
+    .array(
+      z.enum([
+        'destination',
+        'origin',
+        'departureDate',
+        'returnDate',
+        'adultCount',
+        'childCount',
+        'infantCount',
+      ]),
+    )
+    .default([]),
   confirmation: z.boolean().nullable(),
   /**
    * Traveller indicated they are done providing optional trip details
@@ -68,6 +86,11 @@ export const travelSemanticInterpretationSchema = z.object({
    * this advances ready → search execution so the summary is not re-emitted.
    */
   searchExecutionRequested: z.boolean().nullable(),
+  /**
+   * After an amendment, restore search-ready (conversationComplete) once
+   * core trip fields — and required passenger counts — are present again.
+   */
+  amendmentResumeSearchReady: z.boolean().nullable(),
   ambiguityNotes: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1),
 });
@@ -98,9 +121,11 @@ export const emptySemanticInterpretation = (): TravelSemanticInterpretation => (
   restaurantPreference: null,
   preferences: [],
   removals: [],
+  reopenFields: [],
   confirmation: null,
   conversationComplete: null,
   searchExecutionRequested: null,
+  amendmentResumeSearchReady: null,
   ambiguityNotes: [],
   confidence: 0,
 });

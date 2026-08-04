@@ -21,6 +21,7 @@ export {
   editDistance,
 } from './serviceRecognitionSemantics';
 export { extractRelativeDurationMeaning } from './relativeDurationSemantics';
+export { resolveAmendmentSemantics } from './amendmentSemantics';
 export { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 export { resolveContextualConfirmationSemantics } from './contextualConfirmationSemantics';
 export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';

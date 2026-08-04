@@ -108,6 +108,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       accessibleTravelRequested: true,
       conversationComplete: null,
       searchExecutionRequested: null,
+      amendmentResumeSearchReady: null,
       destinationResolutionStatus: null,
       originResolutionStatus: null,
     });
@@ -154,6 +155,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       accessibleTravelRequested: true,
       conversationComplete: null,
       searchExecutionRequested: null,
+      amendmentResumeSearchReady: null,
       destinationResolutionStatus: null,
       originResolutionStatus: null,
     });

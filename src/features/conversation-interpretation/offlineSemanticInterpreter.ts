@@ -7,6 +7,7 @@ import {
 import type { ActiveTravelRequirement } from './types';
 import type { ConversationCoreState, ConversationTranscriptEntry } from '../conversation-core';
 import { buildInterpretationContext } from './buildInterpretationContext';
+import { resolveAmendmentSemantics } from './amendmentSemantics';
 import { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 import { resolveContextualConfirmationSemantics } from './contextualConfirmationSemantics';
 import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
@@ -170,6 +171,34 @@ export function interpretOfflineSemantic(input: {
   const contextualConfirmation = resolveContextualConfirmationSemantics(context);
   if (contextualConfirmation !== null) {
     return contextualConfirmation;
+  }
+
+  // Amendments exit search-ready / search-execution terminal states and reopen
+  // only the named slots (or apply in-utterance replacements / service changes).
+  const amendment = resolveAmendmentSemantics(context);
+  if (amendment !== null) {
+    const dateFieldNote = amendment.ambiguityNotes.find((note) =>
+      note.startsWith('dateAmendmentField:'),
+    );
+    if (dateFieldNote) {
+      const field = dateFieldNote.slice('dateAmendmentField:'.length);
+      const date = parseIsoLikeDate(message, now);
+      if (date !== null) {
+        if (field === 'returnDate') amendment.returnDate = date;
+        else amendment.departureDate = date;
+      } else {
+        // No parseable date → reopen the targeted date slot(s).
+        if (field === 'returnDate' || field === 'departureDate') {
+          amendment.reopenFields = [
+            ...new Set([
+              ...amendment.reopenFields,
+              field as 'departureDate' | 'returnDate',
+            ]),
+          ];
+        }
+      }
+    }
+    return amendment;
   }
 
   const contextualCompletion = resolveContextualCompletionSemantics(context);

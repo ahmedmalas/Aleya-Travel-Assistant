@@ -46,13 +46,26 @@ export function selectConversationReplyComponents(
   const { state, classification } = input;
   const messageInterpreted =
     selectConversationMessageInterpreted(classification);
-  const selected = selectConversationAcknowledgement(state, classification);
-  const acknowledgement = selected?.text ?? null;
-  const acknowledgementEvent = selected?.event ?? null;
   const followUpQuestion = selectConversationFollowUpQuestion(state);
   const continuationPrompt = selectConversationContinuationPrompt({
     followUpQuestion,
   });
+
+  // During an open amendment, ask only for the reopened requirement.
+  // Clearing a slot to reopen it must not narrate as a capability/field removal.
+  if (state.amendmentResumeSearchReady === true) {
+    return {
+      acknowledgement: null,
+      acknowledgementEvent: null,
+      followUpQuestion,
+      continuationPrompt,
+      messageInterpreted,
+    };
+  }
+
+  const selected = selectConversationAcknowledgement(state, classification);
+  const acknowledgement = selected?.text ?? null;
+  const acknowledgementEvent = selected?.event ?? null;
 
   return {
     acknowledgement,

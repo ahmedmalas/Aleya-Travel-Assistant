@@ -115,6 +115,12 @@ export type ConversationCoreState = {
    */
   searchExecutionRequested: boolean | null;
   /**
+   * When true, an amendment reopened planning; once core trip fields (and
+   * required passenger counts) are present again, mapping restores
+   * conversationComplete / search-ready. Never inferred from message text here.
+   */
+  amendmentResumeSearchReady: boolean | null;
+  /**
    * TLI enrichment status for destination. Unresolved/ambiguous places
    * remain in `destination` but are unsafe for provider search.
    */
@@ -175,6 +181,7 @@ export type ConversationStateUpdate = {
   accessibleTravelRequested?: boolean | null;
   conversationComplete?: boolean | null;
   searchExecutionRequested?: boolean | null;
+  amendmentResumeSearchReady?: boolean | null;
   destinationResolutionStatus?:
     | 'resolved'
     | 'unresolved'
@@ -272,6 +279,7 @@ export function createInitialConversationCoreState(
     accessibleTravelRequested: null,
     conversationComplete: null,
     searchExecutionRequested: null,
+    amendmentResumeSearchReady: null,
     destinationResolutionStatus: null,
     originResolutionStatus: null,
     transcript: [],

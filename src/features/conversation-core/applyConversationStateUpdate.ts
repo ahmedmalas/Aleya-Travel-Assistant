@@ -41,6 +41,7 @@ export type AppliedConversationTravelState = {
   accessibleTravelRequested: boolean | null;
   conversationComplete: boolean | null;
   searchExecutionRequested: boolean | null;
+  amendmentResumeSearchReady: boolean | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -204,6 +205,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.searchExecutionRequested !== undefined
         ? stateUpdate.searchExecutionRequested
         : currentState.searchExecutionRequested,
+    amendmentResumeSearchReady:
+      stateUpdate?.amendmentResumeSearchReady !== undefined
+        ? stateUpdate.amendmentResumeSearchReady
+        : currentState.amendmentResumeSearchReady,
     destinationResolutionStatus:
       stateUpdate?.destinationResolutionStatus !== undefined
         ? stateUpdate.destinationResolutionStatus

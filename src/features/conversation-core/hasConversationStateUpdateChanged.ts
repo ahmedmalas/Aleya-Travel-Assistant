@@ -40,6 +40,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'accessibleTravelRequested',
   'conversationComplete',
   'searchExecutionRequested',
+  'amendmentResumeSearchReady',
   'destinationResolutionStatus',
   'originResolutionStatus',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;

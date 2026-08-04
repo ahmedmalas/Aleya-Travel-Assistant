@@ -80,9 +80,23 @@ const semanticSchema = z.object({
       ]),
     )
     .default([]),
+  reopenFields: z
+    .array(
+      z.enum([
+        'destination',
+        'origin',
+        'departureDate',
+        'returnDate',
+        'adultCount',
+        'childCount',
+        'infantCount',
+      ]),
+    )
+    .default([]),
   confirmation: z.boolean().nullable(),
   conversationComplete: z.boolean().nullable(),
   searchExecutionRequested: z.boolean().nullable(),
+  amendmentResumeSearchReady: z.boolean().nullable(),
   ambiguityNotes: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1),
 });
@@ -128,6 +142,7 @@ function buildPrompt(input: {
     '- keep everything else → only update the field being changed; leave all other fields null',
     '- completion signals (that\'s it / nothing else / no / all done / that\'s all) while optional follow-ups are open → set conversationComplete true',
     '- when trip-ready / ready to search when you confirm: confirmation class (confirmed / yes / go ahead / proceed / search / looks good) → confirmation true AND searchExecutionRequested true',
+    '- amendment class (change/update + field, or add/remove service), including after search-ready: amendmentResumeSearchReady true, conversationComplete false; no replacement → reopenFields; replacement supplied → set new value; add hotel → accommodationRequested; remove car → removals carHire; leave unaffected fields null',
     '- traveller counts scoped by active requirement: self-party (myself / just me / alone) → adultCount 1; zero-quantity (none / no / zero) on child/infant slot → 0 for that slot (not conversationComplete); bare cardinals fill the active count slot',
     '- multi-intent service lists (hotel + flights + car hire, etc.): set EVERY recognised service flag true in one turn; tolerate minor spelling mistakes; do not keep only the first service',
     '',

@@ -20,6 +20,51 @@ function addDaysIso(isoDate: string, days: number): string | null {
   return parsed.toISOString().slice(0, 10);
 }
 
+function pickMerged<T>(
+  update: ConversationStateUpdate,
+  key: keyof ConversationStateUpdate,
+  current: ConversationCoreState,
+): T {
+  if (Object.prototype.hasOwnProperty.call(update, key)) {
+    return update[key] as T;
+  }
+  return current[key as keyof ConversationCoreState] as T;
+}
+
+/**
+ * Search-ready eligibility after an amendment: core places/dates present and
+ * required passenger counts filled when flights or accommodation are requested.
+ */
+function isSearchReadyEligible(snapshot: {
+  destination: string | null;
+  origin: string | null;
+  departureDate: string | null;
+  returnDate: string | null;
+  flightsRequested: boolean | null;
+  accommodationRequested: boolean | null;
+  adultCount: number | null;
+  childCount: number | null;
+  infantCount: number | null;
+}): boolean {
+  if (
+    snapshot.destination === null ||
+    snapshot.origin === null ||
+    snapshot.departureDate === null ||
+    snapshot.returnDate === null
+  ) {
+    return false;
+  }
+  const passengerRelevant =
+    snapshot.flightsRequested === true ||
+    snapshot.accommodationRequested === true;
+  if (!passengerRelevant) return true;
+  return (
+    snapshot.adultCount !== null &&
+    snapshot.childCount !== null &&
+    snapshot.infantCount !== null
+  );
+}
+
 /**
  * Deterministic validation + mapping from semantic interpretation → stateUpdate.
  * AI never writes canonical state directly.
@@ -175,6 +220,44 @@ export function validateAndMapSemanticInterpretation(
     }
   }
 
+  // Amendment reopen: clear named slots after value writes so reopen wins
+  // when both appear (reopen-only utterances have null values).
+  for (const field of semantic.reopenFields) {
+    switch (field) {
+      case 'destination':
+        stateUpdate.destination = null;
+        stateUpdate.destinationResolutionStatus = null;
+        break;
+      case 'origin':
+        stateUpdate.origin = null;
+        stateUpdate.originResolutionStatus = null;
+        break;
+      case 'departureDate':
+        stateUpdate.departureDate = null;
+        break;
+      case 'returnDate':
+        stateUpdate.returnDate = null;
+        break;
+      case 'adultCount':
+        stateUpdate.adultCount = null;
+        break;
+      case 'childCount':
+        stateUpdate.childCount = null;
+        break;
+      case 'infantCount':
+        stateUpdate.infantCount = null;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const isAmendmentTurn =
+    semantic.reopenFields.length > 0 ||
+    semantic.amendmentResumeSearchReady === true ||
+    (semantic.removals.length > 0 &&
+      semantic.amendmentResumeSearchReady === true);
+
   if (semantic.conversationComplete === true) {
     stateUpdate.conversationComplete = true;
   } else if (semantic.conversationComplete === false) {
@@ -187,6 +270,22 @@ export function validateAndMapSemanticInterpretation(
     stateUpdate.conversationComplete = true;
   } else if (semantic.searchExecutionRequested === false) {
     stateUpdate.searchExecutionRequested = false;
+  }
+
+  if (semantic.amendmentResumeSearchReady === true) {
+    stateUpdate.amendmentResumeSearchReady = true;
+  } else if (semantic.amendmentResumeSearchReady === false) {
+    stateUpdate.amendmentResumeSearchReady = false;
+  }
+
+  // Amendments always leave search-execution and, when slots reopen, leave
+  // search-ready until the amendment is resolved.
+  if (isAmendmentTurn || semantic.reopenFields.length > 0) {
+    stateUpdate.searchExecutionRequested = false;
+    if (semantic.reopenFields.length > 0) {
+      stateUpdate.conversationComplete = false;
+      stateUpdate.amendmentResumeSearchReady = true;
+    }
   }
 
   // Origin must not equal destination when both set after merge.
@@ -208,6 +307,64 @@ export function validateAndMapSemanticInterpretation(
       delete stateUpdate.origin;
       delete stateUpdate.originResolutionStatus;
     }
+  }
+
+  const mergedForReady = {
+    destination: pickMerged<string | null>(
+      stateUpdate,
+      'destination',
+      currentState,
+    ),
+    origin: pickMerged<string | null>(stateUpdate, 'origin', currentState),
+    departureDate: pickMerged<string | null>(
+      stateUpdate,
+      'departureDate',
+      currentState,
+    ),
+    returnDate: pickMerged<string | null>(
+      stateUpdate,
+      'returnDate',
+      currentState,
+    ),
+    flightsRequested: pickMerged<boolean | null>(
+      stateUpdate,
+      'flightsRequested',
+      currentState,
+    ),
+    accommodationRequested: pickMerged<boolean | null>(
+      stateUpdate,
+      'accommodationRequested',
+      currentState,
+    ),
+    adultCount: pickMerged<number | null>(
+      stateUpdate,
+      'adultCount',
+      currentState,
+    ),
+    childCount: pickMerged<number | null>(
+      stateUpdate,
+      'childCount',
+      currentState,
+    ),
+    infantCount: pickMerged<number | null>(
+      stateUpdate,
+      'infantCount',
+      currentState,
+    ),
+  };
+
+  const resumePending =
+    pickMerged<boolean | null>(
+      stateUpdate,
+      'amendmentResumeSearchReady',
+      currentState,
+    ) === true;
+
+  // Restore search-ready once the amendment leaves the trip complete again.
+  if (resumePending && isSearchReadyEligible(mergedForReady)) {
+    stateUpdate.conversationComplete = true;
+    stateUpdate.amendmentResumeSearchReady = false;
+    stateUpdate.searchExecutionRequested = false;
   }
 
   return { stateUpdate, warnings };
