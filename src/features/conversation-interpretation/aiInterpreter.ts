@@ -3,52 +3,24 @@ import {
   travelSemanticInterpretationSchema,
   type TravelSemanticInterpretation,
 } from './schema';
+import {
+  buildInterpretationContext,
+  type TravelInterpretationContext,
+} from './buildInterpretationContext';
+import { buildInterpretationPrompt } from './buildInterpretationPrompt';
 import type { ActiveTravelRequirement } from './types';
 import type { ConversationCoreState, ConversationTranscriptEntry } from '../conversation-core';
 
 const DEFAULT_MODEL = 'openai/gpt-5.4';
 
-function historyBlock(
-  history: ConversationTranscriptEntry[] | undefined,
-): string {
-  if (!history || history.length === 0) return '(none)';
-  return history
-    .slice(-8)
-    .map((entry) => `${entry.role}: ${entry.message}`)
-    .join('\n');
-}
-
-function buildPrompt(input: {
+export function createTravelInterpretationContext(input: {
   message: string;
   currentState: ConversationCoreState;
   activeRequirement: ActiveTravelRequirement;
   recentHistory?: ConversationTranscriptEntry[];
-}): string {
-  return [
-    'You are the semantic travel interpretation layer for Aleya Travel.',
-    'Extract structured travel meaning from the user message.',
-    'Respect conversational context: active missing requirement owns bare place answers.',
-    'Understand natural language including missing "to", corrections, removals, times, and night stays.',
-    'Return only fields you can justify; use null when unknown.',
-    'Place names should be plain strings (canonicalisation happens elsewhere).',
-    'Dates must be ISO YYYY-MM-DD when you can resolve them; otherwise null.',
-    '',
-    `Active missing requirement: ${input.activeRequirement}`,
-    `Current state JSON: ${JSON.stringify({
-      destination: input.currentState.destination,
-      origin: input.currentState.origin,
-      departureDate: input.currentState.departureDate,
-      returnDate: input.currentState.returnDate,
-      adultCount: input.currentState.adultCount,
-      childCount: input.currentState.childCount,
-      infantCount: input.currentState.infantCount,
-      flightsRequested: input.currentState.flightsRequested,
-      accommodationRequested: input.currentState.accommodationRequested,
-      carHireRequested: input.currentState.carHireRequested,
-    })}`,
-    `Recent history:\n${historyBlock(input.recentHistory)}`,
-    `User message: ${input.message}`,
-  ].join('\n');
+  now?: Date;
+}): TravelInterpretationContext {
+  return buildInterpretationContext(input);
 }
 
 /**
@@ -60,12 +32,24 @@ export async function interpretWithAi(input: {
   activeRequirement: ActiveTravelRequirement;
   recentHistory?: ConversationTranscriptEntry[];
   model?: string;
+  now?: Date;
+  /** Optional pre-built context (tests / shared path). */
+  context?: TravelInterpretationContext;
 }): Promise<TravelSemanticInterpretation | null> {
   try {
+    const context =
+      input.context ??
+      buildInterpretationContext({
+        message: input.message,
+        currentState: input.currentState,
+        activeRequirement: input.activeRequirement,
+        recentHistory: input.recentHistory,
+        now: input.now,
+      });
     const result = await generateText({
       model: input.model ?? DEFAULT_MODEL,
       output: Output.object({ schema: travelSemanticInterpretationSchema }),
-      prompt: buildPrompt(input),
+      prompt: buildInterpretationPrompt(context),
       temperature: 0,
     });
     return result.output ?? null;
@@ -75,7 +59,7 @@ export async function interpretWithAi(input: {
 }
 
 /**
- * Browser/client path: POST to serverless interpret API.
+ * Browser/client path: POST to serverless interpret API with full context.
  */
 export async function interpretWithAiViaApi(input: {
   message: string;
@@ -83,31 +67,38 @@ export async function interpretWithAiViaApi(input: {
   activeRequirement: ActiveTravelRequirement;
   recentHistory?: ConversationTranscriptEntry[];
   endpoint?: string;
+  now?: Date;
+  context?: TravelInterpretationContext;
 }): Promise<TravelSemanticInterpretation | null> {
   const endpoint = input.endpoint ?? '/api/conversation/interpret';
+  const context =
+    input.context ??
+    buildInterpretationContext({
+      message: input.message,
+      currentState: input.currentState,
+      activeRequirement: input.activeRequirement,
+      recentHistory: input.recentHistory,
+      now: input.now,
+    });
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: input.message,
-        currentState: {
-          destination: input.currentState.destination,
-          origin: input.currentState.origin,
-          departureDate: input.currentState.departureDate,
-          returnDate: input.currentState.returnDate,
-          adultCount: input.currentState.adultCount,
-          childCount: input.currentState.childCount,
-          infantCount: input.currentState.infantCount,
-          flightsRequested: input.currentState.flightsRequested,
-          accommodationRequested: input.currentState.accommodationRequested,
-          carHireRequested: input.currentState.carHireRequested,
-        },
-        activeRequirement: input.activeRequirement,
-        recentHistory: (input.recentHistory ?? []).slice(-8).map((entry) => ({
+        message: context.message,
+        activeRequirement: context.activeRequirement,
+        currentState: context.travelState,
+        recentHistory: context.recentHistory.map((entry) => ({
           role: entry.role,
           message: entry.message,
         })),
+        interpretationContext: {
+          todayIso: context.todayIso,
+          activeRequirementMeaning: context.activeRequirementMeaning,
+          temporalAnchors: context.temporalAnchors,
+          lastAssistantMessage: context.lastAssistantMessage,
+          lastUserMessageBeforeCurrent: context.lastUserMessageBeforeCurrent,
+        },
       }),
     });
     if (!response.ok) return null;

@@ -1,0 +1,46 @@
+import type { TravelInterpretationContext } from './buildInterpretationContext';
+
+/**
+ * Shared consultant-style prompt for the AI semantic interpretation layer.
+ * Used by server generateText and the /api/conversation/interpret route.
+ */
+export function buildInterpretationPrompt(
+  context: TravelInterpretationContext,
+): string {
+  const history =
+    context.recentHistory.length === 0
+      ? '(none)'
+      : context.recentHistory
+          .map((turn) => `${turn.role}: ${turn.message}`)
+          .join('\n');
+
+  return [
+    'You are Aleya’s semantic travel interpretation layer — reason like an experienced travel consultant.',
+    'Read the user message together with active missing requirement, full travel state, temporal anchors, and recent history.',
+    'Resolve the user’s intended meaning into structured fields. Do not ask follow-up questions in this layer.',
+    '',
+    'Relative and contextual language MUST be resolved against temporal anchors and conversation state, including:',
+    '- weekday-of-week references (e.g. Monday of that week) → ISO date in the anchor week; if filling returnDate and that weekday is before departure, use the same weekday in the following week',
+    '- the day after / N days later / four nights later → compute from the primary anchor or departure date',
+    '- that weekend → Saturday (and prefer returnDate Sunday when return is the active slot and only one date is needed, use Saturday as the stay start / return Sunday when night count is implied)',
+    '- same time → copy prior time preference into departureTimePreference or returnTimePreference for the active leg',
+    '- the earlier flight → preferences note; do not invent airports',
+    '- change it to Friday → correct the active/date-being-discussed field to that weekday in the same week as the current value',
+    '- keep everything else → only update the field being changed; leave all other fields null',
+    '',
+    'Dates must be ISO YYYY-MM-DD when resolvable. Place names as plain strings. Use null when unknown.',
+    'Only set fields the user is changing or newly supplying. Null preserves prior canonical state after validation.',
+    'Respect active missing requirement for bare answers (a bare place while origin is missing is origin, etc.).',
+    'Confidence should reflect how clearly the meaning resolved (0.8+ when dates resolve cleanly from anchors).',
+    '',
+    `Today (ISO): ${context.todayIso}`,
+    `Active missing requirement: ${context.activeRequirement}`,
+    `Active requirement meaning: ${context.activeRequirementMeaning}`,
+    `Temporal anchors JSON: ${JSON.stringify(context.temporalAnchors)}`,
+    `Full travel state JSON: ${JSON.stringify(context.travelState)}`,
+    `Last assistant message: ${context.lastAssistantMessage ?? '(none)'}`,
+    `Previous user message: ${context.lastUserMessageBeforeCurrent ?? '(none)'}`,
+    `Recent conversation history:\n${history}`,
+    `Current user message: ${context.message}`,
+  ].join('\n');
+}

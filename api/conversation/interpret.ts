@@ -5,19 +5,29 @@ import { z } from 'zod';
 /**
  * Serverless AI interpretation endpoint.
  * Uses Vercel AI Gateway model routing (OIDC on Vercel; AI_GATEWAY_API_KEY locally).
+ * Receives the full interpretation context package from the client.
  */
+
+const historySchema = z.array(
+  z.object({
+    role: z.enum(['user', 'assistant']),
+    message: z.string(),
+  }),
+);
 
 const requestSchema = z.object({
   message: z.string().min(1).max(4000),
   activeRequirement: z.string(),
   currentState: z.record(z.string(), z.unknown()),
-  recentHistory: z
-    .array(
-      z.object({
-        role: z.enum(['user', 'assistant']),
-        message: z.string(),
-      }),
-    )
+  recentHistory: historySchema.optional(),
+  interpretationContext: z
+    .object({
+      todayIso: z.string(),
+      activeRequirementMeaning: z.string(),
+      temporalAnchors: z.record(z.string(), z.unknown()),
+      lastAssistantMessage: z.string().nullable(),
+      lastUserMessageBeforeCurrent: z.string().nullable(),
+    })
     .optional(),
 });
 
@@ -69,6 +79,61 @@ const semanticSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
+function buildPrompt(input: {
+  message: string;
+  activeRequirement: string;
+  currentState: Record<string, unknown>;
+  recentHistory?: Array<{ role: string; message: string }>;
+  interpretationContext?: {
+    todayIso: string;
+    activeRequirementMeaning: string;
+    temporalAnchors: Record<string, unknown>;
+    lastAssistantMessage: string | null;
+    lastUserMessageBeforeCurrent: string | null;
+  };
+}): string {
+  const history =
+    input.recentHistory && input.recentHistory.length > 0
+      ? input.recentHistory
+          .slice(-16)
+          .map((entry) => `${entry.role}: ${entry.message}`)
+          .join('\n')
+      : '(none)';
+
+  const ctx = input.interpretationContext;
+  const todayIso = ctx?.todayIso ?? new Date().toISOString().slice(0, 10);
+
+  return [
+    'You are Aleya’s semantic travel interpretation layer — reason like an experienced travel consultant.',
+    'Read the user message together with active missing requirement, full travel state, temporal anchors, and recent history.',
+    'Resolve the user’s intended meaning into structured fields. Do not ask follow-up questions in this layer.',
+    '',
+    'Relative and contextual language MUST be resolved against temporal anchors and conversation state, including:',
+    '- weekday-of-week references (e.g. Monday of that week) → ISO date in the anchor week; if filling returnDate and that weekday is before departure, use the same weekday in the following week',
+    '- the day after / N days later / four nights later → compute from the primary anchor or departure date',
+    '- that weekend → Saturday/Sunday of the anchor week (return prefers Sunday when return is active)',
+    '- same time → copy prior time preference into the active leg time field',
+    '- the earlier flight → preferences note; do not invent airports',
+    '- change it to Friday → correct the active/date-being-discussed field to that weekday in the same week as the current value',
+    '- keep everything else → only update the field being changed; leave all other fields null',
+    '',
+    'Dates must be ISO YYYY-MM-DD when resolvable. Place names as plain strings. Use null when unknown.',
+    'Only set fields the user is changing or newly supplying. Null preserves prior canonical state after validation.',
+    'Respect active missing requirement for bare answers.',
+    'Confidence should reflect how clearly the meaning resolved (0.8+ when dates resolve cleanly from anchors).',
+    '',
+    `Today (ISO): ${todayIso}`,
+    `Active missing requirement: ${input.activeRequirement}`,
+    `Active requirement meaning: ${ctx?.activeRequirementMeaning ?? '(derive from requirement)'}`,
+    `Temporal anchors JSON: ${JSON.stringify(ctx?.temporalAnchors ?? {})}`,
+    `Full travel state JSON: ${JSON.stringify(input.currentState)}`,
+    `Last assistant message: ${ctx?.lastAssistantMessage ?? '(none)'}`,
+    `Previous user message: ${ctx?.lastUserMessageBeforeCurrent ?? '(none)'}`,
+    `Recent conversation history:\n${history}`,
+    `Current user message: ${input.message}`,
+  ].join('\n');
+}
+
 export default async function handler(
   request: VercelRequest,
   response: VercelResponse,
@@ -84,30 +149,21 @@ export default async function handler(
     return;
   }
 
-  const { message, activeRequirement, currentState, recentHistory } = parsed.data;
+  const { message, activeRequirement, currentState, recentHistory, interpretationContext } =
+    parsed.data;
 
   try {
-    const history =
-      recentHistory && recentHistory.length > 0
-        ? recentHistory
-            .slice(-8)
-            .map((entry) => `${entry.role}: ${entry.message}`)
-            .join('\n')
-        : '(none)';
-
     const result = await generateText({
       model: 'openai/gpt-5.4',
       temperature: 0,
       output: Output.object({ schema: semanticSchema }),
-      prompt: [
-        'You are the semantic travel interpretation layer for Aleya Travel.',
-        'Extract structured travel meaning. Use null when unknown.',
-        'Dates as ISO YYYY-MM-DD when resolvable.',
-        `Active missing requirement: ${activeRequirement}`,
-        `Current state JSON: ${JSON.stringify(currentState)}`,
-        `Recent history:\n${history}`,
-        `User message: ${message}`,
-      ].join('\n'),
+      prompt: buildPrompt({
+        message,
+        activeRequirement,
+        currentState,
+        recentHistory,
+        interpretationContext,
+      }),
     });
 
     if (!result.output) {

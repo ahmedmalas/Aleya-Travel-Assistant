@@ -12,6 +12,12 @@ export {
   deriveActiveTravelRequirement,
 } from './deriveActiveRequirement';
 export {
+  buildInterpretationContext,
+  type TravelInterpretationContext,
+} from './buildInterpretationContext';
+export { buildInterpretationPrompt } from './buildInterpretationPrompt';
+export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
+export {
   travelSemanticInterpretationSchema,
   emptySemanticInterpretation,
   type TravelSemanticInterpretation,

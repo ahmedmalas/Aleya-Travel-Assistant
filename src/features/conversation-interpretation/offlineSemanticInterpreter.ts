@@ -5,7 +5,9 @@ import {
   type TravelSemanticInterpretation,
 } from './schema';
 import type { ActiveTravelRequirement } from './types';
-import type { ConversationCoreState } from '../conversation-core';
+import type { ConversationCoreState, ConversationTranscriptEntry } from '../conversation-core';
+import { buildInterpretationContext } from './buildInterpretationContext';
+import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 
 /**
  * Offline semantic adapter — place-aware slot filling via travel-location-intelligence
@@ -141,11 +143,26 @@ export function interpretOfflineSemantic(input: {
   message: string;
   currentState: ConversationCoreState;
   activeRequirement: ActiveTravelRequirement;
+  recentHistory?: ConversationTranscriptEntry[];
   now?: Date;
 }): TravelSemanticInterpretation {
   const now = input.now ?? new Date();
   const message = input.message;
   const folded = asciiFold(message);
+
+  // Contextual temporal / reference semantics first (consultant-style anchors).
+  const context = buildInterpretationContext({
+    message: input.message,
+    currentState: input.currentState,
+    activeRequirement: input.activeRequirement,
+    recentHistory: input.recentHistory,
+    now,
+  });
+  const contextual = resolveContextualTemporalSemantics(context);
+  if (contextual !== null) {
+    return contextual;
+  }
+
   const semantic = emptySemanticInterpretation();
   semantic.confidence = 0.55;
   semantic.intent = 'provide_info';

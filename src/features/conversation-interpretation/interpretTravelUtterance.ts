@@ -1,6 +1,7 @@
 import { canonicalizeSemanticPlaces } from './canonicalizePlaces';
 import { deriveActiveTravelRequirement } from './deriveActiveRequirement';
 import { interpretWithAi, interpretWithAiViaApi } from './aiInterpreter';
+import { buildInterpretationContext } from './buildInterpretationContext';
 import { interpretOfflineSemantic } from './offlineSemanticInterpreter';
 import { interpretWithRegexFallback } from './regexFallbackInterpreter';
 import { emptySemanticInterpretation } from './schema';
@@ -10,6 +11,8 @@ import type {
   InterpretationSource,
 } from './types';
 import { validateAndMapSemanticInterpretation } from './validateAndMap';
+import type { TravelSemanticInterpretation } from './schema';
+import type { TravelInterpretationContext } from './buildInterpretationContext';
 
 function isServerRuntime(): boolean {
   return typeof window === 'undefined';
@@ -19,8 +22,8 @@ function isServerRuntime(): boolean {
  * Authoritative semantic interpretation boundary for Aleya conversation turns.
  *
  * Order:
- * 1. AI structured interpretation (Gateway / API) when mode allows
- * 2. Offline semantic adapter (TLI + active requirement)
+ * 1. AI structured interpretation with full conversation context
+ * 2. Offline semantic adapter (contextual temporal + TLI + active requirement)
  * 3. Regex extractor stack as last-resort fallback
  *
  * Canonical state is never written here — only a validated ConversationStateUpdate.
@@ -33,6 +36,14 @@ export async function interpretTravelUtterance(
   const warnings: string[] = [];
   const mode = input.mode ?? 'auto';
 
+  const context = buildInterpretationContext({
+    message: input.message,
+    currentState: input.currentState,
+    activeRequirement,
+    recentHistory: input.recentHistory ?? input.currentState.transcript,
+    now: input.now,
+  });
+
   let source: InterpretationSource = 'empty';
   let semantic = emptySemanticInterpretation();
 
@@ -41,19 +52,29 @@ export async function interpretTravelUtterance(
   const tryRegex = mode === 'auto' || mode === 'regex-fallback';
 
   if (tryAi) {
-    const aiResult = isServerRuntime()
-      ? await interpretWithAi({
-          message: input.message,
-          currentState: input.currentState,
-          activeRequirement,
-          recentHistory: input.recentHistory,
-        })
-      : await interpretWithAiViaApi({
-          message: input.message,
-          currentState: input.currentState,
-          activeRequirement,
-          recentHistory: input.recentHistory,
-        });
+    let aiResult: TravelSemanticInterpretation | null = null;
+    if (input.aiInterpret) {
+      aiResult = await input.aiInterpret(context);
+    } else if (isServerRuntime()) {
+      aiResult = await interpretWithAi({
+        message: input.message,
+        currentState: input.currentState,
+        activeRequirement,
+        recentHistory: input.recentHistory,
+        now: input.now,
+        context,
+      });
+    } else {
+      aiResult = await interpretWithAiViaApi({
+        message: input.message,
+        currentState: input.currentState,
+        activeRequirement,
+        recentHistory: input.recentHistory,
+        now: input.now,
+        context,
+      });
+    }
+
     if (aiResult !== null && aiResult.confidence >= 0.35) {
       semantic = aiResult;
       source = 'ai';
@@ -67,6 +88,8 @@ export async function interpretTravelUtterance(
       message: input.message,
       currentState: input.currentState,
       activeRequirement,
+      recentHistory: input.recentHistory ?? input.currentState.transcript,
+      now: input.now,
     });
     if (semantic.confidence >= 0.35 && semantic.intent !== 'unknown') {
       source = 'offline-semantic';
@@ -120,5 +143,8 @@ export async function interpretTravelUtterance(
     stateUpdate: mapped.stateUpdate,
     interpreted,
     warnings,
+    context,
   };
 }
+
+export type { TravelInterpretationContext };
