@@ -39,6 +39,7 @@ export type AppliedConversationTravelState = {
   wellnessRequested: boolean | null;
   familyActivitiesRequested: boolean | null;
   accessibleTravelRequested: boolean | null;
+  conversationComplete: boolean | null;
 };
 
 /**
@@ -188,5 +189,9 @@ export function applyConversationStateUpdate(
       stateUpdate?.accessibleTravelRequested !== undefined
         ? stateUpdate.accessibleTravelRequested
         : currentState.accessibleTravelRequested,
+    conversationComplete:
+      stateUpdate?.conversationComplete !== undefined
+        ? stateUpdate.conversationComplete
+        : currentState.conversationComplete,
   };
 }

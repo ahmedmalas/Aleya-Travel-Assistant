@@ -15,6 +15,7 @@ export type InterpretationTravelSnapshot = {
   activitiesRequested: boolean | null;
   restaurantsRequested: boolean | null;
   restaurantPreference: string | null;
+  conversationComplete: boolean | null;
 };
 
 export type InterpretationHistoryTurn = {
@@ -54,7 +55,7 @@ const REQUIREMENT_MEANING: Record<ActiveTravelRequirement, string> = {
   childCount: 'Traveller still needs child passenger count.',
   infantCount: 'Traveller still needs infant passenger count.',
   services: 'Traveller still needs which services to search (flights, hotel, car).',
-  none: 'Core trip slots are filled; interpret corrections, preferences, or extras.',
+  none: 'Core trip slots are filled; interpret corrections, preferences, extras, or conversation-complete signals.',
 };
 
 function snapshotTravelState(state: ConversationCoreState): InterpretationTravelSnapshot {
@@ -72,6 +73,7 @@ function snapshotTravelState(state: ConversationCoreState): InterpretationTravel
     activitiesRequested: state.activitiesRequested,
     restaurantsRequested: state.restaurantsRequested,
     restaurantPreference: state.restaurantPreference,
+    conversationComplete: state.conversationComplete,
   };
 }
 

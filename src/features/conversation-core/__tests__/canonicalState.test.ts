@@ -19,6 +19,7 @@ const CANONICAL_KEYS = [
   'campingRequested',
   'carHireRequested',
   'childCount',
+  'conversationComplete',
   'conversationId',
   'createdAt',
   'departureDate',
@@ -139,6 +140,7 @@ describe('canonical conversation-core state', () => {
       wellnessRequested: null,
       familyActivitiesRequested: null,
       accessibleTravelRequested: null,
+      conversationComplete: null,
       transcript: [],
     });
   });

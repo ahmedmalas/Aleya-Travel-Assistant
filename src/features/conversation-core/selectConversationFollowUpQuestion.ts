@@ -2,6 +2,7 @@ import {
   CONVERSATION_REPLY_CATALOGUE,
   NEUTRAL_TRIP_FALLBACK_REPLY,
 } from './conversationReplyCatalogue';
+import { buildTripCaptureSummary } from './buildTripCaptureSummary';
 import type { ConversationCoreState } from './types';
 
 export { NEUTRAL_TRIP_FALLBACK_REPLY };
@@ -147,6 +148,15 @@ const CONTEXTUAL_QUESTIONS = [
   },
 ] as const;
 
+function coreTripFieldsPresent(state: ConversationCoreState): boolean {
+  return (
+    state.destination !== null &&
+    state.origin !== null &&
+    state.departureDate !== null &&
+    state.returnDate !== null
+  );
+}
+
 /**
  * Select exactly one deterministic follow-up from final canonical state.
  *
@@ -163,6 +173,10 @@ const CONTEXTUAL_QUESTIONS = [
  * accommodation is requested and childCount is still null.
  * Phase 19G — after child count, solicits infantCount when flights or
  * accommodation is requested and infantCount is still null.
+ *
+ * When conversationComplete is true and core fields are present: skip
+ * optional contextual / neutral questions and emit trip summary + search
+ * readiness instead.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,
@@ -172,6 +186,13 @@ export function selectConversationFollowUpQuestion(
       return question;
     }
   }
+
+  if (state.conversationComplete === true && coreTripFieldsPresent(state)) {
+    return CONVERSATION_REPLY_CATALOGUE.completion.tripReady(
+      buildTripCaptureSummary(state),
+    );
+  }
+
   for (const entry of CONTEXTUAL_QUESTIONS) {
     if (entry.applies(state)) {
       return entry.question;

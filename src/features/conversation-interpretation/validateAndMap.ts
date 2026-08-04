@@ -157,6 +157,12 @@ export function validateAndMapSemanticInterpretation(
     }
   }
 
+  if (semantic.conversationComplete === true) {
+    stateUpdate.conversationComplete = true;
+  } else if (semantic.conversationComplete === false) {
+    stateUpdate.conversationComplete = false;
+  }
+
   // Origin must not equal destination when both set after merge.
   const nextDestination =
     stateUpdate.destination !== undefined

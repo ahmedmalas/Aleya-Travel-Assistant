@@ -124,6 +124,7 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
     wellnessRequested: state.wellnessRequested,
     familyActivitiesRequested: state.familyActivitiesRequested,
     accessibleTravelRequested: state.accessibleTravelRequested,
+    conversationComplete: state.conversationComplete,
   };
 }
 

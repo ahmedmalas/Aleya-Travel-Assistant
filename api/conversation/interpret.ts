@@ -75,6 +75,7 @@ const semanticSchema = z.object({
     )
     .default([]),
   confirmation: z.boolean().nullable(),
+  conversationComplete: z.boolean().nullable(),
   ambiguityNotes: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1),
 });
@@ -116,10 +117,12 @@ function buildPrompt(input: {
     '- the earlier flight → preferences note; do not invent airports',
     '- change it to Friday → correct the active/date-being-discussed field to that weekday in the same week as the current value',
     '- keep everything else → only update the field being changed; leave all other fields null',
+    '- completion signals (that\'s it / nothing else / no / all done / that\'s all) while optional follow-ups are open → set conversationComplete true',
     '',
     'Dates must be ISO YYYY-MM-DD when resolvable. Place names as plain strings. Use null when unknown.',
     'Only set fields the user is changing or newly supplying. Null preserves prior canonical state after validation.',
     'Respect active missing requirement for bare answers.',
+    'When the last assistant prompt asked what else to know / optional extras, treat brief closers as conversationComplete.',
     'Confidence should reflect how clearly the meaning resolved (0.8+ when dates resolve cleanly from anchors).',
     '',
     `Today (ISO): ${todayIso}`,

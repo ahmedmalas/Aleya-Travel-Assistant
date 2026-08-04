@@ -7,6 +7,7 @@ import {
 import type { ActiveTravelRequirement } from './types';
 import type { ConversationCoreState, ConversationTranscriptEntry } from '../conversation-core';
 import { buildInterpretationContext } from './buildInterpretationContext';
+import { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 
 /**
@@ -158,6 +159,11 @@ export function interpretOfflineSemantic(input: {
     recentHistory: input.recentHistory,
     now,
   });
+  const contextualCompletion = resolveContextualCompletionSemantics(context);
+  if (contextualCompletion !== null) {
+    return contextualCompletion;
+  }
+
   const contextual = resolveContextualTemporalSemantics(context);
   if (contextual !== null) {
     return contextual;
@@ -327,7 +333,8 @@ export function interpretOfflineSemantic(input: {
     semantic.carHireRequested === null &&
     semantic.removals.length === 0 &&
     semantic.nightCount === null &&
-    semantic.departureTimePreference === null
+    semantic.departureTimePreference === null &&
+    semantic.conversationComplete !== true
   ) {
     semantic.intent = 'unknown';
     semantic.confidence = 0.1;

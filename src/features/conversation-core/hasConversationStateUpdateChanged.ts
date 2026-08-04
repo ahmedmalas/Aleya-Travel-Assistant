@@ -38,6 +38,7 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'wellnessRequested',
   'familyActivitiesRequested',
   'accessibleTravelRequested',
+  'conversationComplete',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
 /**

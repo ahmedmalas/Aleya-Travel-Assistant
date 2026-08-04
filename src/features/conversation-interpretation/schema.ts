@@ -50,6 +50,12 @@ export const travelSemanticInterpretationSchema = z.object({
     )
     .default([]),
   confirmation: z.boolean().nullable(),
+  /**
+   * Traveller indicated they are done providing optional trip details
+   * (e.g. that's it / nothing else / all done). Deterministic planner
+   * stops optional follow-ups and moves to summary / search readiness.
+   */
+  conversationComplete: z.boolean().nullable(),
   ambiguityNotes: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1),
 });
@@ -79,6 +85,7 @@ export const emptySemanticInterpretation = (): TravelSemanticInterpretation => (
   preferences: [],
   removals: [],
   confirmation: null,
+  conversationComplete: null,
   ambiguityNotes: [],
   confidence: 0,
 });

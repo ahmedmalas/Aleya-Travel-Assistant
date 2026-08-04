@@ -455,6 +455,8 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(types).toMatch(/accessibleTravelRequested: boolean \| null/);
     expect(types).toMatch(/accessibleTravelRequested: null,/);
+    expect(types).toMatch(/conversationComplete: null,/);
+    expect(types).toMatch(/conversationComplete\?: boolean \| null/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.accessibleTravelRequested !== undefined[\s\S]*\? stateUpdate\.accessibleTravelRequested[\s\S]*: currentState\.accessibleTravelRequested/,
     );

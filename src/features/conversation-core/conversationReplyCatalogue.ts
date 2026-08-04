@@ -92,6 +92,12 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     activities: 'What kinds of activities are you interested in?',
     restaurants: 'What type of dining are you looking for?',
     neutralContinuation: 'What else should I know about your trip?',
+    tripReadyAlreadyComplete:
+      "You're all set. I have your trip details and I'm ready to search when you confirm.",
+  },
+  completion: {
+    tripReady: (summary: string) =>
+      `Here's what I have for your trip:\n${summary}\nI have everything I need — ready to search when you confirm.`,
   },
 } as const;
 

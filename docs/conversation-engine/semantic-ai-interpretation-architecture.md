@@ -33,12 +33,14 @@ AiPlanningPanel
 The AI layer receives a complete context package (`TravelInterpretationContext`):
 - current user message
 - active missing requirement + meaning
-- full travel-state snapshot
+- full travel-state snapshot (including `conversationComplete`)
 - temporal anchors (departure/return/primary anchor role)
 - recent history, last assistant question, prior user message
 - today ISO
 
-Relative language (weekday-of-week, day after, that weekend, N nights later, same time, earlier flight, change to Friday, keep everything else) is resolved against those anchors into ISO dates / preferences. Deterministic code only validates and merges.
+Relative language (weekday-of-week, day after, that weekend, N nights later, same time, earlier flight, change to Friday, keep everything else) is resolved against those anchors into ISO dates / preferences.
+
+Completion signals (that's it / nothing else / no / all done / that's all) while optional follow-ups are open set `conversationComplete: true`. Deterministic planner then stops optional / neutral questions, summarises the captured trip, and moves to confirmation / search readiness.
 
 ## Model / provider
 

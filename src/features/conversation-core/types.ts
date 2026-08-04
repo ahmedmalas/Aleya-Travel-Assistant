@@ -102,6 +102,12 @@ export type ConversationCoreState = {
   familyActivitiesRequested: boolean | null;
   /** Explicitly supplied accessible-travel request flag only — never detected from message text. */
   accessibleTravelRequested: boolean | null;
+  /**
+   * Explicit conversation-completion flag from semantic interpretation.
+   * When true, optional follow-ups stop and the planner moves to trip
+   * summary / search readiness. Never inferred from message text here.
+   */
+  conversationComplete: boolean | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -147,6 +153,7 @@ export type ConversationStateUpdate = {
   wellnessRequested?: boolean | null;
   familyActivitiesRequested?: boolean | null;
   accessibleTravelRequested?: boolean | null;
+  conversationComplete?: boolean | null;
 };
 
 /**
@@ -236,6 +243,7 @@ export function createInitialConversationCoreState(
     wellnessRequested: null,
     familyActivitiesRequested: null,
     accessibleTravelRequested: null,
+    conversationComplete: null,
     transcript: [],
   };
 }
