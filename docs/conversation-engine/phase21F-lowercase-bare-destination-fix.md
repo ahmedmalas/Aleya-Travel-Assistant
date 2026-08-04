@@ -74,7 +74,7 @@ Guards such as `hello`, `yes`, `beach`, `flights`, `accommodation`,
 
 ---
 
-## Explicit non-goal
+## Explicit non-goal (at Phase 21F time; repaired by Phase 21I)
 
 ```text
 i want to go lebanon
@@ -82,7 +82,8 @@ I want to go Lebanon
 go Melbourne
 ```
 
-remain unsupported (future phase).
+Missing-`"to"` travel grammar was out of Phase 21F scope. See
+`phase21I-missing-to-destination-grammar.md` for the cue-family repair.
 
 ---
 

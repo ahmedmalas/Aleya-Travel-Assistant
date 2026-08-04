@@ -14,8 +14,8 @@ import { selectConversationFollowUpQuestion } from '../selectConversationFollowU
  * Phase 21E — lowercase destination runtime failure audit (characterization).
  *
  * History: at Phase 21D tip, bare lowercase places failed Title-Case shape.
- * Phase 21F repairs bare lowercase; this suite retains audit history and
- * asserts the corrected bare path while keeping missing-"to" unsupported.
+ * Phase 21F repairs bare lowercase. Phase 21I repairs missing-"to" cues.
+ * This suite retains audit history and asserts the corrected behaviours.
  */
 
 const ROOT = process.cwd();
@@ -49,7 +49,7 @@ function turn(message: string, state: ConversationCoreState, index: number) {
 }
 
 describe('Phase 21E — lowercase destination runtime failure audit', () => {
-  it('locks Phase 21F casing-insensitive bare path superseding 21D Title-Case-only', () => {
+  it('locks Phase 21F casing-insensitive bare path and Phase 21I missing-to cues', () => {
     const source = readFileSync(
       resolve(
         ROOT,
@@ -59,26 +59,29 @@ describe('Phase 21E — lowercase destination runtime failure audit', () => {
     );
     expect(source).toMatch(/Phase 21D/);
     expect(source).toMatch(/Phase 21F/);
+    expect(source).toMatch(/Phase 21I/);
     expect(source).toMatch(/toTitleCasePlace/);
     expect(source).toMatch(/\^\[A-Za-z\]\+/);
-    // Explicit go/travel cues still require "to".
+    // With-"to" cues retained; missing-"to" cues added.
     expect(source).toMatch(/\\s\+to\\s\+\(\.\+\)\$\/i/);
+    expect(source).toMatch(/MISSING_TO_DESTINATION_CUES/);
   });
 
-  it('physical transcript turn 1 still fails; turn 2 lebanon repaired by 21F', () => {
+  it('physical transcript: missing-to + bare lowercase both succeed after 21F/21I', () => {
     let s = createState();
     let result = turn('i want to go lebanon', s, 0);
-    expect(result.state.destination).toBeNull();
-    expect(result.trace.messageInterpreted).toBe(false);
-    expect(result.reply).toContain(DESTINATION_Q);
-
-    // Phase 21E failure: bare lowercase rejected. Phase 21F: accepted.
-    s = result.state;
-    result = turn('lebanon', s, 1);
     expect(result.state.destination).toBe('Lebanon');
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.reply).toContain(ORIGIN_Q);
     expect(selectConversationFollowUpQuestion(result.state)).toBe(ORIGIN_Q);
+
+    // Bare lowercase still works when destination follow-up is active.
+    s = createState();
+    s = turn('Hi Aleya.', s, 0).state;
+    result = turn('lebanon', s, 1);
+    expect(result.state.destination).toBe('Lebanon');
+    expect(result.trace.messageInterpreted).toBe(true);
+    expect(result.reply).toContain(ORIGIN_Q);
   });
 
   it('control: Title-Case bare Lebanon succeeds after greeting', () => {
@@ -103,14 +106,14 @@ describe('Phase 21E — lowercase destination runtime failure audit', () => {
     {
       name: 'missing-to Title-Case',
       message: 'I want to go Lebanon',
-      destination: null as string | null,
-      interpreted: false,
+      destination: 'Lebanon' as string | null,
+      interpreted: true,
     },
     {
       name: 'missing-to lowercase',
       message: 'I want to go lebanon',
-      destination: null as string | null,
-      interpreted: false,
+      destination: 'Lebanon' as string | null,
+      interpreted: true,
     },
     {
       name: 'cued travel-to Title-Case',

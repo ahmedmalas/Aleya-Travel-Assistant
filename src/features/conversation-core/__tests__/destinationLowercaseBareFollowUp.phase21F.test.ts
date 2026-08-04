@@ -15,7 +15,8 @@ import { selectConversationFollowUpQuestion } from '../selectConversationFollowU
  * Phase 21F — lowercase bare destination follow-up fix (production path).
  *
  * Proves casing-insensitive bare places when destination is null, with
- * Title-Case storage, while missing-"to" cues and deny-list guards stay put.
+ * Title-Case storage and deny-list guards. Missing-"to" cues are owned by
+ * Phase 21I (assertions updated to the repaired behaviour).
  */
 
 const ROOT = process.cwd();
@@ -139,15 +140,15 @@ describe('Phase 21F — lowercase bare destination follow-up', () => {
     ).toEqual({ stateUpdate: { destination: 'lebanon' } });
   });
 
-  it('missing-"to" wording remains unsupported', () => {
-    for (const message of [
-      'i want to go lebanon',
-      'I want to go Lebanon',
-      'go Melbourne',
+  it('missing-"to" wording is owned by Phase 21I', () => {
+    for (const { message, destination } of [
+      { message: 'i want to go lebanon', destination: 'Lebanon' },
+      { message: 'I want to go Lebanon', destination: 'Lebanon' },
+      { message: 'go Melbourne', destination: 'Melbourne' },
     ]) {
       const result = turn(message, createState(), 0);
-      expect(result.state.destination, message).toBeNull();
-      expect(result.trace.messageInterpreted, message).toBe(false);
+      expect(result.state.destination, message).toBe(destination);
+      expect(result.trace.messageInterpreted, message).toBe(true);
     }
   });
 

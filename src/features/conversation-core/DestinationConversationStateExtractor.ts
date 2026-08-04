@@ -27,12 +27,17 @@ import type {
  * Phase 21D: when destination is the canonical next required core field
  * (destination null), a whole-message bare place answer may emit destination.
  * Explicit cue ownership is unchanged and always tried first. currentState is
- * read only for that active-destination gate — never copied. Does not broaden
- * travel grammar (e.g. missing-"to" "go Melbourne" remains cue-unsupported).
+ * read only for that active-destination gate — never copied.
  *
  * Phase 21F: bare place tokens are accepted regardless of user-entered casing;
- * the bare path emits deterministic Title-Case display forms. Explicit cue
- * value casing is unchanged. Missing-"to" cues remain out of scope.
+ * the bare path emits deterministic Title-Case display forms. Explicit with-"to"
+ * cue value casing is unchanged.
+ *
+ * Phase 21I: missing-"to" travel grammar (go/travel/fly/head + place without
+ * "to") is recognised as an explicit destination cue family. Captures are
+ * validated with the same place-shape + deny-list boundary as the bare path
+ * (no closed city list; no external place-lookup module). With-"to" cues
+ * still run first. Bare-answer ownership (21B / 21D / 21F) is unchanged.
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -108,10 +113,16 @@ function matchContrastDestinationRepair(
 /**
  * True when the message already contains an explicit destination cue that can
  * safely coexist with an origin “from …” clause.
+ *
+ * Phase 21I: missing-"to" travel verbs with a following non-"to" token also
+ * count so "I want to go Melbourne from Sydney" is not blocked by \\bfrom\\b.
  */
 function hasExplicitDestinationCueAlongsideOrigin(message: string): boolean {
   return (
     /\b(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?)\s+to\b/i.test(
+      message,
+    ) ||
+    /\b(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?)\s+(?!to\b)\S+/i.test(
       message,
     ) ||
     /\b(?:fly(?:ing)?|travel(?:l?ing)?)\s+from\s+.+?\s+to\b/i.test(message) ||
@@ -298,6 +309,16 @@ const EXPLICIT_DESTINATION_CUES: readonly RegExp[] = [
   /\bvisit(?:ing)?\s+(.+)$/i,
 ];
 
+/**
+ * Phase 21I — travel verb + place without the word "to".
+ *
+ * Tried only after with-"to" cues. Negative lookahead keeps "go to Melbourne"
+ * on the with-"to" family. Captures are place-validated + Title-Cased.
+ */
+const MISSING_TO_DESTINATION_CUES: readonly RegExp[] = [
+  /\b(?:(?:i\s+want\s+to|we(?:'re|\s+are))\s+)?(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|head(?:ing)?)\s+(?!to\b)(.+)$/i,
+];
+
 /** Repair-family cues that must apply the Phase 17B capture guards. */
 const REPAIR_DESTINATION_CUE_SOURCES: readonly RegExp[] = [
   /\bchange\s+that\s+to\s+(.+)$/i,
@@ -385,6 +406,27 @@ function extractExplicitDestination(message: string): string | null {
       isRepairDestinationCue(cue) &&
       isRejectedRepairDestinationCapture(destination)
     ) {
+      continue;
+    }
+    return destination;
+  }
+
+  // Phase 21I: missing-"to" travel grammar after with-"to" cues.
+  for (const cue of MISSING_TO_DESTINATION_CUES) {
+    const match = text.match(cue);
+    const captured = match?.[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+    const normalised = normaliseCapturedDestination(captured);
+    if (normalised === null) {
+      continue;
+    }
+    if (isRejectedRepairDestinationCapture(normalised)) {
+      continue;
+    }
+    const destination = asValidatedTitleCasePlace(normalised);
+    if (destination === null) {
       continue;
     }
     return destination;
@@ -568,6 +610,11 @@ const BARE_DESTINATION_FILLERS: readonly string[] = [
   'clear',
   'mobility',
   'access',
+  // Phase 21I — fragments from "go ahead" / "go back" / "go now" must not
+  // become destinations via missing-"to" cues.
+  'ahead',
+  'back',
+  'now',
 ];
 
 /** Multi-word bare phrases that must stay uninterpreted. */
@@ -618,14 +665,37 @@ function isBareDestinationFiller(value: string): boolean {
 }
 
 /**
+ * Phase 21D / 21F / 21I — place-shape validation without a closed city list.
+ *
+ * Accepts one to three alphabetic place tokens (optional internal
+ * hyphen/apostrophe), rejects filler / capability deny-list tokens, and emits
+ * deterministic Title-Case. Used by the bare follow-up path and by Phase 21I
+ * missing-"to" captures. Does not import an external place-lookup module
+ * (conversation-core architecture boundary).
+ */
+function asValidatedTitleCasePlace(value: string): string | null {
+  if (
+    !/^[A-Za-z]+(?:['\-][A-Za-z]+)*(?:\s+[A-Za-z]+(?:['\-][A-Za-z]+)*){0,2}$/.test(
+      value,
+    )
+  ) {
+    return null;
+  }
+  if (isBareDestinationFiller(value)) {
+    return null;
+  }
+  return toTitleCasePlace(value);
+}
+
+/**
  * Phase 21D / 21F — whole-message bare place when destination follow-up is active.
  *
  * Allows one to three alphabetic place tokens (optional internal
  * hyphen/apostrophe) so multi-word destinations such as "Gold Coast" /
  * "gold coast" work. Reuses normaliseCapturedDestination, then emits a
  * deterministic Title-Case display form (Phase 21F). Rejects conversational
- * fillers and capability tokens via the existing deny-lists. Does not broaden
- * explicit travel cues or missing-"to" grammar.
+ * fillers and capability tokens via the existing deny-lists. Missing-"to"
+ * travel grammar is owned by Phase 21I explicit cues, not this bare path.
  */
 function extractBareDestinationPlace(message: string): string | null {
   const text = edgeTrim(message);
@@ -653,20 +723,7 @@ function extractBareDestinationPlace(message: string): string | null {
     return null;
   }
 
-  // One to three place tokens — casing-insensitive shape; fillers/capability
-  // words still rejected by deny-list (ASCII case-fold compare).
-  if (
-    !/^[A-Za-z]+(?:['\-][A-Za-z]+)*(?:\s+[A-Za-z]+(?:['\-][A-Za-z]+)*){0,2}$/.test(
-      destination,
-    )
-  ) {
-    return null;
-  }
-  if (isBareDestinationFiller(destination)) {
-    return null;
-  }
-
-  return toTitleCasePlace(destination);
+  return asValidatedTitleCasePlace(destination);
 }
 
 /**

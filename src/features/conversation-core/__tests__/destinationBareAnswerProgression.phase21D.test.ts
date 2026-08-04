@@ -16,7 +16,7 @@ import { selectConversationFollowUpQuestion } from '../selectConversationFollowU
  *
  * Proves destination-null active context accepts bare place answers through
  * processConversationTurn, and that guards refuse bare places when destination
- * does not own the follow-up. Does not broaden missing-"to" travel cues.
+ * does not own the follow-up. Missing-"to" travel cues are owned by Phase 21I.
  */
 
 const ROOT = process.cwd();
@@ -65,8 +65,9 @@ describe('Phase 21D — bare destination follow-up extraction', () => {
     expect(source).not.toMatch(
       /import \{[^}]*selectConversationFollowUpQuestion/,
     );
-    // Missing-"to" grammar remains out of scope — no new go/<place> cue.
-    expect(source).not.toMatch(/\\bgo(?:ing)?\\s\+\(\.\+\)\$/);
+    // Phase 21D did not add missing-"to"; Phase 21I owns that cue family.
+    expect(source).toMatch(/Phase 21I/);
+    expect(source).toMatch(/MISSING_TO_DESTINATION_CUES/);
   });
 
   it('primary reproduction: Hi Aleya. → Melbourne sets destination and advances to origin', () => {
@@ -110,15 +111,9 @@ describe('Phase 21D — bare destination follow-up extraction', () => {
     },
   );
 
-  it('physical sequence: unsupported go-Melbourne then bare Melbourne recovers', () => {
+  it('physical sequence: missing-to go-Melbourne sets destination (Phase 21I)', () => {
     let s = createState();
     let result = turn('Hi Aleya I want to go Melbourne', s, 0);
-    expect(result.state.destination).toBeNull();
-    expect(result.trace.messageInterpreted).toBe(false);
-    expect(result.reply).toContain(DESTINATION_Q);
-
-    s = result.state;
-    result = turn('Melbourne', s, 1);
     expect(result.state.destination).toBe('Melbourne');
     expect(result.trace.messageInterpreted).toBe(true);
     expect(result.reply).toContain(ORIGIN_Q);
@@ -216,9 +211,10 @@ describe('Phase 21D — bare destination follow-up extraction', () => {
     ).toBeUndefined();
   });
 
-  it('missing-"to" travel phrasing remains unsupported (out of scope)', () => {
+  it('missing-"to" travel phrasing is owned by Phase 21I (sets destination)', () => {
     const result = turn('Hi Aleya I want to go Melbourne', createState(), 0);
-    expect(result.state.destination).toBeNull();
-    expect(result.trace.messageInterpreted).toBe(false);
+    expect(result.state.destination).toBe('Melbourne');
+    expect(result.trace.messageInterpreted).toBe(true);
+    expect(selectConversationFollowUpQuestion(result.state)).toBe(ORIGIN_Q);
   });
 });
