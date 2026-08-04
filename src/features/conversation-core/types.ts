@@ -11,6 +11,16 @@ export const CONVERSATION_CORE_STORAGE_NAMESPACE =
 
 export type ConversationCoreStatus = 'empty' | 'active';
 
+/** Itinerary shape for single-destination vs multi-city planning. */
+export type TripStructureKind = 'one_way' | 'return' | 'multi_city';
+
+/** One ordered hop in a multi-city (or derived single-destination) itinerary. */
+export type ConversationTripLeg = {
+  origin: string | null;
+  destination: string | null;
+  departureDate: string | null;
+};
+
 /** Chronological transcript memory only — not intelligence. */
 export type ConversationTranscriptEntry =
   | {
@@ -38,6 +48,20 @@ export type ConversationCoreState = {
   destination: string | null;
   /** Explicitly supplied origin only — never extracted from message text. */
   origin: string | null;
+  /**
+   * Explicit itinerary shape. When multi_city, destinationStops / tripLegs
+   * are authoritative for ordered cities; destination mirrors the first stop.
+   */
+  tripStructure: TripStructureKind | null;
+  /**
+   * Ordered destination cities for multi-city itineraries. Null when unused.
+   */
+  destinationStops: string[] | null;
+  /**
+   * Ordered trip legs derived from origin + destinationStops (and dates when
+   * known). Null when unused.
+   */
+  tripLegs: ConversationTripLeg[] | null;
   /** Explicitly supplied departure date only — never extracted from message text. */
   departureDate: string | null;
   /** Explicitly supplied return date only — never extracted from message text. */
@@ -147,6 +171,9 @@ export type ConversationCoreState = {
 export type ConversationStateUpdate = {
   destination?: string | null;
   origin?: string | null;
+  tripStructure?: TripStructureKind | null;
+  destinationStops?: string[] | null;
+  tripLegs?: ConversationTripLeg[] | null;
   departureDate?: string | null;
   returnDate?: string | null;
   adultCount?: number | null;
@@ -245,6 +272,9 @@ export function createInitialConversationCoreState(
     ageMs: 0,
     destination: null,
     origin: null,
+    tripStructure: null,
+    destinationStops: null,
+    tripLegs: null,
     departureDate: null,
     returnDate: null,
     adultCount: null,

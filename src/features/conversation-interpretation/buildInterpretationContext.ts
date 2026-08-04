@@ -4,6 +4,8 @@ import type { ActiveTravelRequirement } from './types';
 export type InterpretationTravelSnapshot = {
   destination: string | null;
   origin: string | null;
+  tripStructure: 'one_way' | 'return' | 'multi_city' | null;
+  destinationStops: string[] | null;
   departureDate: string | null;
   returnDate: string | null;
   adultCount: number | null;
@@ -56,6 +58,8 @@ export type TravelInterpretationContext = {
 
 const REQUIREMENT_MEANING: Record<ActiveTravelRequirement, string> = {
   destination: 'Traveller still needs a destination.',
+  destinationStops:
+    'Multi-city trip: traveller still needs ordered destination cities (≥2). Capture every city in destinationStops; set tripStructure multi_city.',
   origin: 'Traveller still needs an origin / departure city.',
   departureDate: 'Traveller still needs a departure date.',
   returnDate: 'Traveller still needs a return date.',
@@ -73,6 +77,8 @@ function snapshotTravelState(state: ConversationCoreState): InterpretationTravel
   return {
     destination: state.destination,
     origin: state.origin,
+    tripStructure: state.tripStructure,
+    destinationStops: state.destinationStops,
     departureDate: state.departureDate,
     returnDate: state.returnDate,
     adultCount: state.adultCount,

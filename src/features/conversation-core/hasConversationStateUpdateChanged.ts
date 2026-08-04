@@ -6,6 +6,9 @@ import type {
 const TRAVEL_STATE_UPDATE_KEYS = [
   'destination',
   'origin',
+  'tripStructure',
+  'destinationStops',
+  'tripLegs',
   'departureDate',
   'returnDate',
   'adultCount',

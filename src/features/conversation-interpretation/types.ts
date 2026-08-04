@@ -8,6 +8,7 @@ import type { TravelInterpretationContext } from './buildInterpretationContext';
 
 export type ActiveTravelRequirement =
   | 'destination'
+  | 'destinationStops'
   | 'origin'
   | 'departureDate'
   | 'returnDate'

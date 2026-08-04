@@ -27,6 +27,11 @@ export { resolveContextualConfirmationSemantics } from './contextualConfirmation
 export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 export { resolveTravellerCountSemantics } from './travellerCountSemantics';
 export {
+  resolveTripStructureSemantics,
+  buildTripLegsFromStops,
+  hasOrderedDestinationListStructure,
+} from './tripStructureSemantics';
+export {
   isShapeValidPlaceName,
   type PlaceResolutionStatus,
 } from './placeResolution';

@@ -16,6 +16,7 @@ import {
   recognizeTravelServicesInMessage,
 } from './serviceRecognitionSemantics';
 import { resolveTravellerCountSemantics } from './travellerCountSemantics';
+import { resolveTripStructureSemantics } from './tripStructureSemantics';
 
 /**
  * Offline semantic adapter — place-aware slot filling via travel-location-intelligence
@@ -294,8 +295,38 @@ export function interpretOfflineSemantic(input: {
     semantic.confidence = Math.max(semantic.confidence, 0.85);
   }
 
+  // Trip structure (one-way / return / multi-city) before single-slot place fill.
+  // Only collect destinationStops while that slot is active — never while origin
+  // or dates are active (a bare city must fill origin, not replace the itinerary).
+  const collectingDestinations =
+    input.activeRequirement === 'destination' ||
+    input.activeRequirement === 'destinationStops';
+
+  const tripStructureMeaning = resolveTripStructureSemantics({
+    message,
+    placesInOrder: places,
+    collectingDestinations,
+    currentTripStructure: input.currentState.tripStructure,
+  });
+  if (tripStructureMeaning !== null) {
+    if (tripStructureMeaning.tripStructure !== null) {
+      semantic.tripStructure = tripStructureMeaning.tripStructure;
+      semantic.confidence = Math.max(semantic.confidence, 0.8);
+      semantic.intent = 'provide_info';
+    }
+    if (tripStructureMeaning.destinationStops.length > 0) {
+      semantic.destinationStops = tripStructureMeaning.destinationStops.map(
+        (stop) => resolveSync(stop).best?.canonicalName ?? stop,
+      );
+      semantic.destination = semantic.destinationStops[0] ?? null;
+      semantic.confidence = Math.max(semantic.confidence, 0.82);
+      semantic.intent = isCorrection ? 'correct' : 'provide_info';
+    }
+  }
+
   // Place role assignment using active requirement + travel cues.
-  if (places.length > 0) {
+  // Skipped when multi-city already captured ordered destinationStops this turn.
+  if (places.length > 0 && semantic.destinationStops.length < 2) {
     const fromMatch = folded.match(
       /\b(?:from|leaving from|departing from|travelling from|traveling from|flying from)\s+([a-z][a-z\s'-]{1,40})/,
     );
@@ -317,7 +348,7 @@ export function interpretOfflineSemantic(input: {
       return resolved.best?.canonicalName ?? null;
     };
 
-    let destination: string | null = null;
+    let destination: string | null = semantic.destination;
     let origin: string | null = null;
 
     if (fromMatch) {
@@ -338,7 +369,10 @@ export function interpretOfflineSemantic(input: {
     }
 
     if (destination === null && origin === null) {
-      if (input.activeRequirement === 'destination') {
+      if (
+        input.activeRequirement === 'destination' ||
+        input.activeRequirement === 'destinationStops'
+      ) {
         destination = places[0] ?? null;
       } else if (input.activeRequirement === 'origin') {
         origin = places[0] ?? null;
@@ -362,7 +396,7 @@ export function interpretOfflineSemantic(input: {
       // keep origin only
     }
 
-    if (destination !== null) {
+    if (destination !== null && semantic.destinationStops.length === 0) {
       const resolved = resolveSync(destination);
       semantic.destination = resolved.best?.canonicalName ?? destination;
       semantic.confidence = Math.max(semantic.confidence, 0.72);
@@ -372,11 +406,30 @@ export function interpretOfflineSemantic(input: {
       semantic.origin = resolved.best?.canonicalName ?? origin;
       semantic.confidence = Math.max(semantic.confidence, 0.72);
     }
+  } else if (places.length > 0 && semantic.destinationStops.length >= 2) {
+    // Multi-city destinations already assigned; still allow explicit origin cues.
+    const fromMatch = folded.match(
+      /\b(?:from|leaving from|departing from|travelling from|traveling from|flying from)\s+([a-z][a-z\s'-]{1,40})/,
+    );
+    if (fromMatch) {
+      const clipped = (fromMatch[1] ?? '')
+        .replace(/\s+(?:from|to|on|for|in|after|before)\b.*$/, '')
+        .trim();
+      const found = findPlacesInMessage(clipped);
+      const originName =
+        found[0] ?? resolveSync(clipped).best?.canonicalName ?? null;
+      if (originName) {
+        semantic.origin = originName;
+        semantic.confidence = Math.max(semantic.confidence, 0.72);
+      }
+    }
   }
 
   if (
     semantic.destination === null &&
     semantic.origin === null &&
+    semantic.tripStructure === null &&
+    semantic.destinationStops.length === 0 &&
     semantic.departureDate === null &&
     semantic.returnDate === null &&
     semantic.adultCount === null &&

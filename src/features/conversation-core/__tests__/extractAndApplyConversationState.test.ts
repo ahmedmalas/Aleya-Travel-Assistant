@@ -259,6 +259,9 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     const travelResult: AppliedConversationTravelState = {
       destination: currentState.destination,
       origin: currentState.origin,
+      tripStructure: currentState.tripStructure,
+      destinationStops: currentState.destinationStops,
+      tripLegs: currentState.tripLegs,
       departureDate: currentState.departureDate,
       returnDate: currentState.returnDate,
       adultCount: currentState.adultCount,

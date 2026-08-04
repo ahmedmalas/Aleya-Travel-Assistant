@@ -461,6 +461,9 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/searchExecutionRequested\?: boolean \| null/);
     expect(types).toMatch(/amendmentResumeSearchReady: null,/);
     expect(types).toMatch(/amendmentResumeSearchReady\?: boolean \| null/);
+    expect(types).toMatch(/tripStructure: null,/);
+    expect(types).toMatch(/destinationStops: null,/);
+    expect(types).toMatch(/tripLegs: null,/);
     expect(types).toMatch(/destinationResolutionStatus: null,/);
     expect(types).toMatch(/originResolutionStatus: null,/);
     expect(applyUpdate).toMatch(

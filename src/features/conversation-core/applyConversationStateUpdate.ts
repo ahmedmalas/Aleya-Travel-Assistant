@@ -1,12 +1,17 @@
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
+  ConversationTripLeg,
+  TripStructureKind,
 } from './types';
 
 /** Travel fields only — no lifecycle, identity, or clock fields. */
 export type AppliedConversationTravelState = {
   destination: string | null;
   origin: string | null;
+  tripStructure: TripStructureKind | null;
+  destinationStops: string[] | null;
+  tripLegs: ConversationTripLeg[] | null;
   departureDate: string | null;
   returnDate: string | null;
   adultCount: number | null;
@@ -69,6 +74,18 @@ export function applyConversationStateUpdate(
       stateUpdate?.origin !== undefined
         ? stateUpdate.origin
         : currentState.origin,
+    tripStructure:
+      stateUpdate?.tripStructure !== undefined
+        ? stateUpdate.tripStructure
+        : currentState.tripStructure,
+    destinationStops:
+      stateUpdate?.destinationStops !== undefined
+        ? stateUpdate.destinationStops
+        : currentState.destinationStops,
+    tripLegs:
+      stateUpdate?.tripLegs !== undefined
+        ? stateUpdate.tripLegs
+        : currentState.tripLegs,
     departureDate:
       stateUpdate?.departureDate !== undefined
         ? stateUpdate.departureDate

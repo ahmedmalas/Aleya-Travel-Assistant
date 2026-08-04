@@ -7,16 +7,48 @@ import type { ConversationCoreState } from './types';
 export function buildTripCaptureSummary(state: ConversationCoreState): string {
   const lines: string[] = [];
 
-  if (state.destination !== null) {
-    lines.push(`Destination: ${state.destination}`);
+  if (state.tripStructure === 'multi_city') {
+    lines.push('Trip: multi-city');
+    if (state.origin !== null) {
+      lines.push(`Origin: ${state.origin}`);
+    }
+    const stops = state.destinationStops ?? [];
+    if (stops.length > 0) {
+      lines.push(`Destinations: ${stops.join(' → ')}`);
+    }
+    if (state.tripLegs && state.tripLegs.length > 0) {
+      const legText = state.tripLegs
+        .map((leg, index) => {
+          const from = leg.origin ?? 'TBC';
+          const to = leg.destination ?? 'TBC';
+          const when = leg.departureDate ? ` (${leg.departureDate})` : '';
+          return `${index + 1}. ${from} → ${to}${when}`;
+        })
+        .join('; ');
+      lines.push(`Legs: ${legText}`);
+    }
+  } else {
+    if (state.tripStructure === 'one_way') {
+      lines.push('Trip: one-way');
+    } else if (state.tripStructure === 'return') {
+      lines.push('Trip: return');
+    }
+    if (state.destination !== null) {
+      lines.push(`Destination: ${state.destination}`);
+    }
+    if (state.origin !== null) {
+      lines.push(`Origin: ${state.origin}`);
+    }
   }
-  if (state.origin !== null) {
-    lines.push(`Origin: ${state.origin}`);
-  }
+
   if (state.departureDate !== null) {
     lines.push(`Depart: ${state.departureDate}`);
   }
-  if (state.returnDate !== null) {
+  if (
+    state.returnDate !== null &&
+    state.tripStructure !== 'one_way' &&
+    state.tripStructure !== 'multi_city'
+  ) {
     lines.push(`Return: ${state.returnDate}`);
   }
 

@@ -91,6 +91,9 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
   return {
     destination: state.destination,
     origin: state.origin,
+    tripStructure: state.tripStructure,
+    destinationStops: state.destinationStops,
+    tripLegs: state.tripLegs,
     departureDate: state.departureDate,
     returnDate: state.returnDate,
     adultCount: state.adultCount,

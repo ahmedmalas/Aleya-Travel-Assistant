@@ -19,6 +19,16 @@ export const travelSemanticInterpretationSchema = z.object({
   ]),
   destination: z.string().nullable(),
   origin: z.string().nullable(),
+  /**
+   * Itinerary shape. multi_city uses ordered destinationStops / trip legs
+   * instead of the single-destination workflow.
+   */
+  tripStructure: z.enum(['one_way', 'return', 'multi_city']).nullable(),
+  /**
+   * Ordered destination cities for multi-city (and optionally a single
+   * destination mirrored into destination). Empty when unknown.
+   */
+  destinationStops: z.array(z.string()).default([]),
   destinationResolutionStatus: z
     .enum(['resolved', 'unresolved', 'ambiguous'])
     .nullable(),
@@ -103,6 +113,8 @@ export const emptySemanticInterpretation = (): TravelSemanticInterpretation => (
   intent: 'unknown',
   destination: null,
   origin: null,
+  tripStructure: null,
+  destinationStops: [],
   destinationResolutionStatus: null,
   originResolutionStatus: null,
   departureDate: null,

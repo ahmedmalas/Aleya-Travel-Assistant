@@ -1,9 +1,11 @@
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
+  ConversationTripLeg,
 } from '../conversation-core';
 import { isShapeValidPlaceName } from './placeResolution';
 import type { TravelSemanticInterpretation } from './schema';
+import { buildTripLegsFromStops } from './tripStructureSemantics';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -40,20 +42,37 @@ function isSearchReadyEligible(snapshot: {
   origin: string | null;
   departureDate: string | null;
   returnDate: string | null;
+  tripStructure: ConversationCoreState['tripStructure'];
+  destinationStops: string[] | null;
   flightsRequested: boolean | null;
   accommodationRequested: boolean | null;
   adultCount: number | null;
   childCount: number | null;
   infantCount: number | null;
 }): boolean {
+  if (snapshot.origin === null || snapshot.departureDate === null) {
+    return false;
+  }
+  if (snapshot.tripStructure === 'multi_city') {
+    if (
+      snapshot.destinationStops === null ||
+      snapshot.destinationStops.length < 2
+    ) {
+      return false;
+    }
+  } else if (snapshot.destination === null) {
+    return false;
+  }
+
+  // Return date required for classic return trips only.
   if (
-    snapshot.destination === null ||
-    snapshot.origin === null ||
-    snapshot.departureDate === null ||
+    snapshot.tripStructure !== 'one_way' &&
+    snapshot.tripStructure !== 'multi_city' &&
     snapshot.returnDate === null
   ) {
     return false;
   }
+
   const passengerRelevant =
     snapshot.flightsRequested === true ||
     snapshot.accommodationRequested === true;
@@ -83,11 +102,40 @@ export function validateAndMapSemanticInterpretation(
     return { stateUpdate: {}, warnings: ['Low-confidence unknown intent rejected'] };
   }
 
+  if (semantic.tripStructure !== null) {
+    stateUpdate.tripStructure = semantic.tripStructure;
+  }
+
+  const validatedStops: string[] = [];
+  for (const stop of semantic.destinationStops) {
+    if (isShapeValidPlaceName(stop)) {
+      validatedStops.push(stop);
+    } else {
+      warnings.push(`Invalid destination stop shape rejected: ${stop}`);
+    }
+  }
+  if (validatedStops.length > 0) {
+    stateUpdate.destinationStops = validatedStops;
+    // Primary destination mirrors the first stop for single-destination callers.
+    if (semantic.destination === null || semantic.destination === validatedStops[0]) {
+      stateUpdate.destination = validatedStops[0] ?? null;
+      stateUpdate.destinationResolutionStatus =
+        semantic.destinationResolutionStatus ?? 'unresolved';
+    }
+    if (validatedStops.length >= 2) {
+      stateUpdate.tripStructure = 'multi_city';
+    }
+  }
+
   if (semantic.destination !== null) {
     if (isShapeValidPlaceName(semantic.destination)) {
       stateUpdate.destination = semantic.destination;
       stateUpdate.destinationResolutionStatus =
         semantic.destinationResolutionStatus ?? 'unresolved';
+      // Keep single destination mirrored into stops when stops were empty.
+      if (validatedStops.length === 0) {
+        stateUpdate.destinationStops = [semantic.destination];
+      }
     } else {
       warnings.push(`Invalid destination shape rejected: ${semantic.destination}`);
     }
@@ -307,23 +355,65 @@ export function validateAndMapSemanticInterpretation(
     }
   }
 
+  const mergedOrigin = pickMerged<string | null>(
+    stateUpdate,
+    'origin',
+    currentState,
+  );
+  const mergedStops = pickMerged<string[] | null>(
+    stateUpdate,
+    'destinationStops',
+    currentState,
+  );
+  const mergedDeparture = pickMerged<string | null>(
+    stateUpdate,
+    'departureDate',
+    currentState,
+  );
+  const mergedStructure = pickMerged<ConversationCoreState['tripStructure']>(
+    stateUpdate,
+    'tripStructure',
+    currentState,
+  );
+
+  // Rebuild ordered legs whenever origin/stops/departure participate in the update.
+  if (
+    stateUpdate.origin !== undefined ||
+    stateUpdate.destinationStops !== undefined ||
+    stateUpdate.departureDate !== undefined ||
+    stateUpdate.tripStructure !== undefined
+  ) {
+    const stops = mergedStops ?? [];
+    if (stops.length > 0) {
+      const built = buildTripLegsFromStops({
+        origin: mergedOrigin,
+        destinationStops: stops,
+        departureDate: mergedDeparture,
+      });
+      const legs: ConversationTripLeg[] = built.map((leg) => ({
+        origin: leg.origin,
+        destination: leg.destination,
+        departureDate: leg.departureDate,
+      }));
+      stateUpdate.tripLegs = legs;
+    }
+  }
+
   const mergedForReady = {
     destination: pickMerged<string | null>(
       stateUpdate,
       'destination',
       currentState,
     ),
-    origin: pickMerged<string | null>(stateUpdate, 'origin', currentState),
-    departureDate: pickMerged<string | null>(
-      stateUpdate,
-      'departureDate',
-      currentState,
-    ),
+    origin: mergedOrigin,
+    departureDate: mergedDeparture,
     returnDate: pickMerged<string | null>(
       stateUpdate,
       'returnDate',
       currentState,
     ),
+    tripStructure: mergedStructure,
+    destinationStops: mergedStops,
     flightsRequested: pickMerged<boolean | null>(
       stateUpdate,
       'flightsRequested',

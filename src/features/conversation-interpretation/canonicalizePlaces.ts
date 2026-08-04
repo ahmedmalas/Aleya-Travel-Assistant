@@ -109,5 +109,32 @@ export function canonicalizeSemanticPlaces(
     }
   }
 
+  if (next.destinationStops.length > 0) {
+    const canonicalStops: string[] = [];
+    let worst: PlaceResolutionStatus = 'resolved';
+    for (const stop of next.destinationStops) {
+      const enriched = enrichPlaceField(stop, 'destination');
+      canonicalStops.push(enriched.value);
+      if (enriched.warning) warnings.push(enriched.warning);
+      if (enriched.ambiguityNote) {
+        next.ambiguityNotes.push(enriched.ambiguityNote);
+      }
+      if (enriched.status === 'ambiguous') worst = 'ambiguous';
+      else if (enriched.status === 'unresolved' && worst === 'resolved') {
+        worst = 'unresolved';
+      }
+    }
+    next.destinationStops = canonicalStops;
+    if (next.destination === null && canonicalStops[0]) {
+      next.destination = canonicalStops[0];
+    }
+    if (next.destinationResolutionStatus === null) {
+      next.destinationResolutionStatus = worst;
+    }
+    if (worst !== 'resolved') {
+      next.confidence = Math.min(next.confidence, 0.7);
+    }
+  }
+
   return { semantic: next, warnings };
 }

@@ -7,6 +7,9 @@ import type {
 export const TRAVEL_COMPARE_KEYS = [
   'destination',
   'origin',
+  'tripStructure',
+  'destinationStops',
+  'tripLegs',
   'departureDate',
   'returnDate',
   'adultCount',
@@ -57,6 +60,8 @@ const ACKNOWLEDGEMENT_INERT_KEYS = new Set<TravelCompareKey>([
   'amendmentResumeSearchReady',
   'destinationResolutionStatus',
   'originResolutionStatus',
+  'tripStructure',
+  'tripLegs',
 ]);
 
 const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([

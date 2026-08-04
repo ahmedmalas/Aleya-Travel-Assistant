@@ -149,12 +149,46 @@ const CONTEXTUAL_QUESTIONS = [
 ] as const;
 
 function coreTripFieldsPresent(state: ConversationCoreState): boolean {
-  return (
-    state.destination !== null &&
-    state.origin !== null &&
-    state.departureDate !== null &&
-    state.returnDate !== null
-  );
+  if (state.origin === null || state.departureDate === null) return false;
+
+  if (state.tripStructure === 'multi_city') {
+    const stops = state.destinationStops ?? [];
+    return stops.length >= 2;
+  }
+
+  if (state.destination === null) return false;
+
+  // one_way skips return; null/return structures keep classic return requirement.
+  if (state.tripStructure === 'one_way') return true;
+  return state.returnDate !== null;
+}
+
+function selectCoreProgressionQuestion(
+  state: ConversationCoreState,
+): string | null {
+  if (state.tripStructure === 'multi_city') {
+    const stops = state.destinationStops ?? [];
+    if (stops.length < 2) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.multiCityDestinations;
+    }
+    if (state.origin === null) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.origin;
+    }
+    if (state.departureDate === null) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.departureDate;
+    }
+    return null;
+  }
+
+  for (const [field, question] of PROGRESSION_QUESTIONS) {
+    if (field === 'returnDate' && state.tripStructure === 'one_way') {
+      continue;
+    }
+    if (state[field] === null) {
+      return question;
+    }
+  }
+  return null;
 }
 
 /**
@@ -174,6 +208,10 @@ function coreTripFieldsPresent(state: ConversationCoreState): boolean {
  * Phase 19G — after child count, solicits infantCount when flights or
  * accommodation is requested and infantCount is still null.
  *
+ * Multi-city workflow: when tripStructure is multi_city, collect ordered
+ * destination stops (≥2), then origin and departure — not the classic
+ * single-destination + return progression.
+ *
  * When searchExecutionRequested is true and core fields are present: emit
  * search-execution wording (do not re-emit the trip-ready summary).
  * When conversationComplete is true (and search not yet requested) and core
@@ -183,10 +221,9 @@ function coreTripFieldsPresent(state: ConversationCoreState): boolean {
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,
 ): string | null {
-  for (const [field, question] of PROGRESSION_QUESTIONS) {
-    if (state[field] === null) {
-      return question;
-    }
+  const coreQuestion = selectCoreProgressionQuestion(state);
+  if (coreQuestion !== null) {
+    return coreQuestion;
   }
 
   if (

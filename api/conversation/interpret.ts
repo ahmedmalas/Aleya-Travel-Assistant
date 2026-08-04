@@ -44,6 +44,8 @@ const semanticSchema = z.object({
   ]),
   destination: z.string().nullable(),
   origin: z.string().nullable(),
+  tripStructure: z.enum(['one_way', 'return', 'multi_city']).nullable(),
+  destinationStops: z.array(z.string()).default([]),
   destinationResolutionStatus: z
     .enum(['resolved', 'unresolved', 'ambiguous'])
     .nullable(),
@@ -143,6 +145,7 @@ function buildPrompt(input: {
     '- completion signals (that\'s it / nothing else / no / all done / that\'s all) while optional follow-ups are open → set conversationComplete true',
     '- when trip-ready / ready to search when you confirm: confirmation class (confirmed / yes / go ahead / proceed / search / looks good) → confirmation true AND searchExecutionRequested true',
     '- amendment class (change/update + field, or add/remove service), including after search-ready: amendmentResumeSearchReady true, conversationComplete false; no replacement → reopenFields; replacement supplied → set new value; add hotel → accommodationRequested; remove car → removals carHire; leave unaffected fields null',
+    '- trip structure class: one_way | return | multi_city. Multi-destination declarations or ordered lists of two or more destination cities → tripStructure multi_city and destinationStops with EVERY city in order (never only the first). destination mirrors the first stop.',
     '- traveller counts scoped by active requirement: self-party (myself / just me / alone) → adultCount 1; zero-quantity (none / no / zero) on child/infant slot → 0 for that slot (not conversationComplete); bare cardinals fill the active count slot',
     '- multi-intent service lists (hotel + flights + car hire, etc.): set EVERY recognised service flag true in one turn; tolerate minor spelling mistakes; do not keep only the first service',
     '',
