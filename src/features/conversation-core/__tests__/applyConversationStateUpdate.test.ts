@@ -106,6 +106,10 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wellnessRequested: true,
       familyActivitiesRequested: true,
       accessibleTravelRequested: true,
+      conversationComplete: null,
+      searchExecutionRequested: null,
+      destinationResolutionStatus: null,
+      originResolutionStatus: null,
     });
   });
 
@@ -148,6 +152,10 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wellnessRequested: true,
       familyActivitiesRequested: true,
       accessibleTravelRequested: true,
+      conversationComplete: null,
+      searchExecutionRequested: null,
+      destinationResolutionStatus: null,
+      originResolutionStatus: null,
     });
   });
 

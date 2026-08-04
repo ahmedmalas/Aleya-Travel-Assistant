@@ -16,6 +16,7 @@ export type InterpretationTravelSnapshot = {
   restaurantsRequested: boolean | null;
   restaurantPreference: string | null;
   conversationComplete: boolean | null;
+  searchExecutionRequested: boolean | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -57,11 +58,14 @@ const REQUIREMENT_MEANING: Record<ActiveTravelRequirement, string> = {
   origin: 'Traveller still needs an origin / departure city.',
   departureDate: 'Traveller still needs a departure date.',
   returnDate: 'Traveller still needs a return date.',
-  adultCount: 'Traveller still needs adult passenger count.',
-  childCount: 'Traveller still needs child passenger count.',
-  infantCount: 'Traveller still needs infant passenger count.',
+  adultCount:
+    'Traveller still needs adult/guest count. Self-party language (myself / just me / alone) means 1 adult. Bare cardinals fill this slot.',
+  childCount:
+    'Traveller still needs child count. Zero-quantity language (none / no / zero) means 0 children for this active slot — not conversation completion.',
+  infantCount:
+    'Traveller still needs infant count. Zero-quantity language (none / no / zero) means 0 infants for this active slot — not conversation completion.',
   services: 'Traveller still needs which services to search (flights, hotel, car).',
-  none: 'Core trip slots are filled; interpret corrections, preferences, extras, or conversation-complete signals.',
+  none: 'Core trip slots are filled; interpret corrections, preferences, extras, conversation-complete, or confirm-to-search signals.',
 };
 
 function snapshotTravelState(state: ConversationCoreState): InterpretationTravelSnapshot {
@@ -80,6 +84,7 @@ function snapshotTravelState(state: ConversationCoreState): InterpretationTravel
     restaurantsRequested: state.restaurantsRequested,
     restaurantPreference: state.restaurantPreference,
     conversationComplete: state.conversationComplete,
+    searchExecutionRequested: state.searchExecutionRequested,
     destinationResolutionStatus: state.destinationResolutionStatus,
     originResolutionStatus: state.originResolutionStatus,
   };

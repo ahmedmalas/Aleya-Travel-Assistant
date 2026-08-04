@@ -181,6 +181,14 @@ export function validateAndMapSemanticInterpretation(
     stateUpdate.conversationComplete = false;
   }
 
+  if (semantic.searchExecutionRequested === true) {
+    stateUpdate.searchExecutionRequested = true;
+    // Search execution implies planning is complete.
+    stateUpdate.conversationComplete = true;
+  } else if (semantic.searchExecutionRequested === false) {
+    stateUpdate.searchExecutionRequested = false;
+  }
+
   // Origin must not equal destination when both set after merge.
   const nextDestination =
     stateUpdate.destination !== undefined

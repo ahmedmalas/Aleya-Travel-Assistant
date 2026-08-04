@@ -8,11 +8,13 @@ import type { ActiveTravelRequirement } from './types';
 import type { ConversationCoreState, ConversationTranscriptEntry } from '../conversation-core';
 import { buildInterpretationContext } from './buildInterpretationContext';
 import { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
+import { resolveContextualConfirmationSemantics } from './contextualConfirmationSemantics';
 import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 import {
   applyRecognizedServicesToSemantic,
   recognizeTravelServicesInMessage,
 } from './serviceRecognitionSemantics';
+import { resolveTravellerCountSemantics } from './travellerCountSemantics';
 
 /**
  * Offline semantic adapter — place-aware slot filling via travel-location-intelligence
@@ -163,6 +165,13 @@ export function interpretOfflineSemantic(input: {
     recentHistory: input.recentHistory,
     now,
   });
+  // Confirm-to-search before optional completion so "confirmed" advances
+  // planning → search execution instead of re-closing optional Q&A.
+  const contextualConfirmation = resolveContextualConfirmationSemantics(context);
+  if (contextualConfirmation !== null) {
+    return contextualConfirmation;
+  }
+
   const contextualCompletion = resolveContextualCompletionSemantics(context);
   if (contextualCompletion !== null) {
     return contextualCompletion;
@@ -238,20 +247,22 @@ export function interpretOfflineSemantic(input: {
     semantic.confidence = Math.max(semantic.confidence, 0.75);
   }
 
-  // Traveller counts: "for 2 adults" / bare number when adultCount active
-  const adults = folded.match(/\b(\d+)\s+adults?\b/);
-  if (adults) semantic.adultCount = Number(adults[1]);
-  const children = folded.match(/\b(\d+)\s+(?:children|child|kids?)\b/);
-  if (children) semantic.childCount = Number(children[1]);
-  const infants = folded.match(/\b(\d+)\s+infants?\b/);
-  if (infants) semantic.infantCount = Number(infants[1]);
-
-  if (
-    input.activeRequirement === 'adultCount' &&
-    semantic.adultCount === null
-  ) {
-    const bare = folded.match(/^\s*(\d+)\s*[.!?]?\s*$/);
-    if (bare) semantic.adultCount = Number(bare[1]);
+  // Traveller counts via meaning classes (self-party, zero-quantity, cardinals).
+  const travellerCounts = resolveTravellerCountSemantics({
+    message,
+    activeRequirement: input.activeRequirement,
+  });
+  if (travellerCounts !== null) {
+    if (travellerCounts.adultCount !== undefined) {
+      semantic.adultCount = travellerCounts.adultCount;
+    }
+    if (travellerCounts.childCount !== undefined) {
+      semantic.childCount = travellerCounts.childCount;
+    }
+    if (travellerCounts.infantCount !== undefined) {
+      semantic.infantCount = travellerCounts.infantCount;
+    }
+    semantic.confidence = Math.max(semantic.confidence, 0.85);
   }
 
   // Place role assignment using active requirement + travel cues.

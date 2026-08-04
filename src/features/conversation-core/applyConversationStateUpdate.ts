@@ -40,6 +40,7 @@ export type AppliedConversationTravelState = {
   familyActivitiesRequested: boolean | null;
   accessibleTravelRequested: boolean | null;
   conversationComplete: boolean | null;
+  searchExecutionRequested: boolean | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -199,6 +200,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.conversationComplete !== undefined
         ? stateUpdate.conversationComplete
         : currentState.conversationComplete,
+    searchExecutionRequested:
+      stateUpdate?.searchExecutionRequested !== undefined
+        ? stateUpdate.searchExecutionRequested
+        : currentState.searchExecutionRequested,
     destinationResolutionStatus:
       stateUpdate?.destinationResolutionStatus !== undefined
         ? stateUpdate.destinationResolutionStatus

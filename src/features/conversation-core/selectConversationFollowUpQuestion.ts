@@ -174,9 +174,11 @@ function coreTripFieldsPresent(state: ConversationCoreState): boolean {
  * Phase 19G — after child count, solicits infantCount when flights or
  * accommodation is requested and infantCount is still null.
  *
- * When conversationComplete is true and core fields are present: skip
- * optional contextual / neutral questions and emit trip summary + search
- * readiness instead.
+ * When searchExecutionRequested is true and core fields are present: emit
+ * search-execution wording (do not re-emit the trip-ready summary).
+ * When conversationComplete is true (and search not yet requested) and core
+ * fields are present: skip optional contextual / neutral questions and emit
+ * trip summary + search readiness instead.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,
@@ -185,6 +187,19 @@ export function selectConversationFollowUpQuestion(
     if (state[field] === null) {
       return question;
     }
+  }
+
+  if (
+    state.searchExecutionRequested === true &&
+    coreTripFieldsPresent(state)
+  ) {
+    const placesSearchSafe =
+      state.destinationResolutionStatus === 'resolved' &&
+      state.originResolutionStatus === 'resolved';
+    return placesSearchSafe
+      ? CONVERSATION_REPLY_CATALOGUE.completion.searchExecuting
+      : CONVERSATION_REPLY_CATALOGUE.completion
+          .searchExecutingNeedsLocationValidation;
   }
 
   if (state.conversationComplete === true && coreTripFieldsPresent(state)) {

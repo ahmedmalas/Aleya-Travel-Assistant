@@ -40,11 +40,22 @@ export const TRAVEL_COMPARE_KEYS = [
   'familyActivitiesRequested',
   'accessibleTravelRequested',
   'conversationComplete',
+  'searchExecutionRequested',
   'destinationResolutionStatus',
   'originResolutionStatus',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
 export type TravelCompareKey = (typeof TRAVEL_COMPARE_KEYS)[number];
+
+/**
+ * Planning-control / enrichment fields that may change without selecting a
+ * generic travel-field acknowledgement (e.g. Perfect.).
+ */
+const ACKNOWLEDGEMENT_INERT_KEYS = new Set<TravelCompareKey>([
+  'searchExecutionRequested',
+  'destinationResolutionStatus',
+  'originResolutionStatus',
+]);
 
 const REQUEST_FLAG_KEYS = new Set<TravelCompareKey>([
   'flightsRequested',
@@ -170,12 +181,16 @@ export function classifyConversationStateChange(
   }
 
   const hasAcknowledgementEligibleChange =
-    newlyPopulated.length > 0 ||
+    newlyPopulated.some((key) => !ACKNOWLEDGEMENT_INERT_KEYS.has(key)) ||
     newlyEnabledRequestFlags.length > 0 ||
     newlyDisabledRequestFlags.length > 0 ||
     // Request-flag entries in updated are only true→null / false→null clears
-    // (Phase 11F/11G) — acknowledgement-inert on their own.
-    updated.some((key) => !REQUEST_FLAG_KEYS.has(key));
+    // (Phase 11F/11G) — acknowledgement-inert on their own. Planning-control
+    // enrichment fields are also acknowledgement-inert.
+    updated.some(
+      (key) =>
+        !REQUEST_FLAG_KEYS.has(key) && !ACKNOWLEDGEMENT_INERT_KEYS.has(key),
+    );
 
   const hasInterpretedChange =
     newlyPopulated.length > 0 ||

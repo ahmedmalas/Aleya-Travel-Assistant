@@ -62,6 +62,12 @@ export const travelSemanticInterpretationSchema = z.object({
    * stops optional follow-ups and moves to summary / search readiness.
    */
   conversationComplete: z.boolean().nullable(),
+  /**
+   * Traveller confirmed the trip-ready summary and requested search
+   * execution. Distinct from conversationComplete (planning → ready);
+   * this advances ready → search execution so the summary is not re-emitted.
+   */
+  searchExecutionRequested: z.boolean().nullable(),
   ambiguityNotes: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1),
 });
@@ -94,6 +100,7 @@ export const emptySemanticInterpretation = (): TravelSemanticInterpretation => (
   removals: [],
   confirmation: null,
   conversationComplete: null,
+  searchExecutionRequested: null,
   ambiguityNotes: [],
   confidence: 0,
 });

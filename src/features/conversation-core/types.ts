@@ -109,6 +109,12 @@ export type ConversationCoreState = {
    */
   conversationComplete: boolean | null;
   /**
+   * Explicit search-execution request from semantic interpretation.
+   * When true, the planner leaves trip-ready summary and advances to
+   * search execution. Never inferred from message text here.
+   */
+  searchExecutionRequested: boolean | null;
+  /**
    * TLI enrichment status for destination. Unresolved/ambiguous places
    * remain in `destination` but are unsafe for provider search.
    */
@@ -168,6 +174,7 @@ export type ConversationStateUpdate = {
   familyActivitiesRequested?: boolean | null;
   accessibleTravelRequested?: boolean | null;
   conversationComplete?: boolean | null;
+  searchExecutionRequested?: boolean | null;
   destinationResolutionStatus?:
     | 'resolved'
     | 'unresolved'
@@ -264,6 +271,7 @@ export function createInitialConversationCoreState(
     familyActivitiesRequested: null,
     accessibleTravelRequested: null,
     conversationComplete: null,
+    searchExecutionRequested: null,
     destinationResolutionStatus: null,
     originResolutionStatus: null,
     transcript: [],

@@ -22,7 +22,9 @@ export {
 } from './serviceRecognitionSemantics';
 export { extractRelativeDurationMeaning } from './relativeDurationSemantics';
 export { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
+export { resolveContextualConfirmationSemantics } from './contextualConfirmationSemantics';
 export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
+export { resolveTravellerCountSemantics } from './travellerCountSemantics';
 export {
   isShapeValidPlaceName,
   type PlaceResolutionStatus,

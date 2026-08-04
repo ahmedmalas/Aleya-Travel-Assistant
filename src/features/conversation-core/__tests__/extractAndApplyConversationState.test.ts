@@ -293,6 +293,7 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       familyActivitiesRequested: currentState.familyActivitiesRequested,
       accessibleTravelRequested: currentState.accessibleTravelRequested,
       conversationComplete: currentState.conversationComplete,
+      searchExecutionRequested: currentState.searchExecutionRequested,
       destinationResolutionStatus: currentState.destinationResolutionStatus,
       originResolutionStatus: currentState.originResolutionStatus,
     };

@@ -457,6 +457,8 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/accessibleTravelRequested: null,/);
     expect(types).toMatch(/conversationComplete: null,/);
     expect(types).toMatch(/conversationComplete\?: boolean \| null/);
+    expect(types).toMatch(/searchExecutionRequested: null,/);
+    expect(types).toMatch(/searchExecutionRequested\?: boolean \| null/);
     expect(types).toMatch(/destinationResolutionStatus: null,/);
     expect(types).toMatch(/originResolutionStatus: null,/);
     expect(applyUpdate).toMatch(
