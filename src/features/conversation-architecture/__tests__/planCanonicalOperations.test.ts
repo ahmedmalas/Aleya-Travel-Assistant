@@ -573,10 +573,14 @@ describe('Phase 2 — pure Intent Planner', () => {
       currentState: current,
       semantic,
     });
-    expect(trace.phase).toBe(2);
+    expect(trace.phase).toBe(3);
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
-    expect(trace.validation.accepted).toEqual([]);
+    expect(trace.validation.accepted.map((o) => o.op)).toContain(
+      'remove_destination',
+    );
+    expect(trace.committer.preview.destinationStops).toEqual(['Osaka']);
+    // Preview removed Bogotá; input unchanged.
     expect(trace.planner.operations.map((o) => o.op)).toContain(
       'remove_destination',
     );

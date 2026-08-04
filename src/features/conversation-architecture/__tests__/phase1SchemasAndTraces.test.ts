@@ -147,19 +147,18 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     });
 
     expect(architectureTurnTraceSchema.parse(trace)).toMatchObject({
-      phase: 2,
+      phase: 3,
       diagnosticOnly: true,
       behaviourSwitchActive: false,
       message: 'Remove Osaka.',
-      committer: { active: false, appliedOperationCount: 0 },
+      committer: { active: false },
       governor: { active: false },
-      validation: { accepted: [], clarificationAction: 'keep' },
     });
     expect(trace.activeClarification?.id).toBe('place-role:Osaka');
     expect(trace.semantic.deltas[0]?.kind).toBe('remove_place');
-    // Planner may propose no_state_change when place is not committed yet.
     expect(trace.planner.operations.length).toBeGreaterThan(0);
     expect(trace.planner.reasoningTrace[0]).toMatch(/Phase 2 pure Intent Planner/);
+    expect(trace.validation.reasons[0]).toMatch(/Phase 3 Canonical Validator/);
     // Canonical state object identity/fields unchanged by trace build.
     expect(current.openClarification).toEqual(open);
     expect(current.origin).toBeNull();
@@ -172,9 +171,9 @@ describe('Phase 1 — diagnostic architecture traces', () => {
       currentState: state(),
     });
     expect(trace.semantic.intent).toBe('unknown');
-    expect(trace.validation.clarificationAction).toBe('none');
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
+    expect(trace.phase).toBe(3);
     expect(trace.notes.some((n) => n.includes('No behaviour switch'))).toBe(
       true,
     );

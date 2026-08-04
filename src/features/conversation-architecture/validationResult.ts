@@ -1,8 +1,5 @@
 /**
- * Phase 1 — Canonical Validator result schema.
- *
- * Phase 1 does not validate or accept operations; factories emit empty results
- * for diagnostic traces.
+ * Canonical Validator result schema.
  */
 
 import { z } from 'zod';
@@ -44,7 +41,7 @@ export function emptyValidationResult(
     clarificationNeeded: false,
     clarificationAction: 'none',
     narrowedClarification: null,
-    reasons: ['Phase 1: validator behaviour not active — empty result'],
+    reasons: ['Empty validation result factory'],
     ...overrides,
   });
 }

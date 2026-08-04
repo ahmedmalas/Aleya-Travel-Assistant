@@ -154,8 +154,8 @@ export function clarificationFromOpenClarification(
     referencedEntities,
     blocking: open.blocking,
     status: 'open',
-    parentClarificationId: null,
-    attemptCount: 1,
+    parentClarificationId: open.parentClarificationId ?? null,
+    attemptCount: open.attemptCount ?? 1,
     placesInOrder: open.placesInOrder,
   });
 }

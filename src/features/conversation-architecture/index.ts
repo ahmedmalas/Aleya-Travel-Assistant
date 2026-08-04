@@ -3,6 +3,7 @@
  *
  * Phase 1: schemas + diagnostic traces.
  * Phase 2: pure Intent Planner (proposals only; not production-active).
+ * Phase 3: pure Validator + Committer (diagnostic preview only).
  * Behaviour switch is OFF. Production Turn Governor remains authoritative.
  */
 
@@ -73,3 +74,14 @@ export {
   resolvePlaceReferences,
   type PlanCanonicalOperationsInput,
 } from './planCanonicalOperations';
+
+export {
+  validateCanonicalOperations,
+  type ValidateCanonicalOperationsInput,
+} from './validateCanonicalOperations';
+
+export {
+  commitCanonicalOperations,
+  type CommitCanonicalOperationsInput,
+  type CommitCanonicalOperationsResult,
+} from './commitCanonicalOperations';

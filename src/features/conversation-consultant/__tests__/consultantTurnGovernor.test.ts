@@ -152,11 +152,12 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
       'Are you starting from Sydney, or is Sydney your first destination?',
     );
     expect(r.architectureTrace).toMatchObject({
-      phase: 2,
+      phase: 3,
       diagnosticOnly: true,
       behaviourSwitchActive: false,
-      committer: { active: false, appliedOperationCount: 0 },
+      committer: { active: false },
     });
-    expect(r.architectureTrace.validation.accepted).toEqual([]);
+    // Diagnostic preview must not become the governor result state.
+    expect(r.state.openClarification?.subject).toBe('Sydney');
   });
 });

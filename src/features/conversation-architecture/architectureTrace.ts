@@ -1,8 +1,8 @@
 /**
  * Architecture turn trace — diagnostic pipeline snapshot.
  *
- * Phase 2: pure Intent Planner runs inside the trace for inspection.
- * Behaviour switch remains OFF. Validator/Committer inactive.
+ * Phase 3: Planner → Validator → Committer preview run for inspection only.
+ * Behaviour switch remains OFF. Production governor remains behavioural owner.
  */
 
 import { z } from 'zod';
@@ -11,6 +11,7 @@ import {
   clarificationFromOpenClarification,
   clarificationSchema,
 } from './clarification';
+import { commitCanonicalOperations } from './commitCanonicalOperations';
 import { plannerResultSchema } from './canonicalOperations';
 import { planCanonicalOperations } from './planCanonicalOperations';
 import {
@@ -18,10 +19,8 @@ import {
   semanticInterpretationSchema,
   type SemanticInterpretation,
 } from './semanticInterpretation';
-import {
-  emptyValidationResult,
-  validationResultSchema,
-} from './validationResult';
+import { validateCanonicalOperations } from './validateCanonicalOperations';
+import { validationResultSchema } from './validationResult';
 
 export const architectureStageSchema = z.enum([
   'semantic_interpreter',
@@ -31,9 +30,31 @@ export const architectureStageSchema = z.enum([
   'consultant_governor',
 ]);
 
+const travelPreviewSchema = z.object({
+  origin: z.string().nullable(),
+  destination: z.string().nullable(),
+  destinationStops: z.array(z.string()).nullable(),
+  tripStructure: z.enum(['one_way', 'return', 'multi_city']).nullable(),
+  tripLegs: z
+    .array(
+      z.object({
+        origin: z.string().nullable(),
+        destination: z.string().nullable(),
+        departureDate: z.string().nullable(),
+      }),
+    )
+    .nullable(),
+  departureDate: z.string().nullable(),
+  returnDate: z.string().nullable(),
+  openClarificationId: z.string().nullable(),
+  openClarificationParentId: z.string().nullable(),
+  returnPoint: z.string().nullable(),
+  clearedClarificationIds: z.array(z.string()),
+});
+
 export const architectureTurnTraceSchema = z.object({
   /** Highest completed architecture phase reflected in this trace. */
-  phase: z.union([z.literal(1), z.literal(2)]),
+  phase: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   /** True when stages must not be treated as production-authoritative. */
   diagnosticOnly: z.literal(true),
   /** Behaviour switch is off — production path unchanged. */
@@ -45,9 +66,12 @@ export const architectureTurnTraceSchema = z.object({
   planner: plannerResultSchema,
   validation: validationResultSchema,
   committer: z.object({
+    /** Architecture committer is not production-active. */
     active: z.literal(false),
-    appliedOperationCount: z.literal(0),
+    appliedOperationCount: z.number().int().nonnegative(),
     note: z.string(),
+    /** Diagnostic preview only — not assigned to result.state. */
+    preview: travelPreviewSchema,
   }),
   governor: z.object({
     active: z.literal(false),
@@ -63,7 +87,7 @@ export type BuildArchitectureTurnTraceInput = {
   message: string;
   currentState: ConversationCoreState;
   /**
-   * Optional semantic payload. When provided, Phase 2 planner runs purely
+   * Optional semantic payload. When provided, Phase 2–3 pipeline runs purely
    * for the diagnostic trace. When omitted, an empty stub is planned.
    */
   semantic?: SemanticInterpretation;
@@ -72,10 +96,9 @@ export type BuildArchitectureTurnTraceInput = {
 /**
  * Build a diagnostic architecture trace.
  *
- * - Projects live `openClarification` into the generic Clarification schema.
- * - Runs the pure Intent Planner when semantic input is available.
- * - Validator and Committer remain inactive stubs.
- * - Never mutates canonical state and never chooses consultant acts.
+ * Runs planner → validator → committer preview on a copy.
+ * Never mutates input state and never chooses consultant acts.
+ * Production result.state / reply remain owned by the existing governor.
  */
 export function buildArchitectureTurnTrace(
   input: BuildArchitectureTurnTraceInput,
@@ -92,25 +115,25 @@ export function buildArchitectureTurnTrace(
       ],
     });
 
-  // Phase 2: pure planner — proposals only, no state writes.
   const planner = planCanonicalOperations({
     semantic,
     currentState: input.currentState,
   });
 
-  const validation = emptyValidationResult({
-    clarificationNeeded: activeClarification?.blocking === true,
-    clarificationAction: activeClarification?.blocking ? 'keep' : 'none',
-    reasons: [
-      'Phase 2: validator behaviour not active — empty result',
-      activeClarification?.blocking
-        ? 'Blocking clarification present on state (projected only)'
-        : 'No blocking clarification',
-    ],
+  const validation = validateCanonicalOperations({
+    operations: planner.operations,
+    currentState: input.currentState,
+  });
+
+  const committed = commitCanonicalOperations({
+    currentState: input.currentState,
+    accepted: validation.accepted,
+    clarificationAction: validation.clarificationAction,
+    narrowedClarification: validation.narrowedClarification,
   });
 
   return architectureTurnTraceSchema.parse({
-    phase: 2,
+    phase: 3,
     diagnosticOnly: true,
     behaviourSwitchActive: false,
     message: input.message,
@@ -127,18 +150,32 @@ export function buildArchitectureTurnTrace(
     validation,
     committer: {
       active: false,
-      appliedOperationCount: 0,
-      note: 'Phase 2: state committer not active — canonical writes use existing governor path',
+      appliedOperationCount: committed.appliedOperationCount,
+      note: 'Phase 3: committer preview only — production writes still use existing governor path',
+      preview: {
+        origin: committed.state.origin,
+        destination: committed.state.destination,
+        destinationStops: committed.state.destinationStops,
+        tripStructure: committed.state.tripStructure,
+        tripLegs: committed.state.tripLegs,
+        departureDate: committed.state.departureDate,
+        returnDate: committed.state.returnDate,
+        openClarificationId: committed.state.openClarification?.id ?? null,
+        openClarificationParentId:
+          committed.state.openClarification?.parentClarificationId ?? null,
+        returnPoint: committed.returnPoint,
+        clearedClarificationIds: committed.clearedClarificationIds,
+      },
     },
     governor: {
       active: false,
-      note: 'Phase 2: architecture governor not active — existing chooseConsultantAct path unchanged',
+      note: 'Phase 3: architecture governor not active — existing chooseConsultantAct path unchanged',
     },
     notes: [
-      'Architecture Phase 2 diagnostic trace: pure Intent Planner active for inspection only.',
+      'Architecture Phase 3 diagnostic trace: planner + validator + committer preview.',
       'No behaviour switch: production Turn Governor path unchanged.',
-      'Validator and Committer remain inactive.',
-      'Planner proposals are not applied to canonical state.',
+      'Committer preview is not assigned to result.state.',
+      'Validator/Committer are not production-active.',
     ],
   });
 }

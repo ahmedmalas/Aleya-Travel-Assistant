@@ -33,6 +33,10 @@ export type OpenClarification = {
   options: string[];
   blocking: boolean;
   placesInOrder?: string[];
+  /** Optional lineage when a clarification was narrowed (architecture Phase 3+). */
+  parentClarificationId?: string | null;
+  /** How many clarification attempts in this lineage (defaults to 1 when omitted). */
+  attemptCount?: number;
 };
 
 /** Chronological transcript memory only — not intelligence. */
