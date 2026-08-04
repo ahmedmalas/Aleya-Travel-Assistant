@@ -5,6 +5,7 @@ import {
   processConversationTurn,
   type ConversationCoreState,
 } from '../../features/conversation-core';
+import { interpretTravelUtterance } from '../../features/conversation-interpretation';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
 
@@ -114,9 +115,15 @@ export function AiPlanningPanel() {
     ]);
   };
 
-  const runEngineTurn = (request: string) => {
+  const runEngineTurn = async (request: string) => {
     const userMessageAt = new Date();
     const assistantMessageAt = new Date();
+    const interpretation = await interpretTravelUtterance({
+      message: request,
+      currentState: coreState,
+      recentHistory: coreState.transcript,
+      mode: 'auto',
+    });
     const result = processConversationTurn({
       message: request,
       state: coreState,
@@ -124,13 +131,15 @@ export function AiPlanningPanel() {
       assistantEntryId: createId(),
       userMessageAt,
       assistantMessageAt,
+      stateUpdate: interpretation.stateUpdate,
+      skipExtraction: true,
     });
     setCoreState(result.state);
     reply(result.reply);
     return result;
   };
 
-  const sendMessage = (event?: FormEvent) => {
+  const sendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
     if (!request || busy) return;
@@ -144,7 +153,7 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
-      runEngineTurn(request);
+      await runEngineTurn(request);
     } catch (error) {
       reply(
         error instanceof Error
@@ -168,8 +177,9 @@ export function AiPlanningPanel() {
           Aleya AI Assistant
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Conversation intelligence is being rebuilt from first principles. The previous engine has
-          been removed; this panel talks only to the empty conversation-core boundary.
+          Semantic interpretation reads your message, trip state, and active
+          missing requirement, then deterministic controls merge and progress
+          the conversation.
         </p>
         <aside
           className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"

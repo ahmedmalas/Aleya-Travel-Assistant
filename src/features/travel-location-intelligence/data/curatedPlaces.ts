@@ -68,6 +68,10 @@ export const CURATED_PLACES: CuratedPlace[] = [
   { id: 'apt-ool', canonicalName: 'Gold Coast Airport', displayName: 'Gold Coast Airport', type: 'airport', countryCode: 'AU', countryName: 'Australia', cityName: 'Gold Coast', iataCode: 'OOL', airportCodes: ['OOL'], aliases: ['gold coast airport', 'ool', 'coolangatta'], latitude: -28.1644, longitude: 153.5047, parent: { name: 'Gold Coast', type: 'city' } },
 
   // NZ / intl
+  // International destinations commonly used in conversation tests / demos
+  { id: 'lb-lebanon', canonicalName: 'Lebanon', displayName: 'Lebanon', type: 'region', countryCode: 'LB', countryName: 'Lebanon', iataCode: 'BEY', airportCodes: ['BEY'], aliases: ['lebanon', 'beyrouth', 'beirut lebanon'], latitude: 33.8938, longitude: 35.5018 },
+  { id: 'lb-beirut', canonicalName: 'Beirut', displayName: 'Beirut', type: 'city', countryCode: 'LB', countryName: 'Lebanon', iataCode: 'BEY', airportCodes: ['BEY'], aliases: ['beirut', 'bey'], latitude: 33.8938, longitude: 35.5018, parent: { name: 'Lebanon', type: 'region' } },
+
   { id: 'nz-auckland', canonicalName: 'Auckland', displayName: 'Auckland', type: 'city', countryCode: 'NZ', countryName: 'New Zealand', iataCode: 'AKL', airportCodes: ['AKL'], aliases: ['auckland', 'akl'], latitude: -36.8509, longitude: 174.7645 },
   { id: 'nz-queenstown', canonicalName: 'Queenstown', displayName: 'Queenstown', type: 'city', countryCode: 'NZ', countryName: 'New Zealand', iataCode: 'ZQN', airportCodes: ['ZQN'], aliases: ['queenstown', 'zqn'], latitude: -45.0312, longitude: 168.6626 },
   { id: 'nz-hamilton', canonicalName: 'Hamilton', displayName: 'Hamilton', type: 'city', countryCode: 'NZ', countryName: 'New Zealand', iataCode: 'HLZ', airportCodes: ['HLZ'], aliases: ['hamilton nz', 'hamilton new zealand', 'hamilton'], latitude: -37.787, longitude: 175.2793 },

@@ -36,6 +36,12 @@ export type ProcessConversationTurnInput = {
    * exactly. Never read from message text.
    */
   stateUpdate?: ConversationStateUpdate;
+  /**
+   * When true, skip the legacy regex extraction path and apply only
+   * `stateUpdate` (from the semantic interpretation boundary). Default false
+   * preserves extractor-based tests and fallback callers.
+   */
+  skipExtraction?: boolean;
 };
 
 export type ProcessConversationTurnResult = {
@@ -47,22 +53,31 @@ export type ProcessConversationTurnResult = {
 /**
  * Sole public turn-processing entry point for conversation-core.
  *
- * Phase 5I/10B: run the internal extraction transition, apply any explicit
- * injected ConversationStateUpdate (explicit input wins), generate a
- * deterministic reply from final travel state via
+ * Phase 5I/10B: run the internal extraction transition (unless skipExtraction),
+ * apply any explicit injected ConversationStateUpdate (explicit input wins),
+ * generate a deterministic reply from final travel state via
  * generateIntegratedConversationReply (Phase 14B seam → generateConversationReply),
  * append raw user + assistant transcript entries, increment turnCount by one,
  * set updatedAt from assistantMessageAt, set status to active, and expose ageMs.
  * Does not ask next questions, call search/itinerary, or persist.
+ *
+ * Semantic AI interpretation lives outside this module; production UI passes
+ * validated stateUpdate with skipExtraction after interpretTravelUtterance.
  */
 export function processConversationTurn(
   input: ProcessConversationTurnInput,
 ): ProcessConversationTurnResult {
   const base = resolveBaseState(input);
-  const extractionTransition = transitionConversationStateFromExtraction({
-    message: input.message,
-    currentState: base,
-  });
+  const extractionTransition = input.skipExtraction
+    ? {
+        extractionResult: { stateUpdate: {} as ConversationStateUpdate },
+        hasStateChanged: false,
+        nextState: base,
+      }
+    : transitionConversationStateFromExtraction({
+        message: input.message,
+        currentState: base,
+      });
   const nextTurnCount = base.turnCount + 1;
   const assistantTimestamp = input.assistantMessageAt.toISOString();
   const ageMs =

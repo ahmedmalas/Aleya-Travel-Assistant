@@ -326,6 +326,10 @@ describe('phase 5F — extractConversationState execution only', () => {
         ROOT,
         'src/features/conversation-core/transitionConversationStateFromExtraction.ts',
       ),
+      resolve(
+        ROOT,
+        'src/features/conversation-interpretation/regexFallbackInterpreter.ts',
+      ),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),

@@ -29,6 +29,8 @@ describe('conversation-core architectural boundary', () => {
       /from ['"]\.\.\/\.\.\/features\/conversation-core['"]/,
     );
     expect(panel).toMatch(/processConversationTurn/);
+    expect(panel).toMatch(/interpretTravelUtterance/);
+    expect(panel).toMatch(/skipExtraction:\s*true/);
     expect(panel).toMatch(/createInitialConversationCoreState/);
     expect(panel.includes('processTurn')).toBe(false);
     expect(panel.includes("from '../../features/conversation-core/types'")).toBe(

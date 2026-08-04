@@ -231,7 +231,9 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
     const concierge = readFileSync(CONCIERGE_PANEL_SOURCE, 'utf8');
     expect(aiPanel).toMatch(/processConversationTurn\(/);
     expect(concierge).toMatch(/processConversationTurn\(/);
-    expect(aiPanel.includes('stateUpdate')).toBe(false);
+    // Semantic interpretation path injects validated stateUpdate + skipExtraction.
+    expect(aiPanel).toMatch(/stateUpdate:\s*interpretation\.stateUpdate/);
+    expect(aiPanel).toMatch(/skipExtraction:\s*true/);
     expect(concierge.includes('stateUpdate')).toBe(false);
   });
 
