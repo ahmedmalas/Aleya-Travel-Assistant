@@ -1,7 +1,7 @@
 /**
  * Architecture turn trace — diagnostic pipeline snapshot.
  *
- * Phase 3: Planner → Validator → Committer preview run for inspection only.
+ * Phase 4: Interpreter → Planner → Validator → Committer preview → Governor preview.
  * Behaviour switch remains OFF. Production governor remains behavioural owner.
  */
 
@@ -11,11 +11,12 @@ import {
   clarificationFromOpenClarification,
   clarificationSchema,
 } from './clarification';
+import { choosePreviewConsultantAct } from './choosePreviewConsultantAct';
 import { commitCanonicalOperations } from './commitCanonicalOperations';
 import { plannerResultSchema } from './canonicalOperations';
+import { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
 import { planCanonicalOperations } from './planCanonicalOperations';
 import {
-  emptySemanticInterpretationResult,
   semanticInterpretationSchema,
   type SemanticInterpretation,
 } from './semanticInterpretation';
@@ -53,11 +54,8 @@ const travelPreviewSchema = z.object({
 });
 
 export const architectureTurnTraceSchema = z.object({
-  /** Highest completed architecture phase reflected in this trace. */
-  phase: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  /** True when stages must not be treated as production-authoritative. */
+  phase: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   diagnosticOnly: z.literal(true),
-  /** Behaviour switch is off — production path unchanged. */
   behaviourSwitchActive: z.literal(false),
   message: z.string(),
   stagesPresent: z.array(architectureStageSchema),
@@ -66,16 +64,21 @@ export const architectureTurnTraceSchema = z.object({
   planner: plannerResultSchema,
   validation: validationResultSchema,
   committer: z.object({
-    /** Architecture committer is not production-active. */
     active: z.literal(false),
     appliedOperationCount: z.number().int().nonnegative(),
     note: z.string(),
-    /** Diagnostic preview only — not assigned to result.state. */
     preview: travelPreviewSchema,
   }),
   governor: z.object({
     active: z.literal(false),
     note: z.string(),
+    previewAct: z.object({
+      kind: z.string(),
+      reply: z.string(),
+      askTopic: z.string().optional(),
+      clarificationId: z.string().nullable(),
+      confidence: z.number(),
+    }),
   }),
   notes: z.array(z.string()),
 });
@@ -86,19 +89,13 @@ export type ArchitectureTurnTrace = z.infer<typeof architectureTurnTraceSchema>;
 export type BuildArchitectureTurnTraceInput = {
   message: string;
   currentState: ConversationCoreState;
-  /**
-   * Optional semantic payload. When provided, Phase 2–3 pipeline runs purely
-   * for the diagnostic trace. When omitted, an empty stub is planned.
-   */
+  /** Optional injected semantic (tests). Otherwise diagnostic interpreter runs. */
   semantic?: SemanticInterpretation;
 };
 
 /**
- * Build a diagnostic architecture trace.
- *
- * Runs planner → validator → committer preview on a copy.
- * Never mutates input state and never chooses consultant acts.
- * Production result.state / reply remain owned by the existing governor.
+ * Build a diagnostic architecture trace (full five-layer preview).
+ * Never mutates input state; never overrides production acts.
  */
 export function buildArchitectureTurnTrace(
   input: BuildArchitectureTurnTraceInput,
@@ -109,10 +106,9 @@ export function buildArchitectureTurnTrace(
 
   const semantic =
     input.semantic ??
-    emptySemanticInterpretationResult({
-      ambiguityNotes: [
-        'Semantic interpreter behaviour not active — stub recorded for trace',
-      ],
+    interpretDiagnosticSemantic({
+      message: input.message,
+      currentState: input.currentState,
     });
 
   const planner = planCanonicalOperations({
@@ -132,8 +128,16 @@ export function buildArchitectureTurnTrace(
     narrowedClarification: validation.narrowedClarification,
   });
 
+  const previewAct = choosePreviewConsultantAct({
+    previewState: committed.state,
+    validation,
+    semantic,
+    clearedClarificationIds: committed.clearedClarificationIds,
+    priorClarificationId: input.currentState.openClarification?.id ?? null,
+  });
+
   return architectureTurnTraceSchema.parse({
-    phase: 3,
+    phase: 4,
     diagnosticOnly: true,
     behaviourSwitchActive: false,
     message: input.message,
@@ -151,7 +155,7 @@ export function buildArchitectureTurnTrace(
     committer: {
       active: false,
       appliedOperationCount: committed.appliedOperationCount,
-      note: 'Phase 3: committer preview only — production writes still use existing governor path',
+      note: 'Phase 4: committer preview only — production writes still use existing governor path',
       preview: {
         origin: committed.state.origin,
         destination: committed.state.destination,
@@ -169,13 +173,19 @@ export function buildArchitectureTurnTrace(
     },
     governor: {
       active: false,
-      note: 'Phase 3: architecture governor not active — existing chooseConsultantAct path unchanged',
+      note: 'Phase 4: preview act only — existing chooseConsultantAct owns production reply',
+      previewAct: {
+        kind: previewAct.kind,
+        reply: previewAct.reply,
+        askTopic: previewAct.askTopic,
+        clarificationId: previewAct.clarification?.id ?? null,
+        confidence: previewAct.confidence,
+      },
     },
     notes: [
-      'Architecture Phase 3 diagnostic trace: planner + validator + committer preview.',
+      'Architecture Phase 4 diagnostic dual-run path.',
       'No behaviour switch: production Turn Governor path unchanged.',
-      'Committer preview is not assigned to result.state.',
-      'Validator/Committer are not production-active.',
+      'Preview commit/act are not assigned to result.state/reply.',
     ],
   });
 }

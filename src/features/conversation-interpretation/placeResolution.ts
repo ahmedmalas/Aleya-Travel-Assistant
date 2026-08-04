@@ -19,10 +19,12 @@ export type PlaceResolutionStatus =
 export function isShapeValidPlaceName(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length < 2 || trimmed.length > 80) return false;
-  if (!/[A-Za-z]/.test(trimmed)) return false;
+  // Require at least one letter (Latin or other scripts); reject digit-only.
+  if (!/\p{L}/u.test(trimmed)) return false;
   if (/^\d+$/.test(trimmed)) return false;
   // One to four whitespace-separated tokens with optional internal hyphen/apostrophe.
-  return /^[A-Za-z]+(?:['\-][A-Za-z]+)*(?:\s+[A-Za-z]+(?:['\-][A-Za-z]+)*){0,3}$/.test(
+  // Unicode letters allowed so names like Bogotá are shape-valid without a catalogue.
+  return /^[\p{L}]+(?:['\-][\p{L}]+)*(?:\s+[\p{L}]+(?:['\-][\p{L}]+)*){0,3}$/u.test(
     trimmed,
   );
 }

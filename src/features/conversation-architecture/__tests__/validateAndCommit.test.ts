@@ -583,9 +583,10 @@ describe('Phase 3 — diagnostic architecture trace', () => {
         ],
       }),
     });
-    expect(trace.phase).toBe(3);
+    expect(trace.phase).toBe(4);
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
+    expect(trace.governor.active).toBe(false);
     expect(trace.validation.accepted.map((o) => o.op)).toContain(
       'remove_destination',
     );

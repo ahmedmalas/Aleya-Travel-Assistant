@@ -1,9 +1,8 @@
 /**
  * conversation-architecture — five-layer pipeline schemas and traces.
  *
- * Phase 1: schemas + diagnostic traces.
- * Phase 2: pure Intent Planner (proposals only; not production-active).
- * Phase 3: pure Validator + Committer (diagnostic preview only).
+ * Phase 1–3: schemas, planner, validator, committer (diagnostic).
+ * Phase 4: dual-run orchestration + divergence telemetry.
  * Behaviour switch is OFF. Production Turn Governor remains authoritative.
  */
 
@@ -85,3 +84,20 @@ export {
   type CommitCanonicalOperationsInput,
   type CommitCanonicalOperationsResult,
 } from './commitCanonicalOperations';
+
+export { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
+
+export {
+  choosePreviewConsultantAct,
+  type PreviewConsultantAct,
+} from './choosePreviewConsultantAct';
+
+export {
+  runDualPathComparison,
+  classifyDivergence,
+  divergenceCategorySchema,
+  dualRunComparisonSchema,
+  type DivergenceCategory,
+  type DualRunComparison,
+  type RunDualPathComparisonInput,
+} from './dualRunComparison';

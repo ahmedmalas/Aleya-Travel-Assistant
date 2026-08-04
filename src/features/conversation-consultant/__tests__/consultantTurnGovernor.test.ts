@@ -141,7 +141,7 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
     expect(panel).not.toMatch(/interpretTravelUtterance/);
   });
 
-  it('attaches Phase 1 diagnostic architectureTrace without changing act/reply', async () => {
+  it('attaches Phase 4 dual-run telemetry without changing act/reply', async () => {
     const r = await turn(
       'I want to go Sydney Bangkok Beirut',
       createState(),
@@ -152,11 +152,21 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
       'Are you starting from Sydney, or is Sydney your first destination?',
     );
     expect(r.architectureTrace).toMatchObject({
-      phase: 3,
+      phase: 4,
       diagnosticOnly: true,
       behaviourSwitchActive: false,
       committer: { active: false },
+      governor: { active: false },
     });
+    expect(r.dualRunComparison).toMatchObject({
+      phase: 4,
+      diagnosticOnly: true,
+      behaviourSwitchActive: false,
+    });
+    expect(r.dualRunComparison.legacy.reply).toBe(r.reply);
+    expect(r.dualRunComparison.legacy.state.openClarificationId).toBe(
+      r.state.openClarification?.id ?? null,
+    );
     // Diagnostic preview must not become the governor result state.
     expect(r.state.openClarification?.subject).toBe('Sydney');
   });

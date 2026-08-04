@@ -498,6 +498,26 @@ function planMentionPlace(
   confidence: number,
 ): ProposedOperation[] {
   const entity = delta.entities[0];
+  const roleAmbiguous =
+    delta.value !== null &&
+    typeof delta.value === 'object' &&
+    'roleAmbiguous' in delta.value &&
+    (delta.value as { roleAmbiguous?: unknown }).roleAmbiguous === true;
+
+  if (roleAmbiguous) {
+    const listed =
+      asPlaceList((delta.value as { places?: unknown }).places) ??
+      delta.entities
+        .map((e) => e.resolvedHint ?? e.surface)
+        .filter((p): p is string => typeof p === 'string' && p.length > 0);
+    return [
+      noStateChange(
+        `Multi-place travel seed without origin role — refusing silent commit of [${listed.join(', ')}]`,
+        confidence,
+      ),
+    ];
+  }
+
   const place =
     (entity ? entity.resolvedHint ?? entity.surface : null) ||
     asPlaceString(delta.value);
@@ -990,8 +1010,34 @@ function planRouteReplacement(
 
   const ops: ProposedOperation[] = [];
   const routeOrigin = origin ?? places[0] ?? null;
-  const destinations =
-    origin !== null ? places : places.length > 1 ? places.slice(1) : places;
+  let destinations: string[] = [];
+  for (const delta of semantic.deltas) {
+    if (
+      delta.value &&
+      typeof delta.value === 'object' &&
+      delta.value !== null &&
+      'destinations' in delta.value
+    ) {
+      const listed = asPlaceList(
+        (delta.value as { destinations: unknown }).destinations,
+      );
+      if (listed) destinations = listed;
+    }
+  }
+  if (destinations.length === 0) {
+    destinations =
+      routeOrigin !== null
+        ? places.filter((p) => placeKey(p) !== placeKey(routeOrigin))
+        : places.length > 1
+          ? places.slice(1)
+          : places;
+  }
+  // Drop return point from destination list when duplicated.
+  if (returnPoint) {
+    destinations = destinations.filter(
+      (p) => placeKey(p) !== placeKey(returnPoint),
+    );
+  }
 
   if (routeOrigin) {
     ops.push(

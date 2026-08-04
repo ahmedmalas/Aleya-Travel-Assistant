@@ -147,13 +147,14 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     });
 
     expect(architectureTurnTraceSchema.parse(trace)).toMatchObject({
-      phase: 3,
+      phase: 4,
       diagnosticOnly: true,
       behaviourSwitchActive: false,
       message: 'Remove Osaka.',
       committer: { active: false },
       governor: { active: false },
     });
+    expect(trace.governor.previewAct.kind).toBeTruthy();
     expect(trace.activeClarification?.id).toBe('place-role:Osaka');
     expect(trace.semantic.deltas[0]?.kind).toBe('remove_place');
     expect(trace.planner.operations.length).toBeGreaterThan(0);
@@ -165,7 +166,7 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     expect(current.destinationStops).toBeNull();
   });
 
-  it('records empty semantic stub when none supplied', () => {
+  it('runs diagnostic interpreter when semantic is not supplied', () => {
     const trace = buildArchitectureTurnTrace({
       message: 'hello',
       currentState: state(),
@@ -173,7 +174,15 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     expect(trace.semantic.intent).toBe('unknown');
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
-    expect(trace.phase).toBe(3);
+    expect(trace.governor.active).toBe(false);
+    expect(trace.phase).toBe(4);
+    expect(trace.stagesPresent).toEqual([
+      'semantic_interpreter',
+      'intent_planner',
+      'canonical_validator',
+      'state_committer',
+      'consultant_governor',
+    ]);
     expect(trace.notes.some((n) => n.includes('No behaviour switch'))).toBe(
       true,
     );

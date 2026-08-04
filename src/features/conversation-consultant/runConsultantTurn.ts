@@ -1,6 +1,8 @@
 import {
   buildArchitectureTurnTrace,
+  runDualPathComparison,
   type ArchitectureTurnTrace,
+  type DualRunComparison,
 } from '../conversation-architecture';
 import {
   processConversationTurn,
@@ -39,24 +41,22 @@ export type RunConsultantTurnResult = {
   act: ConsultantAct;
   stateUpdate: ConversationStateUpdate;
   /**
-   * Phase 1 diagnostic architecture trace only.
-   * Never used for commits, act selection, or UI. behaviourSwitchActive is false.
+   * Diagnostic architecture trace (Phase 4 five-layer preview).
+   * Never used for production commits/acts. behaviourSwitchActive is false.
    */
   architectureTrace: ArchitectureTurnTrace;
+  /**
+   * Dual-run comparison telemetry (legacy vs diagnostic path).
+   * Does not override result.state / result.reply.
+   */
+  dualRunComparison: DualRunComparison;
 };
 
 /**
  * Authoritative production turn path — Consultant Turn Governor.
  *
- * User message + history + canonical state
- *   → semantic SituationModel (via interpretTravelUtterance + clarify-before-write)
- *   → commit only unambiguous facts
- *   → detect blocking ambiguity
- *   → choose one ConsultantAct
- *   → respond from message + situation + act
- *
- * Deterministic validation / canonical apply remain via conversation-core.
- * Fixed slot-filling reply planning is not used on this path.
+ * Legacy path owns actual state/reply. Phase 4 dual-run telemetry runs in
+ * parallel for inspection only (behaviourSwitchActive: false).
  */
 export async function runConsultantTurn(
   input: RunConsultantTurnInput,
@@ -81,7 +81,6 @@ export async function runConsultantTurn(
   const clarification =
     ambiguity !== null ? clarificationFromAmbiguity(ambiguity) : undefined;
 
-  // Preview state after unambiguous commits (before clarification write).
   let stateUpdate = commitUnambiguousFacts({
     situation,
     currentState: previousState,
@@ -93,7 +92,6 @@ export async function runConsultantTurn(
           : undefined,
   });
 
-  // Apply commits to a provisional state for act selection.
   const provisionalTravel = applyConversationStateUpdate(
     previousState,
     stateUpdate,
@@ -108,7 +106,6 @@ export async function runConsultantTurn(
     state: provisionalState,
   });
 
-  // Persist clarification when the chosen act is clarify.
   if (act.kind === 'clarify' && act.clarification) {
     stateUpdate = {
       ...stateUpdate,
@@ -116,7 +113,6 @@ export async function runConsultantTurn(
     };
   }
 
-  // If act cleared clarification via facts already, keep that.
   if (act.kind !== 'clarify' && provisionalState.openClarification === null) {
     stateUpdate = {
       ...stateUpdate,
@@ -124,7 +120,6 @@ export async function runConsultantTurn(
     };
   }
 
-  // Conversation-complete / search flags from summarise/execute acts.
   if (act.kind === 'summarise' && situation.intent === 'complete') {
     stateUpdate = {
       ...stateUpdate,
@@ -165,10 +160,18 @@ export async function runConsultantTurn(
     replyOverride: reply,
   });
 
-  // Phase 1: diagnostic trace only — does not influence state, reply, or act.
+  // Phase 4 diagnostics — never assigned to production state/reply.
   const architectureTrace = buildArchitectureTurnTrace({
     message: input.message,
     currentState: previousState,
+  });
+
+  const dualRunComparison = runDualPathComparison({
+    message: input.message,
+    priorState: previousState,
+    legacyState: result.state,
+    legacyReply: result.reply,
+    legacyAct: act,
   });
 
   return {
@@ -178,5 +181,6 @@ export async function runConsultantTurn(
     act,
     stateUpdate,
     architectureTrace,
+    dualRunComparison,
   };
 }
