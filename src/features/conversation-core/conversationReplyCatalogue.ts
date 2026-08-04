@@ -98,6 +98,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
   completion: {
     tripReady: (summary: string) =>
       `Here's what I have for your trip:\n${summary}\nI have everything I need — ready to search when you confirm.`,
+    tripReadyNeedsLocationValidation: (summary: string) =>
+      `Here's what I have for your trip:\n${summary}\nLocation details still need validation before provider search.`,
   },
 } as const;
 

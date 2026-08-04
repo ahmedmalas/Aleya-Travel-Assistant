@@ -293,6 +293,8 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       familyActivitiesRequested: currentState.familyActivitiesRequested,
       accessibleTravelRequested: currentState.accessibleTravelRequested,
       conversationComplete: currentState.conversationComplete,
+      destinationResolutionStatus: currentState.destinationResolutionStatus,
+      originResolutionStatus: currentState.originResolutionStatus,
     };
 
     const extractSpy = vi

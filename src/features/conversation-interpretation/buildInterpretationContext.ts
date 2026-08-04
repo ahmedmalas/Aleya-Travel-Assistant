@@ -16,6 +16,12 @@ export type InterpretationTravelSnapshot = {
   restaurantsRequested: boolean | null;
   restaurantPreference: string | null;
   conversationComplete: boolean | null;
+  destinationResolutionStatus:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  originResolutionStatus: 'resolved' | 'unresolved' | 'ambiguous' | null;
 };
 
 export type InterpretationHistoryTurn = {
@@ -74,6 +80,8 @@ function snapshotTravelState(state: ConversationCoreState): InterpretationTravel
     restaurantsRequested: state.restaurantsRequested,
     restaurantPreference: state.restaurantPreference,
     conversationComplete: state.conversationComplete,
+    destinationResolutionStatus: state.destinationResolutionStatus,
+    originResolutionStatus: state.originResolutionStatus,
   };
 }
 

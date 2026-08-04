@@ -108,6 +108,20 @@ export type ConversationCoreState = {
    * summary / search readiness. Never inferred from message text here.
    */
   conversationComplete: boolean | null;
+  /**
+   * TLI enrichment status for destination. Unresolved/ambiguous places
+   * remain in `destination` but are unsafe for provider search.
+   */
+  destinationResolutionStatus:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  /**
+   * TLI enrichment status for origin. Unresolved/ambiguous places remain
+   * in `origin` but are unsafe for provider search.
+   */
+  originResolutionStatus: 'resolved' | 'unresolved' | 'ambiguous' | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -154,6 +168,12 @@ export type ConversationStateUpdate = {
   familyActivitiesRequested?: boolean | null;
   accessibleTravelRequested?: boolean | null;
   conversationComplete?: boolean | null;
+  destinationResolutionStatus?:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  originResolutionStatus?: 'resolved' | 'unresolved' | 'ambiguous' | null;
 };
 
 /**
@@ -244,6 +264,8 @@ export function createInitialConversationCoreState(
     familyActivitiesRequested: null,
     accessibleTravelRequested: null,
     conversationComplete: null,
+    destinationResolutionStatus: null,
+    originResolutionStatus: null,
     transcript: [],
   };
 }

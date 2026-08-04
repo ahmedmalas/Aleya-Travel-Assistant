@@ -42,6 +42,17 @@ Relative language (weekday-of-week, day after, that weekend, N nights later, sam
 
 Completion signals (that's it / nothing else / no / all done / that's all) while optional follow-ups are open set `conversationComplete: true`. Deterministic planner then stops optional / neutral questions, summarises the captured trip, and moves to confirmation / search readiness.
 
+## Place enrichment
+
+| Concern | Owner |
+| --- | --- |
+| User meaning (is this a destination?) | Semantic interpretation |
+| Canonical name / ambiguity / unresolved flag | `travel-location-intelligence` via `canonicalizeSemanticPlaces` |
+| Shape-valid but TLI-unknown places | **Retained** in state with `destinationResolutionStatus: 'unresolved'` (or origin equivalent) |
+| Provider search construction | Blocked unless place status is `resolved` |
+
+TLI must not erase a shape-valid destination merely because local coverage is incomplete. “Unknown to TLI” ≠ “not a place.”
+
 ## Model / provider
 
 - Server: Vercel AI Gateway via `generateText` + `Output.object` (`openai/gpt-5.4`)

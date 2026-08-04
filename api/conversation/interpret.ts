@@ -44,6 +44,12 @@ const semanticSchema = z.object({
   ]),
   destination: z.string().nullable(),
   origin: z.string().nullable(),
+  destinationResolutionStatus: z
+    .enum(['resolved', 'unresolved', 'ambiguous'])
+    .nullable(),
+  originResolutionStatus: z
+    .enum(['resolved', 'unresolved', 'ambiguous'])
+    .nullable(),
   departureDate: z.string().nullable(),
   returnDate: z.string().nullable(),
   departureTimePreference: z.string().nullable(),

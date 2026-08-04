@@ -40,6 +40,12 @@ export type AppliedConversationTravelState = {
   familyActivitiesRequested: boolean | null;
   accessibleTravelRequested: boolean | null;
   conversationComplete: boolean | null;
+  destinationResolutionStatus:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  originResolutionStatus: 'resolved' | 'unresolved' | 'ambiguous' | null;
 };
 
 /**
@@ -193,5 +199,13 @@ export function applyConversationStateUpdate(
       stateUpdate?.conversationComplete !== undefined
         ? stateUpdate.conversationComplete
         : currentState.conversationComplete,
+    destinationResolutionStatus:
+      stateUpdate?.destinationResolutionStatus !== undefined
+        ? stateUpdate.destinationResolutionStatus
+        : currentState.destinationResolutionStatus,
+    originResolutionStatus:
+      stateUpdate?.originResolutionStatus !== undefined
+        ? stateUpdate.originResolutionStatus
+        : currentState.originResolutionStatus,
   };
 }

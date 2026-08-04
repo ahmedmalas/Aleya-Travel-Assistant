@@ -40,6 +40,8 @@ export const TRAVEL_COMPARE_KEYS = [
   'familyActivitiesRequested',
   'accessibleTravelRequested',
   'conversationComplete',
+  'destinationResolutionStatus',
+  'originResolutionStatus',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
 export type TravelCompareKey = (typeof TRAVEL_COMPARE_KEYS)[number];

@@ -2,6 +2,7 @@ import type {
   ConversationCoreState,
   ConversationStateUpdate,
 } from '../conversation-core';
+import { isShapeValidPlaceName } from './placeResolution';
 import type { TravelSemanticInterpretation } from './schema';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,6 +23,9 @@ function addDaysIso(isoDate: string, days: number): string | null {
 /**
  * Deterministic validation + mapping from semantic interpretation → stateUpdate.
  * AI never writes canonical state directly.
+ *
+ * Shape-valid places are accepted even when TLI could not resolve them.
+ * "Unknown to TLI" is not treated as "not a place."
  */
 export function validateAndMapSemanticInterpretation(
   semantic: TravelSemanticInterpretation,
@@ -35,10 +39,22 @@ export function validateAndMapSemanticInterpretation(
   }
 
   if (semantic.destination !== null) {
-    stateUpdate.destination = semantic.destination;
+    if (isShapeValidPlaceName(semantic.destination)) {
+      stateUpdate.destination = semantic.destination;
+      stateUpdate.destinationResolutionStatus =
+        semantic.destinationResolutionStatus ?? 'unresolved';
+    } else {
+      warnings.push(`Invalid destination shape rejected: ${semantic.destination}`);
+    }
   }
   if (semantic.origin !== null) {
-    stateUpdate.origin = semantic.origin;
+    if (isShapeValidPlaceName(semantic.origin)) {
+      stateUpdate.origin = semantic.origin;
+      stateUpdate.originResolutionStatus =
+        semantic.originResolutionStatus ?? 'unresolved';
+    } else {
+      warnings.push(`Invalid origin shape rejected: ${semantic.origin}`);
+    }
   }
 
   if (semantic.departureDate !== null) {
@@ -127,9 +143,11 @@ export function validateAndMapSemanticInterpretation(
     switch (removal) {
       case 'destination':
         stateUpdate.destination = null;
+        stateUpdate.destinationResolutionStatus = null;
         break;
       case 'origin':
         stateUpdate.origin = null;
+        stateUpdate.originResolutionStatus = null;
         break;
       case 'departureDate':
         stateUpdate.departureDate = null;
@@ -180,6 +198,7 @@ export function validateAndMapSemanticInterpretation(
     if (stateUpdate.origin !== undefined && stateUpdate.origin === nextDestination) {
       warnings.push('origin equal to destination rejected');
       delete stateUpdate.origin;
+      delete stateUpdate.originResolutionStatus;
     }
   }
 

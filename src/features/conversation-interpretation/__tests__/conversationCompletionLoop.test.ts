@@ -28,6 +28,8 @@ function createCompleteTrip(
     origin: 'Sydney',
     departureDate: '2026-08-28',
     returnDate: '2026-08-31',
+    destinationResolutionStatus: 'resolved',
+    originResolutionStatus: 'resolved',
     flightsRequested: true,
     accommodationRequested: false,
     carHireRequested: false,

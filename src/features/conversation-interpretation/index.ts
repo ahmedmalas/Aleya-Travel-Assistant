@@ -19,6 +19,14 @@ export { buildInterpretationPrompt } from './buildInterpretationPrompt';
 export { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 export {
+  isShapeValidPlaceName,
+  type PlaceResolutionStatus,
+} from './placeResolution';
+export {
+  canSafelyConstructProviderSearch,
+  isPlaceStatusSafeForProviderSearch,
+} from './providerSearchSafety';
+export {
   travelSemanticInterpretationSchema,
   emptySemanticInterpretation,
   type TravelSemanticInterpretation,

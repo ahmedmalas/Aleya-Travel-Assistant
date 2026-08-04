@@ -188,9 +188,15 @@ export function selectConversationFollowUpQuestion(
   }
 
   if (state.conversationComplete === true && coreTripFieldsPresent(state)) {
-    return CONVERSATION_REPLY_CATALOGUE.completion.tripReady(
-      buildTripCaptureSummary(state),
-    );
+    const summary = buildTripCaptureSummary(state);
+    const placesSearchSafe =
+      state.destinationResolutionStatus === 'resolved' &&
+      state.originResolutionStatus === 'resolved';
+    return placesSearchSafe
+      ? CONVERSATION_REPLY_CATALOGUE.completion.tripReady(summary)
+      : CONVERSATION_REPLY_CATALOGUE.completion.tripReadyNeedsLocationValidation(
+          summary,
+        );
   }
 
   for (const entry of CONTEXTUAL_QUESTIONS) {

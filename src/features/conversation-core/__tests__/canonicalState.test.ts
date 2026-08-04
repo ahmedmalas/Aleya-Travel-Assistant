@@ -24,6 +24,7 @@ const CANONICAL_KEYS = [
   'createdAt',
   'departureDate',
   'destination',
+  'destinationResolutionStatus',
   'divingSnorkellingRequested',
   'eventsFestivalsRequested',
   'familyActivitiesRequested',
@@ -37,6 +38,7 @@ const CANONICAL_KEYS = [
   'nearbyDiscoveryRequested',
   'nightlifeRequested',
   'origin',
+  'originResolutionStatus',
   'restaurantPreference',
   'restaurantsRequested',
   'returnDate',
@@ -141,6 +143,8 @@ describe('canonical conversation-core state', () => {
       familyActivitiesRequested: null,
       accessibleTravelRequested: null,
       conversationComplete: null,
+      destinationResolutionStatus: null,
+      originResolutionStatus: null,
       transcript: [],
     });
   });
