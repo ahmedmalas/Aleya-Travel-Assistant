@@ -38,7 +38,9 @@ The AI layer receives a complete context package (`TravelInterpretationContext`)
 - recent history, last assistant question, prior user message
 - today ISO
 
-Relative language (weekday-of-week, day after, that weekend, N nights later, same time, earlier flight, change to Friday, keep everything else) is resolved against those anchors into ISO dates / preferences.
+Relative language (weekday-of-week, day after, that weekend, relative durations as quantity×unit, same time, earlier flight, change to Friday, keep everything else) is resolved against those anchors into ISO dates / preferences.
+
+Relative durations (after N weeks / in two weeks / N days later / fortnight / stay for N days) are one semantic class: convert to day offset from departure, then ISO returnDate. Do not patch individual surface phrases.
 
 Completion signals (that's it / nothing else / no / all done / that's all) while optional follow-ups are open set `conversationComplete: true`. Deterministic planner then stops optional / neutral questions, summarises the captured trip, and moves to confirmation / search readiness.
 

@@ -2,6 +2,7 @@ import type { ActiveTravelRequirement } from './types';
 import type { TravelInterpretationContext } from './buildInterpretationContext';
 import type { TravelSemanticInterpretation } from './schema';
 import { emptySemanticInterpretation } from './schema';
+import { extractRelativeDurationMeaning } from './relativeDurationSemantics';
 
 /**
  * Contextual temporal / reference semantics for relative travel language.
@@ -74,23 +75,6 @@ function ensureReturnOnOrAfterDeparture(
   return bumped ?? candidate;
 }
 
-function wordNumber(raw: string): number | null {
-  if (/^\d+$/.test(raw)) return Number(raw);
-  const words: Record<string, number> = {
-    one: 1,
-    two: 2,
-    three: 3,
-    four: 4,
-    five: 5,
-    six: 6,
-    seven: 7,
-    eight: 8,
-    nine: 9,
-    ten: 10,
-  };
-  return words[raw] ?? null;
-}
-
 function targetDateField(
   activeRequirement: ActiveTravelRequirement,
   folded: string,
@@ -154,46 +138,31 @@ export function resolveContextualTemporalSemantics(
     context.travelState.departureDate ??
     context.todayIso;
 
-  // "the day after" / "N days later" / "four nights later"
-  if (/\bthe day after\b/.test(folded)) {
-    const next = addDays(anchor, 1);
-    if (next) {
-      assignDate(semantic, context, next);
+  // Relative duration class: quantity × unit → day offset from departure/anchor.
+  // (after N weeks | in two weeks | N days later | fortnight | stay for N days)
+  const relativeDuration = extractRelativeDurationMeaning(folded);
+  if (relativeDuration !== null) {
+    const dep = context.travelState.departureDate ?? anchor;
+    const derived = addDays(dep, relativeDuration.dayOffset);
+    if (derived) {
+      semantic.returnDate = ensureReturnOnOrAfterDeparture(
+        derived,
+        context.travelState.departureDate,
+      );
+      if (relativeDuration.framedAsNights) {
+        semantic.nightCount = relativeDuration.dayOffset;
+      }
+      semantic.confidence = Math.max(semantic.confidence, 0.88);
       matched = true;
     }
   }
 
-  const nightsLater = folded.match(
-    /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+nights?\s+later\b/,
-  );
-  if (nightsLater) {
-    const n = wordNumber(nightsLater[1] ?? '');
-    if (n !== null) {
-      const dep = context.travelState.departureDate ?? anchor;
-      const derived = addDays(dep, n);
-      if (derived) {
-        semantic.returnDate = ensureReturnOnOrAfterDeparture(
-          derived,
-          context.travelState.departureDate,
-        );
-        semantic.nightCount = n;
-        semantic.confidence = Math.max(semantic.confidence, 0.85);
-        matched = true;
-      }
-    }
-  }
-
-  const daysLater = folded.match(
-    /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\s+later\b/,
-  );
-  if (daysLater && !nightsLater) {
-    const n = wordNumber(daysLater[1] ?? '');
-    if (n !== null) {
-      const derived = addDays(anchor, n);
-      if (derived) {
-        assignDate(semantic, context, derived);
-        matched = true;
-      }
+  // "the day after" (single-day relational, not a measured duration unit)
+  if (!matched && /\bthe day after\b/.test(folded)) {
+    const next = addDays(anchor, 1);
+    if (next) {
+      assignDate(semantic, context, next);
+      matched = true;
     }
   }
 

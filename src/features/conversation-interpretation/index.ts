@@ -16,6 +16,7 @@ export {
   type TravelInterpretationContext,
 } from './buildInterpretationContext';
 export { buildInterpretationPrompt } from './buildInterpretationPrompt';
+export { extractRelativeDurationMeaning } from './relativeDurationSemantics';
 export { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 export { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 export {
