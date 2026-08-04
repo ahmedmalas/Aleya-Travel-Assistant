@@ -9,6 +9,10 @@ import type { ConversationCoreState, ConversationTranscriptEntry } from '../conv
 import { buildInterpretationContext } from './buildInterpretationContext';
 import { resolveContextualCompletionSemantics } from './contextualCompletionSemantics';
 import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
+import {
+  applyRecognizedServicesToSemantic,
+  recognizeTravelServicesInMessage,
+} from './serviceRecognitionSemantics';
 
 /**
  * Offline semantic adapter — place-aware slot filling via travel-location-intelligence
@@ -186,17 +190,27 @@ export function interpretOfflineSemantic(input: {
     semantic.carHireRequested = false;
     semantic.confidence = 0.8;
   }
-  if (/\badd (?:a )?hotel\b/.test(folded) || /\bhotel too\b/.test(folded)) {
-    semantic.intent = 'add_service';
-    semantic.accommodationRequested = true;
-    semantic.confidence = 0.8;
-  }
-  if (/\badd (?:a )?car\b/.test(folded) || /\bcar hire\b/.test(folded)) {
-    semantic.carHireRequested = true;
-    semantic.confidence = Math.max(semantic.confidence, 0.75);
-  }
-  if (/\bflights?\b/.test(folded)) {
-    semantic.flightsRequested = true;
+
+  // Multi-intent service scan: preserve every recognised service from one utterance.
+  const recognizedServices = recognizeTravelServicesInMessage(message);
+  if (recognizedServices.size > 0 && !semantic.removals.includes('carHire')) {
+    const applied = applyRecognizedServicesToSemantic({
+      services: recognizedServices,
+      flightsRequested: semantic.flightsRequested,
+      accommodationRequested: semantic.accommodationRequested,
+      carHireRequested: semantic.carHireRequested,
+      activitiesRequested: semantic.activitiesRequested,
+      restaurantsRequested: semantic.restaurantsRequested,
+    });
+    semantic.flightsRequested = applied.flightsRequested;
+    semantic.accommodationRequested = applied.accommodationRequested;
+    semantic.carHireRequested = applied.carHireRequested;
+    semantic.activitiesRequested = applied.activitiesRequested;
+    semantic.restaurantsRequested = applied.restaurantsRequested;
+    if (applied.any) {
+      if (recognizedServices.size > 1) semantic.intent = 'add_service';
+      semantic.confidence = Math.max(semantic.confidence, 0.82);
+    }
   }
 
   const nightCount = parseNightCount(message);

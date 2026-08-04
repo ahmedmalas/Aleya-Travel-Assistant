@@ -30,6 +30,7 @@ export function buildInterpretationPrompt(
     '- change it to Friday → correct the active/date-being-discussed field to that weekday in the same week as the current value',
     '- keep everything else → only update the field being changed; leave all other fields null',
     '- completion signals (that\'s it / nothing else / no / all done / that\'s all) while optional follow-ups are open → set conversationComplete true; do not invent new trip fields',
+    '- multi-intent service lists (hotel + flights + car hire, etc.): set EVERY recognised service flag true in one turn; tolerate minor spelling mistakes; do not keep only the first service',
     '',
     'Dates must be ISO YYYY-MM-DD when resolvable. Place names as plain strings. Use null when unknown.',
     'Only set fields the user is changing or newly supplying. Null preserves prior canonical state after validation.',

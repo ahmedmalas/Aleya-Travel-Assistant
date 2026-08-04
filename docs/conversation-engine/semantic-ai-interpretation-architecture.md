@@ -42,6 +42,8 @@ Relative language (weekday-of-week, day after, that weekend, relative durations 
 
 Relative durations (after N weeks / in two weeks / N days later / fortnight / stay for N days) are one semantic class: convert to day offset from departure, then ISO returnDate. Do not patch individual surface phrases.
 
+Multi-intent service lists are scanned for every recognised service in one turn (flights / hotel / car hire / …), with minor spelling tolerance. Partial first-match extraction is not allowed to drop sibling services.
+
 Completion signals (that's it / nothing else / no / all done / that's all) while optional follow-ups are open set `conversationComplete: true`. Deterministic planner then stops optional / neutral questions, summarises the captured trip, and moves to confirmation / search readiness.
 
 ## Place enrichment
