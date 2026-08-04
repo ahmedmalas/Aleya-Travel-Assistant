@@ -1,7 +1,8 @@
 /**
  * conversation-architecture — five-layer pipeline schemas and traces.
  *
- * Phase 1: schemas + diagnostic traces only.
+ * Phase 1: schemas + diagnostic traces.
+ * Phase 2: pure Intent Planner (proposals only; not production-active).
  * Behaviour switch is OFF. Production Turn Governor remains authoritative.
  */
 
@@ -66,3 +67,9 @@ export {
   type ArchitectureTurnTrace,
   type BuildArchitectureTurnTraceInput,
 } from './architectureTrace';
+
+export {
+  planCanonicalOperations,
+  resolvePlaceReferences,
+  type PlanCanonicalOperationsInput,
+} from './planCanonicalOperations';

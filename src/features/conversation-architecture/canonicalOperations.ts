@@ -1,7 +1,7 @@
 /**
- * Phase 1 — proposed canonical operations (planner output schema).
+ * Proposed canonical operations (planner output schema).
  *
- * Operations are proposals only. Phase 1 does not plan or commit them.
+ * Operations are proposals only until Validator + Committer are activated.
  */
 
 import { z } from 'zod';
@@ -89,9 +89,7 @@ export function emptyPlannerResult(
   return plannerResultSchema.parse({
     operations: [],
     clarificationStance: 'none',
-    reasoningTrace: [
-      'Phase 1: planner behaviour not active — empty proposal',
-    ],
+    reasoningTrace: ['Empty planner result factory'],
     ...overrides,
   });
 }
