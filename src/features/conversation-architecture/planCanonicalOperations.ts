@@ -1379,14 +1379,34 @@ export function planCanonicalOperations(
     );
   }
 
+  // Collapse duplicate clarification lifecycle ops (stance + delta overlap).
+  const deduped: ProposedOperation[] = [];
   for (const item of operations) {
+    const duplicateClarOp =
+      (item.op === 'narrow_clarification' ||
+        item.op === 'reject_clarification' ||
+        item.op === 'supersede_clarification' ||
+        item.op === 'confirm_clarification') &&
+      deduped.some((existing) => existing.op === item.op);
+    if (duplicateClarOp) {
+      const prior = deduped.find((existing) => existing.op === item.op)!;
+      prior.reasoningTrace = [
+        ...prior.reasoningTrace,
+        ...item.reasoningTrace,
+      ];
+      continue;
+    }
+    deduped.push(item);
+  }
+
+  for (const item of deduped) {
     reasoningTrace.push(
       `op:${item.op} target=${item.target} role=${item.resolvedEntity.role} id=${String(item.resolvedEntity.id)}`,
     );
   }
 
   return plannerResultSchema.parse({
-    operations,
+    operations: deduped,
     clarificationStance: semantic.clarificationStance,
     reasoningTrace,
   });
