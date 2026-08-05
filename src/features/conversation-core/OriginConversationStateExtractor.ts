@@ -10,14 +10,11 @@ import type {
  *
  * Phase 7B / Phase 8B: recognises only narrow, explicit origin statements in
  * the current message. Deterministic and local — no external lookup,
- * geographic validation, destination extraction, or currentState inspection.
+ * geographic validation, or destination extraction.
  *
- * Phase 17C: adds explicit origin-cued repair forms (meant from / Actually,
- * from / make that from / change origin|departure location / from … instead).
- * Bare-place repairs remain destination-owned (Phase 17B).
- *
- * Phase 17I: repair place captures trim at following date/passenger clauses;
- * destination-contrast messages may keep a trailing from-origin cue.
+ * Engine Consolidation Phase 5: Phase 21B bare-origin follow-up patch retired.
+ * Explicit origin cues remain for regex-fallback compatibility only.
+ * Authoritative bare answers: Dialogue-bound PlaceLike → Travel Planner.
  */
 export class OriginConversationStateExtractor
   implements ConversationStateExtractor
@@ -25,16 +22,18 @@ export class OriginConversationStateExtractor
   extract(
     input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
-    const origin = extractExplicitOrigin(input.message);
-    if (origin === null) {
+    const cuedOrigin = extractExplicitOrigin(input.message);
+    if (cuedOrigin !== null) {
       return {
-        stateUpdate: {},
+        stateUpdate: {
+          origin: cuedOrigin,
+        },
       };
     }
+
+    // Phase 21B bare-origin follow-up patch removed — no vacancy assignment.
     return {
-      stateUpdate: {
-        origin: origin,
-      },
+      stateUpdate: {},
     };
   }
 }

@@ -74,11 +74,12 @@ describe('phase 3A — explicit destination only', () => {
       conversationId: CONVERSATION_ID,
       now: CREATED_AT,
     });
+    // Bare place names are Phase 21D-supported when destination is active;
+    // keep only cue-incomplete / hedged forms here.
     const phrases = [
       'to Melbourne',
       'change to Brisbane',
       'instead of Perth',
-      'Brisbane',
       'Sydney please',
     ];
 

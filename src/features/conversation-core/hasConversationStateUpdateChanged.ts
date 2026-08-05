@@ -6,6 +6,9 @@ import type {
 const TRAVEL_STATE_UPDATE_KEYS = [
   'destination',
   'origin',
+  'tripStructure',
+  'destinationStops',
+  'tripLegs',
   'departureDate',
   'returnDate',
   'adultCount',
@@ -38,6 +41,13 @@ const TRAVEL_STATE_UPDATE_KEYS = [
   'wellnessRequested',
   'familyActivitiesRequested',
   'accessibleTravelRequested',
+  'conversationComplete',
+  'searchExecutionRequested',
+  'amendmentResumeSearchReady',
+  'openClarification',
+  'dialogueState',
+  'destinationResolutionStatus',
+  'originResolutionStatus',
 ] as const satisfies ReadonlyArray<keyof ConversationStateUpdate>;
 
 /**

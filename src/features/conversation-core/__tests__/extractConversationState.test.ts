@@ -75,6 +75,7 @@ describe('phase 5F — extractConversationState execution only', () => {
   it('returns the same empty value for different message text', () => {
     const currentState = createState();
 
+    // Route chatter / non-bare shapes stay empty (Phase 21D does not claim them).
     expect(
       extractConversationState({ message: 'Sydney to Brisbane', currentState }),
     ).toEqual({ stateUpdate: {} });
@@ -202,12 +203,20 @@ describe('phase 5F — extractConversationState execution only', () => {
     expect(second).toEqual({ stateUpdate: { destination: 'Cairns' } });
     expect(second.stateUpdate).not.toBe(first.stateUpdate);
 
-    const unsupported = extractConversationState({
+    // Engine Consolidation Phase 5: bare-origin extractor patch retired.
+    const bareOrigin = extractConversationState({
       message: 'Brisbane',
-      currentState: createState({ destination: 'Perth' }),
+      currentState: createState({ destination: 'Perth', origin: null }),
     });
-    expect(unsupported).toEqual({ stateUpdate: {} });
-    expect(unsupported.stateUpdate).not.toHaveProperty('destination');
+    expect(bareOrigin).toEqual({ stateUpdate: {} });
+    expect(bareOrigin.stateUpdate).not.toHaveProperty('origin');
+    expect(bareOrigin.stateUpdate).not.toBe(first.stateUpdate);
+
+    const stillUnsupported = extractConversationState({
+      message: 'Okay',
+      currentState: createState({ destination: 'Perth', origin: null }),
+    });
+    expect(stillUnsupported).toEqual({ stateUpdate: {} });
   });
 
   it('delegates through createConversationStateExtractor without duplicating empty logic', () => {
@@ -317,6 +326,10 @@ describe('phase 5F — extractConversationState execution only', () => {
         ROOT,
         'src/features/conversation-core/transitionConversationStateFromExtraction.ts',
       ),
+      resolve(
+        ROOT,
+        'src/features/conversation-interpretation/regexFallbackInterpreter.ts',
+      ),
     ]);
     const srcFiles = listSourceFiles(resolve(ROOT, 'src')).filter(
       (path) => !allowed.has(path),
@@ -328,8 +341,9 @@ describe('phase 5F — extractConversationState execution only', () => {
     }
 
     // Real empty extractor path still works when factory is not mocked.
+    // Use a filler (not a bare place) so Phase 21D destination path stays empty.
     const live = extractConversationState({
-      message: 'live path',
+      message: 'Okay',
       currentState: createState(),
     });
     expect(live).toEqual({ stateUpdate: {} });

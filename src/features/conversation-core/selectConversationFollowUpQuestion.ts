@@ -2,6 +2,7 @@ import {
   CONVERSATION_REPLY_CATALOGUE,
   NEUTRAL_TRIP_FALLBACK_REPLY,
 } from './conversationReplyCatalogue';
+import { buildTripCaptureSummary } from './buildTripCaptureSummary';
 import type { ConversationCoreState } from './types';
 
 export { NEUTRAL_TRIP_FALLBACK_REPLY };
@@ -147,6 +148,49 @@ const CONTEXTUAL_QUESTIONS = [
   },
 ] as const;
 
+function coreTripFieldsPresent(state: ConversationCoreState): boolean {
+  if (state.origin === null || state.departureDate === null) return false;
+
+  if (state.tripStructure === 'multi_city') {
+    const stops = state.destinationStops ?? [];
+    return stops.length >= 2;
+  }
+
+  if (state.destination === null) return false;
+
+  // one_way skips return; null/return structures keep classic return requirement.
+  if (state.tripStructure === 'one_way') return true;
+  return state.returnDate !== null;
+}
+
+function selectCoreProgressionQuestion(
+  state: ConversationCoreState,
+): string | null {
+  if (state.tripStructure === 'multi_city') {
+    const stops = state.destinationStops ?? [];
+    if (stops.length < 2) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.multiCityDestinations;
+    }
+    if (state.origin === null) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.origin;
+    }
+    if (state.departureDate === null) {
+      return CONVERSATION_REPLY_CATALOGUE.followUps.departureDate;
+    }
+    return null;
+  }
+
+  for (const [field, question] of PROGRESSION_QUESTIONS) {
+    if (field === 'returnDate' && state.tripStructure === 'one_way') {
+      continue;
+    }
+    if (state[field] === null) {
+      return question;
+    }
+  }
+  return null;
+}
+
 /**
  * Select exactly one deterministic follow-up from final canonical state.
  *
@@ -163,15 +207,50 @@ const CONTEXTUAL_QUESTIONS = [
  * accommodation is requested and childCount is still null.
  * Phase 19G — after child count, solicits infantCount when flights or
  * accommodation is requested and infantCount is still null.
+ *
+ * Multi-city workflow: when tripStructure is multi_city, collect ordered
+ * destination stops (≥2), then origin and departure — not the classic
+ * single-destination + return progression.
+ *
+ * When searchExecutionRequested is true and core fields are present: emit
+ * search-execution wording (do not re-emit the trip-ready summary).
+ * When conversationComplete is true (and search not yet requested) and core
+ * fields are present: skip optional contextual / neutral questions and emit
+ * trip summary + search readiness instead.
  */
 export function selectConversationFollowUpQuestion(
   state: ConversationCoreState,
 ): string | null {
-  for (const [field, question] of PROGRESSION_QUESTIONS) {
-    if (state[field] === null) {
-      return question;
-    }
+  const coreQuestion = selectCoreProgressionQuestion(state);
+  if (coreQuestion !== null) {
+    return coreQuestion;
   }
+
+  if (
+    state.searchExecutionRequested === true &&
+    coreTripFieldsPresent(state)
+  ) {
+    const placesSearchSafe =
+      state.destinationResolutionStatus === 'resolved' &&
+      state.originResolutionStatus === 'resolved';
+    return placesSearchSafe
+      ? CONVERSATION_REPLY_CATALOGUE.completion.searchExecuting
+      : CONVERSATION_REPLY_CATALOGUE.completion
+          .searchExecutingNeedsLocationValidation;
+  }
+
+  if (state.conversationComplete === true && coreTripFieldsPresent(state)) {
+    const summary = buildTripCaptureSummary(state);
+    const placesSearchSafe =
+      state.destinationResolutionStatus === 'resolved' &&
+      state.originResolutionStatus === 'resolved';
+    return placesSearchSafe
+      ? CONVERSATION_REPLY_CATALOGUE.completion.tripReady(summary)
+      : CONVERSATION_REPLY_CATALOGUE.completion.tripReadyNeedsLocationValidation(
+          summary,
+        );
+  }
+
   for (const entry of CONTEXTUAL_QUESTIONS) {
     if (entry.applies(state)) {
       return entry.question;

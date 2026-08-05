@@ -1,12 +1,18 @@
 import type {
   ConversationCoreState,
   ConversationStateUpdate,
+  ConversationTripLeg,
+  OpenClarification,
+  TripStructureKind,
 } from './types';
 
 /** Travel fields only — no lifecycle, identity, or clock fields. */
 export type AppliedConversationTravelState = {
   destination: string | null;
   origin: string | null;
+  tripStructure: TripStructureKind | null;
+  destinationStops: string[] | null;
+  tripLegs: ConversationTripLeg[] | null;
   departureDate: string | null;
   returnDate: string | null;
   adultCount: number | null;
@@ -39,6 +45,17 @@ export type AppliedConversationTravelState = {
   wellnessRequested: boolean | null;
   familyActivitiesRequested: boolean | null;
   accessibleTravelRequested: boolean | null;
+  conversationComplete: boolean | null;
+  searchExecutionRequested: boolean | null;
+  amendmentResumeSearchReady: boolean | null;
+  openClarification: OpenClarification | null;
+  dialogueState: unknown | null;
+  destinationResolutionStatus:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  originResolutionStatus: 'resolved' | 'unresolved' | 'ambiguous' | null;
 };
 
 /**
@@ -60,6 +77,18 @@ export function applyConversationStateUpdate(
       stateUpdate?.origin !== undefined
         ? stateUpdate.origin
         : currentState.origin,
+    tripStructure:
+      stateUpdate?.tripStructure !== undefined
+        ? stateUpdate.tripStructure
+        : currentState.tripStructure,
+    destinationStops:
+      stateUpdate?.destinationStops !== undefined
+        ? stateUpdate.destinationStops
+        : currentState.destinationStops,
+    tripLegs:
+      stateUpdate?.tripLegs !== undefined
+        ? stateUpdate.tripLegs
+        : currentState.tripLegs,
     departureDate:
       stateUpdate?.departureDate !== undefined
         ? stateUpdate.departureDate
@@ -188,5 +217,33 @@ export function applyConversationStateUpdate(
       stateUpdate?.accessibleTravelRequested !== undefined
         ? stateUpdate.accessibleTravelRequested
         : currentState.accessibleTravelRequested,
+    conversationComplete:
+      stateUpdate?.conversationComplete !== undefined
+        ? stateUpdate.conversationComplete
+        : currentState.conversationComplete,
+    searchExecutionRequested:
+      stateUpdate?.searchExecutionRequested !== undefined
+        ? stateUpdate.searchExecutionRequested
+        : currentState.searchExecutionRequested,
+    amendmentResumeSearchReady:
+      stateUpdate?.amendmentResumeSearchReady !== undefined
+        ? stateUpdate.amendmentResumeSearchReady
+        : currentState.amendmentResumeSearchReady,
+    openClarification:
+      stateUpdate?.openClarification !== undefined
+        ? stateUpdate.openClarification
+        : currentState.openClarification,
+    dialogueState:
+      stateUpdate?.dialogueState !== undefined
+        ? stateUpdate.dialogueState
+        : currentState.dialogueState ?? null,
+    destinationResolutionStatus:
+      stateUpdate?.destinationResolutionStatus !== undefined
+        ? stateUpdate.destinationResolutionStatus
+        : currentState.destinationResolutionStatus,
+    originResolutionStatus:
+      stateUpdate?.originResolutionStatus !== undefined
+        ? stateUpdate.originResolutionStatus
+        : currentState.originResolutionStatus,
   };
 }

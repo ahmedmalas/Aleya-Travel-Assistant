@@ -73,6 +73,9 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
     expect(applied).toEqual({
       destination: 'Gold Coast',
       origin: 'Sydney',
+      tripStructure: null,
+      destinationStops: null,
+      tripLegs: null,
       departureDate: '2026-08-15',
       returnDate: '2026-08-22',
       adultCount: 2,
@@ -106,6 +109,13 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wellnessRequested: true,
       familyActivitiesRequested: true,
       accessibleTravelRequested: true,
+      conversationComplete: null,
+      searchExecutionRequested: null,
+      amendmentResumeSearchReady: null,
+      openClarification: null,
+      dialogueState: null,
+      destinationResolutionStatus: null,
+      originResolutionStatus: null,
     });
   });
 
@@ -115,6 +125,9 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
     expect(applied).toEqual({
       destination: 'Gold Coast',
       origin: 'Sydney',
+      tripStructure: null,
+      destinationStops: null,
+      tripLegs: null,
       departureDate: '2026-08-15',
       returnDate: '2026-08-22',
       adultCount: 2,
@@ -148,6 +161,13 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       wellnessRequested: true,
       familyActivitiesRequested: true,
       accessibleTravelRequested: true,
+      conversationComplete: null,
+      searchExecutionRequested: null,
+      amendmentResumeSearchReady: null,
+      openClarification: null,
+      dialogueState: null,
+      destinationResolutionStatus: null,
+      originResolutionStatus: null,
     });
   });
 

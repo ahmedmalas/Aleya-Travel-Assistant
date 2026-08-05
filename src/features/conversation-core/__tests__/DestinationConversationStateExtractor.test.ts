@@ -371,13 +371,15 @@ describe('phase 7A — DestinationConversationStateExtractor activation', () => 
     expect(unsupportedAfter.stateUpdate).not.toHaveProperty('destination');
   });
 
-  it('contains no trim/toLowerCase, currentState inspection, or provider imports', () => {
+  it('contains no trim/toLowerCase or provider imports; currentState is gate-only', () => {
     const source = readFileSync(DESTINATION_SOURCE, 'utf8');
 
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
-    expect(source).not.toMatch(/input\.currentState/);
-    expect(source).not.toMatch(/currentState\./);
+    // Engine Consolidation Phase 5: bare-destination follow-up gate retired.
+    expect(source).not.toMatch(/isDestinationFollowUpActive\(input\.currentState\)/);
+    expect(source).toMatch(/Phase 21D\/F bare-destination/);
+    expect(source).not.toMatch(/state\.destination\s*=(?!=)/);
     expect(source).toMatch(/destination\s*:/);
     expect(source).not.toMatch(/\.trim\(/);
     expect(source).not.toMatch(/\.toLowerCase\(/);

@@ -28,8 +28,8 @@ const FOLLOW_UP_ONLY_LEAD_INS: Readonly<Record<string, string>> = {
     "Let's begin with where you're travelling from.",
   'When would you like to depart?': 'Now for the timing.',
   'When would you like to return?': 'And for your return.',
-  'How many adults will be travelling?': 'Now for the flights.',
-  'How many guests will be staying?': 'Now for the accommodation.',
+  // Passenger / guest counts are trip-wide — no service-scoped lead-in
+  // ("for the flights" / "for the accommodation") that misframes them.
   'What kinds of activities are you interested in?':
     "Let's look at activities.",
   'What type of dining are you looking for?': 'Now for dining.',

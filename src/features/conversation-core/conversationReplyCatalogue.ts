@@ -52,6 +52,8 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     removedCapabilities: (labelList: string) =>
       `I've removed ${labelList} from your trip requirements.`,
     destination: (destination: string) => `Great — ${destination}.`,
+    multiCityDestinations: (stopsList: string) =>
+      `Great — visiting ${stopsList} in that order.`,
     destinationRemoved: 'Destination removed.',
     origin: (origin: string) => `Perfect — departing from ${origin}.`,
     originRemoved: 'Departure location removed.',
@@ -89,9 +91,23 @@ export const CONVERSATION_REPLY_CATALOGUE = {
     accommodationGuestCount: 'How many guests will be staying?',
     childCount: 'How many children will be travelling?',
     infantCount: 'How many infants will be travelling?',
+    multiCityDestinations:
+      'Which cities are you visiting, in order?',
     activities: 'What kinds of activities are you interested in?',
     restaurants: 'What type of dining are you looking for?',
     neutralContinuation: 'What else should I know about your trip?',
+    tripReadyAlreadyComplete:
+      "You're all set. I have your trip details and I'm ready to search when you confirm.",
+  },
+  completion: {
+    tripReady: (summary: string) =>
+      `Here's what I have for your trip:\n${summary}\nI have everything I need — ready to search when you confirm.`,
+    tripReadyNeedsLocationValidation: (summary: string) =>
+      `Here's what I have for your trip:\n${summary}\nLocation details still need validation before provider search.`,
+    searchExecuting:
+      "Confirmed — I'm searching with your trip details now.",
+    searchExecutingNeedsLocationValidation:
+      'Location details still need validation before provider search can run.',
   },
 } as const;
 

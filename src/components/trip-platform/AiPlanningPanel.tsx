@@ -1,10 +1,14 @@
 import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
+  buildGovernorBootDiagnostics,
+  type GovernorTurnDiagnostics,
+} from '../../features/conversation-architecture';
+import {
   createInitialConversationCoreState,
-  processConversationTurn,
   type ConversationCoreState,
 } from '../../features/conversation-core';
+import { runConsultantTurn } from '../../features/conversation-consultant';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { PrimaryButton, SecondaryButton, StatusBanner } from './shared/ui';
 
@@ -61,6 +65,8 @@ export function AiPlanningPanel() {
       now: new Date(),
     }),
   );
+  const [governorDiagnostics, setGovernorDiagnostics] =
+    useState<GovernorTurnDiagnostics>(() => buildGovernorBootDiagnostics());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
@@ -114,10 +120,10 @@ export function AiPlanningPanel() {
     ]);
   };
 
-  const runEngineTurn = (request: string) => {
+  const runEngineTurn = async (request: string) => {
     const userMessageAt = new Date();
     const assistantMessageAt = new Date();
-    const result = processConversationTurn({
+    const result = await runConsultantTurn({
       message: request,
       state: coreState,
       userEntryId: createId(),
@@ -126,11 +132,12 @@ export function AiPlanningPanel() {
       assistantMessageAt,
     });
     setCoreState(result.state);
+    setGovernorDiagnostics(result.governorDiagnostics);
     reply(result.reply);
     return result;
   };
 
-  const sendMessage = (event?: FormEvent) => {
+  const sendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
     const request = input.trim();
     if (!request || busy) return;
@@ -144,7 +151,7 @@ export function AiPlanningPanel() {
     setBusy(true);
 
     try {
-      runEngineTurn(request);
+      await runEngineTurn(request);
     } catch (error) {
       reply(
         error instanceof Error
@@ -168,15 +175,39 @@ export function AiPlanningPanel() {
           Aleya AI Assistant
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Conversation intelligence is being rebuilt from first principles. The previous engine has
-          been removed; this panel talks only to the empty conversation-core boundary.
+          Semantic interpretation builds a SituationModel; the Consultant Turn
+          Governor commits only unambiguous facts, clarifies when needed, and
+          chooses one goal-driven act — not a fixed form ladder.
         </p>
         <aside
           className="mt-4 rounded-xl border border-amber-400/40 bg-amber-950/40 px-3 py-3 font-mono text-[11px] leading-5 text-amber-100"
           data-testid="conversation-core-boundary"
           aria-label="Conversation core boundary"
         >
-          <p>Boundary: conversation-core</p>
+          <p>Boundary: conversation-consultant (Turn Governor)</p>
+          <p
+            data-testid="governor-status"
+            data-governor-status={governorDiagnostics.status}
+          >
+            {governorDiagnostics.statusLabel}
+          </p>
+          {governorDiagnostics.fallbackReason ? (
+            <p data-testid="governor-fallback-reason">
+              Fallback: {governorDiagnostics.fallbackReason}
+            </p>
+          ) : null}
+          {governorDiagnostics.failedGates.length > 0 ? (
+            <div data-testid="governor-failed-gates">
+              <p>Failed activation gate(s):</p>
+              <ul>
+                {governorDiagnostics.failedGates.map((gate) => (
+                  <li key={gate.id}>
+                    {gate.id}: {gate.detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p>Status: {coreState.status}</p>
           <p>Turn count: {coreState.turnCount}</p>
           <p>Conversation: {coreState.conversationId}</p>
@@ -323,6 +354,7 @@ export function AiPlanningPanel() {
                 now: new Date(),
               }),
             );
+            setGovernorDiagnostics(buildGovernorBootDiagnostics());
             setMessages([
               {
                 id: createId(),

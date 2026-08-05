@@ -91,6 +91,9 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
   return {
     destination: state.destination,
     origin: state.origin,
+    tripStructure: state.tripStructure,
+    destinationStops: state.destinationStops,
+    tripLegs: state.tripLegs,
     departureDate: state.departureDate,
     returnDate: state.returnDate,
     adultCount: state.adultCount,
@@ -124,6 +127,13 @@ function travelFrom(state: ConversationCoreState): AppliedConversationTravelStat
     wellnessRequested: state.wellnessRequested,
     familyActivitiesRequested: state.familyActivitiesRequested,
     accessibleTravelRequested: state.accessibleTravelRequested,
+    conversationComplete: state.conversationComplete,
+    searchExecutionRequested: state.searchExecutionRequested,
+    amendmentResumeSearchReady: state.amendmentResumeSearchReady,
+    openClarification: state.openClarification,
+    dialogueState: state.dialogueState ?? null,
+    destinationResolutionStatus: state.destinationResolutionStatus,
+    originResolutionStatus: state.originResolutionStatus,
   };
 }
 

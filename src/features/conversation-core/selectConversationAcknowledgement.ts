@@ -184,6 +184,23 @@ export function selectConversationAcknowledgement(
     );
   }
 
+  // Multi-city ordered stops take priority over single-destination wording.
+  if (
+    state.tripStructure === 'multi_city' &&
+    state.destinationStops !== null &&
+    state.destinationStops.length >= 2 &&
+    (classification.newlyPopulated.includes('destinationStops') ||
+      classification.updated.includes('destinationStops') ||
+      classification.newlyPopulated.includes('destination'))
+  ) {
+    return selected(
+      CONVERSATION_REPLY_CATALOGUE.acknowledgements.multiCityDestinations(
+        state.destinationStops.join(', '),
+      ),
+      { kind: 'field-set', field: 'destination' },
+    );
+  }
+
   const destinationSetOrChanged = selectFieldSetOrChanged(
     state,
     classification,

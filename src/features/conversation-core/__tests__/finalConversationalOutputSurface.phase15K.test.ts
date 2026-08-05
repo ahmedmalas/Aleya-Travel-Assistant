@@ -551,17 +551,21 @@ describe('phase 15K — final conversational output surface audit', () => {
     expect(ackNeutralWording.includes('\n')).toBe(false);
 
     // 15F — each supported question remains a byte-identical trailing substring.
-    const supported = [
+    // Trip-wide passenger/guest questions intentionally have no service-scoped
+    // lead-in, so wording equals the question itself.
+    const supportedWithLeadIn = [
       FOLLOW_UPS.destination,
       FOLLOW_UPS.origin,
       FOLLOW_UPS.departureDate,
       FOLLOW_UPS.returnDate,
-      FOLLOW_UPS.flightsAdultCount,
-      FOLLOW_UPS.accommodationGuestCount,
       FOLLOW_UPS.activities,
       FOLLOW_UPS.restaurants,
     ];
-    for (const followUp of supported) {
+    const tripWidePassengerFollowUps = [
+      FOLLOW_UPS.flightsAdultCount,
+      FOLLOW_UPS.accommodationGuestCount,
+    ];
+    for (const followUp of supportedWithLeadIn) {
       const replyPlan = freezePlan(
         plan({
           acknowledgements: [],
@@ -576,6 +580,20 @@ describe('phase 15K — final conversational output surface audit', () => {
         renderBaselineFollowUpOnly({ followUpQuestion: followUp }),
       );
       expect(wording, followUp).not.toBe(followUp);
+    }
+    for (const followUp of tripWidePassengerFollowUps) {
+      const replyPlan = freezePlan(
+        plan({
+          acknowledgements: [],
+          acknowledgementEvent: null,
+          followUpQuestion: followUp,
+          messageInterpreted: true,
+        }),
+      );
+      const wording = generateBaselineConversationalReply(replyPlan);
+      expect(wording, followUp).toBe(followUp);
+      expect(wording, followUp).not.toMatch(/for the flights/i);
+      expect(wording, followUp).not.toMatch(/for the accommodation/i);
     }
 
     // 15J — canonical neutral question preserved byte-for-byte.

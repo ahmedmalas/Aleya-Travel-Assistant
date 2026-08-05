@@ -28,7 +28,8 @@ describe('conversation-core architectural boundary', () => {
     expect(panel).toMatch(
       /from ['"]\.\.\/\.\.\/features\/conversation-core['"]/,
     );
-    expect(panel).toMatch(/processConversationTurn/);
+    expect(panel).toMatch(/from ['"]\.\.\/\.\.\/features\/conversation-consultant['"]/);
+    expect(panel).toMatch(/runConsultantTurn/);
     expect(panel).toMatch(/createInitialConversationCoreState/);
     expect(panel.includes('processTurn')).toBe(false);
     expect(panel.includes("from '../../features/conversation-core/types'")).toBe(
@@ -453,6 +454,20 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(types).toMatch(/accessibleTravelRequested: boolean \| null/);
     expect(types).toMatch(/accessibleTravelRequested: null,/);
+    expect(types).toMatch(/conversationComplete: null,/);
+    expect(types).toMatch(/conversationComplete\?: boolean \| null/);
+    expect(types).toMatch(/searchExecutionRequested: null,/);
+    expect(types).toMatch(/searchExecutionRequested\?: boolean \| null/);
+    expect(types).toMatch(/amendmentResumeSearchReady: null,/);
+    expect(types).toMatch(/amendmentResumeSearchReady\?: boolean \| null/);
+    expect(types).toMatch(/openClarification: null,/);
+    expect(types).toMatch(/dialogueState: null,/);
+    expect(types).toMatch(/openClarification\?: OpenClarification \| null/);
+    expect(types).toMatch(/tripStructure: null,/);
+    expect(types).toMatch(/destinationStops: null,/);
+    expect(types).toMatch(/tripLegs: null,/);
+    expect(types).toMatch(/destinationResolutionStatus: null,/);
+    expect(types).toMatch(/originResolutionStatus: null,/);
     expect(applyUpdate).toMatch(
       /stateUpdate\?\.accessibleTravelRequested !== undefined[\s\S]*\? stateUpdate\.accessibleTravelRequested[\s\S]*: currentState\.accessibleTravelRequested/,
     );
@@ -512,7 +527,11 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(destinationExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(destinationExtractor).toMatch(/input\.message/);
-    expect(destinationExtractor.includes('input.currentState')).toBe(false);
+    // Engine Consolidation Phase 5: bare-destination follow-up gate retired.
+    expect(destinationExtractor).not.toMatch(
+      /isDestinationFollowUpActive\(input\.currentState\)/,
+    );
+    expect(destinationExtractor).toMatch(/Phase 21D\/F bare-destination/);
     expect(destinationExtractor.includes('.trim(')).toBe(false);
     expect(destinationExtractor.includes('.toLowerCase(')).toBe(false);
     const originExtractor = readSrc(
@@ -523,12 +542,11 @@ describe('conversation-core architectural boundary', () => {
     expect(originExtractor).toContain('Phase 8B');
     expect(originExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(originExtractor).toMatch(/input\.message/);
-    expect(originExtractor.includes('input.currentState')).toBe(false);
+    // Engine Consolidation Phase 5: bare-origin follow-up gate retired.
+    expect(originExtractor).not.toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
     expect(originExtractor.includes('.trim(')).toBe(false);
     expect(originExtractor.includes('.toLowerCase(')).toBe(false);
-    expect(originExtractor.includes('input.currentState')).toBe(false);
-    expect(originExtractor).toMatch(/origin:\s*origin/);
-    expect(originExtractor.includes('origin: null')).toBe(false);
+    expect(originExtractor).toMatch(/origin:\s*(?:cuedOrigin|origin)/);
     expect(originExtractor.includes('origin: ""')).toBe(false);
     const departureDateExtractor = readSrc(
       'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',

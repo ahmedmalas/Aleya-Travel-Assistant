@@ -72,13 +72,15 @@ const TRANSFORMED_FOLLOW_UPS: Array<{
   },
   {
     id: 'flightsAdultCount',
+    // Trip-wide passenger question — no service-scoped lead-in.
     followUp: FOLLOW_UPS.flightsAdultCount,
-    expected: `Now for the flights. ${FOLLOW_UPS.flightsAdultCount}`,
+    expected: FOLLOW_UPS.flightsAdultCount,
   },
   {
     id: 'accommodationGuestCount',
+    // Trip-wide guest question — no service-scoped lead-in.
     followUp: FOLLOW_UPS.accommodationGuestCount,
-    expected: `Now for the accommodation. ${FOLLOW_UPS.accommodationGuestCount}`,
+    expected: FOLLOW_UPS.accommodationGuestCount,
   },
   {
     id: 'activities',

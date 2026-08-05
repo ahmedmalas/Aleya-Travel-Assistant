@@ -259,6 +259,9 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
     const travelResult: AppliedConversationTravelState = {
       destination: currentState.destination,
       origin: currentState.origin,
+      tripStructure: currentState.tripStructure,
+      destinationStops: currentState.destinationStops,
+      tripLegs: currentState.tripLegs,
       departureDate: currentState.departureDate,
       returnDate: currentState.returnDate,
       adultCount: currentState.adultCount,
@@ -292,6 +295,13 @@ describe('phase 5G — extractAndApplyConversationState orchestration only', () 
       wellnessRequested: currentState.wellnessRequested,
       familyActivitiesRequested: currentState.familyActivitiesRequested,
       accessibleTravelRequested: currentState.accessibleTravelRequested,
+      conversationComplete: currentState.conversationComplete,
+      searchExecutionRequested: currentState.searchExecutionRequested,
+      amendmentResumeSearchReady: currentState.amendmentResumeSearchReady,
+      openClarification: currentState.openClarification,
+      dialogueState: currentState.dialogueState ?? null,
+      destinationResolutionStatus: currentState.destinationResolutionStatus,
+      originResolutionStatus: currentState.originResolutionStatus,
     };
 
     const extractSpy = vi

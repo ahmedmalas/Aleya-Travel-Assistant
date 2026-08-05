@@ -1,0 +1,143 @@
+import { z } from 'zod';
+
+/**
+ * Structured semantic travel interpretation schema.
+ *
+ * Produced by the AI interpretation layer (or offline semantic adapter).
+ * Never written to canonical conversation state without deterministic validation.
+ */
+export const travelSemanticInterpretationSchema = z.object({
+  intent: z.enum([
+    'provide_info',
+    'correct',
+    'confirm',
+    'remove',
+    'add_service',
+    'ask_clarification',
+    'smalltalk',
+    'unknown',
+  ]),
+  destination: z.string().nullable(),
+  origin: z.string().nullable(),
+  /**
+   * Itinerary shape. multi_city uses ordered destinationStops / trip legs
+   * instead of the single-destination workflow.
+   */
+  tripStructure: z.enum(['one_way', 'return', 'multi_city']).nullable(),
+  /**
+   * Ordered destination cities for multi-city (and optionally a single
+   * destination mirrored into destination). Empty when unknown.
+   */
+  destinationStops: z.array(z.string()).default([]),
+  destinationResolutionStatus: z
+    .enum(['resolved', 'unresolved', 'ambiguous'])
+    .nullable(),
+  originResolutionStatus: z
+    .enum(['resolved', 'unresolved', 'ambiguous'])
+    .nullable(),
+  departureDate: z.string().nullable(),
+  returnDate: z.string().nullable(),
+  departureTimePreference: z.string().nullable(),
+  returnTimePreference: z.string().nullable(),
+  nightCount: z.number().int().nonnegative().nullable(),
+  adultCount: z.number().int().nonnegative().nullable(),
+  childCount: z.number().int().nonnegative().nullable(),
+  infantCount: z.number().int().nonnegative().nullable(),
+  flightsRequested: z.boolean().nullable(),
+  accommodationRequested: z.boolean().nullable(),
+  carHireRequested: z.boolean().nullable(),
+  activitiesRequested: z.boolean().nullable(),
+  restaurantsRequested: z.boolean().nullable(),
+  restaurantPreference: z.string().nullable(),
+  preferences: z.array(z.string()).default([]),
+  removals: z
+    .array(
+      z.enum([
+        'destination',
+        'origin',
+        'departureDate',
+        'returnDate',
+        'flights',
+        'accommodation',
+        'carHire',
+        'activities',
+        'restaurants',
+      ]),
+    )
+    .default([]),
+  /**
+   * Fields to reopen (clear to null) for amendment without a replacement
+   * value. Mapping exits search-ready terminal state and asks only for
+   * these slots while preserving unaffected trip details.
+   */
+  reopenFields: z
+    .array(
+      z.enum([
+        'destination',
+        'origin',
+        'departureDate',
+        'returnDate',
+        'adultCount',
+        'childCount',
+        'infantCount',
+      ]),
+    )
+    .default([]),
+  confirmation: z.boolean().nullable(),
+  /**
+   * Traveller indicated they are done providing optional trip details
+   * (e.g. that's it / nothing else / all done). Deterministic planner
+   * stops optional follow-ups and moves to summary / search readiness.
+   */
+  conversationComplete: z.boolean().nullable(),
+  /**
+   * Traveller confirmed the trip-ready summary and requested search
+   * execution. Distinct from conversationComplete (planning → ready);
+   * this advances ready → search execution so the summary is not re-emitted.
+   */
+  searchExecutionRequested: z.boolean().nullable(),
+  /**
+   * After an amendment, restore search-ready (conversationComplete) once
+   * core trip fields — and required passenger counts — are present again.
+   */
+  amendmentResumeSearchReady: z.boolean().nullable(),
+  ambiguityNotes: z.array(z.string()).default([]),
+  confidence: z.number().min(0).max(1),
+});
+
+export type TravelSemanticInterpretation = z.infer<
+  typeof travelSemanticInterpretationSchema
+>;
+
+export const emptySemanticInterpretation = (): TravelSemanticInterpretation => ({
+  intent: 'unknown',
+  destination: null,
+  origin: null,
+  tripStructure: null,
+  destinationStops: [],
+  destinationResolutionStatus: null,
+  originResolutionStatus: null,
+  departureDate: null,
+  returnDate: null,
+  departureTimePreference: null,
+  returnTimePreference: null,
+  nightCount: null,
+  adultCount: null,
+  childCount: null,
+  infantCount: null,
+  flightsRequested: null,
+  accommodationRequested: null,
+  carHireRequested: null,
+  activitiesRequested: null,
+  restaurantsRequested: null,
+  restaurantPreference: null,
+  preferences: [],
+  removals: [],
+  reopenFields: [],
+  confirmation: null,
+  conversationComplete: null,
+  searchExecutionRequested: null,
+  amendmentResumeSearchReady: null,
+  ambiguityNotes: [],
+  confidence: 0,
+});

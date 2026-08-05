@@ -229,9 +229,15 @@ describe('phase 11D — request-flag null-transition audit characterisation', ()
   it('current UI callers never pass stateUpdate (false/null only via public API)', () => {
     const aiPanel = readFileSync(AI_PANEL_SOURCE, 'utf8');
     const concierge = readFileSync(CONCIERGE_PANEL_SOURCE, 'utf8');
-    expect(aiPanel).toMatch(/processConversationTurn\(/);
-    expect(concierge).toMatch(/processConversationTurn\(/);
-    expect(aiPanel.includes('stateUpdate')).toBe(false);
+    // Engine Consolidation Phase 7: both surfaces use the Consultant Turn Governor.
+    expect(aiPanel).toMatch(/runConsultantTurn\(/);
+    expect(aiPanel).toMatch(/from ['"].*conversation-consultant['"]/);
+    expect(concierge).toMatch(/runConsultantTurn\(/);
+    expect(concierge).toMatch(/from ['"].*conversation-consultant['"]/);
+    expect(concierge).not.toMatch(/processConversationTurn\(/);
+    // Governor owns interpretation + commits; panels do not inject stateUpdate.
+    expect(aiPanel.includes('stateUpdate:')).toBe(false);
+    expect(aiPanel.includes('skipExtraction')).toBe(false);
     expect(concierge.includes('stateUpdate')).toBe(false);
   });
 

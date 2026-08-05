@@ -11,6 +11,34 @@ export const CONVERSATION_CORE_STORAGE_NAMESPACE =
 
 export type ConversationCoreStatus = 'empty' | 'active';
 
+/** Itinerary shape for single-destination vs multi-city planning. */
+export type TripStructureKind = 'one_way' | 'return' | 'multi_city';
+
+/** One ordered hop in a multi-city (or derived single-destination) itinerary. */
+export type ConversationTripLeg = {
+  origin: string | null;
+  destination: string | null;
+  departureDate: string | null;
+};
+
+/**
+ * First-class blocking clarification held on canonical state until answered.
+ * Distinct from forbidden legacy `pendingClarification`.
+ */
+export type OpenClarification = {
+  id: string;
+  type: 'place_role' | 'trip_structure' | 'date_anchor' | 'generic';
+  subject: string;
+  prompt: string;
+  options: string[];
+  blocking: boolean;
+  placesInOrder?: string[];
+  /** Optional lineage when a clarification was narrowed (architecture Phase 3+). */
+  parentClarificationId?: string | null;
+  /** How many clarification attempts in this lineage (defaults to 1 when omitted). */
+  attemptCount?: number;
+};
+
 /** Chronological transcript memory only — not intelligence. */
 export type ConversationTranscriptEntry =
   | {
@@ -38,6 +66,20 @@ export type ConversationCoreState = {
   destination: string | null;
   /** Explicitly supplied origin only — never extracted from message text. */
   origin: string | null;
+  /**
+   * Explicit itinerary shape. When multi_city, destinationStops / tripLegs
+   * are authoritative for ordered cities; destination mirrors the first stop.
+   */
+  tripStructure: TripStructureKind | null;
+  /**
+   * Ordered destination cities for multi-city itineraries. Null when unused.
+   */
+  destinationStops: string[] | null;
+  /**
+   * Ordered trip legs derived from origin + destinationStops (and dates when
+   * known). Null when unused.
+   */
+  tripLegs: ConversationTripLeg[] | null;
   /** Explicitly supplied departure date only — never extracted from message text. */
   departureDate: string | null;
   /** Explicitly supplied return date only — never extracted from message text. */
@@ -102,6 +144,49 @@ export type ConversationCoreState = {
   familyActivitiesRequested: boolean | null;
   /** Explicitly supplied accessible-travel request flag only — never detected from message text. */
   accessibleTravelRequested: boolean | null;
+  /**
+   * Explicit conversation-completion flag from semantic interpretation.
+   * When true, optional follow-ups stop and the planner moves to trip
+   * summary / search readiness. Never inferred from message text here.
+   */
+  conversationComplete: boolean | null;
+  /**
+   * Explicit search-execution request from semantic interpretation.
+   * When true, the planner leaves trip-ready summary and advances to
+   * search execution. Never inferred from message text here.
+   */
+  searchExecutionRequested: boolean | null;
+  /**
+   * When true, an amendment reopened planning; once core trip fields (and
+   * required passenger counts) are present again, mapping restores
+   * conversationComplete / search-ready. Never inferred from message text here.
+   */
+  amendmentResumeSearchReady: boolean | null;
+  /**
+   * Blocking clarification the consultant is waiting on. While set, the
+   * turn governor prefers resolving this over ladder-style asks.
+   */
+  openClarification: OpenClarification | null;
+  /**
+   * Opaque conversational dialogue ownership (last move, obligations, thread).
+   * Owned by the dialogue layer — not a travel field and not a slot ladder.
+   * Shape is defined in conversation-architecture/dialogue; core stores only.
+   */
+  dialogueState: unknown | null;
+  /**
+   * TLI enrichment status for destination. Unresolved/ambiguous places
+   * remain in `destination` but are unsafe for provider search.
+   */
+  destinationResolutionStatus:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  /**
+   * TLI enrichment status for origin. Unresolved/ambiguous places remain
+   * in `origin` but are unsafe for provider search.
+   */
+  originResolutionStatus: 'resolved' | 'unresolved' | 'ambiguous' | null;
   transcript: ConversationTranscriptEntry[];
 };
 
@@ -115,6 +200,9 @@ export type ConversationCoreState = {
 export type ConversationStateUpdate = {
   destination?: string | null;
   origin?: string | null;
+  tripStructure?: TripStructureKind | null;
+  destinationStops?: string[] | null;
+  tripLegs?: ConversationTripLeg[] | null;
   departureDate?: string | null;
   returnDate?: string | null;
   adultCount?: number | null;
@@ -147,6 +235,17 @@ export type ConversationStateUpdate = {
   wellnessRequested?: boolean | null;
   familyActivitiesRequested?: boolean | null;
   accessibleTravelRequested?: boolean | null;
+  conversationComplete?: boolean | null;
+  searchExecutionRequested?: boolean | null;
+  amendmentResumeSearchReady?: boolean | null;
+  openClarification?: OpenClarification | null;
+  dialogueState?: unknown | null;
+  destinationResolutionStatus?:
+    | 'resolved'
+    | 'unresolved'
+    | 'ambiguous'
+    | null;
+  originResolutionStatus?: 'resolved' | 'unresolved' | 'ambiguous' | null;
 };
 
 /**
@@ -204,6 +303,9 @@ export function createInitialConversationCoreState(
     ageMs: 0,
     destination: null,
     origin: null,
+    tripStructure: null,
+    destinationStops: null,
+    tripLegs: null,
     departureDate: null,
     returnDate: null,
     adultCount: null,
@@ -236,6 +338,13 @@ export function createInitialConversationCoreState(
     wellnessRequested: null,
     familyActivitiesRequested: null,
     accessibleTravelRequested: null,
+    conversationComplete: null,
+    searchExecutionRequested: null,
+    amendmentResumeSearchReady: null,
+    openClarification: null,
+    dialogueState: null,
+    destinationResolutionStatus: null,
+    originResolutionStatus: null,
     transcript: [],
   };
 }

@@ -11,7 +11,7 @@ import type {
  * Phase 7A / 7A.1: recognises only narrow, explicit destination statements,
  * destination-replacement instructions, and explicit origin+destination route
  * forms in the current message. Deterministic and local — no external lookup,
- * geographic validation, origin extraction, or currentState inspection.
+ * geographic validation, or origin extraction.
  *
  * Phase 17B: adds explicit single-fact destination repair cues (meant /
  * Actually, Place / make that / change that / Not X, Y). Does not inspect
@@ -22,6 +22,11 @@ import type {
  *
  * Phase 17I: repair place captures trim at following origin/date/passenger
  * clauses via the shared clause-boundary helper.
+ *
+ * Engine Consolidation Phase 5: Phase 21D/F bare-destination + lowercase
+ * follow-up patches and Phase 21I missing-"to" grammar patches removed.
+ * Explicit with-"to" / repair cues remain for regex-fallback compatibility.
+ * Authoritative framed / bare destinations: shared SI roleHint + Dialogue.
  */
 export class DestinationConversationStateExtractor
   implements ConversationStateExtractor
@@ -29,16 +34,19 @@ export class DestinationConversationStateExtractor
   extract(
     input: ConversationStateExtractionInput,
   ): ConversationStateExtractionResult {
-    const destination = extractExplicitDestination(input.message);
-    if (destination === null) {
+    const cuedDestination = extractExplicitDestination(input.message);
+    if (cuedDestination !== null) {
       return {
-        stateUpdate: {},
+        stateUpdate: {
+          destination: cuedDestination,
+        },
       };
     }
+
+    // Phase 21D/F bare-destination + lowercase follow-up patches removed.
+    // Authoritative bare / framed destinations: shared SI roleHint + Dialogue.
     return {
-      stateUpdate: {
-        destination: destination,
-      },
+      stateUpdate: {},
     };
   }
 }
@@ -70,6 +78,9 @@ function matchContrastDestinationRepair(
 /**
  * True when the message already contains an explicit destination cue that can
  * safely coexist with an origin “from …” clause.
+ *
+ * Consolidation: missing-"to" travel verbs are no longer destination cues —
+ * only with-"to" / repair / route forms unblock origin coexistence.
  */
 function hasExplicitDestinationCueAlongsideOrigin(message: string): boolean {
   return (
@@ -351,5 +362,7 @@ function extractExplicitDestination(message: string): string | null {
     }
     return destination;
   }
+
+  // Phase 21I missing-"to" grammar patch removed — shared SI owns framed travel meaning.
   return null;
 }

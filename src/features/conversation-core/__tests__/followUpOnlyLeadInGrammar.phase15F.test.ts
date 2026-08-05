@@ -55,18 +55,6 @@ const EXACT_OUTPUTS: Array<{
     expected: `And for your return. ${FOLLOW_UPS.returnDate}`,
   },
   {
-    id: 'flightsAdultCount',
-    followUp: FOLLOW_UPS.flightsAdultCount,
-    leadIn: 'Now for the flights.',
-    expected: `Now for the flights. ${FOLLOW_UPS.flightsAdultCount}`,
-  },
-  {
-    id: 'accommodationGuestCount',
-    followUp: FOLLOW_UPS.accommodationGuestCount,
-    leadIn: 'Now for the accommodation.',
-    expected: `Now for the accommodation. ${FOLLOW_UPS.accommodationGuestCount}`,
-  },
-  {
     id: 'activities',
     followUp: FOLLOW_UPS.activities,
     leadIn: "Let's look at activities.",
@@ -79,6 +67,18 @@ const EXACT_OUTPUTS: Array<{
     expected: `Now for dining. ${FOLLOW_UPS.restaurants}`,
   },
 ];
+
+/** Trip-wide passenger questions must not use service-scoped lead-ins. */
+const TRIP_WIDE_PASSENGER_FOLLOW_UPS = [
+  {
+    id: 'flightsAdultCount',
+    followUp: FOLLOW_UPS.flightsAdultCount,
+  },
+  {
+    id: 'accommodationGuestCount',
+    followUp: FOLLOW_UPS.accommodationGuestCount,
+  },
+] as const;
 
 function plan(
   overrides: Partial<ConversationReplyPlan> = {},
@@ -100,8 +100,23 @@ function freezePlan(replyPlan: ConversationReplyPlan): ConversationReplyPlan {
 }
 
 describe('phase 15F — follow-up-only lead-in grammar', () => {
+  it('omits service-scoped lead-ins for trip-wide passenger questions', () => {
+    for (const entry of TRIP_WIDE_PASSENGER_FOLLOW_UPS) {
+      const viaHelper = renderBaselineFollowUpOnly({
+        followUpQuestion: entry.followUp,
+      });
+      expect(viaHelper, entry.id).toBe(entry.followUp);
+      expect(viaHelper, `${entry.id} / no flights lead-in`).not.toMatch(
+        /for the flights/i,
+      );
+      expect(viaHelper, `${entry.id} / no accommodation lead-in`).not.toMatch(
+        /for the accommodation/i,
+      );
+    }
+  });
+
   it('uses complete-sentence lead-ins and excludes malformed mid-sentence capitalization', () => {
-    expect(EXACT_OUTPUTS).toHaveLength(8);
+    expect(EXACT_OUTPUTS).toHaveLength(6);
 
     for (const entry of EXACT_OUTPUTS) {
       const replyPlan = freezePlan(

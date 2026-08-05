@@ -24,7 +24,10 @@ export {
   type ConversationStateExtractor,
   type ConversationStateUpdate,
   type ConversationTranscriptEntry,
+  type ConversationTripLeg,
   type CreateInitialConversationCoreStateInput,
+  type OpenClarification,
+  type TripStructureKind,
 } from './types';
 
 export {

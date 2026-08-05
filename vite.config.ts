@@ -15,6 +15,17 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
     'import.meta.env.VITE_GIT_SHA': JSON.stringify(gitShortSha()),
+    // Mirror Vercel target so the architecture governor switch can default ON
+    // for Preview/Draft builds only (never Production unless explicitly forced).
+    'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(
+      process.env.VERCEL_ENV ?? process.env.VITE_VERCEL_ENV ?? '',
+    ),
+    'import.meta.env.VITE_VERCEL_TARGET_ENV': JSON.stringify(
+      process.env.VERCEL_TARGET_ENV ??
+        process.env.VITE_VERCEL_TARGET_ENV ??
+        process.env.VERCEL_ENV ??
+        '',
+    ),
   },
   build: {
     rollupOptions: {
