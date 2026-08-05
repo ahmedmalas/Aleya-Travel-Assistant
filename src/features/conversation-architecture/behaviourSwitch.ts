@@ -1,19 +1,22 @@
 /**
  * Phase 5 — reversible behaviour switch for the architecture Turn Governor.
  *
- * Default OFF. Enable only on Draft/preview builds via:
- *   VITE_ARCHITECTURE_GOVERNOR_SWITCH=true
+ * Resolution order:
+ * 1. VITE_ARCHITECTURE_GOVERNOR_SWITCH=true|false → explicit (wins)
+ * 2. VITE_VERCEL_ENV=preview → ON (Draft / PR preview builds only)
+ * 3. otherwise → OFF (local + production)
  *
- * Never enable by production hostname heuristics. Production stays legacy
- * unless this explicit flag is set (which must not be set in Production env).
+ * Production stays OFF unless someone explicitly sets the flag to true
+ * (must never be done on the Production environment).
  */
 
 export const ARCHITECTURE_GOVERNOR_SWITCH_ENV =
   'VITE_ARCHITECTURE_GOVERNOR_SWITCH';
 
+export const VERCEL_ENV_MIRROR = 'VITE_VERCEL_ENV';
+
 /**
  * Read the architecture governor behaviour switch.
- * Returns false unless the env value is exactly the string "true".
  */
 export function isArchitectureBehaviourSwitchActive(
   env: Record<string, string | boolean | undefined> = import.meta.env as Record<
@@ -23,6 +26,16 @@ export function isArchitectureBehaviourSwitchActive(
 ): boolean {
   const raw = env[ARCHITECTURE_GOVERNOR_SWITCH_ENV];
   if (typeof raw === 'boolean') return raw;
-  if (typeof raw !== 'string') return false;
-  return raw.trim().toLowerCase() === 'true';
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+
+  const vercelEnv = env[VERCEL_ENV_MIRROR];
+  if (typeof vercelEnv === 'string' && vercelEnv.trim().toLowerCase() === 'preview') {
+    return true;
+  }
+
+  return false;
 }

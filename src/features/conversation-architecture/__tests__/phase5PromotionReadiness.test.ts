@@ -294,7 +294,7 @@ describe('Phase 5 — activation gates', () => {
 });
 
 describe('Phase 5 — reversible behaviour switch', () => {
-  it('defaults off unless env is exactly true', () => {
+  it('resolves explicit flag, preview default, and production off', () => {
     expect(isArchitectureBehaviourSwitchActive({})).toBe(false);
     expect(
       isArchitectureBehaviourSwitchActive({
@@ -306,6 +306,23 @@ describe('Phase 5 — reversible behaviour switch', () => {
         VITE_ARCHITECTURE_GOVERNOR_SWITCH: 'true',
       }),
     ).toBe(true);
+    expect(
+      isArchitectureBehaviourSwitchActive({
+        VITE_VERCEL_ENV: 'preview',
+      }),
+    ).toBe(true);
+    expect(
+      isArchitectureBehaviourSwitchActive({
+        VITE_VERCEL_ENV: 'production',
+      }),
+    ).toBe(false);
+    // Explicit false kills switch even on preview (reversible).
+    expect(
+      isArchitectureBehaviourSwitchActive({
+        VITE_VERCEL_ENV: 'preview',
+        VITE_ARCHITECTURE_GOVERNOR_SWITCH: 'false',
+      }),
+    ).toBe(false);
   });
 
   it('when switch off, legacy still owns Bangkok loop result', async () => {
