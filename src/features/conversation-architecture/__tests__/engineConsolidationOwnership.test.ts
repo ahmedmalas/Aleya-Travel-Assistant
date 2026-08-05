@@ -104,4 +104,19 @@ describe('Engine Consolidation — Semantic Interpretation ownership', () => {
     expect(concierge).toMatch(/runConsultantTurn\(/);
     expect(concierge).not.toMatch(/processConversationTurn\(/);
   });
+
+  it('runConsultantTurn has one SI and no legacy ITU / chooseConsultantAct fork', () => {
+    const source = readFileSync(
+      resolve(ROOT, 'src/features/conversation-consultant/runConsultantTurn.ts'),
+      'utf8',
+    );
+    expect(source).toMatch(/interpretSemanticMeaning\(/);
+    expect(source).toMatch(/runArchitecturePipeline\(/);
+    expect(source).toMatch(/situationFromSemantic\(/);
+    expect(source).not.toMatch(/interpretTravelUtterance\(/);
+    expect(source).not.toMatch(/chooseConsultantAct\(/);
+    expect(source).not.toMatch(/runDualPathComparisonBundle\(/);
+    expect(source).not.toMatch(/commitUnambiguousFacts\(/);
+    expect(source).not.toMatch(/renderConsultantReply\(/);
+  });
 });

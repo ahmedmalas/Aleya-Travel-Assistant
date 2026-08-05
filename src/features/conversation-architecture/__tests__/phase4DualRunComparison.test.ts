@@ -602,16 +602,15 @@ describe('Phase 4 — dual-run orchestration', () => {
   });
 });
 
-describe('Phase 4 — live dual-run corpus (legacy owns result)', () => {
-  it('legacy result.state/reply unchanged vs dual-run legacy snapshot', async () => {
+describe('Phase 4 — live dual-run corpus (retired: single engine owns result)', () => {
+  it('Engine Consolidation: single path owns result; identity telemetry only', async () => {
     let s = state();
     const first = await liveTurn('I want to go Bangkok and Beirut', s, 0);
-    expect(first.dualRunComparison.behaviourSwitchActive).toBe(false);
+    expect(first.dualRunComparison.behaviourSwitchActive).toBe(true);
     expect(first.dualRunComparison.legacy.reply).toBe(first.reply);
     expect(first.dualRunComparison.legacy.state.openClarificationId).toBe(
       first.state.openClarification?.id ?? null,
     );
-    // Diagnostic must not override production behaviour.
     expect(first.state.openClarification?.subject).toBe('Bangkok');
     expect(first.reply).toBe(
       'Are you starting from Bangkok, or is Bangkok your first destination?',
@@ -619,21 +618,14 @@ describe('Phase 4 — live dual-run corpus (legacy owns result)', () => {
 
     s = first.state;
     const second = await liveTurn('bangkok', s, 1);
-    // Current production still loops — telemetry records it.
-    expect(second.reply).toBe(first.reply);
-    expect(second.dualRunComparison.divergence).toBe('legacy_loop_risk');
-    expect(second.dualRunComparison.previewAct.reply.length).toBeLessThan(
-      second.reply.length,
+    // No second engine — telemetry is identity of the authoritative path.
+    expect(second.dualRunComparison.divergence).toBe('same_state_same_act');
+    expect(second.dualRunComparison.legacy.reply).toBe(second.reply);
+    expect(second.dualRunComparison.legacy.state.openClarificationId).toBe(
+      second.state.openClarification?.id ?? null,
     );
-    expect(second.dualRunComparison.previewState.origin).toBeNull();
-    expect(second.state.openClarification?.id).toBe(
-      second.dualRunComparison.legacy.state.openClarificationId,
-    );
-    // result.state remains legacy — not preview narrowed state.
-    expect(second.state.openClarification?.id).toBe('place-role:Bangkok');
-    expect(second.dualRunComparison.previewAct.clarificationId).not.toBe(
-      'place-role:Bangkok',
-    );
+    expect(second.behaviourSwitchActive).toBe(true);
+    expect(second.governorDiagnostics.statusLabel).toBe('Governor: active');
   });
 
   it('corpus divergence counts across required scenarios', () => {

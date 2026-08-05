@@ -3,9 +3,7 @@ import {
   buildArchitectureTurnTraceFromPipeline,
   buildGovernorTurnDiagnostics,
   consultantActFromPreview,
-  isArchitectureBehaviourSwitchActive,
-  runDualPathComparisonBundle,
-  updateDialogueStateAfterAct,
+  runArchitecturePipeline,
   type ArchitectureTurnTrace,
   type DialogueDecision,
   type DialogueState,
@@ -17,20 +15,8 @@ import {
   type ConversationCoreState,
   type ConversationStateUpdate,
 } from '../conversation-core';
-import { applyConversationStateUpdate } from '../conversation-core/applyConversationStateUpdate';
-import {
-  interpretSemanticMeaning,
-  interpretTravelUtterance,
-} from '../conversation-interpretation';
-import type { InterpretTravelUtteranceInput } from '../conversation-interpretation/types';
-import {
-  buildSituationModel,
-  blockingAmbiguity,
-  clarificationFromAmbiguity,
-} from './buildSituationModel';
-import { chooseConsultantAct } from './chooseConsultantAct';
-import { commitUnambiguousFacts } from './commitUnambiguousFacts';
-import { renderConsultantReply } from './renderConsultantReply';
+import { interpretSemanticMeaning } from '../conversation-interpretation';
+import { situationFromSemantic } from './situationFromSemantic';
 import type { ConsultantAct, SituationModel } from './types';
 
 export type RunConsultantTurnInput = {
@@ -40,12 +26,15 @@ export type RunConsultantTurnInput = {
   assistantEntryId: string;
   userMessageAt: Date;
   assistantMessageAt: Date;
-  /** Interpretation mode — default auto (AI → offline → regex). */
-  interpretationMode?: InterpretTravelUtteranceInput['mode'];
+  /**
+   * @deprecated Engine Consolidation — single SI owns meaning; mode is ignored.
+   * Retained only so existing call sites compile.
+   */
+  interpretationMode?: string;
   now?: Date;
   /**
-   * Phase 5 — override behaviour switch for tests.
-   * When omitted, reads VITE_ARCHITECTURE_GOVERNOR_SWITCH.
+   * @deprecated Engine Consolidation — architecture path always owns the turn.
+   * Retained for call-site / diagnostic field compatibility only.
    */
   behaviourSwitchRequested?: boolean;
 };
@@ -57,200 +46,74 @@ export type RunConsultantTurnResult = {
   act: ConsultantAct;
   stateUpdate: ConversationStateUpdate;
   architectureTrace: ArchitectureTurnTrace;
+  /**
+   * Identity telemetry from the single engine (no second path executed).
+   * Field retained for existing diagnostic consumers.
+   */
   dualRunComparison: DualRunComparison;
-  /** Phase 5 — true only when switch requested AND gates passed for this turn. */
+  /** Always true — single authoritative engine owns every turn. */
   behaviourSwitchActive: boolean;
-  /** Phase 5 — whether Preview/env requested architecture ownership. */
+  /** Always true after consolidation (single engine). */
   behaviourSwitchRequested: boolean;
-  /** Phase 5 — visible activation diagnostics (never silent). */
   governorDiagnostics: GovernorTurnDiagnostics;
-  /** Dialogue Layer — conversational decision for this turn. */
   dialogueDecision: DialogueDecision;
-  /** Dialogue Layer — state after governor move. */
   dialogueState: DialogueState;
 };
 
+function travelSnapshot(state: ConversationCoreState) {
+  return {
+    origin: state.origin,
+    destination: state.destination,
+    destinationStops: state.destinationStops,
+    tripStructure: state.tripStructure,
+    departureDate: state.departureDate,
+    returnDate: state.returnDate,
+    openClarificationId: state.openClarification?.id ?? null,
+    openClarificationPrompt: state.openClarification?.prompt ?? null,
+  };
+}
+
 /**
- * Consultant Turn Governor.
+ * Consultant Turn Governor — single authoritative engine.
  *
- * Governed path meaning owner: interpretSemanticMeaning (once per turn).
- * Legacy interpretTravelUtterance remains temporary dual-run / production-off
- * compatibility until competing paths are retired.
+ * Semantic Interpretation
+ * → SituationModel (projection of that semantic)
+ * → Dialogue Reasoner
+ * → Travel Domain Planner
+ * → Canonical Validator
+ * → Committer
+ * → Consultant Governor
+ * → Reply Renderer
  *
- * When VITE_ARCHITECTURE_GOVERNOR_SWITCH=true and activation gates pass,
- * architecture committer + preview governor own result.state / result.reply
- * for that turn (Draft preview only). Otherwise legacy remains authoritative.
+ * No legacy ITU / chooseConsultantAct / dual-run behavioural fork.
  */
 export async function runConsultantTurn(
   input: RunConsultantTurnInput,
 ): Promise<RunConsultantTurnResult> {
   const previousState = input.state;
-  const switchRequested =
-    input.behaviourSwitchRequested ?? isArchitectureBehaviourSwitchActive();
 
-  // Single shared semantic result for the governed architecture path.
-  const governedSemantic = interpretSemanticMeaning({
+  // One semantic result for the whole turn.
+  const semantic = interpretSemanticMeaning({
     message: input.message,
     currentState: previousState,
     now: input.now,
   });
 
-  const interpretation = await interpretTravelUtterance({
+  const situation = situationFromSemantic({
+    message: input.message,
+    semantic,
+    currentState: previousState,
+  });
+
+  // One pipeline execution (SI reused — not re-run).
+  const pipeline = runArchitecturePipeline({
     message: input.message,
     currentState: previousState,
-    recentHistory: previousState.transcript,
-    mode: input.interpretationMode ?? 'auto',
+    semantic,
     now: input.now,
   });
 
-  const situation = buildSituationModel({
-    message: input.message,
-    currentState: previousState,
-    interpretation,
-  });
-
-  const ambiguity = blockingAmbiguity(situation);
-  const clarification =
-    ambiguity !== null ? clarificationFromAmbiguity(ambiguity) : undefined;
-
-  let stateUpdate = commitUnambiguousFacts({
-    situation,
-    currentState: previousState,
-    openClarification:
-      clarification !== undefined
-        ? clarification
-        : situation.facts.openClarification === null
-          ? null
-          : undefined,
-  });
-
-  const provisionalTravel = applyConversationStateUpdate(
-    previousState,
-    stateUpdate,
-  );
-  const provisionalState: ConversationCoreState = {
-    ...previousState,
-    ...provisionalTravel,
-  };
-
-  let act = chooseConsultantAct({
-    situation,
-    state: provisionalState,
-  });
-
-  if (act.kind === 'clarify' && act.clarification) {
-    stateUpdate = {
-      ...stateUpdate,
-      openClarification: act.clarification,
-    };
-  }
-
-  if (act.kind !== 'clarify' && provisionalState.openClarification === null) {
-    stateUpdate = {
-      ...stateUpdate,
-      openClarification: null,
-    };
-  }
-
-  if (act.kind === 'summarise' && situation.intent === 'complete') {
-    stateUpdate = {
-      ...stateUpdate,
-      conversationComplete: true,
-    };
-  }
-  if (act.kind === 'execute') {
-    stateUpdate = {
-      ...stateUpdate,
-      conversationComplete: true,
-      searchExecutionRequested: true,
-      openClarification: null,
-    };
-  }
-
-  const finalTravel = applyConversationStateUpdate(previousState, stateUpdate);
-  const stateForReply: ConversationCoreState = {
-    ...previousState,
-    ...finalTravel,
-  };
-
-  const legacyReply = renderConsultantReply({
-    act,
-    situation,
-    state: stateForReply,
-    previousState,
-  });
-
-  const legacyResult = processConversationTurn({
-    message: input.message,
-    state: previousState,
-    userEntryId: input.userEntryId,
-    assistantEntryId: input.assistantEntryId,
-    userMessageAt: input.userMessageAt,
-    assistantMessageAt: input.assistantMessageAt,
-    stateUpdate,
-    skipExtraction: true,
-    replyOverride: legacyReply,
-  });
-
-  const { comparison, pipeline, gates } = runDualPathComparisonBundle({
-    message: input.message,
-    priorState: previousState,
-    legacyState: legacyResult.state,
-    legacyReply: legacyResult.reply,
-    legacyAct: act,
-    behaviourSwitchRequested: switchRequested,
-    semantic: governedSemantic,
-  });
-
-  const behaviourSwitchActive = switchRequested && gates.mayActivate;
-
-  // Reuse the same pipeline — do not re-run SI / planner for the trace.
-  const architectureTrace = buildArchitectureTurnTraceFromPipeline({
-    message: input.message,
-    currentState: previousState,
-    pipeline,
-    behaviourSwitchActive,
-  });
-
-  const governorDiagnostics = buildGovernorTurnDiagnostics({
-    behaviourSwitchActive,
-    dualRunComparison: comparison,
-    switchRequested,
-  });
-
-  if (!behaviourSwitchActive) {
-    const dialogueState = updateDialogueStateAfterAct({
-      prior: pipeline.dialogueStatePrior,
-      decision: pipeline.dialogueDecision,
-      act: {
-        kind: act.kind,
-        reply: legacyResult.reply,
-        askTopic: act.askTopic,
-        clarification: act.clarification ?? null,
-        confidence: act.confidence,
-      },
-      turnCount: previousState.turnCount + 1,
-    });
-    return {
-      state: { ...legacyResult.state, dialogueState },
-      reply: legacyResult.reply,
-      situation,
-      act,
-      stateUpdate,
-      architectureTrace,
-      dualRunComparison: comparison,
-      behaviourSwitchActive: false,
-      behaviourSwitchRequested: switchRequested,
-      governorDiagnostics,
-      dialogueDecision: pipeline.dialogueDecision,
-      dialogueState,
-    };
-  }
-
-  // Phase 5 activation — architecture owns this turn (existing pipeline only).
   const archUpdate = architectureStateUpdateFromCommit(pipeline.committed.state);
-  // Preview governor may synthesize a place-role clarification that the
-  // committer intentionally did not write (role-ambiguous travel seed).
   if (
     pipeline.previewAct.clarification &&
     (archUpdate.openClarification === null ||
@@ -258,8 +121,9 @@ export async function runConsultantTurn(
   ) {
     archUpdate.openClarification = pipeline.previewAct.clarification;
   }
-  const archAct = consultantActFromPreview(pipeline.previewAct);
-  const archReply = pipeline.previewAct.reply;
+
+  const act = consultantActFromPreview(pipeline.previewAct);
+  const reply = pipeline.previewAct.reply;
 
   const archResult = processConversationTurn({
     message: input.message,
@@ -270,22 +134,71 @@ export async function runConsultantTurn(
     assistantMessageAt: input.assistantMessageAt,
     stateUpdate: archUpdate,
     skipExtraction: true,
-    replyOverride: archReply,
+    replyOverride: reply,
+  });
+
+  const nextState: ConversationCoreState = {
+    ...archResult.state,
+    dialogueState: pipeline.dialogueStateNext,
+  };
+
+  const snap = travelSnapshot(nextState);
+  const dualRunComparison: DualRunComparison = {
+    phase: 5,
+    diagnosticOnly: false,
+    behaviourSwitchActive: true,
+    behaviourSwitchRequested: true,
+    gatesPassed: true,
+    message: input.message,
+    semantic: pipeline.semantic,
+    planner: pipeline.planner,
+    validation: pipeline.validation,
+    previewState: snap,
+    clearedClarificationIds: pipeline.committed.clearedClarificationIds,
+    previewAct: {
+      kind: pipeline.previewAct.kind,
+      reply: pipeline.previewAct.reply,
+      askTopic: pipeline.previewAct.askTopic,
+      clarificationId: pipeline.previewAct.clarification?.id ?? null,
+      confidence: pipeline.previewAct.confidence,
+    },
+    // Identity — no second engine executed.
+    legacy: {
+      reply,
+      actKind: act.kind,
+      clarificationId: act.clarification?.id ?? null,
+      state: snap,
+    },
+    divergence: 'same_state_same_act',
+    divergenceNotes: [
+      'Engine Consolidation: single authoritative path (no dual-run fork)',
+    ],
+    gateResults: [],
+  };
+
+  const architectureTrace = buildArchitectureTurnTraceFromPipeline({
+    message: input.message,
+    currentState: previousState,
+    pipeline,
+    behaviourSwitchActive: true,
+  });
+
+  const governorDiagnostics = buildGovernorTurnDiagnostics({
+    behaviourSwitchActive: true,
+    dualRunComparison,
+    switchRequested: true,
   });
 
   return {
-    state: {
-      ...archResult.state,
-      dialogueState: pipeline.dialogueStateNext,
-    },
-    reply: archResult.reply,
+    state: nextState,
+    reply,
     situation,
-    act: archAct,
+    act,
     stateUpdate: archUpdate,
     architectureTrace,
-    dualRunComparison: comparison,
+    dualRunComparison,
     behaviourSwitchActive: true,
-    behaviourSwitchRequested: switchRequested,
+    behaviourSwitchRequested: true,
     governorDiagnostics,
     dialogueDecision: pipeline.dialogueDecision,
     dialogueState: pipeline.dialogueStateNext,

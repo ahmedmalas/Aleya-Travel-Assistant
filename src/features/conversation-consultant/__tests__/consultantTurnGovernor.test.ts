@@ -147,7 +147,7 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
     expect(panel).toMatch(/data-testid="governor-failed-gates"/);
   });
 
-  it('attaches Phase 5 dual-run telemetry without changing act/reply when switch off', async () => {
+  it('Engine Consolidation: architecture owns turn even if switch flag is false', async () => {
     const r = await runConsultantTurn({
       message: 'I want to go Sydney Bangkok Beirut',
       state: createState(),
@@ -163,29 +163,28 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
     expect(r.reply).toBe(
       'Are you starting from Sydney, or is Sydney your first destination?',
     );
-    expect(r.behaviourSwitchActive).toBe(false);
-    expect(r.behaviourSwitchRequested).toBe(false);
-    expect(r.governorDiagnostics.statusLabel).toBe(
-      'Governor: legacy fallback',
-    );
-    expect(r.governorDiagnostics.fallbackReason).toBeTruthy();
+    // Single engine — no legacy fork regardless of deprecated switch flag.
+    expect(r.behaviourSwitchActive).toBe(true);
+    expect(r.behaviourSwitchRequested).toBe(true);
+    expect(r.governorDiagnostics.statusLabel).toBe('Governor: active');
+    expect(r.governorDiagnostics.fallbackReason).toBeNull();
     expect(r.architectureTrace).toMatchObject({
       phase: 5,
-      diagnosticOnly: true,
-      behaviourSwitchActive: false,
-      committer: { active: false },
-      governor: { active: false },
+      diagnosticOnly: false,
+      behaviourSwitchActive: true,
+      committer: { active: true },
+      governor: { active: true },
     });
     expect(r.dualRunComparison).toMatchObject({
       phase: 5,
-      diagnosticOnly: true,
-      behaviourSwitchActive: false,
+      diagnosticOnly: false,
+      behaviourSwitchActive: true,
+      divergence: 'same_state_same_act',
     });
     expect(r.dualRunComparison.legacy.reply).toBe(r.reply);
     expect(r.dualRunComparison.legacy.state.openClarificationId).toBe(
       r.state.openClarification?.id ?? null,
     );
-    // Diagnostic preview must not become the governor result state when off.
     expect(r.state.openClarification?.subject).toBe('Sydney');
   });
 });

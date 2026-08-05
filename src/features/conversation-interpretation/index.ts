@@ -1,9 +1,9 @@
 /**
  * conversation-interpretation — semantic meaning ownership for Aleya.
  *
- * Governed engine: `interpretSemanticMeaning` → architecture SemanticInterpretation.
- * Legacy compatibility (temporary): `interpretTravelUtterance` still maps to
- * ConversationStateUpdate for the dual-run / production-off path.
+ * Authoritative engine: `interpretSemanticMeaning` → architecture SemanticInterpretation.
+ * `interpretTravelUtterance` / offline / regex are non-authoritative leftovers
+ * (not used by runConsultantTurn after Engine Consolidation).
  */
 
 export { resolveCalendarDateIso } from './calendarDateSemantics';

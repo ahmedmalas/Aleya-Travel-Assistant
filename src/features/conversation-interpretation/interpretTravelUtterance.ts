@@ -19,14 +19,16 @@ function isServerRuntime(): boolean {
 }
 
 /**
- * Authoritative semantic interpretation boundary for Aleya conversation turns.
+ * Non-authoritative leftover adapter (Engine Consolidation).
  *
- * Order:
- * 1. AI structured interpretation with full conversation context
- * 2. Offline semantic adapter (contextual temporal + TLI + active requirement)
- * 3. Regex extractor stack as last-resort fallback
+ * Production turns use `interpretSemanticMeaning` via `runConsultantTurn`.
+ * This function remains for isolated module/tests only — not a competing
+ * behavioural owner on the conversation entry path.
  *
- * Canonical state is never written here — only a validated ConversationStateUpdate.
+ * Order (legacy):
+ * 1. AI structured interpretation
+ * 2. Offline semantic adapter
+ * 3. Regex extractor stack
  */
 export async function interpretTravelUtterance(
   input: InterpretTravelUtteranceInput,

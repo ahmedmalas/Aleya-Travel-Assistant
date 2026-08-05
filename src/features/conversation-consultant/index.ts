@@ -1,8 +1,9 @@
 /**
- * conversation-consultant — goal-driven Consultant Turn Governor.
+ * conversation-consultant — Consultant Turn Governor entry.
  *
- * Authoritative production conversation path:
- * understand → commit unambiguous facts → clarify when needed → one act → reply.
+ * Authoritative path (Engine Consolidation):
+ * interpretSemanticMeaning → SituationModel projection → architecture pipeline
+ * (Dialogue → Planner → Validator → Committer → Governor → reply).
  */
 
 export type {

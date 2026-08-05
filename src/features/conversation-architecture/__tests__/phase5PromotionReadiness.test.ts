@@ -343,22 +343,21 @@ describe('Phase 5 — reversible behaviour switch', () => {
     ).toBe(false);
   });
 
-  it('when switch off, legacy still owns Bangkok loop result', async () => {
+  it('Engine Consolidation: deprecated switch-off flag cannot revive legacy path', async () => {
     let s = state();
     const first = await turn('I want to go Bangkok and Beirut', s, 0, false);
+    expect(first.behaviourSwitchActive).toBe(true);
+    expect(first.governorDiagnostics.statusLabel).toBe('Governor: active');
     s = first.state;
     const second = await turn('bangkok', s, 1, false);
-    expect(second.behaviourSwitchActive).toBe(false);
-    expect(second.behaviourSwitchRequested).toBe(false);
-    expect(second.governorDiagnostics.statusLabel).toBe(
-      'Governor: legacy fallback',
-    );
-    expect(second.governorDiagnostics.fallbackReason).toMatch(/switch off/i);
-    expect(second.reply).toBe(
-      'Are you starting from Bangkok, or is Bangkok your first destination?',
-    );
-    expect(second.state.openClarification?.id).toBe('place-role:Bangkok');
-    expect(second.dualRunComparison.divergence).toBe('legacy_loop_risk');
+    // Architecture remains owner — no legacy behavioural fork.
+    expect(second.behaviourSwitchActive).toBe(true);
+    expect(second.behaviourSwitchRequested).toBe(true);
+    expect(second.governorDiagnostics.statusLabel).toBe('Governor: active');
+    expect(second.governorDiagnostics.fallbackReason).toBeNull();
+    expect(second.dualRunComparison.divergence).toBe('same_state_same_act');
+    // Single-engine path does not re-emit the identical legacy loop reply ownership.
+    expect(second.dualRunComparison.legacy.reply).toBe(second.reply);
   });
 
   it('when switch on and gates pass, architecture owns bare bangkok turn', async () => {

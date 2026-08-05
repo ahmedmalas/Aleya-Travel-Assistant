@@ -104,6 +104,9 @@ function askPrompt(topic: ConsultantAskTopic): string {
 }
 
 /**
+ * @deprecated Engine Consolidation — not used by runConsultantTurn.
+ * Authoritative act owner: choosePreviewConsultantAct (architecture Governor).
+ *
  * Choose exactly one ConsultantAct from situation + projected canonical state.
  * Priority: clarify → execute → summarise → ask (goal-driven gap).
  */
