@@ -235,10 +235,11 @@ function clarificationFactsToUpdate(
 }
 
 /**
- * Build a semantic SituationModel for one consultant turn.
+ * @deprecated Engine Consolidation — not used by runConsultantTurn.
+ * Authoritative SituationModel owner: situationFromSemantic (projects the
+ * single interpretSemanticMeaning result; no independent place reconstruction).
  *
- * Uses validated interpretation as the fact source, then applies
- * clarify-before-write: uncertain place roles are not committed.
+ * Legacy builder: uses ITU result + independent curated place lookup.
  */
 export function buildSituationModel(input: {
   message: string;
