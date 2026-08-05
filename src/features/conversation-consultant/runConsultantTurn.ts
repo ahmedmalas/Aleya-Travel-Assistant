@@ -1,6 +1,9 @@
 import {
+  architectureStateUpdateFromCommit,
   buildArchitectureTurnTrace,
-  runDualPathComparison,
+  consultantActFromPreview,
+  isArchitectureBehaviourSwitchActive,
+  runDualPathComparisonBundle,
   type ArchitectureTurnTrace,
   type DualRunComparison,
 } from '../conversation-architecture';
@@ -32,6 +35,11 @@ export type RunConsultantTurnInput = {
   /** Interpretation mode — default auto (AI → offline → regex). */
   interpretationMode?: InterpretTravelUtteranceInput['mode'];
   now?: Date;
+  /**
+   * Phase 5 — override behaviour switch for tests.
+   * When omitted, reads VITE_ARCHITECTURE_GOVERNOR_SWITCH.
+   */
+  behaviourSwitchRequested?: boolean;
 };
 
 export type RunConsultantTurnResult = {
@@ -40,28 +48,26 @@ export type RunConsultantTurnResult = {
   situation: SituationModel;
   act: ConsultantAct;
   stateUpdate: ConversationStateUpdate;
-  /**
-   * Diagnostic architecture trace (Phase 4 five-layer preview).
-   * Never used for production commits/acts. behaviourSwitchActive is false.
-   */
   architectureTrace: ArchitectureTurnTrace;
-  /**
-   * Dual-run comparison telemetry (legacy vs diagnostic path).
-   * Does not override result.state / result.reply.
-   */
   dualRunComparison: DualRunComparison;
+  /** Phase 5 — true only when switch requested AND gates passed for this turn. */
+  behaviourSwitchActive: boolean;
 };
 
 /**
- * Authoritative production turn path — Consultant Turn Governor.
+ * Consultant Turn Governor.
  *
- * Legacy path owns actual state/reply. Phase 4 dual-run telemetry runs in
- * parallel for inspection only (behaviourSwitchActive: false).
+ * Always computes the legacy path and the architecture dual-run.
+ * When VITE_ARCHITECTURE_GOVERNOR_SWITCH=true and activation gates pass,
+ * architecture committer + preview governor own result.state / result.reply
+ * for that turn (Draft preview only). Otherwise legacy remains authoritative.
  */
 export async function runConsultantTurn(
   input: RunConsultantTurnInput,
 ): Promise<RunConsultantTurnResult> {
   const previousState = input.state;
+  const switchRequested =
+    input.behaviourSwitchRequested ?? isArchitectureBehaviourSwitchActive();
 
   const interpretation = await interpretTravelUtterance({
     message: input.message,
@@ -101,7 +107,7 @@ export async function runConsultantTurn(
     ...provisionalTravel,
   };
 
-  const act = chooseConsultantAct({
+  let act = chooseConsultantAct({
     situation,
     state: provisionalState,
   });
@@ -141,14 +147,14 @@ export async function runConsultantTurn(
     ...finalTravel,
   };
 
-  const reply = renderConsultantReply({
+  const legacyReply = renderConsultantReply({
     act,
     situation,
     state: stateForReply,
     previousState,
   });
 
-  const result = processConversationTurn({
+  const legacyResult = processConversationTurn({
     message: input.message,
     state: previousState,
     userEntryId: input.userEntryId,
@@ -157,30 +163,73 @@ export async function runConsultantTurn(
     assistantMessageAt: input.assistantMessageAt,
     stateUpdate,
     skipExtraction: true,
-    replyOverride: reply,
+    replyOverride: legacyReply,
   });
 
-  // Phase 4 diagnostics — never assigned to production state/reply.
+  const { comparison, pipeline, gates } = runDualPathComparisonBundle({
+    message: input.message,
+    priorState: previousState,
+    legacyState: legacyResult.state,
+    legacyReply: legacyResult.reply,
+    legacyAct: act,
+    behaviourSwitchRequested: switchRequested,
+  });
+
+  const behaviourSwitchActive = switchRequested && gates.mayActivate;
+
   const architectureTrace = buildArchitectureTurnTrace({
     message: input.message,
     currentState: previousState,
+    behaviourSwitchActive,
   });
 
-  const dualRunComparison = runDualPathComparison({
+  if (!behaviourSwitchActive) {
+    return {
+      state: legacyResult.state,
+      reply: legacyResult.reply,
+      situation,
+      act,
+      stateUpdate,
+      architectureTrace,
+      dualRunComparison: comparison,
+      behaviourSwitchActive: false,
+    };
+  }
+
+  // Phase 5 activation — architecture owns this turn (existing pipeline only).
+  const archUpdate = architectureStateUpdateFromCommit(pipeline.committed.state);
+  // Preview governor may synthesize a place-role clarification that the
+  // committer intentionally did not write (role-ambiguous travel seed).
+  if (
+    pipeline.previewAct.clarification &&
+    (archUpdate.openClarification === null ||
+      archUpdate.openClarification === undefined)
+  ) {
+    archUpdate.openClarification = pipeline.previewAct.clarification;
+  }
+  const archAct = consultantActFromPreview(pipeline.previewAct);
+  const archReply = pipeline.previewAct.reply;
+
+  const archResult = processConversationTurn({
     message: input.message,
-    priorState: previousState,
-    legacyState: result.state,
-    legacyReply: result.reply,
-    legacyAct: act,
+    state: previousState,
+    userEntryId: input.userEntryId,
+    assistantEntryId: input.assistantEntryId,
+    userMessageAt: input.userMessageAt,
+    assistantMessageAt: input.assistantMessageAt,
+    stateUpdate: archUpdate,
+    skipExtraction: true,
+    replyOverride: archReply,
   });
 
   return {
-    state: result.state,
-    reply: result.reply,
+    state: archResult.state,
+    reply: archResult.reply,
     situation,
-    act,
-    stateUpdate,
+    act: archAct,
+    stateUpdate: archUpdate,
     architectureTrace,
-    dualRunComparison,
+    dualRunComparison: comparison,
+    behaviourSwitchActive: true,
   };
 }

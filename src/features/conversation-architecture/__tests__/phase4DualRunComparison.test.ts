@@ -122,7 +122,7 @@ describe('Phase 4 — dual-run orchestration', () => {
     });
     expect(comparison.behaviourSwitchActive).toBe(false);
     expect(comparison.diagnosticOnly).toBe(true);
-    expect(comparison.phase).toBe(4);
+    expect(comparison.phase).toBe(5);
     expect(prior).toEqual(before);
   });
 

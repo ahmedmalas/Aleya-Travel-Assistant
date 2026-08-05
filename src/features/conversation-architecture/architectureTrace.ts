@@ -54,9 +54,15 @@ const travelPreviewSchema = z.object({
 });
 
 export const architectureTurnTraceSchema = z.object({
-  phase: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
-  diagnosticOnly: z.literal(true),
-  behaviourSwitchActive: z.literal(false),
+  phase: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal(5),
+  ]),
+  diagnosticOnly: z.boolean(),
+  behaviourSwitchActive: z.boolean(),
   message: z.string(),
   stagesPresent: z.array(architectureStageSchema),
   activeClarification: clarificationSchema.nullable(),
@@ -64,13 +70,13 @@ export const architectureTurnTraceSchema = z.object({
   planner: plannerResultSchema,
   validation: validationResultSchema,
   committer: z.object({
-    active: z.literal(false),
+    active: z.boolean(),
     appliedOperationCount: z.number().int().nonnegative(),
     note: z.string(),
     preview: travelPreviewSchema,
   }),
   governor: z.object({
-    active: z.literal(false),
+    active: z.boolean(),
     note: z.string(),
     previewAct: z.object({
       kind: z.string(),
@@ -91,6 +97,8 @@ export type BuildArchitectureTurnTraceInput = {
   currentState: ConversationCoreState;
   /** Optional injected semantic (tests). Otherwise diagnostic interpreter runs. */
   semantic?: SemanticInterpretation;
+  /** When true, marks committer/governor as active in the trace (Phase 5). */
+  behaviourSwitchActive?: boolean;
 };
 
 /**
@@ -136,10 +144,12 @@ export function buildArchitectureTurnTrace(
     priorClarificationId: input.currentState.openClarification?.id ?? null,
   });
 
+  const switchActive = input.behaviourSwitchActive === true;
+
   return architectureTurnTraceSchema.parse({
-    phase: 4,
-    diagnosticOnly: true,
-    behaviourSwitchActive: false,
+    phase: 5,
+    diagnosticOnly: !switchActive,
+    behaviourSwitchActive: switchActive,
     message: input.message,
     stagesPresent: [
       'semantic_interpreter',
@@ -153,9 +163,11 @@ export function buildArchitectureTurnTrace(
     planner,
     validation,
     committer: {
-      active: false,
+      active: switchActive,
       appliedOperationCount: committed.appliedOperationCount,
-      note: 'Phase 4: committer preview only — production writes still use existing governor path',
+      note: switchActive
+        ? 'Phase 5: committer owns this turn (preview flag + gates passed)'
+        : 'Phase 5: committer preview only — legacy governor owns result.state unless switch+gates',
       preview: {
         origin: committed.state.origin,
         destination: committed.state.destination,
@@ -172,8 +184,10 @@ export function buildArchitectureTurnTrace(
       },
     },
     governor: {
-      active: false,
-      note: 'Phase 4: preview act only — existing chooseConsultantAct owns production reply',
+      active: switchActive,
+      note: switchActive
+        ? 'Phase 5: architecture governor owns this turn reply'
+        : 'Phase 5: preview act only — legacy chooseConsultantAct owns reply unless switch+gates',
       previewAct: {
         kind: previewAct.kind,
         reply: previewAct.reply,
@@ -183,9 +197,10 @@ export function buildArchitectureTurnTrace(
       },
     },
     notes: [
-      'Architecture Phase 4 diagnostic dual-run path.',
-      'No behaviour switch: production Turn Governor path unchanged.',
-      'Preview commit/act are not assigned to result.state/reply.',
+      'Architecture Phase 5 promotion-readiness path.',
+      switchActive
+        ? 'Behaviour switch ACTIVE for this turn (reversible preview flag + gates).'
+        : 'Behaviour switch inactive for this turn — legacy owns result.state/reply.',
     ],
   });
 }

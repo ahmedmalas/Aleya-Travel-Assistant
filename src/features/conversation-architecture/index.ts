@@ -1,9 +1,10 @@
 /**
  * conversation-architecture — five-layer pipeline schemas and traces.
  *
- * Phase 1–3: schemas, planner, validator, committer (diagnostic).
- * Phase 4: dual-run orchestration + divergence telemetry.
- * Behaviour switch is OFF. Production Turn Governor remains authoritative.
+ * Phase 1–4: schemas, planner, validator, committer, dual-run (diagnostic).
+ * Phase 5: activation gates + reversible preview behaviour switch.
+ * Production stays legacy unless VITE_ARCHITECTURE_GOVERNOR_SWITCH=true
+ * and per-turn gates pass.
  */
 
 export {
@@ -94,10 +95,42 @@ export {
 
 export {
   runDualPathComparison,
+  runDualPathComparisonBundle,
   classifyDivergence,
   divergenceCategorySchema,
   dualRunComparisonSchema,
   type DivergenceCategory,
   type DualRunComparison,
   type RunDualPathComparisonInput,
+  type DualPathComparisonBundle,
 } from './dualRunComparison';
+
+export {
+  runArchitecturePipeline,
+  type ArchitecturePipelineResult,
+} from './runArchitecturePipeline';
+
+export {
+  evaluateActivationGates,
+  ACTIVATION_GATE_IDS,
+  type ActivationGateId,
+  type ActivationGateResult,
+  type ActivationGateReport,
+} from './activationGates';
+
+export {
+  isArchitectureBehaviourSwitchActive,
+  ARCHITECTURE_GOVERNOR_SWITCH_ENV,
+} from './behaviourSwitch';
+
+export {
+  architectureStateUpdateFromCommit,
+  consultantActFromPreview,
+  type ArchitectureTurnApplication,
+} from './applyArchitectureTurn';
+
+export {
+  PHASE5_DIVERGENCE_READINESS,
+  assertDivergenceReadiness,
+  type DivergenceReadinessVerdict,
+} from './divergenceReadiness';

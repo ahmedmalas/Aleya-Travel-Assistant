@@ -147,7 +147,7 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     });
 
     expect(architectureTurnTraceSchema.parse(trace)).toMatchObject({
-      phase: 4,
+      phase: 5,
       diagnosticOnly: true,
       behaviourSwitchActive: false,
       message: 'Remove Osaka.',
@@ -175,7 +175,7 @@ describe('Phase 1 — diagnostic architecture traces', () => {
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
     expect(trace.governor.active).toBe(false);
-    expect(trace.phase).toBe(4);
+    expect(trace.phase).toBe(5);
     expect(trace.stagesPresent).toEqual([
       'semantic_interpreter',
       'intent_planner',
@@ -183,8 +183,8 @@ describe('Phase 1 — diagnostic architecture traces', () => {
       'state_committer',
       'consultant_governor',
     ]);
-    expect(trace.notes.some((n) => n.includes('No behaviour switch'))).toBe(
-      true,
-    );
+    expect(
+      trace.notes.some((n) => n.includes('Behaviour switch inactive')),
+    ).toBe(true);
   });
 });

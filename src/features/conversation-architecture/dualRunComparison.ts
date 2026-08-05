@@ -1,27 +1,29 @@
 /**
- * Phase 4 — dual-run orchestration and divergence telemetry.
+ * Phase 4/5 — dual-run orchestration and divergence telemetry.
  *
- * Runs the five-layer diagnostic path in parallel with the legacy governor
- * outcome. Never overrides production state/reply.
+ * Phase 5: when the reversible behaviour switch is on AND activation gates
+ * pass, the caller may promote architecture preview to result.state/reply.
+ * This module still only builds comparison telemetry.
  */
 
 import { z } from 'zod';
 import type { ConversationCoreState } from '../conversation-core';
 import type { ConsultantAct } from '../conversation-consultant/types';
+import type { PreviewConsultantAct } from './choosePreviewConsultantAct';
 import {
-  choosePreviewConsultantAct,
-  type PreviewConsultantAct,
-} from './choosePreviewConsultantAct';
-import { commitCanonicalOperations } from './commitCanonicalOperations';
-import { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
-import { planCanonicalOperations } from './planCanonicalOperations';
+  runArchitecturePipeline,
+  type ArchitecturePipelineResult,
+} from './runArchitecturePipeline';
 import {
   semanticInterpretationSchema,
   type SemanticInterpretation,
 } from './semanticInterpretation';
-import { validateCanonicalOperations } from './validateCanonicalOperations';
 import { plannerResultSchema } from './canonicalOperations';
 import { validationResultSchema } from './validationResult';
+import {
+  evaluateActivationGates,
+  type ActivationGateReport,
+} from './activationGates';
 
 export const divergenceCategorySchema = z.enum([
   'same_state_same_act',
@@ -47,9 +49,11 @@ const travelSnapshotSchema = z.object({
 });
 
 export const dualRunComparisonSchema = z.object({
-  phase: z.literal(4),
-  diagnosticOnly: z.literal(true),
-  behaviourSwitchActive: z.literal(false),
+  phase: z.union([z.literal(4), z.literal(5)]),
+  diagnosticOnly: z.boolean(),
+  behaviourSwitchActive: z.boolean(),
+  behaviourSwitchRequested: z.boolean(),
+  gatesPassed: z.boolean(),
   message: z.string(),
   semantic: semanticInterpretationSchema,
   planner: plannerResultSchema,
@@ -71,6 +75,13 @@ export const dualRunComparisonSchema = z.object({
   }),
   divergence: divergenceCategorySchema,
   divergenceNotes: z.array(z.string()),
+  gateResults: z.array(
+    z.object({
+      id: z.string(),
+      passed: z.boolean(),
+      detail: z.string(),
+    }),
+  ),
 });
 
 export type DualRunComparison = z.infer<typeof dualRunComparisonSchema>;
@@ -100,7 +111,6 @@ function sameActKind(
   preview: PreviewConsultantAct,
 ): boolean {
   if (legacyKind === preview.kind) return true;
-  // Map preview acknowledge/recover onto ask for coarse equality when both non-clarify.
   if (
     (legacyKind === 'ask' || legacyKind === 'amend') &&
     (preview.kind === 'ask' ||
@@ -151,7 +161,6 @@ export function classifyDivergence(input: {
     return { divergence: 'unsafe_new_path_blocked', notes };
   }
 
-  // Narrowing changes clarification id but not travel facts — treat as abstain.
   const travelFactsSame =
     legacySnap.origin === previewSnap.origin &&
     legacySnap.destination === previewSnap.destination &&
@@ -208,8 +217,17 @@ export type RunDualPathComparisonInput = {
   legacyState: ConversationCoreState;
   legacyReply: string;
   legacyAct: ConsultantAct;
-  /** Optional injected semantic for deterministic corpus tests. */
   semantic?: SemanticInterpretation;
+  /** Whether the reversible preview flag requested activation. */
+  behaviourSwitchRequested?: boolean;
+  /** Optional precomputed pipeline (avoids double work). */
+  pipeline?: ArchitecturePipelineResult;
+};
+
+export type DualPathComparisonBundle = {
+  comparison: DualRunComparison;
+  pipeline: ArchitecturePipelineResult;
+  gates: ActivationGateReport;
 };
 
 /**
@@ -218,37 +236,24 @@ export type RunDualPathComparisonInput = {
 export function runDualPathComparison(
   input: RunDualPathComparisonInput,
 ): DualRunComparison {
-  const semantic =
-    input.semantic ??
-    interpretDiagnosticSemantic({
+  return runDualPathComparisonBundle(input).comparison;
+}
+
+/**
+ * Full dual-run bundle including pipeline + gate report for Phase 5 activation.
+ */
+export function runDualPathComparisonBundle(
+  input: RunDualPathComparisonInput,
+): DualPathComparisonBundle {
+  const pipeline =
+    input.pipeline ??
+    runArchitecturePipeline({
       message: input.message,
       currentState: input.priorState,
+      semantic: input.semantic,
     });
 
-  const planner = planCanonicalOperations({
-    semantic,
-    currentState: input.priorState,
-  });
-
-  const validation = validateCanonicalOperations({
-    operations: planner.operations,
-    currentState: input.priorState,
-  });
-
-  const committed = commitCanonicalOperations({
-    currentState: input.priorState,
-    accepted: validation.accepted,
-    clarificationAction: validation.clarificationAction,
-    narrowedClarification: validation.narrowedClarification,
-  });
-
-  const previewAct = choosePreviewConsultantAct({
-    previewState: committed.state,
-    validation,
-    semantic,
-    clearedClarificationIds: committed.clearedClarificationIds,
-    priorClarificationId: input.priorState.openClarification?.id ?? null,
-  });
+  const { semantic, planner, validation, committed, previewAct } = pipeline;
 
   const validationRejectedPlace = validation.rejected.some((r) =>
     /place|origin|destination|stop|Low confidence|refusing|out of range|not found|Undo rejected|unsafe/i.test(
@@ -275,10 +280,12 @@ export function runDualPathComparison(
     message: input.message,
   });
 
-  return dualRunComparisonSchema.parse({
-    phase: 4,
+  const comparisonBase = {
+    phase: 5 as const,
     diagnosticOnly: true,
     behaviourSwitchActive: false,
+    behaviourSwitchRequested: input.behaviourSwitchRequested ?? false,
+    gatesPassed: false,
     message: input.message,
     semantic,
     planner,
@@ -300,5 +307,26 @@ export function runDualPathComparison(
     },
     divergence,
     divergenceNotes: notes,
+    gateResults: [] as Array<{ id: string; passed: boolean; detail: string }>,
+  };
+
+  // Temporary object for gate evaluation before final parse.
+  const gates = evaluateActivationGates({
+    comparison: comparisonBase as DualRunComparison,
+    priorState: input.priorState,
   });
+
+  const switchRequested = input.behaviourSwitchRequested ?? false;
+  const behaviourSwitchActive = switchRequested && gates.mayActivate;
+
+  const comparison = dualRunComparisonSchema.parse({
+    ...comparisonBase,
+    diagnosticOnly: !behaviourSwitchActive,
+    behaviourSwitchActive,
+    behaviourSwitchRequested: switchRequested,
+    gatesPassed: gates.allPassed,
+    gateResults: gates.results,
+  });
+
+  return { comparison, pipeline, gates };
 }

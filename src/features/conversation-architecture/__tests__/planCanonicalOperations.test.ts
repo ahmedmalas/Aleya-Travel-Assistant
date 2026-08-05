@@ -573,7 +573,7 @@ describe('Phase 2 — pure Intent Planner', () => {
       currentState: current,
       semantic,
     });
-    expect(trace.phase).toBe(4);
+    expect(trace.phase).toBe(5);
     expect(trace.behaviourSwitchActive).toBe(false);
     expect(trace.committer.active).toBe(false);
     expect(trace.governor.active).toBe(false);
