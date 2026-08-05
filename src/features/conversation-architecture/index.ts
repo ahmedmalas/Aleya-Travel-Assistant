@@ -64,6 +64,7 @@ export {
   architectureStageSchema,
   architectureTurnTraceSchema,
   buildArchitectureTurnTrace,
+  buildArchitectureTurnTraceFromPipeline,
   type ArchitectureStage,
   type ArchitectureTurnTrace,
   type BuildArchitectureTurnTraceInput,
@@ -86,7 +87,9 @@ export {
   type CommitCanonicalOperationsResult,
 } from './commitCanonicalOperations';
 
+/** @deprecated Prefer interpretSemanticMeaning — temporary alias during consolidation. */
 export { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
+export { interpretSemanticMeaning } from '../conversation-interpretation/interpretSemanticMeaning';
 
 export {
   choosePreviewConsultantAct,

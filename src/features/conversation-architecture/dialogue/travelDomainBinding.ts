@@ -47,14 +47,12 @@ export function resolveBoundDomainTarget(
   return typeof target === 'string' ? target : null;
 }
 
-export function shouldUseEmptySlotResidual(decision: DialogueDecision): boolean {
-  return (
-    decision.event === 'no_prior_move' ||
-    (decision.planningMode === 'apply_contributions_only' &&
-      decision.event === 'ignored_move_with_contribution') ||
-    (decision.planningMode === 'apply_contributions_only' &&
-      decision.event === 'shifted_focus')
-  );
+/**
+ * @deprecated Engine Consolidation Phase 2 — vacancy residual removed.
+ * Always false; retained temporarily for import compatibility in tests.
+ */
+export function shouldUseEmptySlotResidual(_decision: DialogueDecision): boolean {
+  return false;
 }
 
 export function isHoldDecision(decision: DialogueDecision): boolean {

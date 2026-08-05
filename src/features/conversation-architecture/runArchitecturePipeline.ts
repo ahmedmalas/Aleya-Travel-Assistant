@@ -24,7 +24,7 @@ import {
 import { reasonDialogue } from './dialogue/dialogueReasoner';
 import { buildTurnContributions } from './dialogue/turnContributions';
 import { updateDialogueStateAfterAct } from './dialogue/updateDialogueStateAfterAct';
-import { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
+import { interpretSemanticMeaning } from '../conversation-interpretation/interpretSemanticMeaning';
 import { planCanonicalOperations } from './planCanonicalOperations';
 import type { PlannerResult } from './canonicalOperations';
 import type { SemanticInterpretation } from './semanticInterpretation';
@@ -59,7 +59,7 @@ export function runArchitecturePipeline(input: {
 }): ArchitecturePipelineResult {
   const semantic =
     input.semantic ??
-    interpretDiagnosticSemantic({
+    interpretSemanticMeaning({
       message: input.message,
       currentState: input.currentState,
       now: input.now,

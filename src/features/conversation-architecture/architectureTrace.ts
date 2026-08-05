@@ -11,7 +11,10 @@ import {
   clarificationSchema,
 } from './clarification';
 import { plannerResultSchema } from './canonicalOperations';
-import { runArchitecturePipeline } from './runArchitecturePipeline';
+import {
+  runArchitecturePipeline,
+  type ArchitecturePipelineResult,
+} from './runArchitecturePipeline';
 import {
   semanticInterpretationSchema,
   type SemanticInterpretation,
@@ -90,11 +93,35 @@ export type ArchitectureTurnTrace = z.infer<typeof architectureTurnTraceSchema>;
 export type BuildArchitectureTurnTraceInput = {
   message: string;
   currentState: ConversationCoreState;
-  /** Optional injected semantic (tests). Otherwise diagnostic interpreter runs. */
+  /** Optional injected semantic (tests). Otherwise shared SI runs. */
   semantic?: SemanticInterpretation;
   /** When true, marks committer/governor as active in the trace (Phase 5). */
   behaviourSwitchActive?: boolean;
+  /**
+   * Consolidation: reuse an already-run pipeline so the turn does not
+   * re-interpret / re-plan. Preferred on the live consultant path.
+   */
+  pipeline?: ArchitecturePipelineResult;
 };
+
+/**
+ * Build an architecture turn trace from an existing pipeline result.
+ * Prefer this on the live path to avoid duplicate SI/pipeline execution.
+ */
+export function buildArchitectureTurnTraceFromPipeline(input: {
+  message: string;
+  currentState: ConversationCoreState;
+  pipeline: ArchitecturePipelineResult;
+  behaviourSwitchActive?: boolean;
+}): ArchitectureTurnTrace {
+  return buildArchitectureTurnTrace({
+    message: input.message,
+    currentState: input.currentState,
+    behaviourSwitchActive: input.behaviourSwitchActive,
+    pipeline: input.pipeline,
+    semantic: input.pipeline.semantic,
+  });
+}
 
 /**
  * Build a diagnostic architecture trace (full five-layer preview).
@@ -103,11 +130,13 @@ export type BuildArchitectureTurnTraceInput = {
 export function buildArchitectureTurnTrace(
   input: BuildArchitectureTurnTraceInput,
 ): ArchitectureTurnTrace {
-  const pipeline = runArchitecturePipeline({
-    message: input.message,
-    currentState: input.currentState,
-    semantic: input.semantic,
-  });
+  const pipeline =
+    input.pipeline ??
+    runArchitecturePipeline({
+      message: input.message,
+      currentState: input.currentState,
+      semantic: input.semantic,
+    });
 
   const {
     semantic,

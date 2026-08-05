@@ -1,6 +1,6 @@
 import {
   architectureStateUpdateFromCommit,
-  buildArchitectureTurnTrace,
+  buildArchitectureTurnTraceFromPipeline,
   buildGovernorTurnDiagnostics,
   consultantActFromPreview,
   isArchitectureBehaviourSwitchActive,
@@ -18,7 +18,10 @@ import {
   type ConversationStateUpdate,
 } from '../conversation-core';
 import { applyConversationStateUpdate } from '../conversation-core/applyConversationStateUpdate';
-import { interpretTravelUtterance } from '../conversation-interpretation';
+import {
+  interpretSemanticMeaning,
+  interpretTravelUtterance,
+} from '../conversation-interpretation';
 import type { InterpretTravelUtteranceInput } from '../conversation-interpretation/types';
 import {
   buildSituationModel,
@@ -70,7 +73,10 @@ export type RunConsultantTurnResult = {
 /**
  * Consultant Turn Governor.
  *
- * Always computes the legacy path and the architecture dual-run.
+ * Governed path meaning owner: interpretSemanticMeaning (once per turn).
+ * Legacy interpretTravelUtterance remains temporary dual-run / production-off
+ * compatibility until competing paths are retired.
+ *
  * When VITE_ARCHITECTURE_GOVERNOR_SWITCH=true and activation gates pass,
  * architecture committer + preview governor own result.state / result.reply
  * for that turn (Draft preview only). Otherwise legacy remains authoritative.
@@ -81,6 +87,13 @@ export async function runConsultantTurn(
   const previousState = input.state;
   const switchRequested =
     input.behaviourSwitchRequested ?? isArchitectureBehaviourSwitchActive();
+
+  // Single shared semantic result for the governed architecture path.
+  const governedSemantic = interpretSemanticMeaning({
+    message: input.message,
+    currentState: previousState,
+    now: input.now,
+  });
 
   const interpretation = await interpretTravelUtterance({
     message: input.message,
@@ -186,13 +199,16 @@ export async function runConsultantTurn(
     legacyReply: legacyResult.reply,
     legacyAct: act,
     behaviourSwitchRequested: switchRequested,
+    semantic: governedSemantic,
   });
 
   const behaviourSwitchActive = switchRequested && gates.mayActivate;
 
-  const architectureTrace = buildArchitectureTurnTrace({
+  // Reuse the same pipeline — do not re-run SI / planner for the trace.
+  const architectureTrace = buildArchitectureTurnTraceFromPipeline({
     message: input.message,
     currentState: previousState,
+    pipeline,
     behaviourSwitchActive,
   });
 

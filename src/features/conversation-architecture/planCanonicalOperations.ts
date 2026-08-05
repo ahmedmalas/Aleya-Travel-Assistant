@@ -24,7 +24,6 @@ import type { DialogueDecision, DialogueState } from './dialogue/dialogueTypes';
 import {
   isHoldDecision,
   resolveBoundDomainTarget,
-  shouldUseEmptySlotResidual,
 } from './dialogue/travelDomainBinding';
 
 export type PlanCanonicalOperationsInput = {
@@ -591,6 +590,14 @@ function planMentionPlace(
     ];
   }
 
+  const roleHint =
+    delta.value !== null &&
+    typeof delta.value === 'object' &&
+    'roleHint' in delta.value &&
+    typeof (delta.value as { roleHint?: unknown }).roleHint === 'string'
+      ? ((delta.value as { roleHint: string }).roleHint as string)
+      : null;
+
   // Dialogue-constrained hold — do not invent roles.
   if (dialogueDecision && isHoldDecision(dialogueDecision)) {
     return [
@@ -640,91 +647,45 @@ function planMentionPlace(
           }),
         ];
       }
-      if (boundTarget === 'optional') {
-        // Optional thread — residual empty-slot only if allowed.
-      } else if (
-        boundTarget !== 'departureDate' &&
-        boundTarget !== 'returnDate' &&
-        boundTarget !== 'services' &&
-        boundTarget !== 'search_confirmation' &&
-        boundTarget !== 'openClarification'
+      if (
+        boundTarget === 'departureDate' ||
+        boundTarget === 'returnDate' ||
+        boundTarget === 'services' ||
+        boundTarget === 'search_confirmation' ||
+        boundTarget === 'openClarification' ||
+        boundTarget === 'optional'
       ) {
-        // Unknown sealed target with PlaceLike — do not guess.
+        // Place under non-place obligation — do not vacancy-fill.
         return [
           noStateChange(
-            `PlaceLike contribution under non-place domainTarget=${boundTarget} — no silent remap`,
+            `PlaceLike under awaiting non-place obligation (${boundTarget}) — no vacancy role assignment`,
             confidence,
           ),
         ];
-      } else {
-        // Place mentioned while temporal/service obligation awaiting — diversion residual.
-        if (!shouldUseEmptySlotResidual(dialogueDecision)) {
-          return [
-            noStateChange(
-              `PlaceLike under awaiting non-place obligation (${boundTarget}) without diversion policy — no empty-slot fill`,
-              confidence,
-            ),
-          ];
-        }
       }
+      return [
+        noStateChange(
+          `PlaceLike contribution under non-place domainTarget=${boundTarget} — no silent remap`,
+          confidence,
+        ),
+      ];
     }
 
-    // Ignored move with contribution / shifted focus / no prior — residual empty-slot only when policy allows.
     if (
-      dialogueDecision.planningMode === 'apply_contributions_only' ||
-      dialogueDecision.event === 'no_prior_move'
-    ) {
-      if (!shouldUseEmptySlotResidual(dialogueDecision)) {
-        return [
-          noStateChange(
-            'Dialogue decision disallows empty-slot residual for place mention',
-            confidence,
-          ),
-        ];
-      }
-      // Fall through to demoted empty-slot residual.
-    } else if (
       dialogueDecision.planningMode === 'apply_amendments' ||
       dialogueDecision.planningMode === 'apply_premise_correction'
     ) {
-      // Amendments handled by other delta kinds; bare mention is not an amend by itself.
       return [
         noStateChange(
           'Bare mention_place under amendment/premise mode — no empty-slot role assignment',
           confidence,
         ),
       ];
-    } else if (dialogueDecision.satisfiedObligationIds.length === 0) {
-      // Not an answer bind and not an allowed residual mode.
-      if (!shouldUseEmptySlotResidual(dialogueDecision)) {
-        return [
-          noStateChange(
-            `Dialogue event ${dialogueDecision.event} — refusing first-empty-slot place role`,
-            confidence,
-          ),
-        ];
-      }
     }
   }
 
-  // Demoted residual: empty-slot fill only when dialogue allows (or no dialogue context).
-  if (state.destination === null && (state.destinationStops?.length ?? 0) === 0) {
-    return [
-      op('set_destinations', {
-        target: 'destinationStops',
-        value: [place],
-        role: 'destination',
-        id: place,
-        dependsOnClarification: false,
-        confidence,
-        reasoningTrace: [
-          'Residual empty-slot: no destination — propose set_destinations',
-        ],
-      }),
-    ];
-  }
-
-  if (state.origin === null) {
+  // Explicit SI roleHint — Travel Domain Planner maps meaning, never vacancy.
+  if (roleHint === 'origin') {
     return [
       op('set_origin', {
         target: 'origin',
@@ -734,24 +695,33 @@ function planMentionPlace(
         dependsOnClarification: false,
         confidence,
         reasoningTrace: [
-          'Residual empty-slot: destination present, origin missing — propose set_origin',
+          'Explicit semantic roleHint=origin → set_origin',
+        ],
+      }),
+    ];
+  }
+  if (roleHint === 'destination') {
+    return [
+      op('set_destinations', {
+        target: 'destinationStops',
+        value: [place],
+        role: 'destination',
+        id: place,
+        dependsOnClarification: false,
+        confidence,
+        reasoningTrace: [
+          'Explicit semantic roleHint=destination → set_destinations',
         ],
       }),
     ];
   }
 
+  // Untyped place mention without Dialogue bind or roleHint — clarify, do not guess.
   return [
-    op('add_destination', {
-      target: 'destinationStops',
-      value: place,
-      role: 'stop',
-      id: place,
-      dependsOnClarification: false,
+    noStateChange(
+      'Untyped mention_place without Dialogue-bound obligation or roleHint — refusing vacancy / add_destination guess',
       confidence,
-      reasoningTrace: [
-        'Residual empty-slot: origin and destination present — propose add_destination',
-      ],
-    }),
+    ),
   ];
 }
 

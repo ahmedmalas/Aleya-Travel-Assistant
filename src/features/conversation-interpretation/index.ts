@@ -1,9 +1,9 @@
 /**
- * conversation-interpretation — authoritative semantic travel utterance boundary.
+ * conversation-interpretation — semantic meaning ownership for Aleya.
  *
- * The Consultant Turn Governor calls interpretTravelUtterance, then applies
- * clarify-before-write and commits a validated ConversationStateUpdate through
- * processConversationTurn with skipExtraction.
+ * Governed engine: `interpretSemanticMeaning` → architecture SemanticInterpretation.
+ * Legacy compatibility (temporary): `interpretTravelUtterance` still maps to
+ * ConversationStateUpdate for the dual-run / production-off path.
  */
 
 export { resolveCalendarDateIso } from './calendarDateSemantics';
@@ -54,5 +54,6 @@ export type {
   SemanticInterpreterPort,
 } from './types';
 export { interpretOfflineSemantic } from './offlineSemanticInterpreter';
+export { interpretSemanticMeaning } from './interpretSemanticMeaning';
 export { validateAndMapSemanticInterpretation } from './validateAndMap';
 export { canonicalizeSemanticPlaces } from './canonicalizePlaces';
