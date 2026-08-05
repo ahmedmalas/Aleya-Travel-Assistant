@@ -461,6 +461,7 @@ describe('conversation-core architectural boundary', () => {
     expect(types).toMatch(/amendmentResumeSearchReady: null,/);
     expect(types).toMatch(/amendmentResumeSearchReady\?: boolean \| null/);
     expect(types).toMatch(/openClarification: null,/);
+    expect(types).toMatch(/dialogueState: null,/);
     expect(types).toMatch(/openClarification\?: OpenClarification \| null/);
     expect(types).toMatch(/tripStructure: null,/);
     expect(types).toMatch(/destinationStops: null,/);

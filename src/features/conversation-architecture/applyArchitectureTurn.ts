@@ -41,6 +41,7 @@ export function architectureStateUpdateFromCommit(
     openClarification: committed.openClarification,
     destinationResolutionStatus: committed.destinationResolutionStatus,
     originResolutionStatus: committed.originResolutionStatus,
+    dialogueState: committed.dialogueState,
   };
 }
 

@@ -20,10 +20,19 @@ import type {
   SemanticDelta,
   SemanticInterpretation,
 } from './semanticInterpretation';
+import type { DialogueDecision, DialogueState } from './dialogue/dialogueTypes';
+import {
+  isHoldDecision,
+  resolveBoundDomainTarget,
+  shouldUseEmptySlotResidual,
+} from './dialogue/travelDomainBinding';
 
 export type PlanCanonicalOperationsInput = {
   semantic: SemanticInterpretation;
   currentState: ConversationCoreState;
+  /** Dialogue decision constraining travel planning (optional for legacy callers). */
+  dialogueDecision?: DialogueDecision;
+  dialogueState?: DialogueState;
 };
 
 type PlaceMatch = {
@@ -496,6 +505,8 @@ function planMentionPlace(
   clarification: OpenClarification | null,
   stance: ClarificationStance,
   confidence: number,
+  dialogueDecision?: DialogueDecision,
+  dialogueState?: DialogueState,
 ): ProposedOperation[] {
   const entity = delta.entities[0];
   const roleAmbiguous =
@@ -580,7 +591,123 @@ function planMentionPlace(
     ];
   }
 
-  // No blocking clarification: propose set based on empty slots (goal fill, not ladder).
+  // Dialogue-constrained hold — do not invent roles.
+  if (dialogueDecision && isHoldDecision(dialogueDecision)) {
+    return [
+      noStateChange(
+        `Dialogue hold (${dialogueDecision.planningMode}) — no place role commit`,
+        confidence,
+      ),
+    ];
+  }
+
+  // Dialogue-bound answer: map sealed domainTarget → travel op.
+  if (dialogueDecision && dialogueState) {
+    const boundTarget = resolveBoundDomainTarget(dialogueState, dialogueDecision);
+    if (
+      boundTarget &&
+      (dialogueDecision.event === 'answered_previous_move' ||
+        dialogueDecision.event === 'compound_response' ||
+        dialogueDecision.planningMode === 'apply_bound_contributions')
+    ) {
+      if (boundTarget === 'origin') {
+        return [
+          op('set_origin', {
+            target: 'origin',
+            value: place,
+            role: 'origin',
+            id: place,
+            dependsOnClarification: false,
+            confidence,
+            reasoningTrace: [
+              'Dialogue-bound answer → set_origin from sealed obligation domainTarget',
+            ],
+          }),
+        ];
+      }
+      if (boundTarget === 'destination' || boundTarget === 'destinationStops') {
+        return [
+          op('set_destinations', {
+            target: 'destinationStops',
+            value: [place],
+            role: 'destination',
+            id: place,
+            dependsOnClarification: false,
+            confidence,
+            reasoningTrace: [
+              `Dialogue-bound answer → set_destinations from sealed domainTarget=${boundTarget}`,
+            ],
+          }),
+        ];
+      }
+      if (boundTarget === 'optional') {
+        // Optional thread — residual empty-slot only if allowed.
+      } else if (
+        boundTarget !== 'departureDate' &&
+        boundTarget !== 'returnDate' &&
+        boundTarget !== 'services' &&
+        boundTarget !== 'search_confirmation' &&
+        boundTarget !== 'openClarification'
+      ) {
+        // Unknown sealed target with PlaceLike — do not guess.
+        return [
+          noStateChange(
+            `PlaceLike contribution under non-place domainTarget=${boundTarget} — no silent remap`,
+            confidence,
+          ),
+        ];
+      } else {
+        // Place mentioned while temporal/service obligation awaiting — diversion residual.
+        if (!shouldUseEmptySlotResidual(dialogueDecision)) {
+          return [
+            noStateChange(
+              `PlaceLike under awaiting non-place obligation (${boundTarget}) without diversion policy — no empty-slot fill`,
+              confidence,
+            ),
+          ];
+        }
+      }
+    }
+
+    // Ignored move with contribution / shifted focus / no prior — residual empty-slot only when policy allows.
+    if (
+      dialogueDecision.planningMode === 'apply_contributions_only' ||
+      dialogueDecision.event === 'no_prior_move'
+    ) {
+      if (!shouldUseEmptySlotResidual(dialogueDecision)) {
+        return [
+          noStateChange(
+            'Dialogue decision disallows empty-slot residual for place mention',
+            confidence,
+          ),
+        ];
+      }
+      // Fall through to demoted empty-slot residual.
+    } else if (
+      dialogueDecision.planningMode === 'apply_amendments' ||
+      dialogueDecision.planningMode === 'apply_premise_correction'
+    ) {
+      // Amendments handled by other delta kinds; bare mention is not an amend by itself.
+      return [
+        noStateChange(
+          'Bare mention_place under amendment/premise mode — no empty-slot role assignment',
+          confidence,
+        ),
+      ];
+    } else if (dialogueDecision.satisfiedObligationIds.length === 0) {
+      // Not an answer bind and not an allowed residual mode.
+      if (!shouldUseEmptySlotResidual(dialogueDecision)) {
+        return [
+          noStateChange(
+            `Dialogue event ${dialogueDecision.event} — refusing first-empty-slot place role`,
+            confidence,
+          ),
+        ];
+      }
+    }
+  }
+
+  // Demoted residual: empty-slot fill only when dialogue allows (or no dialogue context).
   if (state.destination === null && (state.destinationStops?.length ?? 0) === 0) {
     return [
       op('set_destinations', {
@@ -591,7 +718,7 @@ function planMentionPlace(
         dependsOnClarification: false,
         confidence,
         reasoningTrace: [
-          'No destination on state — propose set_destinations with mentioned place',
+          'Residual empty-slot: no destination — propose set_destinations',
         ],
       }),
     ];
@@ -607,7 +734,7 @@ function planMentionPlace(
         dependsOnClarification: false,
         confidence,
         reasoningTrace: [
-          'Destination present, origin missing — propose set_origin',
+          'Residual empty-slot: destination present, origin missing — propose set_origin',
         ],
       }),
     ];
@@ -622,7 +749,7 @@ function planMentionPlace(
       dependsOnClarification: false,
       confidence,
       reasoningTrace: [
-        'Origin and destination present — propose add_destination',
+        'Residual empty-slot: origin and destination present — propose add_destination',
       ],
     }),
   ];
@@ -1160,7 +1287,7 @@ function planDuration(
 export function planCanonicalOperations(
   input: PlanCanonicalOperationsInput,
 ): PlannerResult {
-  const { semantic, currentState } = input;
+  const { semantic, currentState, dialogueDecision, dialogueState } = input;
   const clarification = currentState.openClarification;
   const confidence = semantic.confidence;
   const reasoningTrace: string[] = [
@@ -1171,12 +1298,40 @@ export function planCanonicalOperations(
     clarification
       ? `blockingClarification=${clarification.id}`
       : 'blockingClarification=none',
+    dialogueDecision
+      ? `dialogueEvent=${dialogueDecision.event};planningMode=${dialogueDecision.planningMode}`
+      : 'dialogueDecision=none',
   ];
 
   // Project clarification for diagnostic parity (no mutation).
   void clarificationFromOpenClarification(clarification);
 
   const operations: ProposedOperation[] = [];
+
+  if (dialogueDecision && isHoldDecision(dialogueDecision)) {
+    reasoningTrace.push('Dialogue hold — skipping domain mutations except clarification path');
+    // Still allow clarification stance ops when blocking clarification exists.
+    const stanceOps = planClarificationStance(
+      semantic.clarificationStance,
+      semantic,
+      clarification,
+      confidence,
+    );
+    operations.push(...stanceOps);
+    if (operations.length === 0) {
+      operations.push(
+        noStateChange(
+          `Dialogue hold (${dialogueDecision.event})`,
+          confidence,
+        ),
+      );
+    }
+    return plannerResultSchema.parse({
+      operations,
+      clarificationStance: semantic.clarificationStance,
+      reasoningTrace,
+    });
+  }
 
   // Conversational controls first.
   if (
@@ -1295,6 +1450,8 @@ export function planCanonicalOperations(
               clarification,
               semantic.clarificationStance,
               confidence,
+              dialogueDecision,
+              dialogueState,
             ),
           );
         }
@@ -1337,37 +1494,54 @@ export function planCanonicalOperations(
       case 'control_keep_rest':
         // Handled via stance / control blocks.
         break;
-      case 'set_date':
+      case 'set_date': {
+        const boundTarget =
+          dialogueDecision && dialogueState
+            ? resolveBoundDomainTarget(dialogueState, dialogueDecision)
+            : null;
+        const asReturn =
+          boundTarget === 'returnDate' ||
+          (boundTarget !== 'departureDate' &&
+            asciiFold(String(delta.value ?? '')).includes('return'));
         operations.push(
-          op(
-            asciiFold(String(delta.value ?? '')).includes('return')
-              ? 'set_return_date'
-              : 'set_departure_date',
-            {
-              target: 'dates',
-              value: delta.value,
-              role: 'unknown',
-              id: null,
-              dependsOnClarification: false,
-              confidence,
-              reasoningTrace: [`set_date from evidence: ${delta.evidence}`],
-            },
-          ),
-        );
-        break;
-      case 'set_travellers':
-        operations.push(
-          op('set_traveller_count', {
-            target: 'travellers',
+          op(asReturn ? 'set_return_date' : 'set_departure_date', {
+            target: 'dates',
             value: delta.value,
             role: 'unknown',
             id: null,
             dependsOnClarification: false,
             confidence,
-            reasoningTrace: [`set_travellers from evidence: ${delta.evidence}`],
+            reasoningTrace: [
+              boundTarget
+                ? `set_date dialogue-bound domainTarget=${boundTarget}`
+                : `set_date from evidence: ${delta.evidence}`,
+            ],
           }),
         );
         break;
+      }
+      case 'set_travellers': {
+        const boundTarget =
+          dialogueDecision && dialogueState
+            ? resolveBoundDomainTarget(dialogueState, dialogueDecision)
+            : null;
+        operations.push(
+          op('set_traveller_count', {
+            target: boundTarget ?? 'travellers',
+            value: delta.value,
+            role: 'unknown',
+            id: null,
+            dependsOnClarification: false,
+            confidence,
+            reasoningTrace: [
+              boundTarget
+                ? `set_travellers dialogue-bound domainTarget=${boundTarget}`
+                : `set_travellers from evidence: ${delta.evidence}`,
+            ],
+          }),
+        );
+        break;
+      }
       case 'set_service':
         operations.push(
           op('set_service', {

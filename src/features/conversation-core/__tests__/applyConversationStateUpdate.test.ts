@@ -113,6 +113,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       searchExecutionRequested: null,
       amendmentResumeSearchReady: null,
       openClarification: null,
+      dialogueState: null,
       destinationResolutionStatus: null,
       originResolutionStatus: null,
     });
@@ -164,6 +165,7 @@ describe('phase 4B — pure applyConversationStateUpdate only', () => {
       searchExecutionRequested: null,
       amendmentResumeSearchReady: null,
       openClarification: null,
+      dialogueState: null,
       destinationResolutionStatus: null,
       originResolutionStatus: null,
     });

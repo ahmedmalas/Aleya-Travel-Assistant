@@ -5,7 +5,10 @@ import {
   consultantActFromPreview,
   isArchitectureBehaviourSwitchActive,
   runDualPathComparisonBundle,
+  updateDialogueStateAfterAct,
   type ArchitectureTurnTrace,
+  type DialogueDecision,
+  type DialogueState,
   type DualRunComparison,
   type GovernorTurnDiagnostics,
 } from '../conversation-architecture';
@@ -58,6 +61,10 @@ export type RunConsultantTurnResult = {
   behaviourSwitchRequested: boolean;
   /** Phase 5 — visible activation diagnostics (never silent). */
   governorDiagnostics: GovernorTurnDiagnostics;
+  /** Dialogue Layer — conversational decision for this turn. */
+  dialogueDecision: DialogueDecision;
+  /** Dialogue Layer — state after governor move. */
+  dialogueState: DialogueState;
 };
 
 /**
@@ -196,8 +203,20 @@ export async function runConsultantTurn(
   });
 
   if (!behaviourSwitchActive) {
+    const dialogueState = updateDialogueStateAfterAct({
+      prior: pipeline.dialogueStatePrior,
+      decision: pipeline.dialogueDecision,
+      act: {
+        kind: act.kind,
+        reply: legacyResult.reply,
+        askTopic: act.askTopic,
+        clarification: act.clarification ?? null,
+        confidence: act.confidence,
+      },
+      turnCount: previousState.turnCount + 1,
+    });
     return {
-      state: legacyResult.state,
+      state: { ...legacyResult.state, dialogueState },
       reply: legacyResult.reply,
       situation,
       act,
@@ -207,6 +226,8 @@ export async function runConsultantTurn(
       behaviourSwitchActive: false,
       behaviourSwitchRequested: switchRequested,
       governorDiagnostics,
+      dialogueDecision: pipeline.dialogueDecision,
+      dialogueState,
     };
   }
 
@@ -237,7 +258,10 @@ export async function runConsultantTurn(
   });
 
   return {
-    state: archResult.state,
+    state: {
+      ...archResult.state,
+      dialogueState: pipeline.dialogueStateNext,
+    },
     reply: archResult.reply,
     situation,
     act: archAct,
@@ -247,5 +271,7 @@ export async function runConsultantTurn(
     behaviourSwitchActive: true,
     behaviourSwitchRequested: switchRequested,
     governorDiagnostics,
+    dialogueDecision: pipeline.dialogueDecision,
+    dialogueState: pipeline.dialogueStateNext,
   };
 }

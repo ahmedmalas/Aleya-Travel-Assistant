@@ -49,6 +49,7 @@ export type AppliedConversationTravelState = {
   searchExecutionRequested: boolean | null;
   amendmentResumeSearchReady: boolean | null;
   openClarification: OpenClarification | null;
+  dialogueState: unknown | null;
   destinationResolutionStatus:
     | 'resolved'
     | 'unresolved'
@@ -232,6 +233,10 @@ export function applyConversationStateUpdate(
       stateUpdate?.openClarification !== undefined
         ? stateUpdate.openClarification
         : currentState.openClarification,
+    dialogueState:
+      stateUpdate?.dialogueState !== undefined
+        ? stateUpdate.dialogueState
+        : currentState.dialogueState ?? null,
     destinationResolutionStatus:
       stateUpdate?.destinationResolutionStatus !== undefined
         ? stateUpdate.destinationResolutionStatus

@@ -1,8 +1,7 @@
 /**
  * Architecture turn trace — diagnostic pipeline snapshot.
  *
- * Phase 4: Interpreter → Planner → Validator → Committer preview → Governor preview.
- * Behaviour switch remains OFF. Production governor remains behavioural owner.
+ * Phase 4/5: Interpreter → Dialogue → Planner → Validator → Committer → Governor.
  */
 
 import { z } from 'zod';
@@ -11,16 +10,12 @@ import {
   clarificationFromOpenClarification,
   clarificationSchema,
 } from './clarification';
-import { choosePreviewConsultantAct } from './choosePreviewConsultantAct';
-import { commitCanonicalOperations } from './commitCanonicalOperations';
 import { plannerResultSchema } from './canonicalOperations';
-import { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
-import { planCanonicalOperations } from './planCanonicalOperations';
+import { runArchitecturePipeline } from './runArchitecturePipeline';
 import {
   semanticInterpretationSchema,
   type SemanticInterpretation,
 } from './semanticInterpretation';
-import { validateCanonicalOperations } from './validateCanonicalOperations';
 import { validationResultSchema } from './validationResult';
 
 export const architectureStageSchema = z.enum([
@@ -108,41 +103,24 @@ export type BuildArchitectureTurnTraceInput = {
 export function buildArchitectureTurnTrace(
   input: BuildArchitectureTurnTraceInput,
 ): ArchitectureTurnTrace {
+  const pipeline = runArchitecturePipeline({
+    message: input.message,
+    currentState: input.currentState,
+    semantic: input.semantic,
+  });
+
+  const {
+    semantic,
+    planner,
+    validation,
+    committed,
+    previewAct,
+    dialogueDecision,
+  } = pipeline;
+
   const activeClarification = clarificationFromOpenClarification(
     input.currentState.openClarification,
   );
-
-  const semantic =
-    input.semantic ??
-    interpretDiagnosticSemantic({
-      message: input.message,
-      currentState: input.currentState,
-    });
-
-  const planner = planCanonicalOperations({
-    semantic,
-    currentState: input.currentState,
-  });
-
-  const validation = validateCanonicalOperations({
-    operations: planner.operations,
-    currentState: input.currentState,
-  });
-
-  const committed = commitCanonicalOperations({
-    currentState: input.currentState,
-    accepted: validation.accepted,
-    clarificationAction: validation.clarificationAction,
-    narrowedClarification: validation.narrowedClarification,
-  });
-
-  const previewAct = choosePreviewConsultantAct({
-    previewState: committed.state,
-    validation,
-    semantic,
-    clearedClarificationIds: committed.clearedClarificationIds,
-    priorClarificationId: input.currentState.openClarification?.id ?? null,
-  });
 
   const switchActive = input.behaviourSwitchActive === true;
 
@@ -167,7 +145,7 @@ export function buildArchitectureTurnTrace(
       appliedOperationCount: committed.appliedOperationCount,
       note: switchActive
         ? 'Phase 5: committer owns this turn (preview flag + gates passed)'
-        : 'Phase 5: committer preview only — legacy governor owns result.state unless switch+gates',
+        : `Dialogue event=${dialogueDecision.event}; committer preview only`,
       preview: {
         origin: committed.state.origin,
         destination: committed.state.destination,
@@ -197,7 +175,8 @@ export function buildArchitectureTurnTrace(
       },
     },
     notes: [
-      'Architecture Phase 5 promotion-readiness path.',
+      'Architecture Phase 5 promotion-readiness path with Dialogue Layer.',
+      `Dialogue event=${dialogueDecision.event}; planningMode=${dialogueDecision.planningMode}`,
       switchActive
         ? 'Behaviour switch ACTIVE for this turn (reversible preview flag + gates).'
         : 'Behaviour switch inactive for this turn — legacy owns result.state/reply.',

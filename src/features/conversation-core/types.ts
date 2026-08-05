@@ -168,6 +168,12 @@ export type ConversationCoreState = {
    */
   openClarification: OpenClarification | null;
   /**
+   * Opaque conversational dialogue ownership (last move, obligations, thread).
+   * Owned by the dialogue layer — not a travel field and not a slot ladder.
+   * Shape is defined in conversation-architecture/dialogue; core stores only.
+   */
+  dialogueState: unknown | null;
+  /**
    * TLI enrichment status for destination. Unresolved/ambiguous places
    * remain in `destination` but are unsafe for provider search.
    */
@@ -233,6 +239,7 @@ export type ConversationStateUpdate = {
   searchExecutionRequested?: boolean | null;
   amendmentResumeSearchReady?: boolean | null;
   openClarification?: OpenClarification | null;
+  dialogueState?: unknown | null;
   destinationResolutionStatus?:
     | 'resolved'
     | 'unresolved'
@@ -335,6 +342,7 @@ export function createInitialConversationCoreState(
     searchExecutionRequested: null,
     amendmentResumeSearchReady: null,
     openClarification: null,
+    dialogueState: null,
     destinationResolutionStatus: null,
     originResolutionStatus: null,
     transcript: [],

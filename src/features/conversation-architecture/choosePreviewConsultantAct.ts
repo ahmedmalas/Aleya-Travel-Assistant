@@ -10,6 +10,7 @@ import type { ConversationCoreState, OpenClarification } from '../conversation-c
 import type { ConsultantAct } from '../conversation-consultant/types';
 import type { ValidationResult } from './validationResult';
 import type { SemanticInterpretation } from './semanticInterpretation';
+import type { DialogueDecision, DialogueState } from './dialogue/dialogueTypes';
 
 export type PreviewConsultantAct = {
   kind: ConsultantAct['kind'] | 'acknowledge' | 'recover';
@@ -133,6 +134,8 @@ export function choosePreviewConsultantAct(input: {
   semantic: SemanticInterpretation;
   clearedClarificationIds: string[];
   priorClarificationId: string | null;
+  dialogueDecision?: DialogueDecision;
+  dialogueStatePrior?: DialogueState;
 }): PreviewConsultantAct {
   const { previewState, validation, semantic, clearedClarificationIds } = input;
   const open = previewState.openClarification;
@@ -172,6 +175,84 @@ export function choosePreviewConsultantAct(input: {
       clarification: open,
       confidence: 0.88,
     };
+  }
+
+  // Dialogue: prior obligation unanswered → re-ask that obligation only (not a slot ladder).
+  if (
+    input.dialogueDecision &&
+    input.dialogueStatePrior &&
+    input.dialogueDecision.deferredObligationIds.length > 0 &&
+    input.dialogueDecision.satisfiedObligationIds.length === 0 &&
+    (input.dialogueDecision.event === 'ignored_move_with_contribution' ||
+      input.dialogueDecision.event === 'ambiguous_relation' ||
+      input.dialogueDecision.planningMode === 'no_domain_mutation')
+  ) {
+    const oblId = input.dialogueDecision.deferredObligationIds[0]!;
+    const obl = input.dialogueStatePrior.obligations.find((o) => o.id === oblId);
+    const target =
+      typeof obl?.domainSealed?.domainTarget === 'string'
+        ? obl.domainSealed.domainTarget
+        : null;
+    const F = CONVERSATION_REPLY_CATALOGUE.followUps;
+    if (target === 'origin') {
+      return { kind: 'ask', reply: F.origin, askTopic: 'origin', confidence: 0.8 };
+    }
+    if (target === 'destination') {
+      return {
+        kind: 'ask',
+        reply: F.destination,
+        askTopic: 'destination',
+        confidence: 0.8,
+      };
+    }
+    if (target === 'destinationStops') {
+      return {
+        kind: 'ask',
+        reply: F.multiCityDestinations,
+        askTopic: 'destinationStops',
+        confidence: 0.8,
+      };
+    }
+    if (target === 'departureDate') {
+      return {
+        kind: 'ask',
+        reply: F.departureDate,
+        askTopic: 'departureDate',
+        confidence: 0.8,
+      };
+    }
+    if (target === 'returnDate') {
+      return {
+        kind: 'ask',
+        reply: F.returnDate,
+        askTopic: 'returnDate',
+        confidence: 0.8,
+      };
+    }
+    if (target === 'adultCount') {
+      return {
+        kind: 'ask',
+        reply: F.flightsAdultCount,
+        askTopic: 'adultCount',
+        confidence: 0.8,
+      };
+    }
+    if (target === 'services') {
+      return {
+        kind: 'ask',
+        reply:
+          'Would you like me to look at flights, hotels, or car hire for this trip?',
+        askTopic: 'services',
+        confidence: 0.8,
+      };
+    }
+    if (input.dialogueDecision.ambiguity === 'require_recovery_prompt') {
+      return {
+        kind: 'recover',
+        reply: 'Could you rephrase that for me?',
+        confidence: 0.55,
+      };
+    }
   }
 
   const ambiguousPlaces = roleAmbiguousPlaces(semantic);

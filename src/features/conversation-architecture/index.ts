@@ -145,3 +145,15 @@ export {
   assertDivergenceReadiness,
   type DivergenceReadinessVerdict,
 } from './divergenceReadiness';
+
+export {
+  createInitialDialogueState,
+  reasonDialogue,
+  buildTurnContributions,
+  updateDialogueStateAfterAct,
+  type DialogueState,
+  type DialogueDecision,
+  type DialogueEvent,
+  type TurnContribution,
+  type ValueClass,
+} from './dialogue';

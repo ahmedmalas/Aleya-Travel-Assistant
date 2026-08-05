@@ -1,6 +1,9 @@
 /**
- * Phase 5 — run the five-layer architecture pipeline once.
- * Pure diagnostic/preview computation; caller decides whether to activate.
+ * Architecture pipeline with Dialogue Layer between Situation and Travel Planner.
+ *
+ * Semantic → Turn contributions (Situation bridge) → Dialogue Reasoner
+ * → Travel Domain Planner → Validator → Committer → Governor preview
+ * → Dialogue State update.
  */
 
 import type { ConversationCoreState } from '../conversation-core';
@@ -12,6 +15,15 @@ import {
   commitCanonicalOperations,
   type CommitCanonicalOperationsResult,
 } from './commitCanonicalOperations';
+import {
+  createInitialDialogueState,
+  type DialogueDecision,
+  type DialogueState,
+  type TurnContribution,
+} from './dialogue';
+import { reasonDialogue } from './dialogue/dialogueReasoner';
+import { buildTurnContributions } from './dialogue/turnContributions';
+import { updateDialogueStateAfterAct } from './dialogue/updateDialogueStateAfterAct';
 import { interpretDiagnosticSemantic } from './interpretDiagnosticSemantic';
 import { planCanonicalOperations } from './planCanonicalOperations';
 import type { PlannerResult } from './canonicalOperations';
@@ -19,8 +31,20 @@ import type { SemanticInterpretation } from './semanticInterpretation';
 import { validateCanonicalOperations } from './validateCanonicalOperations';
 import type { ValidationResult } from './validationResult';
 
+function readDialogueState(state: ConversationCoreState): DialogueState {
+  const raw = state.dialogueState;
+  if (raw && typeof raw === 'object') {
+    return raw as DialogueState;
+  }
+  return createInitialDialogueState();
+}
+
 export type ArchitecturePipelineResult = {
   semantic: SemanticInterpretation;
+  contributions: TurnContribution[];
+  dialogueDecision: DialogueDecision;
+  dialogueStatePrior: DialogueState;
+  dialogueStateNext: DialogueState;
   planner: PlannerResult;
   validation: ValidationResult;
   committed: CommitCanonicalOperationsResult;
@@ -39,9 +63,21 @@ export function runArchitecturePipeline(input: {
       currentState: input.currentState,
     });
 
+  const dialogueStatePrior = readDialogueState(input.currentState);
+  const contributions = buildTurnContributions(semantic);
+
+  const dialogueDecision = reasonDialogue({
+    dialogueState: dialogueStatePrior,
+    contributions,
+    semantic,
+    hasBlockingClarification: input.currentState.openClarification?.blocking === true,
+  });
+
   const planner = planCanonicalOperations({
     semantic,
     currentState: input.currentState,
+    dialogueDecision,
+    dialogueState: dialogueStatePrior,
   });
 
   const validation = validateCanonicalOperations({
@@ -62,7 +98,32 @@ export function runArchitecturePipeline(input: {
     semantic,
     clearedClarificationIds: committed.clearedClarificationIds,
     priorClarificationId: input.currentState.openClarification?.id ?? null,
+    dialogueDecision,
+    dialogueStatePrior,
   });
 
-  return { semantic, planner, validation, committed, previewAct };
+  const dialogueStateNext = updateDialogueStateAfterAct({
+    prior: dialogueStatePrior,
+    decision: dialogueDecision,
+    act: previewAct,
+    turnCount: input.currentState.turnCount + 1,
+  });
+
+  // Persist dialogue ownership on committed preview state (opaque to core).
+  committed.state = {
+    ...committed.state,
+    dialogueState: dialogueStateNext,
+  };
+
+  return {
+    semantic,
+    contributions,
+    dialogueDecision,
+    dialogueStatePrior,
+    dialogueStateNext,
+    planner,
+    validation,
+    committed,
+    previewAct,
+  };
 }
