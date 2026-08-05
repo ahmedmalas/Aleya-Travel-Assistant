@@ -55,12 +55,14 @@ export function runArchitecturePipeline(input: {
   message: string;
   currentState: ConversationCoreState;
   semantic?: SemanticInterpretation;
+  now?: Date;
 }): ArchitecturePipelineResult {
   const semantic =
     input.semantic ??
     interpretDiagnosticSemantic({
       message: input.message,
       currentState: input.currentState,
+      now: input.now,
     });
 
   const dialogueStatePrior = readDialogueState(input.currentState);

@@ -9,6 +9,12 @@
 
 import type { ConversationCoreState } from '../conversation-core';
 import { isShapeValidPlaceName } from '../conversation-interpretation/placeResolution';
+import {
+  buildInterpretationContext,
+  deriveActiveTravelRequirement,
+  resolveCalendarDateIso,
+  resolveContextualTemporalSemantics,
+} from '../conversation-interpretation';
 import { CURATED_PLACES } from '../travel-location-intelligence/data/curatedPlaces';
 import { emptyReferencedEntity, type ReferencedEntity } from './clarification';
 import {
@@ -255,15 +261,19 @@ function mergePlaceHits(hits: PlaceHit[]): string[] {
 }
 
 /**
- * Diagnostic semantic interpretation for dual-run telemetry.
+ * Diagnostic semantic interpretation for dual-run / governed architecture.
+ * Temporal meaning reuses conversation-interpretation shared capabilities
+ * (calendar ISO + contextual relative temporal) — no second date parser.
  */
 export function interpretDiagnosticSemantic(input: {
   message: string;
   currentState: ConversationCoreState;
+  now?: Date;
 }): SemanticInterpretation {
   const message = input.message.trim();
   const folded = asciiFold(message);
   const state = input.currentState;
+  const now = input.now ?? new Date();
   const places = mergePlaceHits([
     ...findKnownPlaceHits(message, state),
     ...captureFramePlaceHits(message, state),
@@ -726,6 +736,69 @@ export function interpretDiagnosticSemantic(input: {
         value: null,
         evidence: message,
       });
+    }
+  }
+
+  // Shared temporal meaning (calendar + contextual relative) → set_date deltas.
+  // Role/target binding is Dialogue + Travel Planner responsibility.
+  const emittedIso = new Set<string>();
+  const calendarIso = resolveCalendarDateIso(message, now);
+  if (calendarIso !== null) {
+    deltas.push({
+      kind: 'set_date',
+      entities: [],
+      value: calendarIso,
+      evidence: message,
+    });
+    emittedIso.add(calendarIso);
+    intent = intent === 'unknown' ? 'inform' : intent;
+    confidence = Math.max(confidence, 0.75);
+  }
+
+  const activeRequirement = deriveActiveTravelRequirement(state);
+  const interpretationContext = buildInterpretationContext({
+    message,
+    currentState: state,
+    activeRequirement,
+    recentHistory: state.transcript,
+    now,
+  });
+  const contextualTemporal = resolveContextualTemporalSemantics(
+    interpretationContext,
+  );
+  if (contextualTemporal !== null) {
+    if (
+      typeof contextualTemporal.departureDate === 'string' &&
+      !emittedIso.has(contextualTemporal.departureDate)
+    ) {
+      deltas.push({
+        kind: 'set_date',
+        entities: [],
+        value: contextualTemporal.departureDate,
+        evidence: message,
+      });
+      emittedIso.add(contextualTemporal.departureDate);
+    }
+    if (
+      typeof contextualTemporal.returnDate === 'string' &&
+      !emittedIso.has(contextualTemporal.returnDate)
+    ) {
+      deltas.push({
+        kind: 'set_date',
+        entities: [],
+        value: contextualTemporal.returnDate,
+        evidence: message,
+      });
+      emittedIso.add(contextualTemporal.returnDate);
+    }
+    if (emittedIso.size > 0 || contextualTemporal.nightCount !== null) {
+      intent = intent === 'unknown' ? 'inform' : intent;
+      confidence = Math.max(
+        confidence,
+        contextualTemporal.confidence > 0
+          ? contextualTemporal.confidence
+          : 0.75,
+      );
     }
   }
 

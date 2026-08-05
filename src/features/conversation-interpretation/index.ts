@@ -6,6 +6,7 @@
  * processConversationTurn with skipExtraction.
  */
 
+export { resolveCalendarDateIso } from './calendarDateSemantics';
 export {
   interpretTravelUtterance,
 } from './interpretTravelUtterance';
