@@ -3,6 +3,8 @@
  * Proves governed path uses interpretSemanticMeaning once (not a second SI).
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createInitialConversationCoreState } from '../../conversation-core';
 import { interpretSemanticMeaning } from '../../conversation-interpretation/interpretSemanticMeaning';
@@ -10,6 +12,7 @@ import { interpretDiagnosticSemantic } from '../interpretDiagnosticSemantic';
 import { runArchitecturePipeline } from '../runArchitecturePipeline';
 
 const NOW = new Date('2026-08-05T00:00:00.000Z');
+const ROOT = resolve(__dirname, '../../../..');
 
 describe('Engine Consolidation — Semantic Interpretation ownership', () => {
   it('interpretDiagnosticSemantic is an alias of interpretSemanticMeaning', () => {
@@ -86,5 +89,19 @@ describe('Engine Consolidation — Semantic Interpretation ownership', () => {
       ),
     ).toBe(true);
     expect(pipe.committed.state.destinationStops).toEqual(['Melbourne']);
+  });
+
+  it('AiPlanningPanel and ConciergePlanPanel both enter via runConsultantTurn', () => {
+    const ai = readFileSync(
+      resolve(ROOT, 'src/components/trip-platform/AiPlanningPanel.tsx'),
+      'utf8',
+    );
+    const concierge = readFileSync(
+      resolve(ROOT, 'src/components/trip-platform/ConciergePlanPanel.tsx'),
+      'utf8',
+    );
+    expect(ai).toMatch(/runConsultantTurn\(/);
+    expect(concierge).toMatch(/runConsultantTurn\(/);
+    expect(concierge).not.toMatch(/processConversationTurn\(/);
   });
 });

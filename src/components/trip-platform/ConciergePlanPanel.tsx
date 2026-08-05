@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { processConversationTurn } from '../../features/conversation-core';
+import {
+  createInitialConversationCoreState,
+  type ConversationCoreState,
+} from '../../features/conversation-core';
+import { runConsultantTurn } from '../../features/conversation-consultant';
 import { useSharedTripStore } from '../../store/TripStoreContext';
 import { Field, Panel, PrimaryButton, SecondaryButton, StatusBanner, inputClassName } from './shared/ui';
 
@@ -65,6 +69,13 @@ export function ConciergePlanPanel() {
       text: 'Ask about flights, hotels, itineraries, transport, dining, accessibility, family needs, backups, or budgets. Recommendations are planning guidance — not confirmed bookings.',
     },
   ]);
+  // Engine Consolidation Phase 7: same authoritative engine as AiPlanningPanel.
+  const [coreState, setCoreState] = useState<ConversationCoreState>(() =>
+    createInitialConversationCoreState({
+      conversationId: crypto.randomUUID(),
+      now: new Date(),
+    }),
+  );
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const contextLabel = useMemo(
@@ -91,20 +102,21 @@ export function ConciergePlanPanel() {
     setFeedback(null);
     const userMessageAt = new Date();
     const assistantMessageAt = new Date();
-    const result = processConversationTurn({
+    const result = await runConsultantTurn({
       message: trimmed,
-      conversationId: crypto.randomUUID(),
+      state: coreState,
       userEntryId: crypto.randomUUID(),
       assistantEntryId: crypto.randomUUID(),
       userMessageAt,
       assistantMessageAt,
     });
+    setCoreState(result.state);
     const assistant: ConciergeMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       text: result.reply,
       recommendation: {
-        title: 'Conversation engine not assembled',
+        title: 'Consultant turn',
         detail: result.reply,
       },
     };
