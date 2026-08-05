@@ -3,8 +3,8 @@
  *
  * Phase 1–4: schemas, planner, validator, committer, dual-run (diagnostic).
  * Phase 5: activation gates + reversible preview behaviour switch.
- * Production stays legacy unless VITE_ARCHITECTURE_GOVERNOR_SWITCH=true
- * and per-turn gates pass.
+ * Vercel Preview defaults the switch ON; production stays OFF.
+ * Per-turn activation still requires gates to pass.
  */
 
 export {
@@ -120,8 +120,19 @@ export {
 
 export {
   isArchitectureBehaviourSwitchActive,
+  isVercelPreviewBuild,
   ARCHITECTURE_GOVERNOR_SWITCH_ENV,
+  VERCEL_ENV_MIRROR,
+  VERCEL_TARGET_ENV_MIRROR,
 } from './behaviourSwitch';
+
+export {
+  buildGovernorTurnDiagnostics,
+  buildGovernorBootDiagnostics,
+  type GovernorUiStatus,
+  type FailedGateDiagnostic,
+  type GovernorTurnDiagnostics,
+} from './governorStatus';
 
 export {
   architectureStateUpdateFromCommit,

@@ -139,6 +139,10 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
     expect(panel).toMatch(/runConsultantTurn/);
     expect(panel).not.toMatch(/selectConversationFollowUpQuestion/);
     expect(panel).not.toMatch(/interpretTravelUtterance/);
+    // Visible governor activation status — never silent fallback.
+    expect(panel).toMatch(/data-testid="governor-status"/);
+    expect(panel).toMatch(/governorDiagnostics\.statusLabel/);
+    expect(panel).toMatch(/data-testid="governor-failed-gates"/);
   });
 
   it('attaches Phase 5 dual-run telemetry without changing act/reply when switch off', async () => {
@@ -152,6 +156,11 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
       'Are you starting from Sydney, or is Sydney your first destination?',
     );
     expect(r.behaviourSwitchActive).toBe(false);
+    expect(r.behaviourSwitchRequested).toBe(false);
+    expect(r.governorDiagnostics.statusLabel).toBe(
+      'Governor: legacy fallback',
+    );
+    expect(r.governorDiagnostics.fallbackReason).toBeTruthy();
     expect(r.architectureTrace).toMatchObject({
       phase: 5,
       diagnosticOnly: true,

@@ -1,11 +1,13 @@
 import {
   architectureStateUpdateFromCommit,
   buildArchitectureTurnTrace,
+  buildGovernorTurnDiagnostics,
   consultantActFromPreview,
   isArchitectureBehaviourSwitchActive,
   runDualPathComparisonBundle,
   type ArchitectureTurnTrace,
   type DualRunComparison,
+  type GovernorTurnDiagnostics,
 } from '../conversation-architecture';
 import {
   processConversationTurn,
@@ -52,6 +54,10 @@ export type RunConsultantTurnResult = {
   dualRunComparison: DualRunComparison;
   /** Phase 5 — true only when switch requested AND gates passed for this turn. */
   behaviourSwitchActive: boolean;
+  /** Phase 5 — whether Preview/env requested architecture ownership. */
+  behaviourSwitchRequested: boolean;
+  /** Phase 5 — visible activation diagnostics (never silent). */
+  governorDiagnostics: GovernorTurnDiagnostics;
 };
 
 /**
@@ -183,6 +189,12 @@ export async function runConsultantTurn(
     behaviourSwitchActive,
   });
 
+  const governorDiagnostics = buildGovernorTurnDiagnostics({
+    behaviourSwitchActive,
+    dualRunComparison: comparison,
+    switchRequested,
+  });
+
   if (!behaviourSwitchActive) {
     return {
       state: legacyResult.state,
@@ -193,6 +205,8 @@ export async function runConsultantTurn(
       architectureTrace,
       dualRunComparison: comparison,
       behaviourSwitchActive: false,
+      behaviourSwitchRequested: switchRequested,
+      governorDiagnostics,
     };
   }
 
@@ -231,5 +245,7 @@ export async function runConsultantTurn(
     architectureTrace,
     dualRunComparison: comparison,
     behaviourSwitchActive: true,
+    behaviourSwitchRequested: switchRequested,
+    governorDiagnostics,
   };
 }

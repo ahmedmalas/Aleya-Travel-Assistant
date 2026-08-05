@@ -1,6 +1,10 @@
 import { useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { AiTravelPlan } from '../../features/ai-planning/aiPlanning';
 import {
+  buildGovernorBootDiagnostics,
+  type GovernorTurnDiagnostics,
+} from '../../features/conversation-architecture';
+import {
   createInitialConversationCoreState,
   type ConversationCoreState,
 } from '../../features/conversation-core';
@@ -61,6 +65,8 @@ export function AiPlanningPanel() {
       now: new Date(),
     }),
   );
+  const [governorDiagnostics, setGovernorDiagnostics] =
+    useState<GovernorTurnDiagnostics>(() => buildGovernorBootDiagnostics());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: createId(),
@@ -126,6 +132,7 @@ export function AiPlanningPanel() {
       assistantMessageAt,
     });
     setCoreState(result.state);
+    setGovernorDiagnostics(result.governorDiagnostics);
     reply(result.reply);
     return result;
   };
@@ -178,6 +185,29 @@ export function AiPlanningPanel() {
           aria-label="Conversation core boundary"
         >
           <p>Boundary: conversation-consultant (Turn Governor)</p>
+          <p
+            data-testid="governor-status"
+            data-governor-status={governorDiagnostics.status}
+          >
+            {governorDiagnostics.statusLabel}
+          </p>
+          {governorDiagnostics.fallbackReason ? (
+            <p data-testid="governor-fallback-reason">
+              Fallback: {governorDiagnostics.fallbackReason}
+            </p>
+          ) : null}
+          {governorDiagnostics.failedGates.length > 0 ? (
+            <div data-testid="governor-failed-gates">
+              <p>Failed activation gate(s):</p>
+              <ul>
+                {governorDiagnostics.failedGates.map((gate) => (
+                  <li key={gate.id}>
+                    {gate.id}: {gate.detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p>Status: {coreState.status}</p>
           <p>Turn count: {coreState.turnCount}</p>
           <p>Conversation: {coreState.conversationId}</p>
@@ -324,6 +354,7 @@ export function AiPlanningPanel() {
                 now: new Date(),
               }),
             );
+            setGovernorDiagnostics(buildGovernorBootDiagnostics());
             setMessages([
               {
                 id: createId(),

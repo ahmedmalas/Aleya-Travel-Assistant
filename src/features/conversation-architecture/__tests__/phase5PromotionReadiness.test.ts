@@ -9,8 +9,11 @@ import type { ConsultantAct } from '../../conversation-consultant/types';
 import {
   ACTIVATION_GATE_IDS,
   assertDivergenceReadiness,
+  buildGovernorBootDiagnostics,
+  buildGovernorTurnDiagnostics,
   evaluateActivationGates,
   isArchitectureBehaviourSwitchActive,
+  isVercelPreviewBuild,
   PHASE5_DIVERGENCE_READINESS,
   runDualPathComparisonBundle,
 } from '../index';
@@ -313,7 +316,20 @@ describe('Phase 5 — reversible behaviour switch', () => {
     ).toBe(true);
     expect(
       isArchitectureBehaviourSwitchActive({
+        VITE_VERCEL_TARGET_ENV: 'preview',
+      }),
+    ).toBe(true);
+    expect(isVercelPreviewBuild({ VITE_VERCEL_TARGET_ENV: 'preview' })).toBe(
+      true,
+    );
+    expect(
+      isArchitectureBehaviourSwitchActive({
         VITE_VERCEL_ENV: 'production',
+      }),
+    ).toBe(false);
+    expect(
+      isArchitectureBehaviourSwitchActive({
+        VITE_VERCEL_TARGET_ENV: 'production',
       }),
     ).toBe(false);
     // Explicit false kills switch even on preview (reversible).
@@ -331,6 +347,11 @@ describe('Phase 5 — reversible behaviour switch', () => {
     s = first.state;
     const second = await turn('bangkok', s, 1, false);
     expect(second.behaviourSwitchActive).toBe(false);
+    expect(second.behaviourSwitchRequested).toBe(false);
+    expect(second.governorDiagnostics.statusLabel).toBe(
+      'Governor: legacy fallback',
+    );
+    expect(second.governorDiagnostics.fallbackReason).toMatch(/switch off/i);
     expect(second.reply).toBe(
       'Are you starting from Bangkok, or is Bangkok your first destination?',
     );
@@ -342,11 +363,16 @@ describe('Phase 5 — reversible behaviour switch', () => {
     let s = state();
     const first = await turn('I want to go Bangkok and Beirut', s, 0, true);
     expect(first.state.openClarification?.subject).toBe('Bangkok');
+    expect(first.governorDiagnostics.statusLabel).toBe('Governor: active');
     s = first.state;
     const second = await turn('bangkok', s, 1, true);
     expect(second.behaviourSwitchActive).toBe(true);
+    expect(second.behaviourSwitchRequested).toBe(true);
     expect(second.dualRunComparison.gatesPassed).toBe(true);
     expect(second.dualRunComparison.behaviourSwitchActive).toBe(true);
+    expect(second.governorDiagnostics.statusLabel).toBe('Governor: active');
+    expect(second.governorDiagnostics.fallbackReason).toBeNull();
+    expect(second.governorDiagnostics.failedGates).toEqual([]);
     expect(second.reply.length).toBeLessThan(
       'Are you starting from Bangkok, or is Bangkok your first destination?'
         .length,
@@ -375,5 +401,63 @@ describe('Phase 5 — reversible behaviour switch', () => {
     expect(r.behaviourSwitchActive).toBe(true);
     expect(r.state.destinationStops).toEqual(['Osaka']);
     expect(r.dualRunComparison.divergence).toBe('unsafe_new_path_blocked');
+  });
+});
+
+describe('Phase 5 — visible governor diagnostics (never silent)', () => {
+  it('boot diagnostics reflect preview ON vs production OFF', () => {
+    const preview = buildGovernorBootDiagnostics({
+      VITE_VERCEL_ENV: 'preview',
+    });
+    expect(preview.statusLabel).toBe('Governor: active');
+    expect(preview.switchRequested).toBe(true);
+
+    const production = buildGovernorBootDiagnostics({
+      VITE_VERCEL_ENV: 'production',
+    });
+    expect(production.statusLabel).toBe('Governor: legacy fallback');
+    expect(production.switchRequested).toBe(false);
+    expect(production.fallbackReason).toMatch(/production/i);
+  });
+
+  it('surfaces failed gate ids when switch requested but gates block', () => {
+    const prior = state({ openClarification: clarBangkok });
+    const { comparison } = runDualPathComparisonBundle({
+      message: 'bangkok',
+      priorState: prior,
+      legacyState: prior,
+      legacyReply: clarBangkok.prompt,
+      legacyAct: clarifyAct(clarBangkok),
+      behaviourSwitchRequested: true,
+    });
+    // Force a blocked diagnostic by synthesizing a failed gate report.
+    const blocked = {
+      ...comparison,
+      gatesPassed: false,
+      gateResults: [
+        {
+          id: 'no_repeated_question_loops' as const,
+          passed: false,
+          detail: 'same clarification id retained',
+        },
+        ...comparison.gateResults.filter(
+          (g) => g.id !== 'no_repeated_question_loops',
+        ),
+      ],
+      behaviourSwitchActive: false,
+    };
+    const diagnostics = buildGovernorTurnDiagnostics({
+      behaviourSwitchActive: false,
+      dualRunComparison: blocked,
+      switchRequested: true,
+    });
+    expect(diagnostics.statusLabel).toBe('Governor: legacy fallback');
+    expect(diagnostics.failedGates.map((g) => g.id)).toContain(
+      'no_repeated_question_loops',
+    );
+    expect(diagnostics.fallbackReason).toMatch(
+      /Activation gate\(s\) blocked/,
+    );
+    expect(diagnostics.fallbackReason).toMatch(/no_repeated_question_loops/);
   });
 });
