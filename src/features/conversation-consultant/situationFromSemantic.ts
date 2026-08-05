@@ -44,13 +44,14 @@ function mapIntent(semantic: SemanticInterpretation): ConsultantIntent {
 function placesFromSemantic(semantic: SemanticInterpretation): string[] {
   const places: string[] = [];
   for (const delta of semantic.deltas) {
-    if (
-      delta.kind !== 'mention_place' &&
-      delta.kind !== 'add_place' &&
-      delta.kind !== 'replace_place' &&
-      delta.kind !== 'remove_place' &&
-      delta.kind !== 'reorder_places'
-    ) {
+    const isPlaceBearing =
+      delta.kind === 'mention_place' ||
+      delta.kind === 'add_place' ||
+      delta.kind === 'replace_place' ||
+      delta.kind === 'remove_place' ||
+      delta.kind === 'reorder_places' ||
+      delta.kind.startsWith('relation_');
+    if (!isPlaceBearing || delta.kind === 'relation_compare_optimise') {
       continue;
     }
     for (const entity of delta.entities) {

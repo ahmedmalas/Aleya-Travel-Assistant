@@ -2,8 +2,10 @@
  * Shared Semantic Interpretation — single meaning owner for the governed engine.
  *
  * Emits architecture SemanticInterpretation (deltas + stance). General
- * capabilities: places (TLI + state entities), temporal (shared calendar /
- * contextual), amendment/control, route structure. Not a transcript cue catalogue.
+ * capabilities: places, temporal, amendment/control, travel relations
+ * (routing/transit/stopover/avoid/hub/compare), conversational control
+ * (complete/summary/proceed/decline/confirm/reject). Meaning only.
+ * Not a transcript cue catalogue.
  *
  * Temporary compatibility: `interpretDiagnosticSemantic` re-exports this.
  */
@@ -21,9 +23,11 @@ import {
 import { CURATED_PLACES } from '../travel-location-intelligence/data/curatedPlaces';
 import { buildInterpretationContext } from './buildInterpretationContext';
 import { resolveCalendarDateIso } from './calendarDateSemantics';
+import { resolveConversationalControlSemantics } from './conversationalControlSemantics';
 import { resolveContextualTemporalSemantics } from './contextualTemporalSemantics';
 import { deriveActiveTravelRequirement } from './deriveActiveRequirement';
 import { isShapeValidPlaceName } from './placeResolution';
+import { resolveTravelRelationSemantics } from './travelRelationSemantics';
 
 function asciiFold(value: string): string {
   let out = '';
@@ -322,6 +326,33 @@ export function interpretSemanticMeaning(input: {
       evidence: message,
     });
     confidence = 0.9;
+  }
+
+  // Conversational-control family (may combine with other facts later).
+  const controlMeaning = resolveConversationalControlSemantics({
+    message,
+    folded,
+  });
+  if (controlMeaning !== null && conversationalControl === 'none') {
+    conversationalControl = controlMeaning.conversationalControl;
+    intent = controlMeaning.intent;
+    confidence = Math.max(confidence, controlMeaning.confidence);
+    deltas.push(...controlMeaning.deltas);
+  } else if (controlMeaning !== null) {
+    // Preserve stronger reset/restart/undo; still attach non-conflicting control deltas.
+    for (const delta of controlMeaning.deltas) {
+      if (
+        delta.kind === 'control_information_complete' ||
+        delta.kind === 'control_request_summary' ||
+        delta.kind === 'control_ready_to_proceed' ||
+        delta.kind === 'control_decline_further' ||
+        delta.kind === 'control_confirm_plan' ||
+        delta.kind === 'control_reject_plan'
+      ) {
+        deltas.push(delta);
+      }
+    }
+    confidence = Math.max(confidence, controlMeaning.confidence);
   }
 
   if (
@@ -693,9 +724,38 @@ export function interpretSemanticMeaning(input: {
     }
   }
 
+  // Travel-relationship / strategy family (before bare place mentions).
+  const relationMeaning = resolveTravelRelationSemantics({
+    message,
+    folded,
+    places,
+    placeEntity,
+  });
+  const relationClaimed = new Set(
+    (relationMeaning?.claimedPlaces ?? []).map((p) => asciiFold(p)),
+  );
+  if (relationMeaning !== null) {
+    intent = intent === 'unknown' || intent === 'conversational_control'
+      ? 'inform'
+      : intent;
+    confidence = Math.max(confidence, relationMeaning.confidence);
+    ambiguityNotes.push(...relationMeaning.ambiguityNotes);
+    deltas.push(...relationMeaning.deltas);
+  }
+
+  const hasPlaceRoleDelta = deltas.some(
+    (d) =>
+      d.kind === 'mention_place' ||
+      d.kind === 'add_place' ||
+      d.kind === 'replace_place' ||
+      d.kind === 'remove_place' ||
+      d.kind === 'reorder_places' ||
+      d.kind.startsWith('relation_'),
+  );
+
   // Multi-place travel seed without explicit origin role.
   if (
-    deltas.length === 0 &&
+    !hasPlaceRoleDelta &&
     places.length >= 2 &&
     !state.origin &&
     (state.destinationStops?.length ?? 0) === 0 &&
@@ -715,7 +775,8 @@ export function interpretSemanticMeaning(input: {
 
   // Single-place travel frames → explicit roleHint (not vacancy guessing).
   // Planner may only assign roles from roleHint or Dialogue-bound obligations.
-  if (deltas.length === 0 && places.length === 1) {
+  // Skip when a travel-relation or other place-role delta already owns meaning.
+  if (!hasPlaceRoleDelta && places.length === 1) {
     const place = places[0]!;
     const originFrame =
       /\b(?:from|leaving from|departing from|travelling from|traveling from|flying from)\b/.test(
@@ -726,7 +787,7 @@ export function interpretSemanticMeaning(input: {
         folded,
       ) || /\bto\s+[a-z]/.test(folded);
 
-    intent = 'inform';
+    intent = intent === 'unknown' ? 'inform' : intent;
     confidence = Math.max(confidence, 0.75);
     if (originFrame) {
       deltas.push({
@@ -742,7 +803,7 @@ export function interpretSemanticMeaning(input: {
         value: { roleHint: 'destination' },
         evidence: message,
       });
-    } else {
+    } else if (!relationClaimed.has(asciiFold(place))) {
       // Untyped place mention — no role ownership here.
       deltas.push({
         kind: 'mention_place',
@@ -767,10 +828,20 @@ export function interpretSemanticMeaning(input: {
     ambiguityNotes.push('Hedging language lowers confidence');
   }
 
-  if (deltas.length === 0 && places.length > 0) {
-    intent = 'inform';
+  const hasPlaceRoleDeltaAfter = deltas.some(
+    (d) =>
+      d.kind === 'mention_place' ||
+      d.kind === 'add_place' ||
+      d.kind === 'replace_place' ||
+      d.kind === 'remove_place' ||
+      d.kind === 'reorder_places' ||
+      d.kind.startsWith('relation_'),
+  );
+  if (!hasPlaceRoleDeltaAfter && places.length > 0) {
+    intent = intent === 'unknown' ? 'inform' : intent;
     confidence = Math.max(confidence, 0.7);
     for (const place of places) {
+      if (relationClaimed.has(asciiFold(place))) continue;
       deltas.push({
         kind: 'mention_place',
         entities: [placeEntity(place)],

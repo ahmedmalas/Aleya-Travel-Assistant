@@ -29,6 +29,8 @@ export {
   clarificationStanceSchema,
   semanticDeltaSchema,
   semanticInterpretationSchema,
+  travelRelationValueSchema,
+  conversationalControlValueSchema,
   emptySemanticInterpretationResult,
   type SemanticIntent,
   type SemanticDeltaKind,
@@ -36,6 +38,8 @@ export {
   type ClarificationStance,
   type SemanticDelta,
   type SemanticInterpretation,
+  type TravelRelationValue,
+  type ConversationalControlValue,
 } from './semanticInterpretation';
 
 export {

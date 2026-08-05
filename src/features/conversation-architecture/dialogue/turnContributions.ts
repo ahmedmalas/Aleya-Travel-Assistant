@@ -15,6 +15,13 @@ function valueClassesForDeltaKind(kind: string): ValueClass[] {
     case 'remove_place':
     case 'replace_place':
     case 'reorder_places':
+    case 'relation_route_via':
+    case 'relation_transit':
+    case 'relation_stopover':
+    case 'relation_itinerary_stop':
+    case 'relation_prefer_hub':
+    case 'relation_avoid_place':
+    case 'relation_routing_ambiguous':
       return ['PlaceLike'];
     case 'set_date':
     case 'set_duration_on_place':
@@ -24,12 +31,20 @@ function valueClassesForDeltaKind(kind: string): ValueClass[] {
     case 'set_service':
       return ['ServiceLike'];
     case 'confirm_option':
+    case 'control_confirm_plan':
       return ['OptionChoice', 'BooleanConfirm'];
     case 'reject_option':
     case 'reject_framing':
+    case 'control_reject_plan':
       return ['OptionChoice', 'BooleanConfirm'];
     case 'preserve_facet':
+    case 'relation_compare_optimise':
       return ['StructuredBundle'];
+    case 'control_information_complete':
+    case 'control_request_summary':
+    case 'control_ready_to_proceed':
+    case 'control_decline_further':
+      return ['FreeText', 'BooleanConfirm'];
     default:
       return ['FreeText'];
   }

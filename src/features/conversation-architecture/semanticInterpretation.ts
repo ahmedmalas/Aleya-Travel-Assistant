@@ -1,7 +1,8 @@
 /**
- * Phase 1 — SemanticInterpretation schema (meaning only).
+ * SemanticInterpretation schema (meaning only).
  *
  * Describes what the user means. Must not encode canonical mutations.
+ * Includes travel-relation and conversational-control capability families.
  */
 
 import { z } from 'zod';
@@ -25,6 +26,10 @@ export const semanticIntentSchema = z.enum([
   'unknown',
 ]);
 
+/**
+ * Delta kinds — entity mentions, travel relations (strategy), and control acts.
+ * Relation kinds express journey strategy meaning; they do not commit writes.
+ */
 export const semanticDeltaKindSchema = z.enum([
   'mention_place',
   'remove_place',
@@ -43,8 +48,28 @@ export const semanticDeltaKindSchema = z.enum([
   'control_restart',
   'control_undo',
   'control_keep_rest',
+  // Travel relationship / strategy (meaning only).
+  'relation_route_via',
+  'relation_transit',
+  'relation_stopover',
+  'relation_itinerary_stop',
+  'relation_prefer_hub',
+  'relation_avoid_place',
+  'relation_routing_ambiguous',
+  'relation_compare_optimise',
+  // Conversational control (meaning only — never auto-executes search).
+  'control_information_complete',
+  'control_request_summary',
+  'control_ready_to_proceed',
+  'control_decline_further',
+  'control_confirm_plan',
+  'control_reject_plan',
 ]);
 
+/**
+ * Conversational control channel — orthogonal to place/date facts.
+ * `information_complete` means gathering finished; Governor decides next act.
+ */
 export const conversationalControlSchema = z.enum([
   'none',
   'undo',
@@ -52,6 +77,12 @@ export const conversationalControlSchema = z.enum([
   'restart',
   'preserve_rest',
   'change_only',
+  'information_complete',
+  'request_summary',
+  'ready_to_proceed',
+  'decline_further_questions',
+  'confirm_plan',
+  'reject_plan',
 ]);
 
 export const clarificationStanceSchema = z.enum([
@@ -65,6 +96,40 @@ export const clarificationStanceSchema = z.enum([
   'unrelated',
   'ambiguous',
 ]);
+
+/** Typed payload for travel-relation deltas (optional; entities carry places). */
+export const travelRelationValueSchema = z.object({
+  relationFamily: z.enum([
+    'route_via',
+    'transit',
+    'stopover',
+    'itinerary_stop',
+    'prefer_hub',
+    'avoid',
+    'routing_or_stopover_unresolved',
+    'compare_optimise',
+  ]),
+  /** When unresolved, lists candidate readings without choosing one. */
+  unresolvedBetween: z
+    .array(z.enum(['transit', 'stopover', 'route_via']))
+    .optional(),
+  optimisationAxis: z
+    .enum(['cheapest', 'fastest', 'convenient', 'unspecified'])
+    .optional(),
+});
+
+export const conversationalControlValueSchema = z.object({
+  controlFamily: z.enum([
+    'information_complete',
+    'request_summary',
+    'ready_to_proceed',
+    'decline_further_questions',
+    'confirm_plan',
+    'reject_plan',
+  ]),
+  /** Explicit: completion never implies search execution. */
+  executesSearch: z.literal(false).optional(),
+});
 
 export const semanticDeltaSchema = z.object({
   kind: semanticDeltaKindSchema,
@@ -89,6 +154,10 @@ export type ConversationalControl = z.infer<typeof conversationalControlSchema>;
 export type ClarificationStance = z.infer<typeof clarificationStanceSchema>;
 export type SemanticDelta = z.infer<typeof semanticDeltaSchema>;
 export type SemanticInterpretation = z.infer<typeof semanticInterpretationSchema>;
+export type TravelRelationValue = z.infer<typeof travelRelationValueSchema>;
+export type ConversationalControlValue = z.infer<
+  typeof conversationalControlValueSchema
+>;
 
 export function emptySemanticInterpretationResult(
   overrides: Partial<SemanticInterpretation> = {},
