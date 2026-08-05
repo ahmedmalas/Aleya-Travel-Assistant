@@ -203,13 +203,13 @@ describe('phase 5F — extractConversationState execution only', () => {
     expect(second).toEqual({ stateUpdate: { destination: 'Cairns' } });
     expect(second.stateUpdate).not.toBe(first.stateUpdate);
 
-    // Phase 21B: bare place while origin follow-up is active sets origin.
+    // Engine Consolidation Phase 5: bare-origin extractor patch retired.
     const bareOrigin = extractConversationState({
       message: 'Brisbane',
       currentState: createState({ destination: 'Perth', origin: null }),
     });
-    expect(bareOrigin).toEqual({ stateUpdate: { origin: 'Brisbane' } });
-    expect(bareOrigin.stateUpdate).not.toHaveProperty('destination');
+    expect(bareOrigin).toEqual({ stateUpdate: {} });
+    expect(bareOrigin.stateUpdate).not.toHaveProperty('origin');
     expect(bareOrigin.stateUpdate).not.toBe(first.stateUpdate);
 
     const stillUnsupported = extractConversationState({

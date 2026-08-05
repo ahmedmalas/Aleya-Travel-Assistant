@@ -100,7 +100,8 @@ describe('Amendment flow architecture after search-ready', () => {
     expect(step.result.reply).not.toMatch(/removed/i);
 
     state = step.result.state;
-    step = await turn('Brisbane', state, 1);
+    // Consolidation: place roles require explicit cues (no vacancy / bare-city guess).
+    step = await turn('from Brisbane', state, 1);
     expect(step.result.state.origin).toBe('Brisbane');
     expect(step.result.state.destination).toBe('Melbourne');
     expect(step.result.state.conversationComplete).toBe(true);

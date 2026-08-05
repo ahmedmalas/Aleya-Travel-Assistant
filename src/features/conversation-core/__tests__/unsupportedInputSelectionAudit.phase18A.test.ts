@@ -539,13 +539,11 @@ describe('Phase 18A — unsupported input selection audit', () => {
       );
     }
 
-    // Phase 21B: a bare unknown place while origin is active is interpreted as
-    // origin (no gazetteer). Pre-21B this path was empty / uninterpreted.
+    // Engine Consolidation Phase 5: bare unknown place is no longer origin-patched.
     const bareUnknown = trace('Xyzzyville', seed);
-    expect(bareUnknown.extractedPatch).toEqual({ origin: 'Xyzzyville' });
-    expect(bareUnknown.messageInterpreted).toBe(true);
-    expect(bareUnknown.followUpIfCalled).toBe(FOLLOW_UPS.departureDate);
-    expect(bareUnknown.followUpQuestion).toBe(FOLLOW_UPS.departureDate);
+    expect(bareUnknown.extractedPatch).toEqual({});
+    expect(bareUnknown.messageInterpreted).toBe(false);
+    expect(bareUnknown.followUpIfCalled).toBe(FOLLOW_UPS.origin);
   });
 
   it('shows required follow-up after a prior turn just set a field, and when prior state is unchanged', () => {

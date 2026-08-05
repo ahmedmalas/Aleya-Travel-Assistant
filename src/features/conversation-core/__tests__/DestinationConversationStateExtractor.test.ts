@@ -376,11 +376,10 @@ describe('phase 7A — DestinationConversationStateExtractor activation', () => 
 
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
-    // Phase 21D: currentState used only for active-destination follow-up gate.
-    expect(source).toMatch(/isDestinationFollowUpActive\(input\.currentState\)/);
-    expect(source).toMatch(/state\.destination === null/);
+    // Engine Consolidation Phase 5: bare-destination follow-up gate retired.
+    expect(source).not.toMatch(/isDestinationFollowUpActive\(input\.currentState\)/);
+    expect(source).toMatch(/Phase 21D\/F bare-destination/);
     expect(source).not.toMatch(/state\.destination\s*=(?!=)/);
-    expect(source).not.toMatch(/currentState\.destination/);
     expect(source).toMatch(/destination\s*:/);
     expect(source).not.toMatch(/\.trim\(/);
     expect(source).not.toMatch(/\.toLowerCase\(/);

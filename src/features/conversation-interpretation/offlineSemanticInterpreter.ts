@@ -282,18 +282,15 @@ export function interpretOfflineSemantic(input: {
     }
   }
 
-  // Place role assignment using active requirement + travel cues.
-  // Skipped when multi-city already captured ordered destinationStops this turn.
+  // Place role assignment using travel role cues only (from / go-to frames).
+  // Engine Consolidation Phase 5: removed thinking/sounds phrase cues and
+  // activeRequirement vacancy fill (duplicate of retired Phase 21 patches).
   if (places.length > 0 && semantic.destinationStops.length < 2) {
     const fromMatch = folded.match(
       /\b(?:from|leaving from|departing from|travelling from|traveling from|flying from)\s+([a-z][a-z\s'-]{1,40})/,
     );
     const goMatch = folded.match(
-      /\b(?:go(?:ing)?|travel(?:l?ing)?|fly(?:ing)?|visit(?:ing)?|head(?:ing)?|to)\s+(?!from\b)([a-z][a-z\s'-]{1,40})/,
-    );
-    const thinkingMatch = folded.match(/\bthinking(?:\s+about)?\s+([a-z][a-z\s'-]{1,40})/);
-    const soundsMatch = folded.match(
-      /\b([a-z][a-z\s'-]{1,40})\s+sounds\s+good\b/,
+      /\b(?:go(?:ing)?\s+to|travel(?:l?ing)?\s+to|fly(?:ing)?\s+to|visit(?:ing)?|head(?:ing)?\s+to)\s+(?!from\b)([a-z][a-z\s'-]{1,40})/,
     );
 
     const resolveNamed = (raw: string | undefined): string | null => {
@@ -315,33 +312,9 @@ export function interpretOfflineSemantic(input: {
     if (goMatch) {
       destination = resolveNamed(goMatch[1] ?? undefined);
     }
-    if (thinkingMatch && destination === null) {
-      destination = resolveNamed(thinkingMatch[1] ?? undefined);
-    }
-    if (soundsMatch && destination === null) {
-      destination = resolveNamed(soundsMatch[1] ?? undefined);
-    }
 
-    if (isCorrection && places.length > 0 && destination === null) {
+    if (isCorrection && places.length > 0 && destination === null && origin === null) {
       destination = places[places.length - 1] ?? null;
-    }
-
-    if (destination === null && origin === null) {
-      if (
-        input.activeRequirement === 'destination' ||
-        input.activeRequirement === 'destinationStops'
-      ) {
-        destination = places[0] ?? null;
-      } else if (input.activeRequirement === 'origin') {
-        origin = places[0] ?? null;
-      } else if (input.currentState.destination === null) {
-        destination = places[0] ?? null;
-      } else if (input.currentState.origin === null) {
-        origin = places[0] ?? null;
-      } else {
-        destination = places[0] ?? null;
-        semantic.intent = isCorrection ? 'correct' : 'provide_info';
-      }
     }
 
     // Bare "travelling from X" with origin set and no destination cue.

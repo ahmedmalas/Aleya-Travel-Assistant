@@ -104,7 +104,7 @@ describe('Unresolved destination architecture', () => {
 
   it('curated destinations still resolve to canonical TLI names', async () => {
     const { interpretation, result } = await interpretedTurn(
-      'Melbourne',
+      'I want to go to Melbourne',
       createState(),
       0,
     );
@@ -113,22 +113,24 @@ describe('Unresolved destination architecture', () => {
     expect(interpretation.warnings.join(' ')).not.toMatch(/Unresolved destination retained/i);
   });
 
-  it('production skipExtraction path keeps non-curated bare destinations', async () => {
+  it('production skipExtraction path keeps non-curated framed destinations', async () => {
+    // Engine Consolidation: bare vacancy fill retired — use travel frames.
     const cases = [
-      'rome',
-      'spain',
-      'newcastle',
-      'wollongong',
-      'vietnam',
-      'greece',
-      'italy',
-      'croatia',
-      'ballarat',
-      'alice springs',
+      'go to rome',
+      'go to spain',
+      'go to newcastle',
+      'go to wollongong',
+      'go to vietnam',
+      'go to greece',
+      'go to italy',
+      'go to croatia',
+      'go to ballarat',
+      'go to alice springs',
     ];
 
     for (const [index, message] of cases.entries()) {
-      expect(curatedNames.has(message.toLowerCase()), message).toBe(false);
+      const place = message.replace(/^go to /i, '');
+      expect(curatedNames.has(place.toLowerCase()), place).toBe(false);
       const { result, interpretation } = await interpretedTurn(
         message,
         createState(),
@@ -149,9 +151,9 @@ describe('Unresolved destination architecture', () => {
     }
   });
 
-  it('non-curated missing-to grammar destinations are retained', async () => {
+  it('non-curated framed destinations are retained without missing-to patch', async () => {
     const { result } = await interpretedTurn(
-      'I want to go Rome',
+      'I want to go to Rome',
       createState({ transcript: [] }),
       0,
     );
@@ -170,21 +172,19 @@ describe('Unresolved destination architecture', () => {
       mode: 'regex-fallback',
       now: NOW,
     });
-    // Bare "12" is not a Phase-21 place; no destination fabricated.
     expect(interpretation.stateUpdate.destination).toBeUndefined();
   });
 
   it('provider search stays gated while destination/origin are unresolved', async () => {
     let state = createState();
-    let step = await interpretedTurn('rome', state, 0);
+    let step = await interpretedTurn('go to rome', state, 0);
     state = step.result.state;
     expect(state.destination).toBe('Rome');
     expect(state.destinationResolutionStatus).toBe('unresolved');
     expect(canSafelyConstructProviderSearch(state)).toBe(false);
 
-    step = await interpretedTurn('newcastle', state, 1);
+    step = await interpretedTurn('from newcastle', state, 1);
     state = step.result.state;
-    // newcastle may land as origin while destination follow-up already filled
     expect(state.origin ?? state.destination).toBeTruthy();
     expect(canSafelyConstructProviderSearch(state)).toBe(false);
     expect(isPlaceStatusSafeForProviderSearch('unresolved')).toBe(false);

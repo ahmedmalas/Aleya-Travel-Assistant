@@ -187,7 +187,7 @@ describe('Multi-city trip structure architecture', () => {
         { origin: 'Melbourne', destination: 'Perth', departureDate: null },
       ],
     };
-    const step = await turn('Sydney', state, 0);
+    const step = await turn('from Sydney', state, 0);
     expect(step.result.state.origin).toBe('Sydney');
     expect(step.result.state.tripLegs).toEqual([
       { origin: 'Sydney', destination: 'Melbourne', departureDate: null },

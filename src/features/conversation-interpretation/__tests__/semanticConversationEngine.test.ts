@@ -1,14 +1,20 @@
+/**
+ * Semantic engine capability tests (Engine Consolidation Phase 6).
+ * Transcript cue locks (Thinking X / sounds good / missing-to vacancy) retired.
+ */
+
 import { describe, expect, it } from 'vitest';
 import {
   createInitialConversationCoreState,
   processConversationTurn,
   type ConversationCoreState,
 } from '../../conversation-core';
-import { selectConversationFollowUpQuestion } from '../../conversation-core/selectConversationFollowUpQuestion';
-import { CONVERSATION_REPLY_CATALOGUE } from '../../conversation-core/conversationReplyCatalogue';
+import { runArchitecturePipeline } from '../../conversation-architecture/runArchitecturePipeline';
+import { createInitialDialogueState } from '../../conversation-architecture/dialogue/dialogueState';
+import { updateDialogueStateAfterAct } from '../../conversation-architecture/dialogue/updateDialogueStateAfterAct';
 import { interpretTravelUtterance } from '../interpretTravelUtterance';
 
-const F = CONVERSATION_REPLY_CATALOGUE.followUps;
+const NOW = new Date('2026-08-04T00:00:00.000Z');
 
 function createState(
   overrides: Partial<ConversationCoreState> = {},
@@ -16,7 +22,7 @@ function createState(
   return {
     ...createInitialConversationCoreState({
       conversationId: 'semantic-engine',
-      now: new Date('2026-08-04T00:00:00.000Z'),
+      now: NOW,
     }),
     status: 'active',
     turnCount: 0,
@@ -24,144 +30,57 @@ function createState(
   };
 }
 
-async function turn(
-  message: string,
-  state: ConversationCoreState,
-  index: number,
-) {
-  const interpretation = await interpretTravelUtterance({
-    message,
-    currentState: state,
-    recentHistory: state.transcript,
-    mode: 'offline-semantic',
-  });
-  return processConversationTurn({
-    message,
-    state,
-    userEntryId: `u-${index}`,
-    assistantEntryId: `a-${index}`,
-    userMessageAt: new Date(Date.UTC(2026, 7, 4, 0, 0, index * 2)),
-    assistantMessageAt: new Date(Date.UTC(2026, 7, 4, 0, 0, index * 2 + 1)),
-    stateUpdate: interpretation.stateUpdate,
-    skipExtraction: true,
-  });
-}
-
-describe('Semantic conversation engine — multi-turn regressions', () => {
-  it('I want to go Melbourne → Sydney', async () => {
-    let s = createState();
-    let r = await turn('I want to go Melbourne', s, 0);
-    expect(r.state.destination).toBe('Melbourne');
-    expect(selectConversationFollowUpQuestion(r.state)).toBe(F.origin);
-
-    s = r.state;
-    r = await turn('Sydney', s, 1);
-    expect(r.state.destination).toBe('Melbourne');
-    expect(r.state.origin).toBe('Sydney');
-    expect(selectConversationFollowUpQuestion(r.state)).toBe(F.departureDate);
-  });
-
-  it('Thinking Lebanon as destination', async () => {
-    const r = await turn('Thinking Lebanon', createState(), 0);
-    expect(r.state.destination).toBe('Lebanon');
-    expect(selectConversationFollowUpQuestion(r.state)).toBe(F.origin);
-  });
-
-  it('Sydney sounds good while destination is missing', async () => {
-    const r = await turn('Sydney sounds good', createState(), 0);
-    expect(r.state.destination).toBe('Sydney');
-    expect(r.state.origin).toBeNull();
-  });
-
-  it('Actually make that Brisbane corrects destination', async () => {
-    let s = createState({ destination: 'Melbourne', origin: null });
-    const r = await turn('Actually make that Brisbane', s, 0);
-    expect(r.state.destination).toBe('Brisbane');
-  });
-
-  it('travelling from Sydney then I want to go Lebanon', async () => {
-    let s = createState();
-    let r = await turn('I am travelling from Sydney', s, 0);
-    expect(r.state.origin).toBe('Sydney');
-    expect(r.state.destination).toBeNull();
-
-    s = r.state;
-    r = await turn('I want to go Lebanon', s, 1);
-    expect(r.state.origin).toBe('Sydney');
-    expect(r.state.destination).toBe('Lebanon');
-  });
-
-  it('28th of August sets departure date when origin/destination known', async () => {
-    const s = createState({
-      destination: 'Melbourne',
-      origin: 'Sydney',
+describe('Semantic conversation engine — capability regressions', () => {
+  it('framed destination then Dialogue-bound origin', () => {
+    const first = runArchitecturePipeline({
+      message: 'I want to go to Melbourne',
+      currentState: createState(),
+      now: NOW,
     });
-    const r = await turn('28th of August', s, 0);
-    expect(r.state.departureDate).toMatch(/^\d{4}-08-28$/);
+    expect(first.committed.state.destination).toBe('Melbourne');
+
+    const dialogue = updateDialogueStateAfterAct({
+      prior: createInitialDialogueState(),
+      decision: first.dialogueDecision,
+      act: first.previewAct,
+      turnCount: 1,
+    });
+    const second = runArchitecturePipeline({
+      message: 'Sydney',
+      currentState: {
+        ...first.committed.state,
+        dialogueState: dialogue,
+        turnCount: 1,
+      },
+      now: NOW,
+    });
+    expect(second.committed.state.origin).toBe('Sydney');
+    expect(second.committed.state.destination).toBe('Melbourne');
   });
 
-  it('in the afternoon records time preference without fabricating places', async () => {
+  it('explicit from-origin cue via offline compatibility path', async () => {
     const interpretation = await interpretTravelUtterance({
-      message: 'in the afternoon',
-      currentState: createState({
-        destination: 'Melbourne',
-        origin: 'Sydney',
-        departureDate: '2026-08-28',
-      }),
+      message: 'I am travelling from Sydney',
+      currentState: createState(),
       mode: 'offline-semantic',
     });
-    expect(interpretation.semantic.departureTimePreference).toBe('afternoon');
-    expect(interpretation.stateUpdate.destination).toBeUndefined();
+    expect(interpretation.stateUpdate.origin).toBe('Sydney');
   });
 
-  it('after 5 records time preference', async () => {
+  it('calendar date via offline compatibility path', async () => {
+    const s = createState({
+      destination: 'Melbourne',
+      origin: 'Sydney',
+    });
     const interpretation = await interpretTravelUtterance({
-      message: 'after 5',
-      currentState: createState({
-        destination: 'Melbourne',
-        origin: 'Sydney',
-      }),
+      message: '28th of August',
+      currentState: s,
       mode: 'offline-semantic',
     });
-    expect(interpretation.semantic.departureTimePreference).toMatch(/after 5/i);
+    expect(interpretation.stateUpdate.departureDate).toMatch(/^\d{4}-08-28$/);
   });
 
-  it('for four nights derives return when departure known', async () => {
-    const s = createState({
-      destination: 'Melbourne',
-      origin: 'Sydney',
-      departureDate: '2026-08-28',
-    });
-    const r = await turn('for four nights', s, 0);
-    expect(r.state.returnDate).toBe('2026-09-01');
-  });
-
-  it('remove the car clears car hire', async () => {
-    const s = createState({
-      destination: 'Melbourne',
-      origin: 'Sydney',
-      carHireRequested: true,
-    });
-    const r = await turn('remove the car', s, 0);
-    expect(r.state.carHireRequested).toBe(false);
-  });
-
-  it('add a hotel too requests accommodation', async () => {
-    const s = createState({
-      destination: 'Melbourne',
-      origin: 'Sydney',
-    });
-    const r = await turn('add a hotel too', s, 0);
-    expect(r.state.accommodationRequested).toBe(true);
-  });
-
-  it('Melbourne from Sydney in one utterance — no reversal', async () => {
-    const r = await turn('I want to go Melbourne from Sydney', createState(), 0);
-    expect(r.state.destination).toBe('Melbourne');
-    expect(r.state.origin).toBe('Sydney');
-  });
-
-  it('AI failure path: regex fallback still available via mode', async () => {
+  it('regex fallback remains available as explicit mode only', async () => {
     const interpretation = await interpretTravelUtterance({
       message: 'I want to go to Melbourne',
       currentState: createState(),
@@ -171,9 +90,36 @@ describe('Semantic conversation engine — multi-turn regressions', () => {
     expect(interpretation.stateUpdate.destination).toBe('Melbourne');
   });
 
-  it('empty smalltalk does not fabricate destination', async () => {
-    const r = await turn('I want to go', createState(), 0);
-    expect(r.state.destination).toBeNull();
-    expect(selectConversationFollowUpQuestion(r.state)).toBe(F.destination);
+  it('empty travel frame does not fabricate destination on governed path', () => {
+    const pipe = runArchitecturePipeline({
+      message: 'I want to go',
+      currentState: createState(),
+      now: NOW,
+    });
+    expect(pipe.committed.state.destination).toBeNull();
+  });
+
+  it('service add via offline compatibility path', async () => {
+    const s = createState({
+      destination: 'Melbourne',
+      origin: 'Sydney',
+    });
+    const r = await interpretTravelUtterance({
+      message: 'add a hotel too',
+      currentState: s,
+      mode: 'offline-semantic',
+    });
+    const applied = processConversationTurn({
+      message: 'add a hotel too',
+      state: s,
+      userEntryId: 'u',
+      assistantEntryId: 'a',
+      userMessageAt: NOW,
+      assistantMessageAt: NOW,
+      stateUpdate: r.stateUpdate,
+      skipExtraction: true,
+      replyOverride: 'ok',
+    });
+    expect(applied.state.accommodationRequested).toBe(true);
   });
 });

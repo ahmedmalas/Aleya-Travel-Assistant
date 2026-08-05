@@ -527,10 +527,11 @@ describe('conversation-core architectural boundary', () => {
     );
     expect(destinationExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(destinationExtractor).toMatch(/input\.message/);
-    // Phase 21D: currentState is read only for the active-destination bare gate.
-    expect(destinationExtractor).toMatch(
+    // Engine Consolidation Phase 5: bare-destination follow-up gate retired.
+    expect(destinationExtractor).not.toMatch(
       /isDestinationFollowUpActive\(input\.currentState\)/,
     );
+    expect(destinationExtractor).toMatch(/Phase 21D\/F bare-destination/);
     expect(destinationExtractor.includes('.trim(')).toBe(false);
     expect(destinationExtractor.includes('.toLowerCase(')).toBe(false);
     const originExtractor = readSrc(
@@ -541,11 +542,11 @@ describe('conversation-core architectural boundary', () => {
     expect(originExtractor).toContain('Phase 8B');
     expect(originExtractor).toMatch(/input: ConversationStateExtractionInput/);
     expect(originExtractor).toMatch(/input\.message/);
-    // Phase 21B: currentState is read only for the active-origin bare gate.
-    expect(originExtractor).toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
+    // Engine Consolidation Phase 5: bare-origin follow-up gate retired.
+    expect(originExtractor).not.toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
     expect(originExtractor.includes('.trim(')).toBe(false);
     expect(originExtractor.includes('.toLowerCase(')).toBe(false);
-    expect(originExtractor).toMatch(/origin:\s*(?:cuedOrigin|bareOrigin|origin)/);
+    expect(originExtractor).toMatch(/origin:\s*(?:cuedOrigin|origin)/);
     expect(originExtractor.includes('origin: ""')).toBe(false);
     const departureDateExtractor = readSrc(
       'src/features/conversation-core/DepartureDateConversationStateExtractor.ts',

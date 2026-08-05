@@ -36,6 +36,8 @@ async function turn(
     assistantMessageAt: new Date(Date.UTC(2026, 7, 4, 0, 0, index * 2 + 1)),
     interpretationMode: 'offline-semantic',
     now: new Date('2026-08-04T00:00:00.000Z'),
+    // Engine Consolidation: exercise the governed authoritative path.
+    behaviourSwitchRequested: true,
   });
 }
 
@@ -146,11 +148,17 @@ describe('Consultant Turn Governor — goal-driven regressions', () => {
   });
 
   it('attaches Phase 5 dual-run telemetry without changing act/reply when switch off', async () => {
-    const r = await turn(
-      'I want to go Sydney Bangkok Beirut',
-      createState(),
-      0,
-    );
+    const r = await runConsultantTurn({
+      message: 'I want to go Sydney Bangkok Beirut',
+      state: createState(),
+      userEntryId: 'u-off',
+      assistantEntryId: 'a-off',
+      userMessageAt: new Date(Date.UTC(2026, 7, 4, 0, 0, 0)),
+      assistantMessageAt: new Date(Date.UTC(2026, 7, 4, 0, 0, 1)),
+      interpretationMode: 'offline-semantic',
+      now: new Date('2026-08-04T00:00:00.000Z'),
+      behaviourSwitchRequested: false,
+    });
     expect(r.act.kind).toBe('clarify');
     expect(r.reply).toBe(
       'Are you starting from Sydney, or is Sydney your first destination?',

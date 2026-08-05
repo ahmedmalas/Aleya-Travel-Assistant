@@ -284,11 +284,10 @@ describe('phase 8B — OriginConversationStateExtractor activation', () => {
 
     expect(source).toMatch(/input: ConversationStateExtractionInput/);
     expect(source).toMatch(/input\.message/);
-    // Phase 21B: currentState used only for active-origin follow-up gate.
-    expect(source).toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
-    expect(source).toMatch(/state\.destination !== null && state\.origin === null/);
+    // Engine Consolidation Phase 5: bare-origin follow-up gate retired.
+    expect(source).not.toMatch(/isOriginFollowUpActive\(input\.currentState\)/);
+    expect(source).toMatch(/Phase 21B bare-origin follow-up patch removed/);
     expect(source).not.toMatch(/state\.origin\s*=(?!=)/);
-    expect(source).not.toMatch(/currentState\.origin/);
     expect(source).toMatch(/origin\s*:/);
     expect(source).not.toMatch(/\.trim\(/);
     expect(source).not.toMatch(/\.toLowerCase\(/);
